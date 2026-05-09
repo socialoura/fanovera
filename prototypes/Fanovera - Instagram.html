@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fanovera — Abonnés Instagram réels & actifs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  :root {
+    --frame: #dde0f5;
+    --frame-2: #c9cef0;
+    --paper: #fcfbf8;
+    --paper-2: #f4f3ee;
+    --ink: #1d1d2c;
+    --ink-2: #5a5a72;
+    --ink-3: #9494a8;
+    --primary: #5260e6;
+    --primary-2: #6e7aff;
+    --primary-soft: #e8eaff;
+    --yellow: #f5b800;
+    --pink: #ff6b9b;
+    --green: #4dbf8a;
+    --orange: #ff8a4c;
+    --line: #e7e5dd;
+    --ig-1: #fa7e1e;
+    --ig-2: #d62976;
+    --ig-3: #962fbf;
+    --ig-4: #4f5bd5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0; padding:0;
+    background: var(--frame);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--primary); color: white; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+  input { font: inherit; color: inherit; }
+
+  .script { font-family: 'Caveat', cursive; }
+  .container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+  .paper-frame {
+    background: var(--paper);
+    border-radius: 32px;
+    margin: 24px;
+    box-shadow: 0 30px 60px -30px rgba(82, 96, 230, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Soft IG gradient halo behind paper-frame */
+  .paper-frame::before {
+    content:''; position:absolute;
+    top: -160px; left: 50%; transform: translateX(-50%);
+    width: 720px; height: 360px;
+    background: radial-gradient(ellipse at center, rgba(214,41,118,0.15), rgba(79,91,213,0.08) 40%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .paper-frame::after {
+    content:''; position:absolute;
+    bottom: -120px; right: -80px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(250,126,30,0.12), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .paper-frame > * { position: relative; z-index: 1; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 26px;
+    background: var(--primary); color: white;
+    border-radius: 999px;
+    font-weight: 600; font-size: 15px;
+    box-shadow: 0 8px 22px -8px rgba(82, 96, 230, 0.55);
+    transition: transform .25s, box-shadow .25s, background .25s;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--primary-2); transform: translateY(-2px); box-shadow: 0 14px 32px -10px rgba(82, 96, 230, 0.65); }
+  .btn-primary:disabled { background: var(--ink-3); box-shadow: none; cursor: not-allowed; transform: none; }
+
+  .btn-ig {
+    background: linear-gradient(135deg, var(--ig-1) 0%, var(--ig-2) 50%, var(--ig-3) 100%);
+    box-shadow: 0 8px 22px -8px rgba(214, 41, 118, 0.55);
+  }
+  .btn-ig:hover { box-shadow: 0 14px 32px -10px rgba(214, 41, 118, 0.65); }
+
+  .btn-soft {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px;
+    background: white; color: var(--ink);
+    border-radius: 999px;
+    font-weight: 600; font-size: 15px;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: border-color .2s, transform .2s;
+  }
+  .btn-soft:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+  .nav-pill {
+    display: inline-flex; align-items: center;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  }
+  .nav-pill a {
+    padding: 8px 16px;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    border-radius: 999px;
+    transition: background .2s, color .2s;
+  }
+  .nav-pill a:hover { color: var(--ink); background: var(--paper-2); }
+  .nav-pill a.active { color: var(--ink); background: var(--paper-2); }
+
+  .display {
+    font-weight: 800;
+    font-size: clamp(36px, 4.6vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+
+  .squiggle {
+    position: relative; display: inline-block;
+    color: var(--primary);
+  }
+  .squiggle::after {
+    content: ""; position: absolute;
+    left: -2%; right: -2%; bottom: -8px;
+    height: 14px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 30 1, 60 7 T 120 6 T 198 8' stroke='%235260e6' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>") no-repeat;
+    background-size: 100% 100%;
+  }
+  .squiggle.ig { color: var(--ig-2); }
+  .squiggle.ig::after { background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 30 1, 60 7 T 120 6 T 198 8' stroke='%23d62976' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>") no-repeat; }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 19px; letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--primary-2), var(--primary));
+    border-radius: 9px;
+    display: grid; place-items: center;
+    color: white; font-weight: 800; font-size: 16px;
+    box-shadow: 0 4px 10px -2px rgba(82, 96, 230, 0.45);
+  }
+
+  /* Stepper */
+  .stepper {
+    display: flex; align-items: center; gap: 16px;
+    background: white; border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  }
+  .step-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    color: var(--ink-3);
+    transition: all .25s;
+  }
+  .step-pill.done { color: var(--green); }
+  .step-pill.active { color: var(--ink); background: var(--paper-2); }
+  .step-pill.active .step-num,
+  .step-pill.done .step-num { background: var(--ink); color: white; }
+  .step-pill.done .step-num { background: var(--green); }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--paper-2);
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    transition: all .25s;
+  }
+  .step-divider {
+    width: 24px; height: 2px;
+    background: var(--line); border-radius: 2px;
+  }
+
+  /* Pack tile */
+  .pack-tile {
+    background: white;
+    border: 2px solid var(--line);
+    border-radius: 22px;
+    padding: 20px 18px 22px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform .25s, border-color .25s, box-shadow .25s;
+  }
+  .pack-tile:hover { transform: translateY(-4px); border-color: var(--ig-3); box-shadow: 0 18px 36px -16px rgba(214, 41, 118, 0.25); }
+  .pack-tile.selected {
+    border-color: var(--ig-2);
+    box-shadow: 0 18px 38px -14px rgba(214, 41, 118, 0.35);
+    background: linear-gradient(180deg, #fff 0%, #fff8fb 100%);
+  }
+  .pack-tile.popular::before {
+    content: "★ POPULAIRE";
+    position: absolute;
+    top: -10px; left: 50%; transform: translateX(-50%);
+    padding: 4px 12px;
+    background: linear-gradient(135deg, var(--ig-1), var(--ig-2));
+    color: white;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pack-tile.best::before {
+    content: "✓ MEILLEUR PRIX/QTÉ";
+    position: absolute;
+    top: -10px; left: 50%; transform: translateX(-50%);
+    padding: 4px 12px;
+    background: var(--green); color: white;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* Country toggle card */
+  .country-card {
+    background: white;
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all .25s;
+    position: relative;
+  }
+  .country-card:hover { border-color: var(--ig-3); }
+  .country-card.selected {
+    border-color: var(--ig-2);
+    background: linear-gradient(180deg, #fff 0%, #fff8fb 100%);
+  }
+  .country-card.selected .check-bubble { background: var(--ig-2); }
+
+  /* Trust list */
+  .trust-row {
+    display: flex; gap: 10px; align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 14px;
+  }
+  .trust-row:last-child { border-bottom: 0; }
+  .trust-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+
+  /* Network icon button */
+  .net-icon {
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    background: white;
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    transition: transform .3s, border-color .3s;
+    cursor: pointer;
+  }
+  .net-icon:hover { transform: translateY(-3px); border-color: var(--primary); }
+  .net-icon.active {
+    background: linear-gradient(135deg, var(--ig-1), var(--ig-2));
+    border-color: transparent;
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+  }
+  .floaty { animation: floaty 5s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  }
+  .pulse-dot { animation: pulse 1.6s ease-in-out infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide-in { animation: slide-in .45s ease-out; }
+
+  /* Section */
+  .section { padding: 80px 0; position: relative; }
+
+  /* FAQ */
+  .faq-item {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    margin-bottom: 12px;
+    padding: 4px 24px;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .faq-item.open { border-color: var(--ig-2); box-shadow: 0 12px 28px -16px rgba(214, 41, 118, 0.2); }
+  .faq-q { width: 100%; text-align: left; padding: 22px 0; display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 17px; font-weight: 600; }
+  .faq-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--paper-2); display: grid; place-items: center; flex-shrink: 0; transition: all .3s; }
+  .faq-item.open .faq-icon { background: var(--ig-2); color: white; transform: rotate(45deg); }
+  .faq-a { overflow: hidden; max-height: 0; transition: max-height .4s, padding .4s; color: var(--ink-2); font-size: 15px; line-height: 1.6; }
+  .faq-item.open .faq-a { max-height: 320px; padding-bottom: 22px; }
+
+  /* Form */
+  .input-shell {
+    background: white;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 6px 8px 6px 16px;
+    display: flex; align-items: center;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .input-shell:focus-within {
+    border-color: var(--ig-2);
+    box-shadow: 0 8px 22px -10px rgba(214, 41, 118, 0.35);
+  }
+  .input-shell input {
+    flex: 1; border: 0; outline: 0; padding: 12px 4px;
+    font-size: 16px; font-weight: 500; background: transparent;
+  }
+
+  /* IG Profile preview card */
+  .ig-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px -20px rgba(214, 41, 118, 0.25);
+  }
+  .ig-card-top {
+    background: linear-gradient(135deg, #fff 0%, #fdf3f8 100%);
+    padding: 20px;
+    display: flex; gap: 16px; align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .ig-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--ig-1), var(--ig-2), var(--ig-3));
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  .ig-avatar-inner {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: var(--paper); display: grid; place-items: center;
+    font-size: 26px; font-weight: 800;
+    color: var(--ig-2);
+  }
+  .ig-grid-3 {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+  .ig-tile {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #efefef, #d8d8d8);
+    position: relative;
+  }
+
+  /* Promo banner */
+  .promo-banner {
+    background: linear-gradient(90deg, #4f5bd5 0%, #962fbf 33%, #d62976 66%, #fa7e1e 100%);
+    color: white;
+    padding: 10px 0;
+    font-size: 13px; font-weight: 600;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Why-us card */
+  .why-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 22px; padding: 28px;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .why-card:hover { transform: translateY(-4px); box-shadow: 0 18px 36px -16px rgba(82, 96, 230, 0.18); }
+
+  /* Review card */
+  .review-card {
+    background: white; border: 1px solid var(--line);
+    border-radius: 18px; padding: 18px;
+  }
+
+  /* Floating decorative IG icons */
+  .ig-deco {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.22;
+    color: var(--ig-2);
+    z-index: 0;
+    filter: drop-shadow(0 6px 14px rgba(214, 41, 118, 0.18));
+  }
+  .ig-deco.tinted-1 { color: var(--ig-1); opacity: 0.22; filter: drop-shadow(0 6px 14px rgba(250, 126, 30, 0.22)); }
+  .ig-deco.tinted-2 { color: var(--ig-3); opacity: 0.22; filter: drop-shadow(0 6px 14px rgba(150, 47, 191, 0.22)); }
+  .ig-deco.tinted-4 { color: var(--ig-4); opacity: 0.22; filter: drop-shadow(0 6px 14px rgba(79, 91, 213, 0.22)); }
+  .ig-deco.bright { opacity: 0.45; }
+  .ig-deco svg { stroke-width: 2.2 !important; }
+  @keyframes drift-a {
+    0%, 100% { transform: translate(0, 0) rotate(var(--rot, 0deg)); }
+    33% { transform: translate(8px, -10px) rotate(calc(var(--rot, 0deg) + 4deg)); }
+    66% { transform: translate(-6px, 6px) rotate(calc(var(--rot, 0deg) - 3deg)); }
+  }
+  @keyframes drift-b {
+    0%, 100% { transform: translate(0, 0) rotate(var(--rot, 0deg)); }
+    50% { transform: translate(-10px, -8px) rotate(calc(var(--rot, 0deg) + 6deg)); }
+  }
+  .ig-deco.drift-a { animation: drift-a 9s ease-in-out infinite; }
+  .ig-deco.drift-b { animation: drift-b 11s ease-in-out infinite; }
+
+  .ig-grad-stroke {
+    background: linear-gradient(135deg, var(--ig-1), var(--ig-2), var(--ig-3), var(--ig-4));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* Sticker */
+  .sticker {
+    background: white;
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: 0 12px 28px -8px rgba(29, 29, 44, 0.2);
+    display: inline-flex; gap: 10px; align-items: center;
+  }
+
+  @media (max-width: 980px) {
+    .checkout-grid { grid-template-columns: 1fr !important; }
+    .pack-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .country-grid { grid-template-columns: 1fr !important; }
+    .why-grid { grid-template-columns: 1fr !important; }
+    .reviews-grid { grid-template-columns: 1fr 1fr !important; }
+    .footer-grid { grid-template-columns: 1fr 1fr !important; }
+    .hide-md { display: none !important; }
+    .nav-pill { display: none !important; }
+    .paper-frame { margin: 12px; }
+    .stepper { gap: 6px; padding: 6px; }
+    .step-pill { padding: 6px 10px; font-size: 11px; }
+    .step-divider { width: 12px; }
+  }
+  @media (max-width: 640px) {
+    .pack-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .reviews-grid { grid-template-columns: 1fr !important; }
+  }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useMemo } = React;
+
+/* ─── Networks ─── */
+const NETWORKS = [
+  { id:'instagram', name:'Instagram', icon:'instagram' },
+  { id:'tiktok',    name:'TikTok',    icon:'tiktok' },
+  { id:'youtube',   name:'YouTube',   icon:'youtube' },
+  { id:'spotify',   name:'Spotify',   icon:'spotify' },
+  { id:'twitter',   name:'Twitter',   icon:'twitter' },
+  { id:'facebook',  name:'Facebook',  icon:'facebook' },
+  { id:'linkedin',  name:'LinkedIn',  icon:'linkedin' },
+  { id:'twitch',    name:'Twitch',    icon:'twitch' },
+];
+
+function NetIcon({ kind, color = 'currentColor', size = 22 }) {
+  const s = { fill:'none', stroke: color, strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (kind) {
+    case 'instagram': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" {...s}/><circle cx="12" cy="12" r="4" {...s}/><circle cx="17.5" cy="6.5" r="1.1" fill={color}/></svg>;
+    case 'tiktok': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5" {...s}/><path d="M14 4c0 2.5 2 4.5 4.5 4.5" {...s}/></svg>;
+    case 'youtube': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="3" {...s}/><path d="M10 9.5v5l4.5-2.5z" fill={color}/></svg>;
+    case 'spotify': return <svg width={size} height={size} viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" {...s}/><path d="M7.5 10c3-1 7-1 9.5 1M8 13c2.5-.8 5-.5 7 1M9 16c1.8-.5 3.5-.3 5 .8" {...s}/></svg>;
+    case 'twitter': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" {...s}/></svg>;
+    case 'facebook': return <svg width={size} height={size} viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" {...s}/><path d="M13.5 21V13h2.5l.5-3h-3V8.2c0-.9.3-1.5 1.6-1.5H17V4.1c-.3 0-1.4-.1-2.5-.1-2.5 0-4 1.4-4 4v2H8v3h2.5v8" {...s}/></svg>;
+    case 'linkedin': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" {...s}/><circle cx="7.5" cy="8" r="1.1" fill={color}/><path d="M7 11v6M11 11v6M11 13.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5V17" {...s}/></svg>;
+    case 'twitch': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M5 4h14v10l-4 4h-3l-3 3v-3H5z" {...s}/><path d="M11 8v4M15 8v4" {...s}/></svg>;
+  }
+}
+
+/* ─── Pack data ─── */
+const PACKS = [
+  { qty: 100,    price: 2.79,  old: 9.99,   bonus: 25 },
+  { qty: 250,    price: 5.49,  old: 14.99,  bonus: 50 },
+  { qty: 500,    price: 8.99,  old: 24.99,  bonus: 100 },
+  { qty: 1000,   price: 14.99, old: 39.99,  bonus: 200, popular: true },
+  { qty: 2500,   price: 32.99, old: 84.99,  bonus: 500 },
+  { qty: 5000,   price: 59.99, old: 149.99, bonus: 1000 },
+  { qty: 10000,  price: 109.99,old: 269.99, bonus: 2500 },
+  { qty: 25000,  price: 249.99,old: 599.99, bonus: 6000 },
+  { qty: 50000,  price: 449.99,old: 1099.99,bonus: 12500, best: true },
+  { qty: 100000, price: 799.99,old: 1999.99,bonus: 25000 }
+];
+
+const COUNTRIES = [
+  { id: 'fr', name: 'Abonnés Français', flag: '🇫🇷', desc: 'Comptes basés en France', mult: 1.6, premium: true },
+  { id: 'eu', name: 'Abonnés Européens', flag: '🇪🇺', desc: 'Mix France, Belgique, Suisse, EU', mult: 1, premium: false }
+];
+
+/* ─── Logo ─── */
+function Logo() {
+  return (
+    <a href="Fanovera v5 - Friendly SaaS.html" className="logo">
+      <div className="logo-mark">f</div>
+      <span>Fanovera</span>
+    </a>
+  );
+}
+
+/* ─── Promo Banner ─── */
+function PromoBanner() {
+  const [time, setTime] = useState({ h: 0, m: 14, s: 32 });
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(t => {
+        let { h, m, s } = t;
+        s--; if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) { h = 0; m = 14; s = 32; }
+        return { h, m, s };
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  const pad = n => String(n).padStart(2, '0');
+  return (
+    <div className="promo-banner">
+      <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap: 16, flexWrap:'wrap', padding:'0 16px'}}>
+        <span style={{fontWeight: 700}}>★ Offre spéciale</span>
+        <span>Code <span style={{background:'rgba(255,255,255,0.2)', padding:'2px 10px', borderRadius: 999, fontWeight: 800, letterSpacing:'0.05em'}}>FANO5</span> · −5% sur tout</span>
+        <div style={{display:'flex', gap: 4, fontFamily:'monospace', fontWeight: 700}}>
+          <span style={{background:'rgba(0,0,0,0.25)', padding:'2px 8px', borderRadius: 6}}>{pad(time.h)}h</span>
+          <span style={{background:'rgba(0,0,0,0.25)', padding:'2px 8px', borderRadius: 6}}>{pad(time.m)}m</span>
+          <span style={{background:'rgba(0,0,0,0.25)', padding:'2px 8px', borderRadius: 6}}>{pad(time.s)}s</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Header ─── */
+function Header() {
+  return (
+    <div style={{padding:'24px 0'}}>
+      <div className="container" style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <Logo />
+        <nav className="nav-pill">
+          <a href="Fanovera - Instagram.html" className="active">Instagram</a>
+          <a href="#tiktok">TikTok</a>
+          <a href="#youtube">YouTube</a>
+          <a href="#facebook">Facebook</a>
+          <a href="#all">Tous les réseaux</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <div style={{display:'flex', alignItems:'center', gap: 12}}>
+          <div className="hide-md" style={{display:'flex', alignItems:'center', gap: 4, fontSize: 13, color:'var(--ink-2)'}}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+            <span style={{fontWeight: 700}}>4,9</span>
+            <span>· 2 348 avis</span>
+          </div>
+          <a href="#cart" style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: 'white', border: '1px solid var(--line)',
+            display: 'grid', placeItems: 'center', position:'relative'
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5h2l2.4 11.5a2 2 0 0 0 2 1.5h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Stepper ─── */
+function Stepper({ step }) {
+  const steps = [
+    { n: 1, label: 'Choisir un pack' },
+    { n: 2, label: 'Votre Instagram' },
+    { n: 3, label: 'Paiement sécurisé' }
+  ];
+  return (
+    <div style={{display:'flex', justifyContent:'center', marginBottom: 28}}>
+      <div className="stepper">
+        {steps.map((s, i) => (
+          <React.Fragment key={s.n}>
+            <div className={`step-pill ${step === s.n ? 'active' : ''} ${step > s.n ? 'done' : ''}`}>
+              <span className="step-num">
+                {step > s.n ? (
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : s.n}
+              </span>
+              {s.label}
+            </div>
+            {i < steps.length - 1 && <div className="step-divider"></div>}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═════════════ STEP 1: PACKS ═════════════ */
+function Step1Packs({ country, setCountry, pack, setPack, onNext }) {
+  const formatPrice = (p) => {
+    const adjusted = p.price * (country === 'fr' ? COUNTRIES[0].mult : 1);
+    return adjusted.toFixed(2).replace('.', ',') + ' €';
+  };
+  const formatOld = (p) => {
+    const adjusted = p.old * (country === 'fr' ? COUNTRIES[0].mult : 1);
+    return adjusted.toFixed(2).replace('.', ',') + ' €';
+  };
+  const formatQty = (q) => q.toLocaleString('fr-FR');
+
+  return (
+    <section className="slide-in" style={{padding:'40px 0 0', position:'relative'}}>
+      <IgSprinkle count={6} seed={0} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <Stepper step={1} />
+
+        {/* Hero header */}
+        <div style={{textAlign:'center', maxWidth: 760, margin:'0 auto 36px'}}>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap: 8,
+            padding: '6px 14px',
+            background: 'linear-gradient(135deg, rgba(250,126,30,0.12), rgba(214,41,118,0.12))',
+            color:'var(--ig-2)', fontSize: 12, fontWeight: 800, letterSpacing:'0.08em',
+            borderRadius: 999, marginBottom: 20, textTransform:'uppercase'
+          }}>
+            <NetIcon kind="instagram" color="var(--ig-2)" size={14}/>
+            Instagram
+          </div>
+          <h1 className="display" style={{margin:'0 0 16px'}}>
+            Des abonnés Instagram <span className="squiggle ig">100% réels</span> & actifs.
+          </h1>
+          <p style={{maxWidth: 580, margin:'0 auto', fontSize: 17, color:'var(--ink-2)', lineHeight: 1.55}}>
+            Croissance progressive, comptes vérifiés, livraison en moins de 60 secondes. <strong style={{color:'var(--ink)'}}>Garantie à vie.</strong>
+          </p>
+        </div>
+
+        {/* Live activity ribbon */}
+        <div style={{display:'flex', justifyContent:'center', gap: 24, flexWrap:'wrap', marginBottom: 40}}>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap: 8,
+            padding: '8px 14px', background: 'white', border: '1px solid var(--line)',
+            borderRadius: 999, fontSize: 13, color: 'var(--ink-2)'
+          }}>
+            <span className="pulse-dot" style={{width: 8, height: 8, borderRadius:'50%', background: 'var(--green)'}}></span>
+            <strong style={{color:'var(--ink)'}}>5 000 abonnés</strong> livrés à <strong>@lea_creates</strong> · il y a 2 min
+          </div>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap: 8,
+            padding: '8px 14px', background: 'white', border: '1px solid var(--line)',
+            borderRadius: 999, fontSize: 13, color: 'var(--ink-2)'
+          }}>
+            <span className="pulse-dot" style={{width: 8, height: 8, borderRadius:'50%', background: 'var(--green)'}}></span>
+            <strong style={{color:'var(--ink)'}}>1 248</strong> commandes en cours
+          </div>
+        </div>
+
+        {/* Country toggle */}
+        <div style={{maxWidth: 760, margin:'0 auto 36px'}}>
+          <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 12}}>① Choisissez votre type d'abonnés</div>
+          <div className="country-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap: 14}}>
+            {COUNTRIES.map(c => (
+              <button key={c.id} onClick={() => setCountry(c.id)} className={`country-card ${country === c.id ? 'selected' : ''}`} style={{textAlign:'left'}}>
+                <div style={{display:'flex', alignItems:'center', gap: 14}}>
+                  <div style={{fontSize: 30}}>{c.flag}</div>
+                  <div style={{flex: 1}}>
+                    <div style={{fontWeight: 700, fontSize: 15}}>{c.name}</div>
+                    <div style={{fontSize: 12, color:'var(--ink-3)'}}>{c.desc}</div>
+                  </div>
+                  <div className="check-bubble" style={{
+                    width: 22, height: 22, borderRadius:'50%',
+                    background: country === c.id ? 'var(--ig-2)' : 'white',
+                    border: '2px solid ' + (country === c.id ? 'var(--ig-2)' : 'var(--line)'),
+                    display:'grid', placeItems:'center', flexShrink: 0,
+                    transition: 'all .2s'
+                  }}>
+                    {country === c.id && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                </div>
+                {c.premium && (
+                  <div style={{marginTop: 12, padding:'8px 12px', background:'rgba(214,41,118,0.08)', borderRadius: 10, fontSize: 11, color:'var(--ig-2)', fontWeight: 700, display:'flex', gap: 6, alignItems:'center'}}>
+                    <span>🇫🇷</span>
+                    <span>Qualité premium · vérifiés à la main</span>
+                  </div>
+                )}
+                {!c.premium && (
+                  <div style={{marginTop: 12, padding:'8px 12px', background:'var(--paper-2)', borderRadius: 10, fontSize: 11, color:'var(--ink-2)', fontWeight: 700, display:'flex', gap: 6, alignItems:'center'}}>
+                    <span>✓</span>
+                    <span>Le meilleur rapport qualité/prix</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pack grid */}
+        <div style={{maxWidth: 1100, margin:'0 auto'}}>
+          <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 12}}>② Quelle quantité ?</div>
+          <div className="pack-grid" style={{display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap: 14, marginBottom: 32}}>
+            {PACKS.map((p, i) => (
+              <button key={i} onClick={() => setPack(i)} className={`pack-tile ${pack === i ? 'selected' : ''} ${p.popular ? 'popular' : ''} ${p.best ? 'best' : ''}`}>
+                <div style={{fontSize: 11, fontWeight: 700, color:'var(--ink-3)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom: 4}}>Abonnés</div>
+                <div style={{fontSize: 24, fontWeight: 800, letterSpacing:'-0.02em', lineHeight: 1}}>
+                  {formatQty(p.qty)}
+                </div>
+                <div style={{marginTop: 8, fontSize: 11, color:'var(--green)', fontWeight: 700}}>
+                  +{formatQty(p.bonus)} offerts
+                </div>
+                <div style={{marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--line)'}}>
+                  <div style={{fontSize: 18, fontWeight: 800, color: pack === i ? 'var(--ig-2)' : 'var(--ink)', letterSpacing:'-0.01em'}}>
+                    {formatPrice(p)}
+                  </div>
+                  <div style={{fontSize: 12, color:'var(--ink-3)', textDecoration:'line-through'}}>
+                    {formatOld(p)}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust + CTA card */}
+        <div className="checkout-grid" style={{display:'grid', gridTemplateColumns:'1.2fr 1fr', gap: 24, maxWidth: 1100, margin:'0 auto'}}>
+          {/* Trust list */}
+          <div style={{background:'white', border:'1px solid var(--line)', borderRadius: 22, padding: 24}}>
+            <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 8}}>Inclus dans votre pack</div>
+            {[
+              { i: '⚡', c:'rgba(82,96,230,0.12)', t: 'Livraison en', strong: country === 'fr' ? '47 secondes' : '37 secondes' },
+              { i: '✓', c:'rgba(77,191,138,0.15)', t: 'Profils', strong: country === 'fr' ? '100% Français vérifiés' : '100% Européens vérifiés' },
+              { i: '🛡', c:'rgba(245,184,0,0.15)', t: '', strong: 'Garantie à vie en cas de chute' },
+              { i: '🔄', c:'rgba(255,107,155,0.15)', t: '', strong: '100% satisfait ou remboursé sous 30j' },
+              { i: '👤', c:'rgba(255,138,76,0.15)', t: '', strong: 'Pas besoin de votre mot de passe' },
+              { i: '💳', c:'rgba(82,96,230,0.12)', t: '', strong: 'CB · Apple Pay · Google Pay · PayPal' },
+              { i: '🇫🇷', c:'var(--paper-2)', t: '', strong: 'Service client français 7j/7' },
+            ].map((r, i) => (
+              <div key={i} className="trust-row">
+                <div className="trust-icon" style={{background: r.c, fontSize: 14}}>{r.i}</div>
+                <div>{r.t && <span style={{color:'var(--ink-2)'}}>{r.t} </span>}<strong>{r.strong}</strong></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Summary card */}
+          <div style={{background:'white', border:'2px solid var(--ig-2)', borderRadius: 22, padding: 24, position:'relative', boxShadow: '0 18px 40px -16px rgba(214,41,118,0.3)'}}>
+            <div style={{display:'flex', alignItems:'center', gap: 8, marginBottom: 16}}>
+              <NetIcon kind="instagram" color="var(--ig-2)" size={20}/>
+              <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ig-2)'}}>Votre commande</div>
+            </div>
+
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px dashed var(--line)'}}>
+              <div>
+                <div style={{fontSize: 13, color:'var(--ink-2)'}}>Pack sélectionné</div>
+                <div style={{fontWeight: 700, fontSize: 16, marginTop: 2}}>
+                  {formatQty(PACKS[pack].qty)} abonnés
+                  <span style={{fontSize: 11, color:'var(--green)', fontWeight: 700, marginLeft: 8, padding:'2px 6px', background:'rgba(77,191,138,0.12)', borderRadius: 6}}>
+                    +{formatQty(PACKS[pack].bonus)} offerts
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 0', borderBottom:'1px dashed var(--line)'}}>
+              <div>
+                <div style={{fontSize: 13, color:'var(--ink-2)'}}>Origine</div>
+                <div style={{fontWeight: 700, fontSize: 15, marginTop: 2}}>
+                  {COUNTRIES.find(c => c.id === country).flag} {COUNTRIES.find(c => c.id === country).name}
+                </div>
+              </div>
+            </div>
+
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', padding:'14px 0'}}>
+              <div>
+                <div style={{fontSize: 13, color:'var(--ink-2)'}}>Total</div>
+                <div style={{fontSize: 32, fontWeight: 800, color:'var(--ig-2)', letterSpacing:'-0.02em', lineHeight: 1, marginTop: 4}}>
+                  {formatPrice(PACKS[pack])}
+                </div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize: 13, color:'var(--ink-3)', textDecoration:'line-through'}}>
+                  {formatOld(PACKS[pack])}
+                </div>
+                <div style={{fontSize: 12, color:'var(--green)', fontWeight: 700, marginTop: 4}}>
+                  Vous économisez {((PACKS[pack].old - PACKS[pack].price) * (country === 'fr' ? COUNTRIES[0].mult : 1)).toFixed(2).replace('.', ',')} €
+                </div>
+              </div>
+            </div>
+
+            <button className="btn-primary btn-ig" onClick={onNext} style={{width:'100%', padding:'16px 26px', fontSize: 16, marginTop: 8}}>
+              Continuer
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <div style={{textAlign:'center', marginTop: 12, fontSize: 12, color:'var(--ink-3)'}}>
+              ✓ Sans engagement · ✓ Aucun mot de passe demandé
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ STEP 2: USERNAME ═════════════ */
+function Step2Username({ country, pack, username, setUsername, onNext, onBack }) {
+  const [touched, setTouched] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
+
+  const clean = username.replace(/^@/, '').trim();
+  const valid = /^[a-zA-Z0-9._]{2,30}$/.test(clean);
+
+  // Simulate verifying when user has typed a valid handle
+  useEffect(() => {
+    setVerified(false);
+    if (!valid) return;
+    setVerifying(true);
+    const id = setTimeout(() => {
+      setVerifying(false);
+      setVerified(true);
+    }, 900);
+    return () => { clearTimeout(id); setVerifying(false); };
+  }, [clean, valid]);
+
+  const formatQty = (q) => q.toLocaleString('fr-FR');
+
+  return (
+    <section className="slide-in" style={{padding:'40px 0 0', position:'relative'}}>
+      <IgSprinkle count={5} seed={2} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <Stepper step={2} />
+
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 36px'}}>
+          <h1 className="display" style={{fontSize:'clamp(32px, 4vw, 52px)', margin:'0 0 12px'}}>
+            À quel <span className="squiggle ig">compte</span> les envoyer ?
+          </h1>
+          <p style={{maxWidth: 540, margin:'0 auto', fontSize: 16, color:'var(--ink-2)', lineHeight: 1.55}}>
+            Entrez juste votre <strong style={{color:'var(--ink)'}}>pseudo Instagram</strong>, c'est tout. Aucun mot de passe, aucun accès demandé. Le compte doit être <strong style={{color:'var(--ink)'}}>public</strong>.
+          </p>
+        </div>
+
+        <div className="checkout-grid" style={{display:'grid', gridTemplateColumns:'1fr 0.9fr', gap: 28, maxWidth: 1000, margin:'0 auto'}}>
+          {/* Form */}
+          <div style={{background:'white', border:'1px solid var(--line)', borderRadius: 22, padding: 28}}>
+            <label style={{display:'block', fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 10}}>
+              Votre nom d'utilisateur Instagram
+            </label>
+
+            <div className="input-shell">
+              <span style={{color:'var(--ink-3)', fontWeight: 700, fontSize: 16}}>@</span>
+              <input
+                type="text"
+                placeholder="votrepseudo"
+                value={clean}
+                onChange={e => { setUsername(e.target.value); setTouched(true); }}
+                onBlur={() => setTouched(true)}
+                autoFocus
+                spellCheck={false}
+                autoCapitalize="none"
+              />
+              <div style={{paddingRight: 8, display:'flex', alignItems:'center'}}>
+                {verifying && <div className="spinner" style={{borderColor:'rgba(214,41,118,0.25)', borderTopColor:'var(--ig-2)'}}></div>}
+                {!verifying && verified && (
+                  <div style={{
+                    width: 28, height: 28, borderRadius:'50%', background:'var(--green)',
+                    display:'grid', placeItems:'center'
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {touched && !valid && clean.length > 0 && (
+              <div style={{marginTop: 10, fontSize: 13, color:'var(--ig-2)', display:'flex', gap: 6, alignItems:'center'}}>
+                <span>⚠</span> Format invalide. Lettres, chiffres, "." et "_" uniquement (2-30 caractères).
+              </div>
+            )}
+
+            {/* Privacy callouts */}
+            <div style={{marginTop: 24, display:'grid', gridTemplateColumns:'1fr 1fr', gap: 10}}>
+              {[
+                { i: '🔒', t: 'Aucun mot de passe' },
+                { i: '🛡', t: '100% sécurisé' },
+                { i: '⚡', t: 'Démarrage immédiat' },
+                { i: '🇪🇺', t: 'RGPD · UE' }
+              ].map((c, i) => (
+                <div key={i} style={{padding:'10px 12px', background:'var(--paper-2)', borderRadius: 12, fontSize: 13, fontWeight: 600, display:'flex', gap: 8, alignItems:'center'}}>
+                  <span>{c.i}</span>
+                  <span>{c.t}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Email */}
+            <div style={{marginTop: 24}}>
+              <label style={{display:'block', fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 10}}>
+                Votre e-mail (pour le reçu)
+              </label>
+              <div className="input-shell">
+                <input type="email" placeholder="vous@exemple.com"/>
+              </div>
+              <div style={{marginTop: 8, fontSize: 12, color:'var(--ink-3)'}}>
+                On vous envoie uniquement votre facture. Pas de spam, jamais.
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{marginTop: 28, display:'flex', gap: 10}}>
+              <button onClick={onBack} className="btn-soft" style={{padding:'14px 22px'}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Retour
+              </button>
+              <button onClick={onNext} disabled={!verified} className="btn-primary btn-ig" style={{flex: 1, padding:'14px 26px', fontSize: 16}}>
+                Aller au paiement
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          {/* IG profile preview */}
+          <div style={{position:'relative'}}>
+            <div className="ig-card">
+              <div className="ig-card-top">
+                <div className="ig-avatar">
+                  <div className="ig-avatar-inner">
+                    {clean ? clean.charAt(0).toUpperCase() : '?'}
+                  </div>
+                </div>
+                <div style={{flex: 1, minWidth: 0}}>
+                  <div style={{display:'flex', alignItems:'center', gap: 6}}>
+                    <div style={{fontWeight: 700, fontSize: 16, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      {clean ? '@' + clean : '@votrepseudo'}
+                    </div>
+                    {verified && <svg width="14" height="14" viewBox="0 0 14 14" style={{flexShrink: 0}}><circle cx="7" cy="7" r="6" fill="var(--ig-2)"/><path d="M4 7l2 2 4-4" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <div style={{fontSize: 12, color:'var(--ink-3)', marginTop: 2}}>
+                    {verified ? 'Compte trouvé · Public' : verifying ? 'Recherche…' : 'En attente du pseudo'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', textAlign:'center', padding:'16px 0', borderBottom:'1px solid var(--line)'}}>
+                <div>
+                  <div style={{fontWeight: 800, fontSize: 18}}>248</div>
+                  <div style={{fontSize: 11, color:'var(--ink-3)'}}>publications</div>
+                </div>
+                <div style={{borderLeft:'1px solid var(--line)', borderRight:'1px solid var(--line)'}}>
+                  <div style={{fontWeight: 800, fontSize: 18, color: verified ? 'var(--ig-2)' : 'var(--ink)'}}>
+                    {verified ? (
+                      <span>1 842 <span style={{fontSize: 12, color:'var(--green)'}}>→ {(1842 + PACKS[pack].qty + PACKS[pack].bonus).toLocaleString('fr-FR')}</span></span>
+                    ) : '—'}
+                  </div>
+                  <div style={{fontSize: 11, color:'var(--ink-3)'}}>abonnés</div>
+                </div>
+                <div>
+                  <div style={{fontWeight: 800, fontSize: 18}}>312</div>
+                  <div style={{fontSize: 11, color:'var(--ink-3)'}}>abonnements</div>
+                </div>
+              </div>
+
+              {/* Mock posts */}
+              <div className="ig-grid-3" style={{padding: 4}}>
+                {[
+                  ['#fa7e1e','#d62976'],
+                  ['#962fbf','#4f5bd5'],
+                  ['#d62976','#fa7e1e'],
+                  ['#4f5bd5','#962fbf'],
+                  ['#fa7e1e','#962fbf'],
+                  ['#d62976','#4f5bd5']
+                ].map((g, i) => (
+                  <div key={i} className="ig-tile" style={{background: `linear-gradient(135deg, ${g[0]}, ${g[1]})`, borderRadius: 4}}>
+                    <div style={{position:'absolute', inset: 0, display:'grid', placeItems:'center', color:'white', opacity: 0.7}}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Floating sticker */}
+            <div className="floaty" style={{position:'absolute', top:-14, right:-12, '--r':'8deg'}}>
+              <div className="sticker">
+                <div style={{width: 30, height: 30, borderRadius:'50%', background:'var(--green)', display:'grid', placeItems:'center'}}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div style={{fontSize: 11, color:'var(--ink-3)', fontWeight: 600}}>NOUVEAU TOTAL</div>
+                  <div style={{fontWeight: 800, fontSize: 13}}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ STEP 3: CHECKOUT ═════════════ */
+function Step3Checkout({ country, pack, username, onBack }) {
+  const [paymethod, setPaymethod] = useState('card');
+  const [coupon, setCoupon] = useState('FANO5');
+  const [couponApplied, setCouponApplied] = useState(true);
+
+  const formatQty = (q) => q.toLocaleString('fr-FR');
+  const fmtEuro = (n) => n.toFixed(2).replace('.', ',') + ' €';
+  const subtotal = PACKS[pack].price * (country === 'fr' ? COUNTRIES[0].mult : 1);
+  const discount = couponApplied ? subtotal * 0.05 : 0;
+  const total = subtotal - discount;
+
+  const clean = username.replace(/^@/, '').trim();
+
+  return (
+    <section className="slide-in" style={{padding:'40px 0 0', position:'relative'}}>
+      <IgSprinkle count={5} seed={4} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <Stepper step={3} />
+
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 36px'}}>
+          <h1 className="display" style={{fontSize:'clamp(32px, 4vw, 52px)', margin:'0 0 12px'}}>
+            Plus qu'une <span className="squiggle ig">étape</span>.
+          </h1>
+          <p style={{maxWidth: 540, margin:'0 auto', fontSize: 16, color:'var(--ink-2)', lineHeight: 1.55}}>
+            Paiement sécurisé · livraison automatique dès la confirmation.
+          </p>
+        </div>
+
+        <div className="checkout-grid" style={{display:'grid', gridTemplateColumns:'1.2fr 1fr', gap: 28, maxWidth: 1100, margin:'0 auto'}}>
+          {/* LEFT: payment */}
+          <div style={{background:'white', border:'1px solid var(--line)', borderRadius: 22, padding: 28}}>
+
+            {/* Payment methods */}
+            <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 12}}>Méthode de paiement</div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap: 8, marginBottom: 24}}>
+              {[
+                { id:'card', label:'Carte', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 11h20"/></svg> },
+                { id:'apple', label:'Apple Pay', icon: <span style={{fontSize: 22}}></span> },
+                { id:'google', label:'G Pay', icon: <span style={{fontWeight: 800, fontSize: 14}}>G</span> },
+                { id:'paypal', label:'PayPal', icon: <span style={{fontWeight: 800, fontSize: 12, color:'#003087'}}>Pay<span style={{color:'#009cde'}}>Pal</span></span> }
+              ].map(m => (
+                <button key={m.id} onClick={() => setPaymethod(m.id)}
+                  style={{
+                    padding:'14px 8px', background: paymethod === m.id ? 'white' : 'var(--paper-2)',
+                    border:'2px solid ' + (paymethod === m.id ? 'var(--ig-2)' : 'transparent'),
+                    borderRadius: 12,
+                    display:'flex', flexDirection:'column', alignItems:'center', gap: 6,
+                    cursor:'pointer', transition:'all .2s'
+                  }}>
+                  {m.icon}
+                  <div style={{fontSize: 11, fontWeight: 600, color:'var(--ink-2)'}}>{m.label}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Card form (only if card) */}
+            {paymethod === 'card' && (
+              <div style={{display:'flex', flexDirection:'column', gap: 14}}>
+                <div>
+                  <label style={{display:'block', fontSize: 12, fontWeight: 700, color:'var(--ink-3)', marginBottom: 6, letterSpacing:'0.04em', textTransform:'uppercase'}}>Numéro de carte</label>
+                  <div className="input-shell" style={{padding:'6px 12px 6px 16px'}}>
+                    <input type="text" placeholder="1234 5678 9012 3456" defaultValue="4242 4242 4242 4242"/>
+                    <div style={{display:'flex', gap: 4, paddingRight: 4}}>
+                      <span style={{fontSize: 18}}>💳</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12}}>
+                  <div>
+                    <label style={{display:'block', fontSize: 12, fontWeight: 700, color:'var(--ink-3)', marginBottom: 6, letterSpacing:'0.04em', textTransform:'uppercase'}}>Expiration</label>
+                    <div className="input-shell"><input type="text" placeholder="MM/AA" defaultValue="12/28"/></div>
+                  </div>
+                  <div>
+                    <label style={{display:'block', fontSize: 12, fontWeight: 700, color:'var(--ink-3)', marginBottom: 6, letterSpacing:'0.04em', textTransform:'uppercase'}}>CVC</label>
+                    <div className="input-shell"><input type="text" placeholder="•••" defaultValue="123"/></div>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:'block', fontSize: 12, fontWeight: 700, color:'var(--ink-3)', marginBottom: 6, letterSpacing:'0.04em', textTransform:'uppercase'}}>Nom sur la carte</label>
+                  <div className="input-shell"><input type="text" placeholder="Jean Dupont"/></div>
+                </div>
+              </div>
+            )}
+            {paymethod !== 'card' && (
+              <div style={{padding:'24px', background:'var(--paper-2)', borderRadius: 14, textAlign:'center', color:'var(--ink-2)', fontSize: 14}}>
+                Vous serez redirigé vers <strong style={{color:'var(--ink)'}}>{paymethod === 'apple' ? 'Apple Pay' : paymethod === 'google' ? 'Google Pay' : 'PayPal'}</strong> pour finaliser le paiement de manière sécurisée.
+              </div>
+            )}
+
+            {/* Trust */}
+            <div style={{marginTop: 20, padding:'14px 16px', background:'var(--paper-2)', borderRadius: 12, display:'flex', alignItems:'center', gap: 10, fontSize: 13}}>
+              <span style={{fontSize: 18}}>🔒</span>
+              <div>
+                Paiement chiffré <strong>SSL 256-bit</strong> via Stripe · Conforme <strong>PCI DSS</strong> · 3D Secure
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: recap */}
+          <div>
+            <div style={{background:'white', border:'2px solid var(--ig-2)', borderRadius: 22, padding: 24, position:'sticky', top: 20}}>
+              <div style={{display:'flex', alignItems:'center', gap: 8, marginBottom: 20}}>
+                <NetIcon kind="instagram" color="var(--ig-2)" size={20}/>
+                <div style={{fontSize: 13, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ig-2)'}}>Récapitulatif</div>
+              </div>
+
+              {/* Recipient */}
+              <div style={{padding:'14px', background:'linear-gradient(135deg, rgba(250,126,30,0.08), rgba(214,41,118,0.08))', borderRadius: 14, display:'flex', gap: 12, alignItems:'center', marginBottom: 18}}>
+                <div className="ig-avatar" style={{width: 44, height: 44}}>
+                  <div className="ig-avatar-inner" style={{fontSize: 18}}>
+                    {clean ? clean.charAt(0).toUpperCase() : '?'}
+                  </div>
+                </div>
+                <div style={{flex: 1, minWidth: 0}}>
+                  <div style={{fontSize: 11, color:'var(--ink-3)', fontWeight: 600, letterSpacing:'0.04em', textTransform:'uppercase'}}>Compte destinataire</div>
+                  <div style={{fontWeight: 700, fontSize: 15, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                    {clean ? '@' + clean : '@votrepseudo'}
+                  </div>
+                </div>
+                <button onClick={onBack} style={{padding:'6px 10px', fontSize: 11, fontWeight: 700, background:'white', borderRadius: 999, border:'1px solid var(--line)', cursor:'pointer'}}>Modifier</button>
+              </div>
+
+              {/* Items */}
+              <div style={{display:'flex', justifyContent:'space-between', padding:'10px 0', fontSize: 14}}>
+                <div>
+                  <div style={{fontWeight: 600}}>{formatQty(PACKS[pack].qty)} abonnés Instagram</div>
+                  <div style={{fontSize: 12, color:'var(--ink-3)'}}>{COUNTRIES.find(c => c.id === country).flag} {COUNTRIES.find(c => c.id === country).name}</div>
+                </div>
+                <div style={{fontWeight: 700}}>{fmtEuro(subtotal)}</div>
+              </div>
+              <div style={{display:'flex', justifyContent:'space-between', padding:'10px 0', fontSize: 14, color:'var(--green)', borderBottom:'1px dashed var(--line)'}}>
+                <div>
+                  <div style={{fontWeight: 600}}>+{formatQty(PACKS[pack].bonus)} abonnés offerts</div>
+                  <div style={{fontSize: 12, opacity: 0.8}}>Bonus du pack</div>
+                </div>
+                <div style={{fontWeight: 700}}>OFFERT</div>
+              </div>
+
+              {/* Coupon */}
+              <div style={{padding:'14px 0', borderBottom:'1px dashed var(--line)'}}>
+                <div style={{fontSize: 12, fontWeight: 700, color:'var(--ink-3)', marginBottom: 8, letterSpacing:'0.04em', textTransform:'uppercase'}}>Code promo</div>
+                <div style={{display:'flex', gap: 8}}>
+                  <div className="input-shell" style={{flex: 1, padding:'4px 12px'}}>
+                    <input type="text" value={coupon} onChange={e => setCoupon(e.target.value)} placeholder="CODE PROMO" style={{textTransform:'uppercase', fontSize: 14}}/>
+                  </div>
+                  <button onClick={() => setCouponApplied(!couponApplied)} style={{padding:'10px 16px', background: couponApplied ? 'var(--green)' : 'var(--paper-2)', color: couponApplied ? 'white' : 'var(--ink)', borderRadius: 12, fontWeight: 700, fontSize: 13, cursor:'pointer'}}>
+                    {couponApplied ? '✓ Appliqué' : 'Appliquer'}
+                  </button>
+                </div>
+                {couponApplied && (
+                  <div style={{marginTop: 8, fontSize: 12, color:'var(--green)', fontWeight: 600}}>
+                    ✓ −5% appliqué · économie {fmtEuro(discount)}
+                  </div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', padding:'16px 0 4px'}}>
+                <div style={{fontSize: 15, fontWeight: 700}}>Total TTC</div>
+                <div style={{fontSize: 32, fontWeight: 800, color:'var(--ig-2)', letterSpacing:'-0.02em', lineHeight: 1}}>
+                  {fmtEuro(total)}
+                </div>
+              </div>
+              <div style={{textAlign:'right', fontSize: 12, color:'var(--ink-3)', textDecoration:'line-through', marginBottom: 16}}>
+                {fmtEuro(PACKS[pack].old * (country === 'fr' ? COUNTRIES[0].mult : 1))}
+              </div>
+
+              {/* CTA */}
+              <button className="btn-primary btn-ig" style={{width:'100%', padding:'16px 26px', fontSize: 16}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 6.5V4a3.5 3.5 0 1 1 7 0v2.5M2.5 6.5h9v6h-9z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Payer {fmtEuro(total)}
+              </button>
+
+              <div style={{textAlign:'center', marginTop: 14, fontSize: 11, color:'var(--ink-3)', lineHeight: 1.5}}>
+                En cliquant vous acceptez nos <a href="#cgv" style={{color:'var(--ink-2)', textDecoration:'underline'}}>CGV</a>. Aucun abonnement caché. Livraison instantanée après paiement.
+              </div>
+
+              <div style={{display:'flex', justifyContent:'center', gap: 10, marginTop: 16, paddingTop: 16, borderTop:'1px dashed var(--line)'}}>
+                <span style={{fontSize: 11, color:'var(--ink-3)', display:'flex', gap: 4, alignItems:'center'}}>🔒 SSL</span>
+                <span style={{fontSize: 11, color:'var(--ink-3)', display:'flex', gap: 4, alignItems:'center'}}>✓ 3D Secure</span>
+                <span style={{fontSize: 11, color:'var(--ink-3)', display:'flex', gap: 4, alignItems:'center'}}>🇪🇺 RGPD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ WHY US ═════════════ */
+function WhyUs() {
+  const items = [
+    { i: '⚡', title: 'Livraison en 60 sec.', body: 'Activation instantanée dès le paiement. Vous voyez les premiers abonnés arriver tout de suite.' },
+    { i: '🛡', title: 'Garantie à vie', body: 'En cas de chute (rare), on recharge gratuitement, sans limite dans le temps. Tranquillité totale.' },
+    { i: '👥', title: 'Profils 100% réels', body: 'Aucun bot. Aucun faux compte. Uniquement de vraies personnes vérifiées qui suivent votre profil.' },
+    { i: '🔒', title: 'Sans mot de passe', body: 'On a juste besoin de votre nom d\'utilisateur. Aucun accès, aucun risque pour votre compte.' },
+    { i: '🇫🇷', title: 'Support FR 7j/7', body: 'Une équipe française, joignable en moins d\'une heure par chat ou e-mail. Vraies personnes.' },
+    { i: '↩', title: 'Satisfait ou remboursé', body: 'Pas content sous 30 jours ? On vous rembourse intégralement, sans question. Promis.' }
+  ];
+  return (
+    <section style={{padding:'80px 0', background:'var(--frame)', position:'relative', overflow:'hidden'}}>
+      <IgSprinkle count={5} seed={1} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 48px'}}>
+          <div style={{display:'inline-flex', alignItems:'center', gap: 6, padding:'6px 14px', background:'white', color:'var(--ig-2)', fontSize: 12, fontWeight: 800, letterSpacing:'0.06em', borderRadius: 999, marginBottom: 20, textTransform:'uppercase', border:'1px solid var(--line)'}}><NetIcon kind="instagram" color="var(--ig-2)" size={13}/> Pourquoi Fanovera</div>
+          <h2 className="display" style={{fontSize:'clamp(32px, 4.2vw, 56px)', margin:0}}>
+            Le meilleur service<br/>pour <span className="squiggle ig">Instagram</span>.
+          </h2>
+        </div>
+        <div className="why-grid" style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap: 18}}>
+          {items.map((it, i) => (
+            <div key={i} className="why-card">
+              <div style={{
+                width: 50, height: 50, borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(250,126,30,0.15), rgba(214,41,118,0.15))',
+                display:'grid', placeItems:'center', fontSize: 22, marginBottom: 16
+              }}>{it.i}</div>
+              <h3 style={{margin:'0 0 8px', fontSize: 18, fontWeight: 700, letterSpacing:'-0.01em'}}>{it.title}</h3>
+              <p style={{margin: 0, fontSize: 14, color:'var(--ink-2)', lineHeight: 1.55}}>{it.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ REVIEWS ═════════════ */
+function Reviews() {
+  const reviews = [
+    { n:'Julien D.', d:'il y a 2 jours', t: 'Enfin de vrais abonnés français !! Je recommande à 100%.', r: 5 },
+    { n:'Marie L.',  d:'il y a 7 jours', t: 'J\'ai reçu mes abonnés en quelques minutes après l\'achat. Service nickel.', r: 5 },
+    { n:'Pierre F.', d:'il y a 5 jours', t: 'Très rapide, j\'ai reçu mes abonnés FR en quelques minutes.', r: 5 },
+    { n:'Lucie B.',  d:'il y a 10 jours', t: 'Premier achat de followers, c\'est sérieux et le prix est imbattable.', r: 5 },
+    { n:'Karim T.',  d:'il y a 5 jours', t: 'Excellent service, 10k followers en 10 minutes. Vraiment surpris.', r: 5 },
+    { n:'Léa M.',    d:'il y a 12 jours', t: 'Rien à redire, tout fonctionne comme prévu. Garantie respectée.', r: 5 },
+    { n:'Philippe C.', d:'il y a 14 jours', t: 'Service client réactif et résultats au rendez-vous. Top.', r: 5 },
+    { n:'Laurent M.', d:'il y a 15 jours', t: 'Les follows sont arrivés le jour même, comme promis.', r: 5 }
+  ];
+  return (
+    <section style={{padding:'80px 0', position:'relative', overflow:'hidden'}}>
+      <IgSprinkle count={4} seed={3} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 36px'}}>
+          <div style={{display:'inline-flex', alignItems:'center', gap: 6, padding:'6px 14px', background:'var(--primary-soft)', color:'var(--ig-2)', fontSize: 12, fontWeight: 800, letterSpacing:'0.06em', borderRadius: 999, marginBottom: 20, textTransform:'uppercase'}}><NetIcon kind="instagram" color="var(--ig-2)" size={13}/> Avis clients</div>
+          <h2 className="display" style={{fontSize:'clamp(32px, 4.2vw, 56px)', margin:'0 0 12px'}}>
+            <span className="squiggle ig">2 348 avis</span> · 4,9/5
+          </h2>
+        </div>
+
+        {/* Rating bar block */}
+        <div style={{maxWidth: 520, margin:'0 auto 36px', background:'white', borderRadius: 22, padding: 24, border:'1px solid var(--line)', display:'flex', gap: 28, alignItems:'center'}}>
+          <div style={{textAlign:'center', flexShrink: 0}}>
+            <div style={{fontSize: 48, fontWeight: 800, letterSpacing:'-0.02em', lineHeight: 1, color:'var(--ig-2)'}}>4,91</div>
+            <div style={{display:'flex', gap: 2, marginTop: 6, justifyContent:'center'}}>
+              {[...Array(5)].map((_, j) => (
+                <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+              ))}
+            </div>
+            <div style={{fontSize: 11, color:'var(--ink-3)', marginTop: 4, fontWeight: 600}}>2 348 avis</div>
+          </div>
+          <div style={{flex: 1, display:'flex', flexDirection:'column', gap: 4}}>
+            {[
+              { r:5, n: 2048 },
+              { r:4, n: 198 },
+              { r:3, n: 65 },
+              { r:2, n: 22 },
+              { r:1, n: 15 }
+            ].map(b => (
+              <div key={b.r} style={{display:'flex', gap: 8, alignItems:'center', fontSize: 12}}>
+                <div style={{width: 10, fontWeight: 700}}>{b.r}</div>
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+                <div style={{flex: 1, height: 6, background:'var(--paper-2)', borderRadius: 3, overflow:'hidden'}}>
+                  <div style={{height:'100%', width: (b.n/2048*100)+'%', background: 'var(--yellow)', borderRadius: 3}}></div>
+                </div>
+                <div style={{width: 28, textAlign:'right', color:'var(--ink-3)'}}>{b.n}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Review cards */}
+        <div className="reviews-grid" style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap: 14}}>
+          {reviews.map((r, i) => (
+            <div key={i} className="review-card">
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom: 6}}>
+                <div style={{fontSize: 13, fontWeight: 700}}>{r.n}</div>
+                <div style={{display:'flex', gap: 1}}>
+                  {[...Array(r.r)].map((_, j) => (
+                    <svg key={j} width="11" height="11" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+                  ))}
+                </div>
+              </div>
+              <div style={{fontSize: 11, color:'var(--ink-3)', marginBottom: 10}}>{r.d}</div>
+              <p style={{margin: 0, fontSize: 13, color:'var(--ink)', lineHeight: 1.5}}>{r.t}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ FAQ ═════════════ */
+function FAQ() {
+  const [open, setOpen] = useState(0);
+  const items = [
+    { q: "Les abonnés sont-ils réels ?", a: "Oui, à 100%. Notre IA identifie de vraies personnes susceptibles d'aimer votre contenu et leur expose votre profil. Aucun bot, aucune ferme à clics." },
+    { q: "Est-ce que je dois vous donner mon mot de passe ?", a: "Jamais. On a uniquement besoin de votre nom d'utilisateur Instagram public. Aucun accès au compte, aucun risque." },
+    { q: "Mon compte risque-t-il d'être suspendu ?", a: "Non. La croissance est progressive et naturelle, conforme aux conditions d'utilisation d'Instagram. Plus de 2,4M de comptes accompagnés depuis 2022." },
+    { q: "En combien de temps les abonnés arrivent ?", a: "Le démarrage est instantané (sous 60 secondes). La livraison complète s'étale sur 1 à 7 jours selon le pack, pour un effet 100% naturel." },
+    { q: "Que se passe-t-il en cas de chute d'abonnés ?", a: "Garantie à vie : on recharge gratuitement et automatiquement si vous perdez des abonnés issus de notre service, sans limite de temps." },
+    { q: "Puis-je commander plusieurs fois ?", a: "Oui, autant que vous voulez. Beaucoup de clients commandent par paliers pour une croissance encore plus organique." }
+  ];
+  return (
+    <section id="faq" style={{padding:'80px 0', background:'var(--frame)', position:'relative', overflow:'hidden'}}>
+      <IgSprinkle count={5} seed={5} />
+      <div className="container" style={{position:'relative', zIndex: 1}}>
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 48px'}}>
+          <div style={{display:'inline-flex', alignItems:'center', gap: 6, padding:'6px 14px', background:'white', color:'var(--ig-2)', fontSize: 12, fontWeight: 800, letterSpacing:'0.06em', borderRadius: 999, marginBottom: 20, textTransform:'uppercase', border:'1px solid var(--line)'}}><NetIcon kind="instagram" color="var(--ig-2)" size={13}/> FAQ</div>
+          <h2 className="display" style={{fontSize:'clamp(32px, 4.2vw, 56px)', margin:0}}>
+            Vos questions, <span className="squiggle ig">nos réponses</span>.
+          </h2>
+        </div>
+        <div style={{maxWidth: 760, margin:'0 auto'}}>
+          {items.map((it, i) => (
+            <div key={i} className={`faq-item ${open === i ? 'open' : ''}`}>
+              <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)}>
+                <span>{it.q}</span>
+                <span className="faq-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </span>
+              </button>
+              <div className="faq-a">{it.a}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═════════════ FOOTER ═════════════ */
+function Footer() {
+  return (
+    <footer style={{padding:'60px 0 32px'}}>
+      <div className="container">
+        <div className="footer-grid" style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr', gap: 40, marginBottom: 40, paddingBottom: 40, borderBottom:'1px solid var(--line)'}}>
+          <div>
+            <Logo />
+            <p style={{marginTop: 16, fontSize: 14, lineHeight: 1.55, color:'var(--ink-2)', maxWidth: 280}}>
+              Croissance social media propulsée par IA. Vrais comptes, croissance progressive, 100% whitehat.
+            </p>
+            <div style={{display:'flex', gap: 8, marginTop: 20}}>
+              {NETWORKS.slice(0,4).map(n => (
+                <a key={n.id} href={'/'+n.id} className={`net-icon ${n.id === 'instagram' ? 'active' : ''}`}>
+                  <NetIcon kind={n.icon} color={n.id === 'instagram' ? 'white' : 'currentColor'} size={18}/>
+                </a>
+              ))}
+            </div>
+          </div>
+          <FootCol title="Réseaux" links={NETWORKS.slice(0,4).map(n => ({l: n.name, h: '/'+n.id}))} />
+          <FootCol title=" " links={NETWORKS.slice(4,8).map(n => ({l: n.name, h: '/'+n.id}))} />
+          <FootCol title="Aide" links={[{l:'Comment ça marche', h:'#how'},{l:'Garantie à vie', h:'#guarantee'},{l:'Contact', h:'mailto:hello@fanovera.com'},{l:'Affiliation', h:'#aff'}]} />
+          <FootCol title="Légal" links={[{l:'Mentions légales', h:'#legal'},{l:'CGV', h:'#cgv'},{l:'Confidentialité', h:'#privacy'},{l:'Cookies', h:'#cookies'}]} />
+        </div>
+        <div style={{display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap: 12, fontSize: 13, color:'var(--ink-3)'}}>
+          <div>© Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris</div>
+          <div>hello@fanovera.com</div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+function FootCol({ title, links }) {
+  return (
+    <div>
+      <div style={{fontSize: 12, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 16, minHeight: 16}}>{title}</div>
+      <ul style={{listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:10}}>
+        {links.map((l, i) => <li key={i}><a href={l.h} style={{fontSize: 14, color:'var(--ink-2)'}}>{l.l}</a></li>)}
+      </ul>
+    </div>
+  );
+}
+
+/* ═════════════ APP ═════════════ */
+/* Decorative floating IG icons sprinkled in a section */
+function IgSprinkle({ count = 6, seed = 0 }) {
+  // Deterministic positions per seed
+  const positions = [
+    { top: '6%',  left: '4%',  size: 56,  rot: -14, anim: 'drift-a', tint: '' },
+    { top: '14%', right: '5%', size: 72,  rot: 10,  anim: 'drift-b', tint: 'tinted-1' },
+    { top: '42%', left: '2%',  size: 44,  rot: 18,  anim: 'drift-b', tint: 'tinted-4' },
+    { top: '52%', right: '2%', size: 64,  rot: -8,  anim: 'drift-a', tint: 'tinted-2' },
+    { top: '78%', left: '6%',  size: 50,  rot: 4,   anim: 'drift-a', tint: 'tinted-1' },
+    { top: '86%', right: '7%', size: 40,  rot: -20, anim: 'drift-b', tint: '' },
+    { top: '24%', left: '11%', size: 32,  rot: 22,  anim: 'drift-b', tint: 'tinted-2' },
+    { top: '64%', right: '12%',size: 36,  rot: -16, anim: 'drift-a', tint: 'tinted-4' }
+  ];
+  const start = seed % positions.length;
+  const items = [];
+  for (let i = 0; i < count; i++) items.push(positions[(start + i) % positions.length]);
+  return (
+    <>
+      {items.map((p, i) => (
+        <div key={i} className={`ig-deco ${p.anim} ${p.tint}`}
+          style={{ top: p.top, left: p.left, right: p.right, '--rot': p.rot + 'deg' }}>
+          <NetIcon kind="instagram" color="currentColor" size={p.size}/>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function App() {
+  const [step, setStep] = useState(1);
+  const [country, setCountry] = useState('fr');
+  const [pack, setPack] = useState(3); // popular default
+  const [username, setUsername] = useState('');
+
+  const next = () => { setStep(s => Math.min(3, s + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const back = () => { setStep(s => Math.max(1, s - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  return (
+    <>
+      <PromoBanner />
+      <div className="paper-frame">
+        <Header />
+        {step === 1 && <Step1Packs country={country} setCountry={setCountry} pack={pack} setPack={setPack} onNext={next}/>}
+        {step === 2 && <Step2Username country={country} pack={pack} username={username} setUsername={setUsername} onNext={next} onBack={back}/>}
+        {step === 3 && <Step3Checkout country={country} pack={pack} username={username} onBack={back}/>}
+      </div>
+      <WhyUs />
+      <Reviews />
+      <FAQ />
+      <Footer />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

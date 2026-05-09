@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/design_extract)",
+      "Read(//tmp/**)",
+      "Bash(cp \"C:\\\\Users\\\\ilyee\\\\.claude\\\\projects\\\\C--Users-ilyee-Fanovera\\\\6ab17086-cffa-4e86-800b-e64a17239ea3\\\\tool-results\\\\webfetch-1778356397751-1kl8fa.bin\" ./design.tar.gz)",
+      "Bash(tar -xzf design.tar.gz)",
+      "Bash(cp \"/tmp/design_extract/fanovera/project/Fanovera v5 - Friendly SaaS.html\" \"C:\\\\Users\\\\ilyee\\\\Fanovera\\\\index.html\")",
+      "Bash(cp \"/tmp/design_extract/fanovera/project/Fanovera - Instagram.html\" \"C:\\\\Users\\\\ilyee\\\\Fanovera\\\\Fanovera - Instagram.html\")",
+      "Bash(mkdir -p prototypes)",
+      "Bash(mv \"index.html\" \"Fanovera - Instagram.html\" prototypes/)",
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm view *)",
+      "Bash(npm audit *)",
+      "Bash(npx next *)"
+    ]
+  }
+}

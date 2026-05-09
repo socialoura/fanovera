@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fanovera — Croissance social media propulsée par IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  :root {
+    --frame: #dde0f5;
+    --frame-2: #c9cef0;
+    --paper: #fcfbf8;
+    --paper-2: #f4f3ee;
+    --ink: #1d1d2c;
+    --ink-2: #5a5a72;
+    --ink-3: #9494a8;
+    --primary: #5260e6;
+    --primary-2: #6e7aff;
+    --primary-soft: #e8eaff;
+    --yellow: #f5b800;
+    --pink: #ff6b9b;
+    --green: #4dbf8a;
+    --orange: #ff8a4c;
+    --line: #e7e5dd;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin:0; padding:0;
+    background: var(--frame);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--primary); color: white; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+
+  .script { font-family: 'Caveat', cursive; }
+
+  .container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+  .paper-frame {
+    background: var(--paper);
+    border-radius: 32px;
+    margin: 24px;
+    box-shadow: 0 30px 60px -30px rgba(82, 96, 230, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative dot pattern */
+  .dot-pattern {
+    background-image: radial-gradient(circle, var(--frame-2) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+  }
+
+  /* Btn */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px;
+    background: var(--primary); color: white;
+    border-radius: 999px;
+    font-weight: 600; font-size: 15px;
+    box-shadow: 0 8px 22px -8px rgba(82, 96, 230, 0.55);
+    transition: transform .25s, box-shadow .25s, background .25s;
+  }
+  .btn-primary:hover { background: var(--primary-2); transform: translateY(-2px); box-shadow: 0 14px 32px -10px rgba(82, 96, 230, 0.65); }
+
+  .btn-soft {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px;
+    background: white; color: var(--ink);
+    border-radius: 999px;
+    font-weight: 600; font-size: 15px;
+    border: 1px solid var(--line);
+    transition: border-color .2s, transform .2s;
+  }
+  .btn-soft:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+  /* Pill nav */
+  .nav-pill {
+    display: inline-flex; align-items: center;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  }
+  .nav-pill a {
+    padding: 8px 16px;
+    font-size: 14px; font-weight: 500;
+    color: var(--ink-2);
+    border-radius: 999px;
+    transition: background .2s, color .2s;
+  }
+  .nav-pill a:hover { color: var(--ink); background: var(--paper-2); }
+
+  /* Hero display */
+  .display {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: clamp(40px, 5.4vw, 76px);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+
+  /* Hand-drawn underline */
+  .squiggle {
+    position: relative; display: inline-block;
+    color: var(--primary);
+  }
+  .squiggle::after {
+    content: ""; position: absolute;
+    left: -2%; right: -2%; bottom: -8px;
+    height: 14px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'><path d='M2 9 Q 30 1, 60 7 T 120 6 T 198 8' stroke='%235260e6' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>") no-repeat;
+    background-size: 100% 100%;
+  }
+
+  /* Network icon button (legacy small) */
+  .net-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: white;
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    transition: transform .3s, border-color .3s, box-shadow .3s;
+    cursor: pointer;
+    position: relative;
+  }
+  .net-icon:hover { transform: translateY(-4px); border-color: var(--primary); }
+
+  /* BIG network poster card — primary hero CTA */
+  .netcard {
+    --brand: var(--primary);
+    --brand-2: var(--primary-2);
+    position: relative;
+    background: linear-gradient(155deg, var(--brand) 0%, var(--brand-2) 100%);
+    border-radius: 24px;
+    padding: 22px 20px 20px;
+    cursor: pointer;
+    transition: transform .4s cubic-bezier(.2,.85,.3,1), box-shadow .35s;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-height: 200px;
+    color: white;
+    box-shadow: 0 14px 30px -16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18);
+    isolation: isolate;
+  }
+  /* Glow ring on hover */
+  .netcard::before {
+    content:''; position: absolute; inset: -2px;
+    border-radius: 26px; z-index: -2;
+    background: linear-gradient(155deg, var(--brand), var(--brand-2));
+    filter: blur(18px); opacity: 0;
+    transition: opacity .4s;
+  }
+  /* Big background glyph */
+  .netcard-glyph {
+    position: absolute; right: -24px; bottom: -32px;
+    color: white; opacity: 0.13;
+    transition: transform .5s cubic-bezier(.2,.85,.3,1), opacity .4s;
+    pointer-events: none;
+  }
+  /* Subtle noise/sheen */
+  .netcard::after {
+    content:''; position: absolute; inset: 0; border-radius: 24px;
+    background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.22), transparent 55%);
+    pointer-events: none;
+  }
+  .netcard:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 28px 50px -16px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .netcard:hover::before { opacity: 0.55; }
+  .netcard:hover .netcard-glyph { transform: translate(-8px, -8px) rotate(-6deg) scale(1.08); opacity: 0.22; }
+  .netcard:hover .netcard-arrow { transform: translate(4px, -4px) rotate(-45deg); background: white; color: var(--brand); }
+
+  .netcard > .netcard-row { position: relative; z-index: 1; }
+
+  .netcard-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: white;
+  }
+  .netcard-chip.solid {
+    background: white; color: var(--brand); border-color: white;
+  }
+  .netcard-name {
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-top: 14px;
+    color: white;
+  }
+  .netcard-stat {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 6px;
+    color: rgba(255,255,255,0.85);
+  }
+  .netcard-foot {
+    margin-top: auto;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 12px;
+    position: relative; z-index: 1;
+    padding-top: 16px;
+  }
+  .netcard-cta-label {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.85);
+  }
+  .netcard-arrow {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(8px);
+    display: grid; place-items: center;
+    color: white;
+    transition: transform .35s cubic-bezier(.2,.85,.3,1), background .3s, color .3s;
+    flex-shrink: 0;
+  }
+  .netcard-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    margin: 12px 0 0;
+  }
+
+  /* Floating cards */
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+  }
+  .floaty { animation: floaty 5s ease-in-out infinite; }
+
+  /* Mock window */
+  .mock-window {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 30px 70px -20px rgba(29, 29, 44, 0.25), 0 0 0 1px var(--line);
+    overflow: hidden;
+  }
+  .mock-titlebar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, #f6f5f0, #ecebe5);
+    border-bottom: 1px solid var(--line);
+  }
+  .traffic { width: 12px; height: 12px; border-radius: 50%; }
+
+  /* Sticker badge */
+  .sticker {
+    background: white;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 12px 28px -8px rgba(29, 29, 44, 0.2);
+    display: inline-flex; gap: 10px; align-items: center;
+  }
+
+  /* Section */
+  .section { padding: 100px 0; position: relative; }
+
+  /* Stat tile */
+  .stat-tile {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    border: 1px solid var(--line);
+  }
+
+  /* Step card */
+  .step-card {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    border: 1px solid var(--line);
+    transition: transform .3s, box-shadow .3s;
+  }
+  .step-card:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -16px rgba(82, 96, 230, 0.18); }
+
+  /* FAQ */
+  .faq-item {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    margin-bottom: 12px;
+    padding: 4px 24px;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .faq-item.open { border-color: var(--primary); box-shadow: 0 12px 28px -16px rgba(82, 96, 230, 0.2); }
+  .faq-q { width: 100%; text-align: left; padding: 22px 0; display: flex; justify-content: space-between; align-items: center; gap: 24px; font-size: 17px; font-weight: 600; }
+  .faq-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--paper-2); display: grid; place-items: center; flex-shrink: 0; transition: all .3s; }
+  .faq-item.open .faq-icon { background: var(--primary); color: white; transform: rotate(45deg); }
+  .faq-a { overflow: hidden; max-height: 0; transition: max-height .4s, padding .4s; color: var(--ink-2); font-size: 15px; line-height: 1.6; }
+  .faq-item.open .faq-a { max-height: 300px; padding-bottom: 22px; }
+
+  /* Logo */
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 19px; letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--primary-2), var(--primary));
+    border-radius: 9px;
+    display: grid; place-items: center;
+    color: white; font-weight: 800; font-size: 16px;
+    box-shadow: 0 4px 10px -2px rgba(82, 96, 230, 0.45);
+  }
+
+  @media (max-width: 980px) {
+    .hero-grid { grid-template-columns: 1fr !important; }
+    .feat-grid { grid-template-columns: 1fr !important; }
+    .test-grid { grid-template-columns: 1fr !important; }
+    .footer-grid { grid-template-columns: 1fr 1fr !important; }
+    .net-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .hide-md { display: none !important; }
+    .nav-pill { display: none !important; }
+    .paper-frame { margin: 12px; }
+  }
+  @media (max-width: 640px) {
+    .net-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  }
+
+  /* Cloud bottom decoration */
+  .cloud-deco {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 100px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 100' preserveAspectRatio='none'><path d='M0 100 L0 70 Q 100 40 200 60 Q 320 80 420 50 Q 540 20 660 60 Q 780 90 900 50 Q 1020 20 1200 60 L 1200 100 Z' fill='%23dde0f5' opacity='0.6'/></svg>") no-repeat bottom;
+    background-size: 100% 100%;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState } = React;
+
+const NETWORKS = [
+  { id:'instagram', name:'Instagram', color:'#e1407e', icon:'instagram' },
+  { id:'tiktok',    name:'TikTok',    color:'#1d1d2c', icon:'tiktok' },
+  { id:'youtube',   name:'YouTube',   color:'#ff3a3a', icon:'youtube' },
+  { id:'spotify',   name:'Spotify',   color:'#1ed760', icon:'spotify' },
+  { id:'twitter',   name:'Twitter',   color:'#1d1d2c', icon:'twitter' },
+  { id:'facebook',  name:'Facebook',  color:'#3a6ad4', icon:'facebook' },
+  { id:'linkedin',  name:'LinkedIn',  color:'#1d6dc1', icon:'linkedin' },
+  { id:'twitch',    name:'Twitch',    color:'#9146ff', icon:'twitch' },
+];
+
+function NetIcon({ kind, color, size = 26 }) {
+  const s = { fill:'none', stroke: color, strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (kind) {
+    case 'instagram': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" {...s}/><circle cx="12" cy="12" r="4" {...s}/><circle cx="17.5" cy="6.5" r="1.1" fill={color}/></svg>;
+    case 'tiktok': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5" {...s}/><path d="M14 4c0 2.5 2 4.5 4.5 4.5" {...s}/></svg>;
+    case 'youtube': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="3" {...s}/><path d="M10 9.5v5l4.5-2.5z" fill={color}/></svg>;
+    case 'spotify': return <svg width={size} height={size} viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" {...s}/><path d="M7.5 10c3-1 7-1 9.5 1M8 13c2.5-.8 5-.5 7 1M9 16c1.8-.5 3.5-.3 5 .8" {...s}/></svg>;
+    case 'twitter': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" {...s}/></svg>;
+    case 'facebook': return <svg width={size} height={size} viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" {...s}/><path d="M13.5 21V13h2.5l.5-3h-3V8.2c0-.9.3-1.5 1.6-1.5H17V4.1c-.3 0-1.4-.1-2.5-.1-2.5 0-4 1.4-4 4v2H8v3h2.5v8" {...s}/></svg>;
+    case 'linkedin': return <svg width={size} height={size} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" {...s}/><circle cx="7.5" cy="8" r="1.1" fill={color}/><path d="M7 11v6M11 11v6M11 13.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5V17" {...s}/></svg>;
+    case 'twitch': return <svg width={size} height={size} viewBox="0 0 24 24"><path d="M5 4h14v10l-4 4h-3l-3 3v-3H5z" {...s}/><path d="M11 8v4M15 8v4" {...s}/></svg>;
+  }
+}
+
+/* ─── Logo ─── */
+function Logo() {
+  return (
+    <a href="/" className="logo">
+      <div className="logo-mark">f</div>
+      <span>Fanovera</span>
+    </a>
+  );
+}
+
+/* ─── Header ─── */
+function Header() {
+  return (
+    <div style={{padding:'24px 0'}}>
+      <div className="container" style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <Logo />
+        <nav className="nav-pill">
+          <a href="#how">Comment ça marche</a>
+          <a href="#networks">Réseaux</a>
+          <a href="#proof">Témoignages</a>
+          <a href="#faq">FAQ</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <div style={{display:'flex', alignItems:'center', gap: 12}}>
+          <a href="#login" style={{fontSize: 14, fontWeight: 600}} className="hide-md">Se connecter</a>
+          <a href="#start" className="btn-primary" style={{padding:'10px 20px', fontSize: 14}}>
+            Commencer
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Stars row ─── */
+function StarsRow() {
+  return (
+    <div style={{display:'flex', justifyContent:'center', gap: 56, flexWrap:'wrap', marginBottom: 32}}>
+      {[
+        { q: "Croissance vraiment naturelle", a: "Léa M., musicienne" },
+        { q: "ROI clair en 3 semaines",     a: "Karim T., DTC founder" },
+        { q: "Le meilleur ciblage IA testé", a: "Studio Métrique" }
+      ].map((t, i) => (
+        <div key={i} style={{textAlign:'center'}}>
+          <div style={{display:'flex', justifyContent:'center', gap: 3, marginBottom: 6}}>
+            {[...Array(5)].map((_, j) => (
+              <svg key={j} width="16" height="16" viewBox="0 0 16 16" fill="var(--yellow)"><path d="M8 1l2 4.6 5 .7-3.6 3.5.9 5L8 12.3 3.7 14.8l.9-5L1 6.3l5-.7z"/></svg>
+            ))}
+          </div>
+          <div style={{fontSize: 13, color:'var(--ink-2)', fontStyle:'italic'}}>"{t.q}"</div>
+          <div style={{fontSize: 11, color:'var(--ink-3)', marginTop: 2}}>— {t.a}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Mock dashboard ─── */
+function MockDashboard() {
+  return (
+    <div className="mock-window" style={{width:'100%', maxWidth: 700}}>
+      <div className="mock-titlebar">
+        <div className="traffic" style={{background:'#ff5f57'}}></div>
+        <div className="traffic" style={{background:'#ffbd2e'}}></div>
+        <div className="traffic" style={{background:'#28c840'}}></div>
+        <div style={{flex:1, textAlign:'center', fontSize:11, color:'var(--ink-3)'}}>app.fanovera.com</div>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'180px 1fr', minHeight: 380}}>
+        {/* Sidebar */}
+        <div style={{background:'var(--paper-2)', padding:'18px 12px', borderRight:'1px solid var(--line)'}}>
+          <div style={{
+            background: 'var(--primary)', color:'white',
+            padding: '8px 10px', borderRadius: 8,
+            fontSize: 12, fontWeight: 600,
+            display:'flex', alignItems:'center', gap: 8, marginBottom: 16
+          }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            + Nouvelle campagne
+          </div>
+          {['Tableau de bord','Campagnes','Audience IA','Statistiques','Réseaux','Facturation'].map((label, i) => (
+            <div key={label} style={{
+              padding:'8px 10px', fontSize: 12, fontWeight: i===0 ? 700 : 500,
+              color: i===0 ? 'var(--ink)' : 'var(--ink-2)',
+              borderRadius: 6, marginBottom: 2,
+              background: i===0 ? 'white' : 'transparent'
+            }}>{label}</div>
+          ))}
+          <div style={{marginTop: 18, fontSize: 10, color:'var(--ink-3)', fontWeight:600, letterSpacing:'0.08em', padding:'0 10px'}}>RÉSEAUX ACTIFS</div>
+          <div style={{display:'flex', flexWrap:'wrap', gap: 4, padding:'8px 10px'}}>
+            {NETWORKS.slice(0,8).map(n => (
+              <div key={n.id} style={{width:18, height:18}}>
+                <NetIcon kind={n.icon} color={n.color} size={18}/>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Main */}
+        <div style={{padding: 20}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 14}}>
+            <div>
+              <div style={{fontSize: 14, fontWeight:700}}>Campagne #042</div>
+              <div style={{fontSize: 11, color:'var(--ink-3)'}}>Active · Jour 18 sur 30</div>
+            </div>
+            <div style={{display:'flex', gap: 4}}>
+              <div style={{padding:'4px 10px', background:'var(--paper-2)', fontSize: 10, fontWeight:600, borderRadius: 6}}>7j</div>
+              <div style={{padding:'4px 10px', background:'var(--ink)', color:'white', fontSize: 10, fontWeight:600, borderRadius: 6}}>30j</div>
+              <div style={{padding:'4px 10px', background:'var(--paper-2)', fontSize: 10, fontWeight:600, borderRadius: 6}}>90j</div>
+            </div>
+          </div>
+          {/* Stat cards */}
+          <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap: 8, marginBottom: 14}}>
+            {[
+              {l:'Portée', v:'847k', d:'+412%', c:'var(--green)'},
+              {l:'Engagement', v:'24,3k', d:'+186%', c:'var(--primary)'},
+              {l:'Abonnés', v:'+3 124', d:'+98%', c:'var(--orange)'}
+            ].map((s, i) => (
+              <div key={i} style={{padding: 12, border:'1px solid var(--line)', borderRadius: 8}}>
+                <div style={{fontSize: 10, color:'var(--ink-3)'}}>{s.l}</div>
+                <div style={{fontSize: 18, fontWeight:800, marginTop: 2, letterSpacing:'-0.01em'}}>{s.v}</div>
+                <div style={{fontSize: 10, color: s.c, fontWeight:600, marginTop: 2}}>↑ {s.d}</div>
+              </div>
+            ))}
+          </div>
+          {/* Chart */}
+          <div style={{padding: 12, border:'1px solid var(--line)', borderRadius: 8, height: 170}}>
+            <div style={{fontSize: 11, fontWeight:600, color:'var(--ink-2)', marginBottom: 8}}>Croissance · 30 derniers jours</div>
+            <svg viewBox="0 0 300 130" style={{width:'100%', height:140}}>
+              <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#5260e6" stopOpacity="0.3"/>
+                  <stop offset="100%" stopColor="#5260e6" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              {[30, 60, 90].map(y => <line key={y} x1="10" x2="290" y1={y} y2={y} stroke="#eee" strokeDasharray="2 3"/>)}
+              <path d="M 10 110 Q 40 100 60 95 T 110 80 T 160 60 T 210 40 T 290 18 L 290 130 L 10 130 Z" fill="url(#grad)"/>
+              <path d="M 10 110 Q 40 100 60 95 T 110 80 T 160 60 T 210 40 T 290 18" stroke="var(--primary)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+              {[[60,95],[110,80],[160,60],[210,40],[260,25]].map(([x,y], i) => (
+                <circle key={i} cx={x} cy={y} r="3" fill="white" stroke="var(--primary)" strokeWidth="2"/>
+              ))}
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Hero ─── */
+const NET_META = {
+  instagram: { stat:'+412% portée',    badge:'POPULAIRE', brand:'#e1407e', brand2:'#fa7e1e' },
+  tiktok:    { stat:'+847% vues',       badge:null,        brand:'#1d1d2c', brand2:'#3d3d52' },
+  youtube:   { stat:'+186% abonnés',    badge:null,        brand:'#ff3a3a', brand2:'#ff7a5a' },
+  spotify:   { stat:'+312% écoutes',    badge:null,        brand:'#1ed760', brand2:'#16a34a' },
+  twitter:   { stat:'+254% impressions',badge:null,        brand:'#1d1d2c', brand2:'#3d3d52' },
+  facebook:  { stat:'+198% portée',     badge:null,        brand:'#3a6ad4', brand2:'#5a8af0' },
+  linkedin:  { stat:'+147% leads',      badge:null,        brand:'#1d6dc1', brand2:'#3a8de0' },
+  twitch:    { stat:'+221% viewers',    badge:'NOUVEAU',   brand:'#9146ff', brand2:'#b56cff' },
+};
+
+function NetCard({ n }) {
+  const meta = NET_META[n.id];
+  return (
+    <a href={`Fanovera - ${n.name}.html`} className="netcard"
+       style={{ '--brand': meta.brand, '--brand-2': meta.brand2 }}>
+      {/* Background oversized glyph */}
+      <div className="netcard-glyph">
+        <NetIcon kind={n.icon} color="white" size={180}/>
+      </div>
+
+      {/* Top row: small icon chip + badge */}
+      <div className="netcard-row" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap: 10}}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 11,
+          background:'rgba(255,255,255,0.95)',
+          display:'grid', placeItems:'center',
+          boxShadow:'0 4px 12px rgba(0,0,0,0.18)'
+        }}>
+          <NetIcon kind={n.icon} color={n.color} size={22}/>
+        </div>
+        {meta.badge && <span className="netcard-chip solid">★ {meta.badge}</span>}
+      </div>
+
+      {/* Name + stat */}
+      <div className="netcard-row">
+        <div className="netcard-name">{n.name}</div>
+        <div className="netcard-stat">{meta.stat}</div>
+      </div>
+
+      <div className="netcard-divider"></div>
+
+      {/* Foot: CTA + arrow */}
+      <div className="netcard-foot">
+        <div>
+          <div className="netcard-cta-label">Démarrer</div>
+          <div style={{fontSize: 14, fontWeight: 700, marginTop: 2, color:'white'}}>Booster maintenant</div>
+        </div>
+        <div className="netcard-arrow">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 12L12 4M5 4h7v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function Hero() {
+  return (
+    <section style={{padding:'40px 0 0', position:'relative'}}>
+      <div className="container">
+        <StarsRow />
+
+        <h1 className="display" style={{textAlign:'center', margin:'0 auto 18px', maxWidth: 900, fontSize:'clamp(38px, 5vw, 68px)'}}>
+          Sur quel réseau voulez-vous <span className="squiggle">décoller</span> ?
+        </h1>
+        <p style={{textAlign:'center', maxWidth: 620, margin:'0 auto 36px', fontSize: 17, color:'var(--ink-2)', lineHeight: 1.55}}>
+          Choisissez votre plateforme. Notre IA orchestre une croissance naturelle avec de vrais comptes — <strong style={{color:'var(--ink)'}}>100% whitehat</strong>, livraison immédiate, garantie à vie.
+        </p>
+
+        {/* 8 BIG network cards — primary hero CTA */}
+        <div className="net-grid" style={{
+          display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap: 14,
+          maxWidth: 1100, margin:'0 auto 28px'
+        }}>
+          {NETWORKS.map(n => <NetCard key={n.id} n={n}/>)}
+        </div>
+
+        {/* Sub-CTA strip */}
+        <div style={{display:'flex', justifyContent:'center', alignItems:'center', gap: 24, flexWrap:'wrap', marginBottom: 48}}>
+          <div style={{display:'flex', alignItems:'center', gap: 8, fontSize: 14, fontWeight: 600}}>
+            <span style={{color:'var(--ink-2)'}}>✓ Note 4,9/5</span>
+            <div style={{display:'flex', gap: 2}}>
+              {[...Array(5)].map((_, j) => (
+                <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+              ))}
+            </div>
+            <span style={{color:'var(--ink-3)'}}>· 2 348 avis</span>
+          </div>
+          <div style={{height: 16, width: 1, background:'var(--line)'}}></div>
+          <div style={{fontSize: 14, fontWeight: 600, color:'var(--ink-2)'}}>⚡ Livraison instantanée</div>
+          <div style={{height: 16, width: 1, background:'var(--line)'}}></div>
+          <div style={{fontSize: 14, fontWeight: 600, color:'var(--ink-2)'}}>🛡 Garantie à vie</div>
+          <div style={{height: 16, width: 1, background:'var(--line)'}}></div>
+          <div style={{fontSize: 14, fontWeight: 600, color:'var(--ink-2)'}}>🔒 Sans mot de passe</div>
+        </div>
+
+        {/* Mock with floating cards */}
+        <div style={{position:'relative', marginTop: 20, marginBottom: -40, paddingBottom: 60}}>
+          <div style={{display:'flex', justifyContent:'center'}}>
+            <MockDashboard />
+          </div>
+
+          {/* Floating left icons */}
+          <div style={{position:'absolute', left:'5%', top: 60, '--r':'-8deg'}} className="floaty">
+            <div style={{
+              width: 64, height: 64, borderRadius: 16,
+              background: 'linear-gradient(135deg, #fda085, #f6d365)',
+              display:'grid', placeItems:'center',
+              boxShadow:'0 14px 30px -10px rgba(253, 160, 133, 0.5)'
+            }}>
+              <NetIcon kind="instagram" color="white" size={32}/>
+            </div>
+          </div>
+          <div style={{position:'absolute', left:'2%', top: 220, '--r':'5deg'}} className="floaty" style_d={{animationDelay:'-2s'}}>
+            <div className="sticker" style={{borderRadius: 999}}>
+              <NetIcon kind="tiktok" color="#1d1d2c" size={20}/>
+              <div>
+                <div style={{fontSize: 10, color:'var(--ink-3)', fontWeight:600}}>TIKTOK</div>
+                <div style={{fontSize: 13, fontWeight:700}}>+847%</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating right cards */}
+          <div style={{position:'absolute', right:'5%', top: 30, '--r':'7deg'}} className="floaty">
+            <div className="sticker">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'var(--green)', display:'grid', placeItems:'center'
+              }}>
+                <NetIcon kind="spotify" color="white" size={20}/>
+              </div>
+              <div>
+                <div style={{fontSize: 12, fontWeight:700}}>+312% écoutes</div>
+                <div style={{fontSize: 10, color:'var(--ink-3)'}}>en 30 jours</div>
+              </div>
+            </div>
+          </div>
+          <div style={{position:'absolute', right:'2%', top: 180, '--r':'-4deg'}} className="floaty">
+            <div className="sticker">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'linear-gradient(135deg, #ff6b9b, #c45cae)', display:'grid', placeItems:'center'
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 4l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/></svg>
+              </div>
+              <div>
+                <div style={{fontSize: 12, fontWeight:700}}>4,9/5</div>
+                <div style={{fontSize: 10, color:'var(--ink-3)'}}>2 348 avis</div>
+              </div>
+            </div>
+          </div>
+          <div style={{position:'absolute', right:'8%', top: 320, '--r':'3deg'}} className="floaty">
+            <div className="sticker">
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'var(--primary)', display:'grid', placeItems:'center'
+              }}>
+                <NetIcon kind="youtube" color="white" size={20}/>
+              </div>
+              <div>
+                <div style={{fontSize: 12, fontWeight:700}}>+186% abonnés</div>
+                <div style={{fontSize: 10, color:'var(--ink-3)'}}>en 6 semaines</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── How It Works ─── */
+function HowItWorks() {
+  const steps = [
+    {
+      num: '01',
+      title: "L'IA lit votre contenu",
+      body: "Notre modèle analyse votre voix, votre niche, vos visuels. Il établit une fiche éditoriale unique pour comprendre exactement à qui vous parlez.",
+      icon: 'analyze',
+      color: 'var(--primary)'
+    },
+    {
+      num: '02',
+      title: "On trouve les bonnes audiences",
+      body: "Sur les 8 plateformes, on identifie les vrais utilisateurs susceptibles d'aimer votre contenu. Centres d'intérêt, comportements, affinités.",
+      icon: 'target',
+      color: 'var(--orange)'
+    },
+    {
+      num: '03',
+      title: "Croissance naturelle, qui tient",
+      body: "On expose votre contenu à ces audiences via les voies natives de chaque plateforme. La courbe monte en pente douce, et l'algorithme prend le relais.",
+      icon: 'growth',
+      color: 'var(--green)'
+    }
+  ];
+  return (
+    <section id="how" className="section">
+      <div className="container">
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 56px'}}>
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap: 8,
+            padding: '6px 14px', background:'var(--primary-soft)',
+            color:'var(--primary)', fontSize: 12, fontWeight: 700, letterSpacing:'0.06em',
+            borderRadius: 999, marginBottom: 20, textTransform:'uppercase'
+          }}>★ Comment ça marche</div>
+          <h2 className="display" style={{fontSize:'clamp(36px, 4.6vw, 60px)', margin:0}}>
+            Trois étapes pour des résultats <span className="squiggle">durables</span>.
+          </h2>
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap: 20}} className="feat-grid">
+          {steps.map((s, i) => (
+            <div key={i} className="step-card">
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 24}}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 16,
+                  background: s.color, color: 'white',
+                  display:'grid', placeItems:'center'
+                }}>
+                  <StepIcon kind={s.icon}/>
+                </div>
+                <div style={{
+                  fontFamily: 'Caveat, cursive', fontSize: 32, fontWeight: 600,
+                  color: s.color, opacity: 0.5
+                }}>{s.num}</div>
+              </div>
+              <h3 style={{fontSize: 22, fontWeight: 700, margin:'0 0 12px', letterSpacing:'-0.01em'}}>{s.title}</h3>
+              <p style={{margin:0, color:'var(--ink-2)', fontSize: 15, lineHeight: 1.6}}>{s.body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Connector line */}
+        <div style={{textAlign:'center', marginTop: 40}}>
+          <span className="script" style={{fontSize: 24, color:'var(--primary)'}}>↳ Et ça tient sur la durée.</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StepIcon({ kind }) {
+  switch (kind) {
+    case 'analyze': return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/><path d="M8 11h6M11 8v6"/></svg>;
+    case 'target': return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="5"/><circle cx="14" cy="14" r="1.5" fill="white"/></svg>;
+    case 'growth': return <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22l6-6 4 4 8-10"/><path d="M16 10h6v6"/></svg>;
+  }
+}
+
+/* ─── Side feature row (AI assistant) ─── */
+function FeatureRow() {
+  return (
+    <section style={{background:'var(--frame)', padding: '100px 0', position:'relative'}}>
+      <div className="container">
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap: 80, alignItems:'center'}} className="hero-grid">
+          <div>
+            <div style={{
+              display:'inline-flex', padding:'6px 14px', background:'white',
+              color:'var(--primary)', fontSize: 12, fontWeight: 700, letterSpacing:'0.06em',
+              borderRadius: 999, marginBottom: 20, textTransform:'uppercase',
+              border:'1px solid var(--line)'
+            }}>★ Audience IA</div>
+            <h2 className="display" style={{fontSize:'clamp(32px, 4vw, 52px)', margin:'0 0 20px'}}>
+              Votre <span className="squiggle">copilote</span> de croissance.
+            </h2>
+            <p style={{color:'var(--ink-2)', fontSize: 16, lineHeight: 1.6, marginBottom: 28}}>
+              L'IA Fanovera apprend votre univers en quelques minutes. Elle vous dit qui cibler, quand publier, et ce qui va décoller — sur chacun des 8 réseaux.
+            </p>
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12, marginBottom: 32}}>
+              {[
+                { i:'✓', t:'Analyse de niche IA' },
+                { i:'✓', t:'Ciblage par affinités' },
+                { i:'✓', t:'Modèle dédié réseaux' },
+                { i:'✓', t:'Reporting en temps réel' }
+              ].map((f, i) => (
+                <div key={i} style={{display:'flex', gap: 10, alignItems:'center'}}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius:'50%', background:'var(--primary)', color:'white',
+                    display:'grid', placeItems:'center', fontSize: 12, fontWeight: 700
+                  }}>{f.i}</div>
+                  <span style={{fontSize: 14, fontWeight: 600}}>{f.t}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{display:'flex', gap: 24, padding:'24px 0', borderTop:'1px solid var(--frame-2)', borderBottom:'1px solid var(--frame-2)'}}>
+              <div>
+                <div className="display" style={{fontSize: 44, color:'var(--primary)', fontWeight: 800}}>+412%</div>
+                <div style={{fontSize: 13, color:'var(--ink-2)'}}>Portée moyenne</div>
+              </div>
+              <div>
+                <div className="display" style={{fontSize: 44, color:'var(--orange)', fontWeight: 800}}>+2.5×</div>
+                <div style={{fontSize: 13, color:'var(--ink-2)'}}>Croissance abonnés</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side - AI chat mockup */}
+          <div style={{position:'relative'}}>
+            <div className="mock-window" style={{padding: 0}}>
+              <div className="mock-titlebar">
+                <div className="traffic" style={{background:'#ff5f57'}}></div>
+                <div className="traffic" style={{background:'#ffbd2e'}}></div>
+                <div className="traffic" style={{background:'#28c840'}}></div>
+                <div style={{flex:1, textAlign:'center', fontSize:11, color:'var(--ink-3)'}}>Audience IA · Conversation</div>
+              </div>
+              <div style={{padding: 24}}>
+                {/* User message */}
+                <div style={{display:'flex', justifyContent:'flex-end', marginBottom: 16}}>
+                  <div style={{
+                    background:'var(--primary)', color:'white',
+                    padding:'10px 14px', borderRadius:'14px 14px 4px 14px',
+                    fontSize: 13, maxWidth: '80%'
+                  }}>
+                    Comment optimiser mes Reels Instagram ?
+                  </div>
+                </div>
+                {/* AI message */}
+                <div style={{display:'flex', gap: 10, marginBottom: 16}}>
+                  <div style={{
+                    width: 32, height: 32, flexShrink: 0,
+                    borderRadius: 10, background:'linear-gradient(135deg, var(--primary-2), var(--primary))',
+                    display:'grid', placeItems:'center'
+                  }}>
+                    <span style={{color:'white', fontWeight: 800, fontSize: 14}}>f</span>
+                  </div>
+                  <div style={{
+                    background:'var(--paper-2)',
+                    padding:'10px 14px', borderRadius:'14px 14px 14px 4px',
+                    fontSize: 13, lineHeight: 1.5
+                  }}>
+                    J'ai analysé vos 24 derniers posts. Votre niche : <strong>mode upcyclée Paris</strong>. Je recommande :
+                    <div style={{marginTop: 8, display:'flex', flexDirection:'column', gap: 6}}>
+                      {[
+                        '✓ Cibler 18-28 ans Île-de-France',
+                        '✓ Publier mardi & jeudi · 19h',
+                        '✓ Hashtags niche · 8-12 par post'
+                      ].map(t => (
+                        <div key={t} style={{
+                          fontSize: 12, padding:'6px 10px',
+                          background:'white', borderRadius: 8, color:'var(--ink-2)'
+                        }}>{t}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Suggestion chips */}
+                <div style={{display:'flex', gap: 6, flexWrap:'wrap'}}>
+                  {['Lancer la campagne', 'Voir l\'audience', 'Modifier'].map(c => (
+                    <div key={c} style={{
+                      padding:'6px 12px', background:'white',
+                      border:'1px solid var(--line)', borderRadius: 999,
+                      fontSize: 11, fontWeight: 600
+                    }}>{c}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Floating decoration */}
+            <div style={{position:'absolute', top:-20, left:-20, width: 60, height: 60, borderRadius: 16, background:'var(--yellow)', display:'grid', placeItems:'center', boxShadow:'0 14px 30px -10px rgba(245, 184, 0, 0.4)', '--r':'-12deg'}} className="floaty">
+              <span style={{fontSize: 28}}>🎯</span>
+            </div>
+            <div style={{position:'absolute', bottom:-20, right:-20, width: 60, height: 60, borderRadius: 16, background:'var(--pink)', display:'grid', placeItems:'center', boxShadow:'0 14px 30px -10px rgba(255, 107, 155, 0.4)', '--r':'8deg'}} className="floaty">
+              <span style={{fontSize: 28}}>⚡</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Testimonials ─── */
+function Testimonials() {
+  return (
+    <section id="proof" className="section">
+      <div className="container">
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 56px'}}>
+          <div style={{
+            display:'inline-flex', padding:'6px 14px', background:'var(--primary-soft)',
+            color:'var(--primary)', fontSize: 12, fontWeight: 700, letterSpacing:'0.06em',
+            borderRadius: 999, marginBottom: 20, textTransform:'uppercase'
+          }}>★ Ils nous font confiance</div>
+          <h2 className="display" style={{fontSize:'clamp(36px, 4.6vw, 60px)', margin:0}}>
+            <span className="squiggle">2,4 millions</span> de créateurs<br/>nous ont déjà fait confiance.
+          </h2>
+        </div>
+
+        {/* Stats row */}
+        <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap: 16, marginBottom: 56}} className="feat-grid">
+          {[
+            {n:'+412%', l:'Portée moyenne en 30 jours'},
+            {n:'2,4M', l:'Créateurs accompagnés'},
+            {n:'98,7%', l:'Comptes réels (whitehat)'},
+            {n:'14j', l:'Délai médian de résultats'}
+          ].map((s, i) => (
+            <div key={i} className="stat-tile">
+              <div className="display" style={{fontSize:'clamp(32px, 4vw, 48px)', color:'var(--primary)', fontWeight:800, letterSpacing:'-0.02em'}}>{s.n}</div>
+              <div style={{fontSize: 13, color:'var(--ink-2)', marginTop: 8, lineHeight: 1.4}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Cards */}
+        <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap: 20}} className="test-grid">
+          {[
+            {q:"Mes écoutes mensuelles ont triplé en six semaines. De vraies oreilles, et j'ai signé avec un label indé un mois après.", n:'Léa Marchetti', r:'Musicienne · 312k auditeurs', net:'spotify'},
+            {q:"On vendait à nos abonnés. Maintenant on rencontre des prospects qu'on n'aurait jamais touchés. CAC divisé par trois.", n:'Karim Tahar', r:'Fondateur, Barge Goods', net:'instagram'},
+            {q:"On gère quatorze clients sur Fanovera. Ciblage fin, reporting limpide. C'est devenu notre socle de growth.", n:'Studio Métrique', r:'Agence créative, Paris', net:'tiktok'}
+          ].map((t, i) => {
+            const net = NETWORKS.find(n => n.id === t.net);
+            return (
+              <article key={i} style={{
+                background:'white', borderRadius: 20, padding: 28,
+                border:'1px solid var(--line)'
+              }}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 16}}>
+                  <div style={{display:'flex', gap: 3}}>
+                    {[...Array(5)].map((_, j) => (
+                      <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)"><path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z"/></svg>
+                    ))}
+                  </div>
+                  <NetIcon kind={net.icon} color={net.color} size={20}/>
+                </div>
+                <p style={{fontSize: 16, lineHeight: 1.5, margin:'0 0 24px', color:'var(--ink)'}}>"{t.q}"</p>
+                <div style={{display:'flex', alignItems:'center', gap: 12, paddingTop: 16, borderTop:'1px solid var(--line)'}}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius:'50%',
+                    background:`linear-gradient(135deg, ${net.color}, var(--primary))`,
+                    display:'grid', placeItems:'center', color:'white', fontWeight:800, fontSize: 15
+                  }}>{t.n[0]}</div>
+                  <div>
+                    <div style={{fontSize: 14, fontWeight: 700}}>{t.n}</div>
+                    <div style={{fontSize: 12, color:'var(--ink-3)'}}>{t.r}</div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── FAQ ─── */
+function FAQ() {
+  const [open, setOpen] = useState(0);
+  const items = [
+    { q: "Comment ça reste 100% whitehat ?", a: "Aucun bot, aucune ferme à clics, aucun faux compte. Notre IA identifie de vraies personnes susceptibles d'aimer votre contenu et leur expose votre publication via les mécanismes natifs de chaque plateforme." },
+    { q: "Faut-il vous donner mes mots de passe ?", a: "Jamais. Fanovera fonctionne entièrement à l'extérieur de votre compte. On a juste besoin d'une URL — aucun accès, aucun risque." },
+    { q: "En combien de temps voit-on les résultats ?", a: "Sept à quatorze jours pour la grande majorité des clients. L'algorithme natif de la plateforme prend ensuite le relais et amplifie organiquement." },
+    { q: "Plusieurs plateformes en même temps ?", a: "Oui — c'est même fortement recommandé. Le multi-canal renforce votre autorité globale et amplifie chaque réseau individuellement." },
+    { q: "Si j'arrête, qu'est-ce qui reste ?", a: "Aucun engagement. Votre croissance acquise reste évidemment la vôtre. Seule l'amplification s'arrête à la fin de la période." },
+    { q: "RGPD et hébergement ?", a: "Hébergement européen (Francfort), aucune donnée personnelle des utilisateurs ciblés stockée, suppression du compte en un clic." }
+  ];
+  return (
+    <section id="faq" style={{background:'var(--frame)', padding:'100px 0'}}>
+      <div className="container">
+        <div style={{textAlign:'center', maxWidth: 720, margin:'0 auto 48px'}}>
+          <div style={{
+            display:'inline-flex', padding:'6px 14px', background:'white',
+            color:'var(--primary)', fontSize: 12, fontWeight: 700, letterSpacing:'0.06em',
+            borderRadius: 999, marginBottom: 20, textTransform:'uppercase',
+            border:'1px solid var(--line)'
+          }}>★ FAQ</div>
+          <h2 className="display" style={{fontSize:'clamp(36px, 4.6vw, 60px)', margin:0}}>
+            Vos questions, <span className="squiggle">nos réponses</span>.
+          </h2>
+        </div>
+
+        <div style={{maxWidth: 760, margin:'0 auto'}}>
+          {items.map((it, i) => (
+            <div key={i} className={`faq-item ${open === i ? 'open' : ''}`}>
+              <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)}>
+                <span>{it.q}</span>
+                <span className="faq-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </span>
+              </button>
+              <div className="faq-a">{it.a}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{textAlign:'center', marginTop: 32, fontSize: 14, color:'var(--ink-2)'}}>
+          Une autre question ? Écrivez-nous · <a href="mailto:hello@fanovera.com" style={{color:'var(--primary)', fontWeight: 600}}>hello@fanovera.com</a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── CTA ─── */
+function CTABlock() {
+  return (
+    <section id="start" style={{padding:'100px 0', position:'relative'}}>
+      <div className="container">
+        <div style={{
+          background:'linear-gradient(135deg, var(--primary), var(--primary-2))',
+          borderRadius: 28, padding: '60px 48px',
+          color:'white', textAlign:'center', position:'relative', overflow:'hidden'
+        }}>
+          <div className="dot-pattern" style={{position:'absolute', inset: 0, opacity: 0.2}}></div>
+          <div style={{position:'relative'}}>
+            <h2 className="display" style={{fontSize:'clamp(36px, 4.6vw, 60px)', margin:'0 0 16px', color:'white'}}>
+              Prêt à faire <span style={{color:'var(--yellow)'}}>décoller</span> votre contenu ?
+            </h2>
+            <p style={{maxWidth: 540, margin:'0 auto 32px', fontSize: 17, opacity: 0.9}}>
+              Choisissez votre plateforme et lancez votre première campagne en moins de 2 minutes.
+            </p>
+            <div style={{display:'flex', justifyContent:'center', gap: 8, flexWrap:'wrap', marginBottom: 28}}>
+              {NETWORKS.map(n => (
+                <a key={n.id} href={`/${n.id}`} style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background:'white', display:'grid', placeItems:'center',
+                  transition: 'transform .25s'
+                }} onMouseEnter={e => e.currentTarget.style.transform='translateY(-4px) rotate(-3deg)'} onMouseLeave={e => e.currentTarget.style.transform=''}>
+                  <NetIcon kind={n.icon} color={n.color} size={26}/>
+                </a>
+              ))}
+            </div>
+            <div style={{fontSize: 13, opacity: 0.8}}>
+              ✓ Sans carte bancaire · ✓ Annulation à tout moment · ✓ RGPD
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Footer ─── */
+function Footer() {
+  return (
+    <footer style={{padding:'60px 0 32px'}}>
+      <div className="container">
+        <div style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr', gap: 40, marginBottom: 40, paddingBottom: 40, borderBottom:'1px solid var(--line)'}} className="footer-grid">
+          <div>
+            <Logo />
+            <p style={{marginTop: 16, fontSize: 14, lineHeight: 1.55, color:'var(--ink-2)', maxWidth: 280}}>
+              Croissance social media propulsée par IA. Vrais comptes, croissance progressive, 100% whitehat.
+            </p>
+            <div style={{display:'flex', gap: 8, marginTop: 20}}>
+              {NETWORKS.slice(0,4).map(n => (
+                <a key={n.id} href={`/${n.id}`} style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background:'white', border:'1px solid var(--line)',
+                  display:'grid', placeItems:'center'
+                }}>
+                  <NetIcon kind={n.icon} color={n.color} size={16}/>
+                </a>
+              ))}
+            </div>
+          </div>
+          <FootCol title="Réseaux" links={NETWORKS.slice(0,4).map(n => ({l: n.name, h: '/'+n.id}))} />
+          <FootCol title=" " links={NETWORKS.slice(4,8).map(n => ({l: n.name, h: '/'+n.id}))} />
+          <FootCol title="Produit" links={[{l:'Fonctionnement', h:'#how'},{l:'Témoignages', h:'#proof'},{l:'Tarifs', h:'#pricing'},{l:'Affiliation', h:'#aff'}]} />
+          <FootCol title="Société" links={[{l:'Mentions légales', h:'#legal'},{l:'Confidentialité', h:'#privacy'},{l:'CGU', h:'#cgu'},{l:'Contact', h:'mailto:hello@fanovera.com'}]} />
+        </div>
+        <div style={{display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap: 12, fontSize: 13, color:'var(--ink-3)'}}>
+          <div>© Fanovera SAS 2026 · Made in Paris</div>
+          <div>hello@fanovera.com · 17 rue de Paradis · 75010 Paris</div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+function FootCol({ title, links }) {
+  return (
+    <div>
+      <div style={{fontSize: 12, fontWeight: 700, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom: 16, minHeight: 16}}>{title}</div>
+      <ul style={{listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:10}}>
+        {links.map((l, i) => <li key={i}><a href={l.h} style={{fontSize: 14, color:'var(--ink-2)'}}>{l.l}</a></li>)}
+      </ul>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <div className="paper-frame">
+        <Header />
+        <Hero />
+      </div>
+      <HowItWorks />
+      <FeatureRow />
+      <Testimonials />
+      <FAQ />
+      <CTABlock />
+      <Footer />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
