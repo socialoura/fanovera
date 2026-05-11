@@ -1,6 +1,43 @@
 import type { CSSProperties } from "react";
 import NetIcon from "./NetIcon";
+import StatusBadge from "./StatusBadge";
 import { NETWORKS, NET_META, type Network } from "../lib/networks";
+
+function StarsRow() {
+  const items = [
+    { q: "Résultats visibles en quelques jours", a: "Léa M., musicienne" },
+    { q: "Service sérieux, ROI mesurable", a: "Karim T., DTC founder" },
+    { q: "Le meilleur service IA testé", a: "Studio Métrique" },
+  ];
+  return (
+    <div
+      className="hide-md"
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 56,
+        flexWrap: "wrap",
+        marginBottom: 28,
+      }}
+    >
+      {items.map((t, i) => (
+        <div key={i} style={{ textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 3, marginBottom: 6 }}>
+            {[...Array(5)].map((_, j) => (
+              <svg key={j} width="16" height="16" viewBox="0 0 16 16" fill="var(--yellow)">
+                <path d="M8 1l2 4.6 5 .7-3.6 3.5.9 5L8 12.3 3.7 14.8l.9-5L1 6.3l5-.7z" />
+              </svg>
+            ))}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--ink-2)", fontStyle: "italic" }}>
+            &ldquo;{t.q}&rdquo;
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>— {t.a}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function MockDashboard() {
   return (
@@ -258,9 +295,9 @@ function NetCard({ n }: { n: Network }) {
       {/* Foot: CTA + arrow */}
       <div className="netcard-foot">
         <div>
-          <div className="netcard-cta-label">Démarrer</div>
+          <div className="netcard-cta-label">À partir de 0,99€</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: "white" }}>
-            Booster maintenant
+            Lancer ma croissance
           </div>
         </div>
         <div className="netcard-arrow">
@@ -283,16 +320,18 @@ export default function Hero() {
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
       <div className="container">
+        <StatusBadge />
+        <StarsRow />
         <h1
           className="display"
           style={{
             textAlign: "center",
-            margin: "0 auto 24px",
+            margin: "0 auto 16px",
             maxWidth: 900,
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          Sur quel réseau voulez-vous <span className="squiggle">décoller</span> ?
+          + de 12 000 comptes <span className="squiggle">boostés</span> depuis janvier 2025.
         </h1>
 
         {/* 8 BIG network cards — primary hero CTA, above the fold */}

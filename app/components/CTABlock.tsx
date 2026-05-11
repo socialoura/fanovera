@@ -72,7 +72,7 @@ export default function CTABlock() {
               ))}
             </div>
             <div style={{ fontSize: 13, opacity: 0.8 }}>
-              ✓ Sans carte bancaire · ✓ Annulation à tout moment · ✓ RGPD
+              ✓ À partir de 0,99€ · ✓ Activation en 10 min · ✓ Sans engagement
             </div>
           </div>
         </div>

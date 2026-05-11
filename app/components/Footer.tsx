@@ -1,4 +1,4 @@
-import { Logo } from "./Header";
+﻿import { Logo } from "./Header";
 import NetIcon from "./NetIcon";
 import { NETWORKS } from "../lib/networks";
 
@@ -72,7 +72,7 @@ export default function Footer() {
                 maxWidth: 320,
               }}
             >
-              Croissance social media propulsée par IA. 100% whitehat, vrais comptes.
+              Croissance social media propulsée par IA. Service de croissance social media propulsé par IA.
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -99,33 +99,24 @@ export default function Footer() {
             title="Produit"
             links={[
               { l: "Fonctionnement", h: "#how" },
+              { l: "Suivi de commande", h: "/track" },
               { l: "Témoignages", h: "#proof" },
               { l: "FAQ", h: "#faq" },
-              { l: "Affiliation", h: "#aff" },
             ]}
           />
           <FootCol
             title="Société"
             links={[
-              { l: "Mentions légales", h: "#legal" },
-              { l: "CGU", h: "#cgu" },
-              { l: "Confidentialité", h: "#privacy" },
-              { l: "Contact", h: "mailto:hello@fanovera.com" },
+              { l: "Mentions légales", h: "/mentions-legales" },
+              { l: "CGV", h: "/cgv" },
+              { l: "Confidentialité", h: "/confidentialite" },
+              { l: "Contact", h: "mailto:support@fanovera.com" },
             ]}
           />
         </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-            fontSize: 13,
-            color: "var(--ink-3)",
-          }}
-        >
+        <div className="footer-bottom">
           <div>© Fanovera SAS 2026 · Made in Paris</div>
-          <div>hello@fanovera.com · 17 rue de Paradis · 75010 Paris</div>
+          <div>17 rue de Paradis · 75010 Paris · support@fanovera.com</div>
         </div>
       </div>
     </footer>

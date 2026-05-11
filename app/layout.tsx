@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import PostHogProvider from "./PostHogProvider";
+import ChatWidget from "./components/ChatWidget";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -29,7 +33,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" className={`${jakarta.variable} ${caveat.variable}`}>
-      <body>{children}</body>
+      <body>
+        <PostHogProvider>{children}</PostHogProvider>
+        <ChatWidget />
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }

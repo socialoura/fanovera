@@ -1,0 +1,388 @@
+import NetIcon from "../../components/NetIcon";
+import IgSprinkle from "./IgSprinkle";
+import Stepper from "./Stepper";
+import {
+  COUNTRIES,
+  PACKS,
+  formatPrice,
+  formatOld,
+  formatQty,
+  type CountryId,
+} from "../data";
+
+type Props = {
+  country: CountryId;
+  pack: number;
+  setPack: (i: number) => void;
+  onNext: () => void;
+};
+
+export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
+  const selectedPack = PACKS[pack];
+  const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
+  const savings =
+    (selectedPack.old - selectedPack.price) * (country === "fr" ? COUNTRIES[0].mult : 1);
+
+  return (
+    <section className="slide-in" style={{ padding: "40px 0 0", position: "relative" }}>
+      <IgSprinkle count={6} seed={0} />
+      <div className="container" style={{ position: "relative", zIndex: 1 }}>
+        <Stepper step={1} />
+
+        {/* Hero header */}
+        <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 14px",
+              background:
+                "linear-gradient(135deg, rgba(250,126,30,0.12), rgba(214,41,118,0.12))",
+              color: "var(--ig-2)",
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              borderRadius: 999,
+              marginBottom: 16,
+              textTransform: "uppercase",
+            }}
+          >
+            <NetIcon kind="instagram" color="var(--ig-2)" size={14} />
+            Instagram
+          </div>
+          <h1
+            className="display"
+            style={{ margin: 0, fontSize: "clamp(26px, 4.4vw, 48px)" }}
+          >
+            Des abonnés Instagram <span className="squiggle ig">100% réels</span> & actifs.
+          </h1>
+        </div>
+
+        {/* Pack grid */}
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--ink-3)",
+              marginBottom: 12,
+            }}
+          >
+            Quelle quantité ?
+          </div>
+          <div
+            className="pack-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 14,
+              marginBottom: 32,
+            }}
+          >
+            {PACKS.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => setPack(i)}
+                className={`pack-tile ${pack === i ? "selected" : ""} ${
+                  p.popular ? "popular" : ""
+                } ${p.best ? "best" : ""}`}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--ink-3)",
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    marginBottom: 4,
+                  }}
+                >
+                  Abonnés
+                </div>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 800,
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                  }}
+                >
+                  {formatQty(p.qty)}
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 11,
+                    color: "var(--green)",
+                    fontWeight: 700,
+                  }}
+                >
+                  +{formatQty(p.bonus)} offerts
+                </div>
+                <div
+                  style={{
+                    marginTop: 14,
+                    paddingTop: 14,
+                    borderTop: "1px dashed var(--line)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: pack === i ? "var(--ig-2)" : "var(--ink)",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {formatPrice(p, country)}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--ink-3)",
+                      textDecoration: "line-through",
+                    }}
+                  >
+                    {formatOld(p, country)}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust + CTA card */}
+        <div
+          className="checkout-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.2fr 1fr",
+            gap: 24,
+            maxWidth: 1100,
+            margin: "0 auto",
+          }}
+        >
+          {/* Trust list */}
+          <div
+            style={{
+              background: "white",
+              border: "1px solid var(--line)",
+              borderRadius: 22,
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--ink-3)",
+                marginBottom: 8,
+              }}
+            >
+              Inclus dans votre pack
+            </div>
+            {[
+              {
+                i: "⚡",
+                c: "rgba(82,96,230,0.12)",
+                t: "Livraison en",
+                strong: country === "fr" ? "47 secondes" : "37 secondes",
+              },
+              {
+                i: "✓",
+                c: "rgba(77,191,138,0.15)",
+                t: "Profils",
+                strong:
+                  country === "fr"
+                    ? "100% Français vérifiés"
+                    : "100% Européens vérifiés",
+              },
+              { i: "🛡", c: "rgba(245,184,0,0.15)", t: "", strong: "Garantie à vie en cas de chute" },
+              {
+                i: "🔄",
+                c: "rgba(255,107,155,0.15)",
+                t: "",
+                strong: "100% satisfait ou remboursé sous 30j",
+              },
+              {
+                i: "👤",
+                c: "rgba(255,138,76,0.15)",
+                t: "",
+                strong: "Pas besoin de votre mot de passe",
+              },
+              {
+                i: "💳",
+                c: "rgba(82,96,230,0.12)",
+                t: "",
+                strong: "CB · Apple Pay · Google Pay · PayPal",
+              },
+              { i: "🇫🇷", c: "var(--paper-2)", t: "", strong: "Service client français 7j/7" },
+            ].map((r, i) => (
+              <div key={i} className="trust-row">
+                <div className="trust-icon" style={{ background: r.c, fontSize: 14 }}>
+                  {r.i}
+                </div>
+                <div>
+                  {r.t && <span style={{ color: "var(--ink-2)" }}>{r.t} </span>}
+                  <strong>{r.strong}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Summary card */}
+          <div
+            style={{
+              background: "white",
+              border: "2px solid var(--ig-2)",
+              borderRadius: 22,
+              padding: 24,
+              position: "relative",
+              boxShadow: "0 18px 40px -16px rgba(214,41,118,0.3)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <NetIcon kind="instagram" color="var(--ig-2)" size={20} />
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--ig-2)",
+                }}
+              >
+                Votre commande
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 0",
+                borderBottom: "1px dashed var(--line)",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Pack sélectionné</div>
+                <div style={{ fontWeight: 700, fontSize: 16, marginTop: 2 }}>
+                  {formatQty(selectedPack.qty)} abonnés
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "var(--green)",
+                      fontWeight: 700,
+                      marginLeft: 8,
+                      padding: "2px 6px",
+                      background: "rgba(77,191,138,0.12)",
+                      borderRadius: 6,
+                    }}
+                  >
+                    +{formatQty(selectedPack.bonus)} offerts
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 0",
+                borderBottom: "1px dashed var(--line)",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Origine</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginTop: 2 }}>
+                  {selectedCountry.flag} {selectedCountry.name}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+                padding: "14px 0",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Total</div>
+                <div
+                  style={{
+                    fontSize: 32,
+                    fontWeight: 800,
+                    color: "var(--ig-2)",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {formatPrice(selectedPack, country)}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--ink-3)",
+                    textDecoration: "line-through",
+                  }}
+                >
+                  {formatOld(selectedPack, country)}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--green)",
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  Vous économisez {savings.toFixed(2).replace(".", ",")} €
+                </div>
+              </div>
+            </div>
+
+            <button
+              className="btn-primary btn-ig"
+              onClick={onNext}
+              style={{ width: "100%", padding: "16px 26px", fontSize: 16, marginTop: 8 }}
+            >
+              Continuer
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M3 7h8M7 3l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: 12,
+                fontSize: 12,
+                color: "var(--ink-3)",
+              }}
+            >
+              ✓ Sans engagement · ✓ Aucun mot de passe demandé
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

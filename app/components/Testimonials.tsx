@@ -4,21 +4,21 @@ import { NETWORKS, type NetworkId } from "../lib/networks";
 export default function Testimonials() {
   const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
-      q: "Mes écoutes mensuelles ont triplé en six semaines. De vraies oreilles, et j'ai signé avec un label indé un mois après.",
+      q: "J'ai gagné 2 400 abonnés en 3 jours. Mon taux d'engagement a explosé et j'ai même eu des propositions de collab.",
       n: "Léa Marchetti",
-      r: "Musicienne · 312k auditeurs",
+      r: "Musicienne · +2,4k abonnés",
       net: "spotify",
     },
     {
-      q: "On vendait à nos abonnés. Maintenant on rencontre des prospects qu'on n'aurait jamais touchés. CAC divisé par trois.",
-      n: "Karim Tahar",
-      r: "Fondateur, Barge Goods",
+      q: "Service ultra rapide, les résultats sont arrivés en moins de 10 min. Je recommande à 100%, c'est le meilleur service que j'ai testé.",
+      n: "Thomas Durand",
+      r: "Photographe · +5,1k abonnés",
       net: "instagram",
     },
     {
-      q: "On gère quatorze clients sur Fanovera. Ciblage fin, reporting limpide. C'est devenu notre socle de growth.",
-      n: "Studio Métrique",
-      r: "Agence créative, Paris",
+      q: "J'avais peur au début mais tout est arrivé naturellement. Mon compte a pris un vrai boost et mes reels ont beaucoup plus de portée.",
+      n: "Sofia Ramos",
+      r: "Créatrice · +1,8k abonnés",
       net: "tiktok",
     },
   ];
@@ -43,9 +43,7 @@ export default function Testimonials() {
             ★ Ils nous font confiance
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            <span className="squiggle">2,4 millions</span> de créateurs
-            <br />
-            nous ont déjà fait confiance.
+            Ils nous font <span className="squiggle">confiance</span>.
           </h2>
         </div>
 
@@ -68,9 +66,9 @@ export default function Testimonials() {
         >
           {[
             { n: "+412%", l: "portée moyenne" },
-            { n: "2,4M", l: "créateurs" },
-            { n: "98,7%", l: "comptes réels" },
-            { n: "14j", l: "délai médian" },
+            { n: "2,4M", l: "clients satisfaits" },
+            { n: "4,9/5", l: "note moyenne" },
+            { n: "10 min", l: "activation" },
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span

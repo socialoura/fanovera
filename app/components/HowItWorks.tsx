@@ -59,22 +59,22 @@ export default function HowItWorks() {
   const steps: { num: string; title: string; body: string; icon: StepKind; color: string }[] = [
     {
       num: "01",
-      title: "L'IA lit votre contenu",
-      body: "Notre modèle analyse votre voix, votre niche, vos visuels. Il établit une fiche éditoriale unique pour comprendre exactement à qui vous parlez.",
+      title: "L'IA scanne votre profil",
+      body: "Entrez votre @ et notre IA analyse vos stats, vos posts et votre engagement en 30 secondes. Aucun mot de passe, aucun accès demandé.",
       icon: "analyze",
       color: "var(--primary)",
     },
     {
       num: "02",
-      title: "On trouve les bonnes audiences",
-      body: "Sur les 8 plateformes, on identifie les vrais utilisateurs susceptibles d'aimer votre contenu. Centres d'intérêt, comportements, affinités.",
+      title: "Stratégie personnalisée",
+      body: "L'IA vous recommande un plan sur mesure adapté à votre profil et vos objectifs. On s'occupe de tout pendant que vous vous concentrez sur votre contenu.",
       icon: "target",
       color: "var(--orange)",
     },
     {
       num: "03",
-      title: "Croissance naturelle, qui tient",
-      body: "On expose votre contenu à ces audiences via les voies natives de chaque plateforme. La courbe monte en pente douce, et l'algorithme prend le relais.",
+      title: "Croissance automatique",
+      body: "Résultats visibles rapidement, directement sur votre compte. La livraison démarre en moins de 10 minutes après la commande.",
       icon: "growth",
       color: "var(--green)",
     },

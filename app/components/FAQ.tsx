@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -6,20 +6,20 @@ export default function FAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment ça reste 100% whitehat ?",
-      a: "Aucun bot, aucune ferme à clics, aucun faux compte. Notre IA identifie de vraies personnes susceptibles d'aimer votre contenu et leur expose votre publication via les mécanismes natifs de chaque plateforme.",
+      q: "Comment fonctionne votre service ?",
+      a: "Notre IA analyse votre profil et prépare un plan de croissance personnalisé. On s'occupe de votre visibilité pendant que vous vous concentrez sur votre contenu. La livraison démarre en moins de 10 minutes.",
     },
     {
       q: "Faut-il vous donner mes mots de passe ?",
-      a: "Jamais. Fanovera fonctionne entièrement à l'extérieur de votre compte. On a juste besoin d'une URL — aucun accès, aucun risque.",
+      a: "Jamais. Fanovera fonctionne entièrement à l'extérieur de votre compte. On a juste besoin de votre nom d'utilisateur — aucun accès, aucun risque.",
     },
     {
       q: "En combien de temps voit-on les résultats ?",
-      a: "Sept à quatorze jours pour la grande majorité des clients. L'algorithme natif de la plateforme prend ensuite le relais et amplifie organiquement.",
+      a: "La livraison démarre en moins de 10 minutes. Les résultats sont visibles progressivement sur 1 à 7 jours selon le plan choisi.",
     },
     {
-      q: "RGPD et hébergement ?",
-      a: "Hébergement européen (Francfort), aucune donnée personnelle des utilisateurs ciblés stockée, suppression du compte en un clic.",
+      q: "Quelle garantie si je ne suis pas satisfait ?",
+      a: "Satisfait ou remboursé sous 30 jours, sans condition. Et en cas de baisse, on recharge gratuitement à vie.",
     },
   ];
   return (
@@ -83,10 +83,10 @@ export default function FAQ() {
         >
           Une autre question ? Écrivez-nous ·{" "}
           <a
-            href="mailto:hello@fanovera.com"
+            href="mailto:support@fanovera.com"
             style={{ color: "var(--primary)", fontWeight: 600 }}
           >
-            hello@fanovera.com
+            support@fanovera.com
           </a>
         </div>
       </div>

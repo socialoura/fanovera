@@ -14,7 +14,19 @@
       "Bash(npm install *)",
       "Bash(npm view *)",
       "Bash(npm audit *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(rm app/instagram/components/PromoBanner.tsx)",
+      "Bash(rm -rf .next)",
+      "Bash(mkdir -p /tmp/admin_extract)",
+      "Bash(cp \"C:\\\\Users\\\\ilyee\\\\.claude\\\\projects\\\\C--Users-ilyee-Fanovera\\\\6ab17086-cffa-4e86-800b-e64a17239ea3\\\\tool-results\\\\webfetch-1778408983288-9ncbdm.bin\" ./design.tar.gz)",
+      "Bash(npx tsc *)",
+      "PowerShell(Get-Content *)",
+      "Bash(python3 *)",
+      "Read(//mnt/c/Users/ilyee/**)",
+      "Bash(cp \"Capture d'écran 2026-05-11 020552.png\" /tmp/screen.png)",
+      "PowerShell(Copy-Item *)",
+      "Bash(curl -s \"http://localhost:3000/api/tiktok/profile?username=cristiano\")",
+      "Bash(curl *)"
     ]
   }
 }

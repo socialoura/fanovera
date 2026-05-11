@@ -9,9 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@stripe/react-stripe-js": "^6.3.0",
+    "@stripe/stripe-js": "^9.4.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "next": "15.5.18",
+    "next-intl": "^4.11.2",
+    "posthog-js": "^1.372.10",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "resend": "^6.12.3",
+    "stripe": "^22.1.1"
   },
   "devDependencies": {
     "@types/node": "22.10.7",
