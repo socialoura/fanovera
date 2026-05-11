@@ -60,8 +60,6 @@ function mockProfile(username: string): LiProfile {
     isPremium: false,
     currentPosition: "",
     currentCompany: "",
-    followersCount: 0,
-    connectionsCount: 0,
   };
 }
 

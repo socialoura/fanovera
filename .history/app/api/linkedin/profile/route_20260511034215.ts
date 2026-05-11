@@ -13,8 +13,6 @@ export type LiProfile = {
   isPremium: boolean;
   currentPosition: string;
   currentCompany: string;
-  followersCount: number;
-  connectionsCount: number;
 };
 
 const cache = new Map<string, { data: LiProfile; ts: number }>();
@@ -60,8 +58,6 @@ function mockProfile(username: string): LiProfile {
     isPremium: false,
     currentPosition: "",
     currentCompany: "",
-    followersCount: 0,
-    connectionsCount: 0,
   };
 }
 
@@ -134,8 +130,6 @@ export async function GET(req: NextRequest) {
       isPremium: d.isPremium ?? false,
       currentPosition: currentPos?.title || "",
       currentCompany: currentPos?.companyName || "",
-      followersCount: Number(d.followers ?? d.followersCount ?? 0) || 0,
-      connectionsCount: Number(d.connections ?? d.connectionsCount ?? 0) || 0,
     };
 
     setCache(username, data);

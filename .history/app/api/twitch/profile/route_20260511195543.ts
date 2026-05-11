@@ -121,9 +121,6 @@ export async function GET(req: NextRequest) {
       isLive: !!d.stream,
       lastBroadcastTitle: d.lastBroadcast?.title || "",
       streamTitle: d.stream?.title || "",
-      followersCount: Number(d.followers?.totalCount ?? d.followersCount ?? d.followers ?? 0) || 0,
-      viewersCount: Number(d.stream?.viewersCount ?? 0) || 0,
-      gameName: d.stream?.game?.displayName || d.lastBroadcast?.game?.displayName || "",
     };
 
     setCache(rawUsername, data);
