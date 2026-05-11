@@ -87,7 +87,7 @@ export default function InstagramPageClient() {
           />
         )}
         {step === 3 && (
-          <Step3Checkout country={country} pack={pack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} />
+          <Step3Checkout country={country} pack={pack} username={username} email={email} profile={profile} onBack={back} />
         )}
       </div>
       <div className={step === 1 ? undefined : "hide-md-on-checkout"}>

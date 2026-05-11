@@ -185,18 +185,13 @@ export default function Step2Username({ country, pack, username, setUsername, em
                 </svg>
                 Retour
               </button>
-              <button onClick={handleNext} className="btn-primary btn-tt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
+              <button onClick={onNext} disabled={!verified} className="btn-primary btn-tt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
                 Aller au paiement
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
-            {submitError && (
-              <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(254,44,85,0.08)", border: "1px solid rgba(254,44,85,0.25)", borderRadius: 12, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
-              </div>
-            )}
           </div>
 
           {/* TikTok profile preview */}

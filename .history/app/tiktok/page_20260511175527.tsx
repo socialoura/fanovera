@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import TiktokPageClient from "./TiktokPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Croissance TikTok ciblée & whitehat",
+  title: "Fanovera — Abonnés TikTok réels & actifs",
   description:
-    "Campagnes de promotion ciblée pour gagner de vrais abonnés TikTok. Méthode 100% conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Followers TikTok 100% réels et actifs : croissance progressive, livraison en 60 secondes, garantie à vie. Sans mot de passe, conforme RGPD.",
 };
 
 export default function TiktokPage() {

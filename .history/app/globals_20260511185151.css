@@ -755,7 +755,6 @@ input { font: inherit; color: inherit; }
   white-space: nowrap;
 }
 .step-pill-label { white-space: nowrap; }
-.show-md-only { display: none; }
 
 /* Stripe pay button */
 .stripe-pay-btn {
@@ -2635,10 +2634,7 @@ input { font: inherit; color: inherit; }
   .nav-pill { display: none !important; }
   .pf-header { justify-content: center !important; }
   .show-md-only { display: inline-flex !important; }
-  .container { padding: 0 16px; }
   .paper-frame { margin: 12px; }
-  .paper-frame > div:first-child { padding-top: 12px !important; padding-bottom: 0 !important; }
-  .slide-in { padding-top: 16px !important; }
   .stepper { gap: 6px; padding: 6px; }
   .step-pill { padding: 6px 10px; font-size: 11px; }
   .step-divider { width: 12px; }

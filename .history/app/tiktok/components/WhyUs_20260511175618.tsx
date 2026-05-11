@@ -3,26 +3,10 @@ import TtSprinkle from "./TtSprinkle";
 
 export default function WhyUs() {
   const items = [
-    {
-      i: "🎯",
-      title: "Audience ciblée",
-      body: "Notre IA identifie de vraies personnes correspondant à votre niche et leur expose votre profil TikTok.",
-    },
-    {
-      i: "🛡",
-      title: "Conforme aux CGU",
-      body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de TikTok.",
-    },
-    {
-      i: "🔒",
-      title: "Sans mot de passe",
-      body: "Juste votre nom d'utilisateur public. Aucun accès au compte, aucun risque.",
-    },
-    {
-      i: "↩",
-      title: "Résultats garantis",
-      body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours.",
-    },
+    { i: "⚡", title: "Livraison en 60 sec.", body: "Activation instantanée dès le paiement. Premiers followers tout de suite." },
+    { i: "🛡", title: "Garantie à vie", body: "En cas de chute, on recharge gratuitement, sans limite dans le temps." },
+    { i: "🔒", title: "Sans mot de passe", body: "Juste votre nom d'utilisateur. Aucun accès, aucun risque pour votre compte." },
+    { i: "↩", title: "Satisfait ou remboursé", body: "Pas content sous 30 jours ? Remboursement intégral, sans question." },
   ];
   return (
     <section style={{ padding: "clamp(48px, 7vw, 80px) 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>
@@ -33,9 +17,7 @@ export default function WhyUs() {
             <NetIcon kind="tiktok" color="var(--tt-red)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Une croissance TikTok
-            <br />
-            <span className="squiggle tt">whitehat</span>, sans triche.
+            Le meilleur service<br />pour <span className="squiggle tt">TikTok</span>.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

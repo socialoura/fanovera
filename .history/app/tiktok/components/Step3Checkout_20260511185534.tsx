@@ -122,7 +122,6 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   platform="tiktok"
                   brandColor="var(--tt-red)"
                   cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
-                  clientSecret={clientSecret}
                 />
               </div>
 

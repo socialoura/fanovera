@@ -311,7 +311,8 @@ export default function Step2Username({
                 Retour
               </button>
               <button
-                onClick={handleNext}
+                onClick={onNext}
+                disabled={!verified}
                 className="btn-primary btn-ig"
                 style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}
               >
@@ -327,24 +328,6 @@ export default function Step2Username({
                 </svg>
               </button>
             </div>
-            {submitError && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: "10px 14px",
-                  background: "rgba(225,64,126,0.08)",
-                  border: "1px solid rgba(225,64,126,0.25)",
-                  borderRadius: 12,
-                  fontSize: 13,
-                  color: "var(--ig-2)",
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                }}
-              >
-                <span>⚠</span> {submitError}
-              </div>
-            )}
           </div>
 
           {/* IG profile preview */}

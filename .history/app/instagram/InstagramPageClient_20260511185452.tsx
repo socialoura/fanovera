@@ -31,22 +31,6 @@ export default function InstagramPageClient() {
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<IgProfile | null>(null);
 
-  // Pre-create the Stripe PaymentIntent as soon as we have the data, so Step 3
-  // displays instantly without the "Chargement du paiement sécurisé…" spinner.
-  const subtotal = PACKS[pack].price * (country === "fr" ? COUNTRIES[0].mult : 1);
-  const total = subtotal * 0.95; // default coupon FANO5 (−5%)
-  const amountCents = Math.round(total * 100);
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const cleanUsername = username.replace(/^@/, "").trim();
-  const { clientSecret } = usePaymentIntent({
-    amount: amountCents,
-    email,
-    username: cleanUsername,
-    platform: "instagram",
-    cart: [{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }],
-    enabled: step >= 2 && !!profile && emailValid,
-  });
-
   const next = () => {
     setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
     if (typeof window !== "undefined") {
@@ -87,7 +71,7 @@ export default function InstagramPageClient() {
           />
         )}
         {step === 3 && (
-          <Step3Checkout country={country} pack={pack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} />
+          <Step3Checkout country={country} pack={pack} username={username} email={email} profile={profile} onBack={back} />
         )}
       </div>
       <div className={step === 1 ? undefined : "hide-md-on-checkout"}>

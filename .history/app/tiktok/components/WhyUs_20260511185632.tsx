@@ -33,9 +33,7 @@ export default function WhyUs() {
             <NetIcon kind="tiktok" color="var(--tt-red)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Une croissance TikTok
-            <br />
-            <span className="squiggle tt">whitehat</span>, sans triche.
+            Le meilleur service<br />pour <span className="squiggle tt">TikTok</span>.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

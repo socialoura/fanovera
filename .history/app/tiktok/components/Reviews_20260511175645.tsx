@@ -3,14 +3,14 @@ import TtSprinkle from "./TtSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Yanis K.", d: "il y a 2 jours", t: "Croissance bien régulière, vrais abonnés FR engagés. Je recommande.", r: 5 },
-    { n: "Camille R.", d: "il y a 6 jours", t: "Campagne lancée en quelques minutes, premiers abonnés sous 48h. Naturel.", r: 5 },
-    { n: "Mehdi A.", d: "il y a 4 jours", t: "Mes vues TikTok ont suivi la hausse des abonnés, super naturel.", r: 5 },
-    { n: "Sara P.", d: "il y a 9 jours", t: "Service sérieux, j'ai retesté plusieurs fois sur 3 semaines.", r: 5 },
-    { n: "Tom L.", d: "il y a 5 jours", t: "Top, j'ai vu mes abonnés monter progressivement sur 10 jours.", r: 5 },
-    { n: "Inès B.", d: "il y a 11 jours", t: "Première campagne, c'est sérieux et la garantie a été respectée.", r: 5 },
-    { n: "Hugo M.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous sur 2 semaines.", r: 5 },
-    { n: "Eva S.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui était annoncé.", r: 5 },
+    { n: "Yanis K.", d: "il y a 2 jours", t: "Mes vidéos TikTok décollent enfin, abonnés FR de qualité.", r: 5 },
+    { n: "Camille R.", d: "il y a 6 jours", t: "Reçu en 5 minutes après l'achat, top.", r: 5 },
+    { n: "Mehdi A.", d: "il y a 4 jours", t: "Augmentation des vues directe après le boost de followers.", r: 5 },
+    { n: "Sara P.", d: "il y a 9 jours", t: "Service sérieux, j'ai retesté plusieurs fois.", r: 5 },
+    { n: "Tom L.", d: "il y a 5 jours", t: "10k followers TikTok en quelques heures, parfait.", r: 5 },
+    { n: "Inès B.", d: "il y a 11 jours", t: "Garantie respectée, équipe à l'écoute.", r: 5 },
+    { n: "Hugo M.", d: "il y a 14 jours", t: "Livraison ultra rapide, je recommande.", r: 5 },
+    { n: "Eva S.", d: "il y a 15 jours", t: "Mieux que les concurrents que j'avais essayé.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>

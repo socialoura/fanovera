@@ -7,30 +7,12 @@ import TtSprinkle from "./TtSprinkle";
 export default function TtFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
-    {
-      q: "Comment vos abonnés sont-ils générés ?",
-      a: "Nos campagnes exposent votre profil TikTok à une audience qualifiée correspondant à votre niche, via des techniques de promotion ciblée. Les abonnés gagnés sont de vraies personnes, intéressées par votre contenu. Aucun bot, aucune ferme à clics, aucune automation interdite.",
-    },
-    {
-      q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin de votre nom d'utilisateur TikTok public. Aucun accès au compte, aucun risque.",
-    },
-    {
-      q: "Mon compte risque-t-il d'être suspendu ?",
-      a: "Non. Notre méthode est 100% conforme aux conditions d'utilisation de TikTok. Aucune automation interdite, aucune action sur votre compte. La croissance reste progressive et naturelle.",
-    },
-    {
-      q: "En combien de temps les premiers résultats arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premiers abonnés arrivent généralement sous 24 à 48h, puis la campagne s'étale sur 7 à 30 jours selon le pack, pour une croissance 100% naturelle.",
-    },
-    {
-      q: "Et si je perds des abonnés après la campagne ?",
-      a: "Garantie de résultats : si votre nombre d'abonnés baisse de manière significative pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
-    },
-    {
-      q: "Puis-je commander plusieurs campagnes ?",
-      a: "Oui. Beaucoup de créateurs enchaînent les campagnes par paliers pour une croissance encore plus régulière et naturelle dans le temps.",
-    },
+    { q: "Les followers sont-ils réels ?", a: "Oui, à 100%. Notre IA identifie de vrais utilisateurs TikTok susceptibles d'aimer votre contenu et leur expose votre profil. Aucun bot, aucune ferme à clics." },
+    { q: "Est-ce que je dois vous donner mon mot de passe ?", a: "Jamais. On a uniquement besoin de votre @ TikTok public. Aucun accès au compte, aucun risque." },
+    { q: "Mon compte risque-t-il d'être suspendu ?", a: "Non. La croissance est progressive et naturelle, conforme aux conditions d'utilisation de TikTok. Plus de 2,4M de comptes accompagnés depuis 2022." },
+    { q: "En combien de temps les followers arrivent ?", a: "Le démarrage est instantané (sous 60 secondes). La livraison complète s'étale sur 1 à 7 jours selon le pack, pour un effet 100% naturel." },
+    { q: "Que se passe-t-il en cas de chute ?", a: "Garantie à vie : on recharge gratuitement et automatiquement si vous perdez des followers issus de notre service, sans limite de temps." },
+    { q: "Est-ce que ça booste mes vues TikTok ?", a: "Oui indirectement : un compte avec plus de followers est plus poussé par l'algo TikTok, ce qui augmente la portée organique de vos vidéos." },
   ];
   return (
     <section id="faq" style={{ padding: "80px 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>

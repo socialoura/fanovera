@@ -26,47 +26,7 @@ export type StripeCheckoutProps = {
   cart?: unknown;
   onSuccess?: () => void;
   brandColor?: string; // CSS color for the pay button (e.g. "var(--ig-2)")
-  clientSecret?: string | null; // optional pre-fetched secret
 };
-
-/** Pre-fetch a PaymentIntent so the Elements UI is instant when Step 3 renders. */
-export function usePaymentIntent(args: {
-  amount: number;
-  email: string;
-  username: string;
-  platform: string;
-  cart?: unknown;
-  enabled?: boolean;
-}) {
-  const { amount, email, username, platform, cart, enabled = true } = args;
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || !amount || amount < 100) return;
-    let aborted = false;
-    setError(null);
-    fetch("/api/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, currency: "eur", email, username, platform, cart }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (aborted) return;
-        if (data.clientSecret) setClientSecret(data.clientSecret);
-        else setError(data.error || "Erreur de paiement");
-      })
-      .catch(() => {
-        if (!aborted) setError("Connexion impossible au service de paiement");
-      });
-    return () => {
-      aborted = true;
-    };
-  }, [enabled, amount, email, username, platform, cart]);
-
-  return { clientSecret, error };
-}
 
 function ExpressCheckout({
   platform,
@@ -159,40 +119,39 @@ function CardPayment({
       <button
         onClick={submit}
         disabled={submitting}
-        className="stripe-pay-btn"
-        style={{ ["--brand" as string]: brandColor || "#5260e6" } as React.CSSProperties}
+        className="btn-primary"
+        style={{
+          width: "100%",
+          marginTop: 16,
+          padding: "16px 26px",
+          fontSize: 16,
+          background: brandColor || "var(--primary)",
+          border: "none",
+          color: "white",
+          borderRadius: 999,
+          fontWeight: 700,
+          cursor: submitting ? "not-allowed" : "pointer",
+          opacity: submitting ? 0.7 : 1,
+        }}
       >
-        {submitting ? (
-          <>
-            <span className="pay-spinner" />
-            <span>Paiement en cours…</span>
-          </>
-        ) : (
-          <>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <path
-                d="M5 8V5.5a4 4 0 0 1 8 0V8M4 8h10v7H4z"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>Payer</span>
-            <span className="pay-amount">
-              {(amount / 100).toFixed(2).replace(".", ",")} €
-            </span>
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
-              <path
-                d="M3 7h8M7 3l4 4-4 4"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </>
-        )}
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          style={{ marginRight: 8, verticalAlign: "middle" }}
+        >
+          <path
+            d="M3.5 6.5V4a3.5 3.5 0 1 1 7 0v2.5M2.5 6.5h9v6h-9z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {submitting
+          ? "Paiement en cours…"
+          : `Payer ${(amount / 100).toFixed(2).replace(".", ",")} €`}
       </button>
     </div>
   );
@@ -206,19 +165,31 @@ export default function StripeCheckout({
   cart,
   onSuccess,
   brandColor,
-  clientSecret: prefetchedSecret,
 }: StripeCheckoutProps) {
-  // If a pre-fetched secret is provided, use it directly; otherwise fetch locally.
-  const { clientSecret: fetchedSecret, error: fetchError } = usePaymentIntent({
-    amount,
-    email,
-    username,
-    platform,
-    cart,
-    enabled: !prefetchedSecret,
-  });
-  const clientSecret = prefetchedSecret ?? fetchedSecret;
-  const error = prefetchedSecret ? null : fetchError;
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!amount || amount < 100) return;
+    let aborted = false;
+    fetch("/api/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, currency: "eur", email, username, platform, cart }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (aborted) return;
+        if (data.clientSecret) setClientSecret(data.clientSecret);
+        else setError(data.error || "Erreur de paiement");
+      })
+      .catch(() => {
+        if (!aborted) setError("Connexion impossible au service de paiement");
+      });
+    return () => {
+      aborted = true;
+    };
+  }, [amount, email, username, platform, cart]);
 
   if (error) {
     return (

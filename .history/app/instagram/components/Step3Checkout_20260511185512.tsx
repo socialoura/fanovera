@@ -295,7 +295,6 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   platform="instagram"
                   brandColor="var(--ig-2)"
                   cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
-                  clientSecret={clientSecret}
                 />
               </div>
 
