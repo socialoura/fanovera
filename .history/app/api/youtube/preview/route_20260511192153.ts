@@ -98,7 +98,7 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ch: any = null;
-  if (channelId) ch = await fetchChannelDetails(channelId, key);
+  if (channelId) ch = await fetchChannelDetails(channelId, host, key);
 
   const channelAvatar: string =
     pickLargest(ch?.avatar) ||
@@ -111,10 +111,9 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
     "";
 
   const subscribers = parseCount(
-    ch?.subscriber_count ??
-      ch?.subscriberCount ??
-      ch?.stats?.subscribers ??
+    ch?.stats?.subscribers ??
       ch?.stats?.subscribersText ??
+      ch?.subscriberCount ??
       ch?.subscriberCountText ??
       ch?.subscribers ??
       author.stats?.subscribers ??

@@ -111,10 +111,9 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
     "";
 
   const subscribers = parseCount(
-    ch?.subscriber_count ??
-      ch?.subscriberCount ??
-      ch?.stats?.subscribers ??
+    ch?.stats?.subscribers ??
       ch?.stats?.subscribersText ??
+      ch?.subscriberCount ??
       ch?.subscriberCountText ??
       ch?.subscribers ??
       author.stats?.subscribers ??

@@ -55,18 +55,12 @@ function pickLargest(arr: unknown): string {
   return (last?.url || first?.url || "") as string;
 }
 
-async function fetchChannelDetails(channelId: string, key: string) {
-  // Use youtube-v2 (same as /api/youtube/profile) — richer channel payload
-  // including subscriber_count, avatar[], is_verified.
-  const host = "youtube-v2.p.rapidapi.com";
+async function fetchChannelDetails(channelId: string, host: string, key: string) {
   try {
-    const r = await fetch(
-      `https://${host}/channel/details?channel_id=${encodeURIComponent(channelId)}`,
-      {
-        headers: { "x-rapidapi-host": host, "x-rapidapi-key": key },
-        signal: AbortSignal.timeout(8000),
-      }
-    );
+    const r = await fetch(`https://${host}/channel/details/?id=${encodeURIComponent(channelId)}&hl=fr&gl=FR`, {
+      headers: { "x-rapidapi-host": host, "x-rapidapi-key": key },
+      signal: AbortSignal.timeout(8000),
+    });
     if (!r.ok) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (await r.json()) as any;
@@ -98,7 +92,7 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let ch: any = null;
-  if (channelId) ch = await fetchChannelDetails(channelId, key);
+  if (channelId) ch = await fetchChannelDetails(channelId, host, key);
 
   const channelAvatar: string =
     pickLargest(ch?.avatar) ||
@@ -111,10 +105,9 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
     "";
 
   const subscribers = parseCount(
-    ch?.subscriber_count ??
-      ch?.subscriberCount ??
-      ch?.stats?.subscribers ??
+    ch?.stats?.subscribers ??
       ch?.stats?.subscribersText ??
+      ch?.subscriberCount ??
       ch?.subscriberCountText ??
       ch?.subscribers ??
       author.stats?.subscribers ??

@@ -32,49 +32,6 @@ function formatDuration(secs: number) {
   return h > 0 ? `${h}:${pad(m)}:${pad(r)}` : `${m}:${pad(r)}`;
 }
 
-// Parses numbers with K/M/B suffixes ("10.5M", "27,6 M abonnés", "1.2K subscribers").
-function parseCount(v: unknown): number {
-  if (typeof v === "number" && isFinite(v)) return v;
-  if (typeof v !== "string") return 0;
-  const s = v.replace(/\u00a0/g, " ").trim();
-  if (!s) return 0;
-  const m = s.match(/([\d.,]+)\s*([KkMmBb])/);
-  if (m) {
-    const n = parseFloat(m[1].replace(",", "."));
-    const mult = m[2].toUpperCase() === "K" ? 1e3 : m[2].toUpperCase() === "M" ? 1e6 : 1e9;
-    return Math.round(n * mult);
-  }
-  const digits = s.replace(/[^\d]/g, "");
-  return digits ? parseInt(digits, 10) : 0;
-}
-
-function pickLargest(arr: unknown): string {
-  if (!Array.isArray(arr) || arr.length === 0) return "";
-  const last = arr[arr.length - 1] as { url?: string } | undefined;
-  const first = arr[0] as { url?: string } | undefined;
-  return (last?.url || first?.url || "") as string;
-}
-
-async function fetchChannelDetails(channelId: string, key: string) {
-  // Use youtube-v2 (same as /api/youtube/profile) — richer channel payload
-  // including subscriber_count, avatar[], is_verified.
-  const host = "youtube-v2.p.rapidapi.com";
-  try {
-    const r = await fetch(
-      `https://${host}/channel/details?channel_id=${encodeURIComponent(channelId)}`,
-      {
-        headers: { "x-rapidapi-host": host, "x-rapidapi-key": key },
-        signal: AbortSignal.timeout(8000),
-      }
-    );
-    if (!r.ok) return null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (await r.json()) as any;
-  } catch {
-    return null;
-  }
-}
-
 async function fromRapidApi(id: string): Promise<YtPreview> {
   const host = "youtube138.p.rapidapi.com";
   const key = process.env.RAPIDAPI_KEY!;
@@ -89,40 +46,31 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = (await r.json()) as any;
 
+  // Parses numbers with K/M/B suffixes ("10.5M", "27,6 M abonnés", "1.2K subscribers").
+  // Falls back to digit-only stripping for purely numeric strings.
+  const num = (v: unknown): number => {
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v !== "string") return 0;
+    const s = v.replace(/\u00a0/g, " ").trim();
+    if (!s) return 0;
+    const m = s.match(/([\d.,]+)\s*([KkMmBb])/);
+    if (m) {
+      const n = parseFloat(m[1].replace(",", "."));
+      const mult = m[2].toUpperCase() === "K" ? 1e3 : m[2].toUpperCase() === "M" ? 1e6 : 1e9;
+      return Math.round(n * mult);
+    }
+    const digits = s.replace(/[^\d]/g, "");
+    return digits ? parseInt(digits, 10) : 0;
+  };
+
   const author = d.author || {};
   const stats = d.stats || {};
 
-  // Pull channelId then enrich with /channel/details (avatar + subscribers).
-  const channelId: string =
-    author.channelId || author.channel_id || author.id || "";
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let ch: any = null;
-  if (channelId) ch = await fetchChannelDetails(channelId, key);
-
-  const channelAvatar: string =
-    pickLargest(ch?.avatar) ||
-    pickLargest(ch?.thumbnails) ||
-    pickLargest(ch?.image) ||
-    pickLargest(author.avatar) ||
-    pickLargest(author.thumbnails) ||
-    pickLargest(author.image) ||
-    (typeof author.avatarUrl === "string" ? author.avatarUrl : "") ||
-    "";
-
-  const subscribers = parseCount(
-    ch?.subscriber_count ??
-      ch?.subscriberCount ??
-      ch?.stats?.subscribers ??
-      ch?.stats?.subscribersText ??
-      ch?.subscriberCountText ??
-      ch?.subscribers ??
-      author.stats?.subscribers ??
-      author.stats?.subscribersText ??
-      author.subscriberCountText ??
-      author.subscribers ??
-      0
-  );
+  // Avatar: last element in array = highest resolution
+  const avatarArr = author.avatar || [];
+  const channelAvatar: string = Array.isArray(avatarArr) && avatarArr.length > 0
+    ? avatarArr[avatarArr.length - 1]?.url || ""
+    : "";
 
   // Thumbnail: last element = highest resolution
   const thumbArr = d.thumbnails || [];
@@ -134,21 +82,17 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
     id,
     title: (d.title as string) || "Vidéo YouTube",
     channel: {
-      name: (ch?.title as string) || (author.title as string) || (author.channelName as string) || "—",
-      subscribers,
-      verified: Boolean(
-        ch?.is_verified ??
-          ch?.badges?.some?.((b: { type?: string }) => b.type === "VERIFIED_CHANNEL") ??
-          author.badges?.some?.((b: { type?: string }) => b.type === "VERIFIED_CHANNEL")
-      ),
+      name: (author.title as string) || (author.channelName as string) || "—",
+      subscribers: num(author.stats?.subscribers ?? author.stats?.subscribersText),
+      verified: Boolean(author.badges?.some?.((b: { type?: string }) => b.type === "VERIFIED_CHANNEL")),
       avatarUrl: channelAvatar
         ? `/api/image-proxy?url=${encodeURIComponent(channelAvatar)}`
         : "",
     },
     thumbnail,
-    views: parseCount(stats.views ?? d.viewCount),
-    likes: parseCount(stats.likes ?? d.likeCount),
-    duration: d.lengthSeconds ? formatDuration(parseCount(d.lengthSeconds)) : "",
+    views: num(stats.views ?? d.viewCount),
+    likes: num(stats.likes ?? d.likeCount),
+    duration: d.lengthSeconds ? formatDuration(num(d.lengthSeconds)) : "",
     publishedAt: (d.publishedDate as string) || (d.publishDate as string) || "",
   };
 }
