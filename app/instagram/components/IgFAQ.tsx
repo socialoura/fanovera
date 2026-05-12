@@ -8,28 +8,28 @@ export default function IgFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment vos abonnés sont-ils générés ?",
-      a: "Nos campagnes exposent votre profil Instagram à une audience qualifiée correspondant à votre niche, via des techniques de promotion ciblée. Les abonnés gagnés sont de vraies personnes, intéressées par votre contenu. Aucun bot, aucune ferme à clics, aucune automation interdite.",
+      q: "Comment fonctionne la mise en avant ?",
+      a: "Nous préparons une campagne de visibilité autour de votre profil public et de votre thématique. L'objectif est de présenter votre compte à une audience plus pertinente, avec un rythme progressif et mesuré.",
     },
     {
       q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin de votre nom d'utilisateur Instagram public. Aucun accès au compte, aucun risque.",
+      a: "Jamais. On a uniquement besoin de votre nom d'utilisateur Instagram public. Aucun accès au compte n'est demandé.",
     },
     {
-      q: "Mon compte risque-t-il d'être suspendu ?",
-      a: "Non. Notre méthode est 100% conforme aux conditions d'utilisation d'Instagram. Aucune automation interdite, aucune action sur votre compte. La croissance reste progressive et naturelle.",
+      q: "Est-ce que vous agissez sur mon compte ?",
+      a: "Non. Nous ne nous connectons pas à votre compte et nous ne publions rien à votre place. Le service s'appuie sur une mise en avant externe et progressive de votre profil public.",
     },
     {
-      q: "En combien de temps les premiers résultats arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premiers abonnés arrivent généralement sous 24 à 48h, puis la campagne s'étale sur 7 à 30 jours selon le pack, pour une croissance 100% naturelle.",
+      q: "Quand la campagne démarre-t-elle ?",
+      a: "La préparation démarre après confirmation du paiement. Le déploiement est progressif et peut s'étaler sur plusieurs jours selon le volume choisi.",
     },
     {
-      q: "Et si je perds des abonnés après la campagne ?",
-      a: "Garantie de résultats : si votre nombre d'abonnés baisse de manière significative pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
+      q: "Que se passe-t-il si le volume n'est pas atteint ?",
+      a: "Notre support vérifie la campagne et peut prolonger la mise en avant sans frais supplémentaires lorsque le volume prévu n'est pas atteint.",
     },
     {
       q: "Puis-je commander plusieurs campagnes ?",
-      a: "Oui. Beaucoup de clients enchaînent les campagnes par paliers pour une croissance encore plus régulière et naturelle dans le temps.",
+      a: "Oui. Nous recommandons de travailler par paliers afin de garder une progression régulière et cohérente dans le temps.",
     },
   ];
   return (

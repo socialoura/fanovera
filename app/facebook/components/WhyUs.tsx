@@ -1,12 +1,12 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import FbSprinkle from "./FbSprinkle";
 
 export default function WhyUs() {
   const items = [
-    { i: "🎯", title: "Audience ciblée", body: "Notre IA expose votre page Facebook à une audience qualifiée intéressée par votre thématique." },
-    { i: "🛡", title: "Conforme aux CGU", body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de Facebook." },
-    { i: "🔒", title: "Sans mot de passe", body: "Juste le lien public de votre page. Aucun accès au compte, aucun risque." },
-    { i: "↩", title: "Résultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
+    { i: "ðŸŽ¯", title: "Audience ciblÃ©e", body: "Notre IA expose votre page Facebook Ã  une audience qualifiÃ©e intÃ©ressÃ©e par votre thÃ©matique." },
+    { i: "ðŸ›¡", title: "Compte preserve", body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil." },
+    { i: "ðŸ”’", title: "Sans mot de passe", body: "Juste le lien public de votre page. Aucun acces au compte n'est demande." },
+    { i: "â†©", title: "RÃ©sultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
   ];
   return (
     <section style={{ padding: "clamp(48px, 7vw, 80px) 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>
@@ -17,7 +17,7 @@ export default function WhyUs() {
             <NetIcon kind="facebook" color="var(--fb-blue)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Des likes Facebook<br /><span className="squiggle fb">whitehat</span>, sans triche.
+            Des likes Facebook<br /><span className="squiggle fb">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

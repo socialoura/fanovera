@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import TiktokPageClient from "./TiktokPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Croissance TikTok ciblée & whitehat",
+  title: "Fanovera - Visibilite TikTok ciblee",
   description:
-    "Campagnes de promotion ciblée pour gagner de vrais abonnés TikTok. Méthode 100% conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Campagnes de visibilite TikTok avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
 };
 
 export default function TiktokPage() {

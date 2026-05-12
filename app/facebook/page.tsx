@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import FacebookPageClient from "./FacebookPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Likes Facebook ciblés & whitehat",
+  title: "Fanovera - Visibilite Facebook ciblee",
   description:
-    "Campagnes de promotion ciblée pour gagner de vrais likes sur votre page Facebook. Méthode conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Campagnes de visibilite Facebook avec audience ciblee, deploiement progressif, paiement securise et aucun acces administrateur demande.",
 };
 
 export default function FacebookPage() {

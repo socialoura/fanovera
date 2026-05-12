@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import NetIcon from "../../components/NetIcon";
@@ -8,28 +8,28 @@ export default function TtFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment vos abonnés sont-ils générés ?",
-      a: "Nos campagnes exposent votre profil TikTok à une audience qualifiée correspondant à votre niche, via des techniques de promotion ciblée. Les abonnés gagnés sont de vraies personnes, intéressées par votre contenu. Aucun bot, aucune ferme à clics, aucune automation interdite.",
+      q: "Comment fonctionne la mise en avant ?",
+      a: "Nous preparons une campagne de visibilite autour de votre profil TikTok et de votre thematique. L objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.",
     },
     {
       q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin de votre nom d'utilisateur TikTok public. Aucun accès au compte, aucun risque.",
+      a: "Jamais. On a uniquement besoin de votre nom d utilisateur TikTok public. Aucun acces au compte n est demande.",
     },
     {
-      q: "Mon compte risque-t-il d'être suspendu ?",
-      a: "Non. Notre méthode est 100% conforme aux conditions d'utilisation de TikTok. Aucune automation interdite, aucune action sur votre compte. La croissance reste progressive et naturelle.",
+      q: "Est-ce que vous agissez sur mon compte ?",
+      a: "Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s appuie sur une mise en avant externe et progressive.",
     },
     {
-      q: "En combien de temps les premiers résultats arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premiers abonnés arrivent généralement sous 24 à 48h, puis la campagne s'étale sur 7 à 30 jours selon le pack, pour une croissance 100% naturelle.",
+      q: "Quand la campagne demarre-t-elle ?",
+      a: "La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s etaler sur plusieurs jours selon le volume choisi.",
     },
     {
-      q: "Et si je perds des abonnés après la campagne ?",
-      a: "Garantie de résultats : si votre nombre d'abonnés baisse de manière significative pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
+      q: "Que se passe-t-il si le volume n est pas atteint ?",
+      a: "Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n est pas atteint.",
     },
     {
       q: "Puis-je commander plusieurs campagnes ?",
-      a: "Oui. Beaucoup de créateurs enchaînent les campagnes par paliers pour une croissance encore plus régulière et naturelle dans le temps.",
+      a: "Oui. Nous recommandons de travailler par paliers afin de garder une progression reguliere et coherente dans le temps.",
     },
   ];
   return (
@@ -41,19 +41,15 @@ export default function TtFAQ() {
             <NetIcon kind="tiktok" color="var(--tt-red)" size={13} /> FAQ
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Vos questions, <span className="squiggle tt">nos réponses</span>.
+            Vos questions, <span className="squiggle tt">nos reponses</span>.
           </h2>
         </div>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           {items.map((it, i) => (
-            <div key={i} className={`faq-item tt ${open === i ? "open" : ""}`}>
+            <div key={i} className={"faq-item tt" + (open === i ? " open" : "")}>
               <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                 <span>{it.q}</span>
-                <span className="faq-icon">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
+                <span className="faq-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
               </button>
               <div className="faq-a">{it.a}</div>
             </div>

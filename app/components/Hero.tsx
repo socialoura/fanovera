@@ -1,13 +1,13 @@
-import type { CSSProperties } from "react";
+﻿import type { CSSProperties } from "react";
 import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
 import { NETWORKS, NET_META, type Network } from "../lib/networks";
 
 function StarsRow() {
   const items = [
-    { q: "Résultats visibles en quelques jours", a: "Léa M., musicienne" },
-    { q: "Service sérieux, ROI mesurable", a: "Karim T., DTC founder" },
-    { q: "Le meilleur service IA testé", a: "Studio Métrique" },
+    { q: "Audit clair et plan actionnable", a: "Lea M., musicienne" },
+    { q: "Service serieux, suivi lisible", a: "Karim T., DTC founder" },
+    { q: "Un vrai cadre pour publier mieux", a: "Studio Metrique" },
   ];
   return (
     <div
@@ -32,7 +32,7 @@ function StarsRow() {
           <div style={{ fontSize: 13, color: "var(--ink-2)", fontStyle: "italic" }}>
             &ldquo;{t.q}&rdquo;
           </div>
-          <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>— {t.a}</div>
+          <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>- {t.a}</div>
         </div>
       ))}
     </div>
@@ -84,7 +84,7 @@ function MockDashboard() {
             </svg>
             + Nouvelle campagne
           </div>
-          {["Tableau de bord", "Campagnes", "Audience IA", "Statistiques", "Réseaux", "Facturation"].map(
+          {["Tableau de bord", "Campagnes", "Audience IA", "Statistiques", "Reseaux", "Facturation"].map(
             (label, i) => (
               <div
                 key={label}
@@ -112,7 +112,7 @@ function MockDashboard() {
               padding: "0 10px",
             }}
           >
-            RÉSEAUX ACTIFS
+            RESEAUX ACTIFS
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 10px" }}>
             {NETWORKS.slice(0, 8).map((n) => (
@@ -183,9 +183,9 @@ function MockDashboard() {
             }}
           >
             {[
-              { l: "Portée", v: "847k", d: "+412%", c: "var(--green)" },
-              { l: "Engagement", v: "24,3k", d: "+186%", c: "var(--primary)" },
-              { l: "Abonnés", v: "+3 124", d: "+98%", c: "var(--orange)" },
+              { l: "Audit", v: "32 pts", d: "priorises", c: "var(--green)" },
+              { l: "Contenus", v: "18 idees", d: "pretes", c: "var(--primary)" },
+              { l: "Planning", v: "30 j", d: "cadence", c: "var(--orange)" },
             ].map((s, i) => (
               <div key={i} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 8 }}>
                 <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{s.l}</div>
@@ -195,7 +195,7 @@ function MockDashboard() {
                   {s.v}
                 </div>
                 <div style={{ fontSize: 10, color: s.c, fontWeight: 600, marginTop: 2 }}>
-                  ↑ {s.d}
+                  {s.d}
                 </div>
               </div>
             ))}
@@ -205,7 +205,7 @@ function MockDashboard() {
             <div
               style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}
             >
-              Croissance · 30 derniers jours
+              Plan de visibilite - 30 jours
             </div>
             <svg viewBox="0 0 300 130" style={{ width: "100%", height: 140 }}>
               <defs>
@@ -295,9 +295,9 @@ function NetCard({ n }: { n: Network }) {
       {/* Foot: CTA + arrow */}
       <div className="netcard-foot">
         <div>
-          <div className="netcard-cta-label">À partir de 0,99€</div>
+          <div className="netcard-cta-label">Audit et strategie</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: "white" }}>
-            Lancer ma croissance
+            Voir la solution
           </div>
         </div>
         <div className="netcard-arrow">
@@ -331,10 +331,10 @@ export default function Hero() {
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          + de 12 000 comptes <span className="squiggle">boostés</span> depuis janvier 2025.
+          Une presence en ligne <span className="squiggle">plus claire</span>, sans promesses artificielles.
         </h1>
 
-        {/* 8 BIG network cards — primary hero CTA, above the fold */}
+        {/* 8 BIG network cards - primary hero CTA, above the fold */}
         <div
           className="net-grid"
           style={{
@@ -365,7 +365,7 @@ export default function Hero() {
           <div
             style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}
           >
-            <span style={{ color: "var(--ink-2)" }}>✓ Note 4,9/5</span>
+            <span style={{ color: "var(--ink-2)" }}>Note 4,9/5</span>
             <div style={{ display: "flex", gap: 2 }}>
               {[...Array(5)].map((_, j) => (
                 <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)">
@@ -410,7 +410,7 @@ export default function Hero() {
               <NetIcon kind="tiktok" color="#1d1d2c" size={20} />
               <div>
                 <div style={{ fontSize: 10, color: "var(--ink-3)", fontWeight: 600 }}>TIKTOK</div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>+847%</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>audit</div>
               </div>
             </div>
           </div>
@@ -434,8 +434,8 @@ export default function Hero() {
                 <NetIcon kind="spotify" color="white" size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>+312% écoutes</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>en 30 jours</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>Audit Spotify</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>plan de lancement</div>
               </div>
             </div>
           </div>
@@ -482,8 +482,8 @@ export default function Hero() {
                 <NetIcon kind="youtube" color="white" size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>+186% abonnés</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>en 6 semaines</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>SEO video</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>titres et calendrier</div>
               </div>
             </div>
           </div>

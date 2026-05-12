@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { upsertCheckoutPayload } from "@/app/lib/db";
+import { SUPPORTED_CURRENCIES } from "@/app/lib/pricingCurrency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   // @ts-expect-error Stripe SDK version mismatch
@@ -16,9 +17,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
+    const normalizedCurrency = typeof currency === "string" ? currency.toUpperCase() : "EUR";
+    if (!SUPPORTED_CURRENCIES.includes(normalizedCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
+      return NextResponse.json({ error: "Invalid currency" }, { status: 400 });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount),
-      currency: currency || "eur",
+      currency: normalizedCurrency.toLowerCase(),
       metadata: {
         email: email || "",
         username: username || "",
@@ -36,7 +42,7 @@ export async function POST(req: NextRequest) {
         platform,
         cart,
         amountCents: Math.round(amount),
-        currency: currency || "eur",
+        currency: normalizedCurrency.toLowerCase(),
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);

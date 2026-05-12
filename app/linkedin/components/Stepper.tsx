@@ -1,10 +1,10 @@
-import { Fragment } from "react";
+﻿import { Fragment } from "react";
 
 export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
   const steps = [
     { n: 1, label: "Choisir un pack" },
     { n: 2, label: "Votre profil" },
-    { n: 3, label: "Paiement sécurisé" },
+    { n: 3, label: "Paiement sÃ©curisÃ©" },
   ] as const;
   return (
     <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>

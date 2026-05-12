@@ -1,26 +1,26 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import YtSprinkle from "./YtSprinkle";
 
 export default function WhyUs() {
   const items = [
     {
-      i: "🎯",
-      title: "Audience ciblée",
-      body: "Notre IA expose votre vidéo YouTube à une audience qualifiée intéressée par votre thématique.",
+      i: "ðŸŽ¯",
+      title: "Audience ciblÃ©e",
+      body: "Notre IA expose votre vidÃ©o YouTube Ã  une audience qualifiÃ©e intÃ©ressÃ©e par votre thÃ©matique.",
     },
     {
-      i: "🛡",
-      title: "Conforme aux CGU",
-      body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de YouTube.",
+      i: "ðŸ›¡",
+      title: "Compte preserve",
+      body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.",
     },
     {
-      i: "🔒",
+      i: "ðŸ”’",
       title: "Sans mot de passe",
-      body: "Juste le lien public de votre vidéo. Aucun accès au compte, aucun risque pour votre chaîne.",
+      body: "Juste le lien public de votre vidÃ©o. Aucun acces au compte n'est demande.",
     },
     {
-      i: "↩",
-      title: "Résultats garantis",
+      i: "â†©",
+      title: "RÃ©sultats garantis",
       body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours.",
     },
   ];
@@ -51,7 +51,7 @@ export default function WhyUs() {
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
             Des vues YouTube
             <br />
-            <span className="squiggle yt">whitehat</span>, sans triche.
+            <span className="squiggle yt">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

@@ -11,6 +11,7 @@ import IgFAQ from "./components/IgFAQ";
 import IgFooter from "./components/IgFooter";
 import { COUNTRIES, PACKS, type CountryId } from "./data";
 import { usePaymentIntent } from "../components/StripePayment";
+import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 
 export type IgProfile = {
   username: string;
@@ -23,6 +24,8 @@ export type IgProfile = {
   verified: boolean;
 };
 
+const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+
 export default function InstagramPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
@@ -30,20 +33,25 @@ export default function InstagramPageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<IgProfile | null>(null);
+  const { currency } = useApplyCurrencyPricing("ig_followers", PACKS, STATIC_PACKS);
+
+  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
+  const selectedPack = PACKS[safePack] ?? PACKS[0];
 
   // Pre-create the Stripe PaymentIntent as soon as we have the data, so Step 3
   // displays instantly without the "Chargement du paiement sécurisé…" spinner.
-  const subtotal = PACKS[pack].price * (country === "fr" ? COUNTRIES[0].mult : 1);
+  const subtotal = selectedPack.price * (country === "fr" ? COUNTRIES[0].mult : 1);
   const total = subtotal * 0.95; // default coupon FANO5 (−5%)
   const amountCents = Math.round(total * 100);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const cleanUsername = username.replace(/^@/, "").trim();
   const { clientSecret } = usePaymentIntent({
     amount: amountCents,
+    currency: currency.toLowerCase(),
     email,
     username: cleanUsername,
     platform: "instagram",
-    cart: [{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -73,7 +81,7 @@ export default function InstagramPageClient() {
         {step === 1 && (
           <Step1Packs
             country={country}
-            pack={pack}
+            pack={safePack}
             setPack={setPack}
             onNext={next}
           />
@@ -81,7 +89,7 @@ export default function InstagramPageClient() {
         {step === 2 && (
           <Step2Username
             country={country}
-            pack={pack}
+            pack={safePack}
             username={username}
             setUsername={setUsername}
             email={email}
@@ -93,7 +101,7 @@ export default function InstagramPageClient() {
           />
         )}
         {step === 3 && (
-          <Step3Checkout country={country} pack={pack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />
+          <Step3Checkout country={country} pack={safePack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />
         )}
       </div>
       <div className={step === 1 ? undefined : "hide-md-on-checkout"}>

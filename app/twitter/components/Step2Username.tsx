@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -49,12 +49,12 @@ export default function Step2Username({
   const handleNext = () => {
     if (!username.trim()) { setSubmitError("Entrez votre @ X (Twitter)."); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Vérification du compte en cours…");
+      if (verifying) setSubmitError("VÃ©rification du compte en coursâ€¦");
       else if (apiError === "not_found") setSubmitError("Ce compte est introuvable sur X.");
       else setSubmitError("Entrez un @ X valide et public.");
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reçu."); return; }
+    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
     setSubmitError(null);
     onNext();
   };
@@ -99,10 +99,10 @@ export default function Step2Username({
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            À quel <span className="squiggle x">compte</span> les envoyer ?
+            Quel <span className="squiggle x">profil</span> souhaitez-vous promouvoir ?
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>@ X (Twitter)</strong>, c&apos;est tout. Aucun mot de passe, aucun accès demandé. Le compte doit être <strong style={{ color: "var(--ink)" }}>public</strong>.
+            Entrez juste votre <strong style={{ color: "var(--ink)" }}>@ X (Twitter)</strong>, c&apos;est tout. Aucun mot de passe, aucun accÃ¨s demandÃ©. Le compte doit Ãªtre <strong style={{ color: "var(--ink)" }}>public</strong>.
           </p>
         </div>
 
@@ -138,18 +138,18 @@ export default function Step2Username({
 
             {touched && !valid && clean.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Format invalide. 4-15 caractères : lettres, chiffres, &quot;_&quot; uniquement.
+                <span>âš </span> Format invalide. 4-15 caractÃ¨res : lettres, chiffres, &quot;_&quot; uniquement.
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Compte introuvable sur X.
+                <span>âš </span> Compte introuvable sur X.
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reçu)
+                Votre e-mail (pour le reÃ§u)
               </label>
               <div className="input-shell x">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -173,7 +173,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 12, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
+                <span>âš </span> {submitError}
               </div>
             )}
           </div>
@@ -210,7 +210,7 @@ export default function Step2Username({
                 )}
                 <div className="x-stats-row">
                   <div>
-                    <span style={{ fontWeight: 800, color: "white" }}>{profile ? formatQty(profile.followingCount) : "—"}</span>
+                    <span style={{ fontWeight: 800, color: "white" }}>{profile ? formatQty(profile.followingCount) : "â€”"}</span>
                     <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>Abonnements</span>
                   </div>
                   <div>
@@ -219,17 +219,17 @@ export default function Step2Username({
                         <>
                           {formatQty(profile.followersCount)}
                           <span style={{ fontSize: 12, color: "var(--green)" }}>
-                            {" → "}
+                            {" â†’ "}
                             {formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
                           </span>
                         </>
-                      ) : "—"}
+                      ) : "â€”"}
                     </span>
-                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>Abonnés</span>
+                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>AbonnÃ©s</span>
                   </div>
                 </div>
                 <div style={{ marginTop: 10, fontSize: 11, color: "#71767b" }}>
-                  {verified ? "Compte trouvé · Public" : verifying ? "Vérification…" : apiError ? "" : "En attente du @"}
+                  {verified ? "Compte trouvÃ© Â· Public" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du @"}
                 </div>
               </div>
             </div>

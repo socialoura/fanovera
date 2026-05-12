@@ -1,12 +1,12 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import SpoSprinkle from "./SpoSprinkle";
 
 export default function WhyUs() {
   const items = [
-    { i: "🎯", title: "Audience ciblée", body: "Notre IA expose votre morceau à une audience qualifiée qui écoute déjà votre genre musical." },
-    { i: "🛡", title: "Conforme aux CGU", body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de Spotify." },
-    { i: "🔒", title: "Sans mot de passe", body: "Juste le lien public de votre morceau. Aucun accès au compte, aucun risque pour votre profil artiste." },
-    { i: "↩", title: "Résultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
+    { i: "ðŸŽ¯", title: "Audience ciblÃ©e", body: "Notre IA expose votre morceau Ã  une audience qualifiÃ©e qui Ã©coute dÃ©jÃ  votre genre musical." },
+    { i: "ðŸ›¡", title: "Compte preserve", body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil." },
+    { i: "ðŸ”’", title: "Sans mot de passe", body: "Juste le lien public de votre morceau. Aucun acces au compte n'est demande." },
+    { i: "â†©", title: "RÃ©sultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
   ];
   return (
     <section style={{ padding: "clamp(48px, 7vw, 80px) 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>
@@ -17,9 +17,9 @@ export default function WhyUs() {
             <NetIcon kind="spotify" color="var(--spo-green-2)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Des écoutes Spotify
+            Des Ã©coutes Spotify
             <br />
-            <span className="squiggle spo">whitehat</span>, sans triche.
+            <span className="squiggle spo">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

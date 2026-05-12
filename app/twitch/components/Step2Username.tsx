@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -49,15 +49,15 @@ export default function Step2Username({
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const handleNext = () => {
-    if (!username.trim()) { setSubmitError("Entrez votre nom de chaîne Twitch."); return; }
-    if (!valid) { setSubmitError("Format invalide. 4-25 caractères : lettres, chiffres, \"_\"."); return; }
+    if (!username.trim()) { setSubmitError("Entrez votre nom de chaine Twitch."); return; }
+    if (!valid) { setSubmitError("Format invalide. 4-25 caract€¨res : lettres, chiffres, \"_\"."); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Vérification de la chaîne en cours…");
-      else if (apiError === "not_found") setSubmitError("Cette chaîne est introuvable sur Twitch.");
-      else setSubmitError("Chaîne non trouvée.");
+      if (verifying) setSubmitError("Verification de la chaine en cours...");
+      else if (apiError === "not_found") setSubmitError("Cette chaine est introuvable sur Twitch.");
+      else setSubmitError("Chaine non trouvee.");
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reçu."); return; }
+    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le recu."); return; }
     setSubmitError(null);
     onNext();
   };
@@ -102,18 +102,16 @@ export default function Step2Username({
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
-          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            À quelle <span className="squiggle tw">chaîne</span> les envoyer ?
-          </h1>
+          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>Quelle <span className="squiggle tw">chaine</span> souhaitez-vous promouvoir ?</h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>nom de chaîne Twitch</strong>. Aucun mot de passe, aucun accès demandé. La chaîne doit être <strong style={{ color: "var(--ink)" }}>publique</strong>.
+            Entrez votre <strong style={{ color: "var(--ink)" }}>nom de chaine Twitch</strong>. Aucun mot de passe, aucun acces demande. La chaine doit etre <strong style={{ color: "var(--ink)" }}>publique</strong>.
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Nom de votre chaîne Twitch
+              Nom de votre chaine Twitch
             </label>
 
             <div className="input-shell tw">
@@ -142,18 +140,18 @@ export default function Step2Username({
 
             {touched && !valid && clean.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Format invalide. 4-25 caractères : lettres, chiffres, &quot;_&quot; uniquement.
+                <span>âš </span> Format invalide. 4-25 caracteres : lettres, chiffres, &quot;_&quot; uniquement.
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Chaîne Twitch introuvable.
+                <span>âš </span> Chaine Twitch introuvable.
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reçu)
+                Votre e-mail (pour le recu)
               </label>
               <div className="input-shell tw">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -177,7 +175,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(145,70,255,0.08)", border: "1px solid rgba(145,70,255,0.25)", borderRadius: 12, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
+                <span>âš </span> {submitError}
               </div>
             )}
           </div>

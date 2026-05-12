@@ -1,3 +1,5 @@
+import { formatMoney } from "../lib/pricingCurrency";
+
 export type Pack = {
   qty: number;
   price: number;
@@ -34,25 +36,24 @@ export type Country = {
 export const COUNTRIES: Country[] = [
   {
     id: "fr",
-    name: "Abonnés Français",
+    name: "Audience France",
     flag: "🇫🇷",
-    desc: "Comptes basés en France",
+    desc: "Ciblage prioritaire France",
     mult: 1.6,
     premium: true,
   },
   {
     id: "eu",
-    name: "Abonnés Européens",
+    name: "Audience Europe",
     flag: "🇪🇺",
-    desc: "Mix France, Belgique, Suisse, EU",
+    desc: "Ciblage France, Belgique, Suisse, EU",
     mult: 1,
     premium: false,
   },
 ];
 
 export const formatQty = (q: number) => q.toLocaleString("fr-FR");
-export const fmtEuro = (n: number) =>
-  n.toFixed(2).replace(".", ",") + " €";
+export const fmtEuro = (n: number) => formatMoney(n);
 export const formatPrice = (p: Pack, country: CountryId) =>
   fmtEuro(p.price * (country === "fr" ? COUNTRIES[0].mult : 1));
 export const formatOld = (p: Pack, country: CountryId) =>

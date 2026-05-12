@@ -72,7 +72,7 @@ export default function Footer() {
                 maxWidth: 320,
               }}
             >
-              Croissance social media propulsée par IA. Service de croissance social media propulsé par IA.
+              Strategie de presence en ligne propulsee par IA : audit, calendrier de contenu et suivi de visibilite.
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -99,7 +99,7 @@ export default function Footer() {
             title="Produit"
             links={[
               { l: "Fonctionnement", h: "#how" },
-              { l: "Suivi de commande", h: "/track" },
+              { l: "Suivi", h: "/track" },
               { l: "Témoignages", h: "#proof" },
               { l: "FAQ", h: "#faq" },
             ]}

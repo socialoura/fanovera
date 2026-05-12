@@ -12,6 +12,9 @@ import SpoFooter from "./components/SpoFooter";
 import type { SpoPreview } from "./components/Step2Track";
 import { COUNTRIES, PACKS, type CountryId } from "./data";
 import { usePaymentIntent } from "../components/StripePayment";
+import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+
+const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
 export default function SpotifyPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -20,19 +23,24 @@ export default function SpotifyPageClient() {
   const [trackInput, setTrackInput] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<SpoPreview | null>(null);
+  const { currency } = useApplyCurrencyPricing("sp_streams", PACKS, STATIC_PACKS);
 
-  const subtotal = PACKS[pack].price * (country === "fr" ? COUNTRIES[0].mult : 1);
+  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
+  const selectedPack = PACKS[safePack] ?? PACKS[0];
+
+  const subtotal = selectedPack.price * (country === "fr" ? COUNTRIES[0].mult : 1);
   const total = subtotal * 0.95;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
+    currency: currency.toLowerCase(),
     email,
     username: trackInput.trim(),
     platform: "spotify",
     cart: [
       {
-        qty: PACKS[pack].qty,
-        bonus: PACKS[pack].bonus,
+        qty: selectedPack.qty,
+        bonus: selectedPack.bonus,
         country,
         trackUrl: trackInput.trim(),
         trackId: profile?.id,
@@ -58,11 +66,11 @@ export default function SpotifyPageClient() {
     <>
       <div className="paper-frame with-spo-halo">
         <SpoHeader />
-        {step === 1 && <Step1Packs country={country} pack={pack} setPack={setPack} onNext={next} />}
+        {step === 1 && <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} />}
         {step === 2 && (
           <Step2Track
             country={country}
-            pack={pack}
+            pack={safePack}
             trackInput={trackInput}
             setTrackInput={setTrackInput}
             email={email}
@@ -76,7 +84,7 @@ export default function SpotifyPageClient() {
         {step === 3 && (
           <Step3Checkout
             country={country}
-            pack={pack}
+            pack={safePack}
             trackInput={trackInput}
             email={email}
             profile={profile}

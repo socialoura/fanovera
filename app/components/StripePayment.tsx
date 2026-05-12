@@ -2,13 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  PaymentElement,
-  ExpressCheckoutElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { getDisplayCurrency } from "../lib/pricingCurrency";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -24,6 +19,7 @@ function paymentIntentIdFromClientSecret(clientSecret: string): string {
 
 export type StripeCheckoutProps = {
   amount: number; // in cents
+  currency?: string;
   email: string;
   username: string;
   platform: string;
@@ -36,24 +32,26 @@ export type StripeCheckoutProps = {
 /** Pre-fetch a PaymentIntent so the Elements UI is instant when Step 3 renders. */
 export function usePaymentIntent(args: {
   amount: number;
+  currency?: string;
   email: string;
   username: string;
   platform: string;
   cart?: unknown;
   enabled?: boolean;
 }) {
-  const { amount, email, username, platform, cart, enabled = true } = args;
+  const { amount, currency = "eur", email, username, platform, cart, enabled = true } = args;
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!enabled || !amount || amount < 100) return;
     let aborted = false;
+    setClientSecret(null);
     setError(null);
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, currency: "eur", email, username, platform, cart }),
+      body: JSON.stringify({ amount, currency, email, username, platform, cart }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -67,7 +65,7 @@ export function usePaymentIntent(args: {
     return () => {
       aborted = true;
     };
-  }, [enabled, amount, email, username, platform, cart]);
+  }, [enabled, amount, currency, email, username, platform, cart]);
 
   return { clientSecret, error };
 }
@@ -135,6 +133,7 @@ function CardPayment({
   email,
   platform,
   amount,
+  currency,
   clientSecret,
   brandColor,
   onSuccess,
@@ -142,6 +141,7 @@ function CardPayment({
   email: string;
   platform: string;
   amount: number;
+  currency: string;
   clientSecret: string;
   brandColor?: string;
   onSuccess?: () => void;
@@ -150,6 +150,11 @@ function CardPayment({
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const formattedAmount = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: (currency || "eur").toUpperCase(),
+  }).format((amount || 0) / 100);
 
   const submit = async () => {
     if (!stripe || !elements) return;
@@ -224,7 +229,7 @@ function CardPayment({
             </svg>
             <span>Payer</span>
             <span className="pay-amount">
-              {(amount / 100).toFixed(2).replace(".", ",")} €
+              {formattedAmount}
             </span>
             <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden>
               <path
@@ -244,6 +249,7 @@ function CardPayment({
 
 export default function StripeCheckout({
   amount,
+  currency,
   email,
   username,
   platform,
@@ -252,9 +258,12 @@ export default function StripeCheckout({
   brandColor,
   clientSecret: prefetchedSecret,
 }: StripeCheckoutProps) {
+  const effectiveCurrency = (currency || getDisplayCurrency() || "EUR").toLowerCase();
+
   // If a pre-fetched secret is provided, use it directly; otherwise fetch locally.
   const { clientSecret: fetchedSecret, error: fetchError } = usePaymentIntent({
     amount,
+    currency: effectiveCurrency,
     email,
     username,
     platform,
@@ -323,6 +332,7 @@ export default function StripeCheckout({
         email={email}
         platform={platform}
         amount={amount}
+        currency={effectiveCurrency}
         clientSecret={clientSecret}
         brandColor={brandColor}
         onSuccess={onSuccess}

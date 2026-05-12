@@ -1,10 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
+import CurrencySelector from "./CurrencySelector";
 import NetIcon from "./NetIcon";
 import { NETWORKS } from "../lib/networks";
 
 export function Logo() {
   return (
-    <a href="/" className="logo" aria-label="Fanovera">
+    <Link href="/" className="logo" aria-label="Fanovera">
       <Image
         src="/fanovera-logo.png"
         alt="Fanovera"
@@ -13,7 +15,7 @@ export function Logo() {
         priority
         style={{ height: 36, width: "auto", display: "block" }}
       />
-    </a>
+    </Link>
   );
 }
 
@@ -24,7 +26,7 @@ export default function Header() {
         <Logo />
         <nav className="nav-pill">
           {NETWORKS.map((n) => (
-            <a
+            <Link
               key={n.id}
               href={`/${n.id}`}
               aria-label={n.name}
@@ -32,7 +34,7 @@ export default function Header() {
               className="nav-pill-icon"
             >
               <NetIcon kind={n.icon} color={n.color} size={18} />
-            </a>
+            </Link>
           ))}
           <span
             aria-hidden
@@ -43,11 +45,12 @@ export default function Header() {
               margin: "0 4px",
             }}
           />
-          <a href="/track">Suivi</a>
-          <a href="/#faq">FAQ</a>
-          <a href="/contact">Contact</a>
+          <Link href="/track">Suivi</Link>
+          <Link href="/#faq">FAQ</Link>
+          <Link href="/contact">Contact</Link>
         </nav>
         <div className="header-cta-group" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <CurrencySelector compact />
           <a
             href="#start"
             className="btn-primary hide-md"

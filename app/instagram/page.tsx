@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import InstagramPageClient from "./InstagramPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Abonnés Instagram réels & actifs",
+  title: "Fanovera — Croissance Instagram ciblée",
   description:
-    "Abonnés Instagram 100% réels et actifs : croissance progressive, livraison en 60 secondes, garantie à vie. Sans mot de passe, conforme RGPD.",
+    "Campagnes de visibilité Instagram avec audience ciblée, déploiement progressif, paiement sécurisé et aucun accès au compte demandé.",
 };
 
 export default function InstagramPage() {

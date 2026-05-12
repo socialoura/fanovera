@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import TwitchPageClient from "./TwitchPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Followers Twitch ciblés & whitehat",
+  title: "Fanovera - Visibilite Twitch ciblee",
   description:
-    "Campagnes de promotion ciblée pour gagner de vrais followers Twitch. Méthode conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Campagnes de visibilite Twitch avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
 };
 
 export default function TwitchPage() {

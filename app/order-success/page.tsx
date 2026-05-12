@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 type ConfirmState = "idle" | "loading" | "ok" | "error";
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const search = useSearchParams();
   const [state, setState] = useState<ConfirmState>("idle");
   const [orderId, setOrderId] = useState<string>(search.get("orderId") || "");
@@ -102,11 +102,19 @@ export default function OrderSuccessPage() {
                 fontWeight: 600,
               }}
             >
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </Link>
           </div>
         )}
       </div>
     </main>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }

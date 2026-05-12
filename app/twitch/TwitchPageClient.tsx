@@ -12,6 +12,9 @@ import TwFooter from "./components/TwFooter";
 import type { TwProfile } from "./components/Step2Username";
 import { COUNTRIES, PACKS, type CountryId } from "./data";
 import { usePaymentIntent } from "../components/StripePayment";
+import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+
+const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
 export default function TwitchPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -20,16 +23,21 @@ export default function TwitchPageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<TwProfile | null>(null);
+  const { currency } = useApplyCurrencyPricing("tw_followers", PACKS, STATIC_PACKS);
 
-  const subtotal = PACKS[pack].price * (country === "fr" ? COUNTRIES[0].mult : 1);
+  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
+  const selectedPack = PACKS[safePack] ?? PACKS[0];
+
+  const subtotal = selectedPack.price * (country === "fr" ? COUNTRIES[0].mult : 1);
   const total = subtotal * 0.95;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
+    currency: currency.toLowerCase(),
     email,
     username: username.replace(/^@/, "").trim(),
     platform: "twitch",
-    cart: [{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -50,11 +58,11 @@ export default function TwitchPageClient() {
     <>
       <div className="paper-frame with-tw-halo">
         <TwHeader />
-        {step === 1 && <Step1Packs country={country} pack={pack} setPack={setPack} onNext={next} />}
+        {step === 1 && <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} />}
         {step === 2 && (
           <Step2Username
             country={country}
-            pack={pack}
+            pack={safePack}
             username={username}
             setUsername={setUsername}
             email={email}
@@ -68,7 +76,7 @@ export default function TwitchPageClient() {
         {step === 3 && (
           <Step3Checkout
             country={country}
-            pack={pack}
+            pack={safePack}
             username={username}
             email={email}
             profile={profile}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -116,22 +116,22 @@ export default function Step2Track({
   // Keep username/trackInput in sync with search mode so the PageClient always has a meaningful value for Stripe.
   useEffect(() => {
     if (mode === "search") {
-      const combined = `${trackName.trim()} — ${artistName.trim()}`;
+      const combined = `${trackName.trim()} â€” ${artistName.trim()}`;
       if (trackName.trim() || artistName.trim()) setTrackInput(combined);
     }
   }, [mode, trackName, artistName, setTrackInput]);
 
   const handleNext = () => {
     if (mode === "url" && !url) { setSubmitError("Collez le lien Spotify de votre morceau."); return; }
-    if (mode === "url" && !validUrl) { setSubmitError("Lien Spotify invalide. Format : open.spotify.com/track/…"); return; }
+    if (mode === "url" && !validUrl) { setSubmitError("Lien Spotify invalide. Format : open.spotify.com/track/â€¦"); return; }
     if (mode === "search" && !validSearch) { setSubmitError("Renseignez le titre et l'artiste."); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Recherche du morceau en cours…");
+      if (verifying) setSubmitError("Recherche du morceau en coursâ€¦");
       else if (apiError) setSubmitError("Morceau introuvable sur Spotify.");
-      else setSubmitError("Morceau non trouvé.");
+      else setSubmitError("Morceau non trouvÃ©.");
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reçu."); return; }
+    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
     setSubmitError(null);
     onNext();
   };
@@ -199,10 +199,10 @@ export default function Step2Track({
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quel <span className="squiggle spo">morceau</span> booster ?
+            Quel <span className="squiggle spo">morceau</span> promouvoir ?
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien Spotify de votre morceau, ou cherchez par titre + artiste. Aucun mot de passe demandé.
+            Collez le lien Spotify de votre morceau, ou cherchez par titre + artiste. Aucun mot de passe demandÃ©.
           </p>
         </div>
 
@@ -242,7 +242,7 @@ export default function Step2Track({
                 </div>
                 {touched && url.length > 0 && !validUrl && (
                   <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 6, alignItems: "center" }}>
-                    <span>⚠</span> Lien invalide. Exemple : https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx
+                    <span>âš </span> Lien invalide. Exemple : https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx
                   </div>
                 )}
               </>
@@ -274,13 +274,13 @@ export default function Step2Track({
             )}
             {hasInput && apiError && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Morceau introuvable sur Spotify.
+                <span>âš </span> Morceau introuvable sur Spotify.
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reçu)
+                Votre e-mail (pour le reÃ§u)
               </label>
               <div className="input-shell spo">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -304,7 +304,7 @@ export default function Step2Track({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.25)", borderRadius: 12, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
+                <span>âš </span> {submitError}
               </div>
             )}
           </div>
@@ -334,14 +334,14 @@ export default function Step2Track({
                     Spotify
                   </div>
                   <div className="spo-track-title" style={{ marginTop: 8 }}>
-                    {profile?.trackName || (hasInput ? "Chargement…" : "Votre morceau")}
+                    {profile?.trackName || (hasInput ? "Chargementâ€¦" : "Votre morceau")}
                   </div>
                   <div className="spo-artist" style={{ marginTop: 4 }}>
                     {profile?.artistName || "Artiste"}
                   </div>
                   {profile && (
                     <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-                      {profile.album} · {formatDuration(profile.durationMs)}
+                      {profile.album} Â· {formatDuration(profile.durationMs)}
                     </div>
                   )}
                 </div>
@@ -349,25 +349,25 @@ export default function Step2Track({
 
               <div className="spo-stats-row">
                 <div>
-                  <div className="spo-stat-label">Écoutes totales</div>
+                  <div className="spo-stat-label">Ã‰coutes totales</div>
                   <div className="spo-stat-value" style={{ color: verified ? "var(--spo-green)" : "white" }}>
                     {profile ? (
                       <>
                         {formatQty(profile.totalStreams)}{" "}
                         <span style={{ fontSize: 11, color: "var(--spo-green)" }}>
-                          → {formatQty(profile.totalStreams + PACKS[pack].qty + PACKS[pack].bonus)}
+                          â†’ {formatQty(profile.totalStreams + PACKS[pack].qty + PACKS[pack].bonus)}
                         </span>
                       </>
-                    ) : "—"}
+                    ) : "â€”"}
                   </div>
                 </div>
                 <div>
                   <div className="spo-stat-label">Auditeurs mensuels</div>
-                  <div className="spo-stat-value">{profile ? formatQty(profile.monthlyListeners) : "—"}</div>
+                  <div className="spo-stat-value">{profile ? formatQty(profile.monthlyListeners) : "â€”"}</div>
                 </div>
                 <div>
-                  <div className="spo-stat-label">Popularité</div>
-                  <div className="spo-stat-value">{profile ? `${profile.popularity}/100` : "—"}</div>
+                  <div className="spo-stat-label">PopularitÃ©</div>
+                  <div className="spo-stat-value">{profile ? `${profile.popularity}/100` : "â€”"}</div>
                 </div>
               </div>
             </div>

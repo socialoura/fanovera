@@ -6,22 +6,22 @@ export default function WhyUs() {
     {
       i: "🎯",
       title: "Audience ciblée",
-      body: "Notre IA identifie de vraies personnes correspondant à votre niche et leur expose votre profil.",
+      body: "Notre IA aide à définir une audience cohérente avec votre niche et vos contenus.",
     },
     {
       i: "🛡",
-      title: "Conforme aux CGU",
-      body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation d'Instagram.",
+      title: "Compte préservé",
+      body: "Aucun accès au compte, aucune publication à votre place, aucune action directe sur votre profil.",
     },
     {
       i: "🔒",
       title: "Sans mot de passe",
-      body: "Juste votre nom d'utilisateur public. Aucun accès au compte, aucun risque.",
+      body: "Juste votre nom d'utilisateur public pour préparer la campagne de visibilité.",
     },
     {
       i: "↩",
-      title: "Résultats garantis",
-      body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours.",
+      title: "Suivi inclus",
+      body: "Si le volume prévu n'est pas atteint, notre support vérifie et prolonge la campagne.",
     },
   ];
   return (
@@ -58,7 +58,7 @@ export default function WhyUs() {
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
             Une croissance Instagram
             <br />
-            <span className="squiggle ig">whitehat</span>, sans triche.
+            <span className="squiggle ig">progressive</span> et soignée.
           </h2>
         </div>
         <div

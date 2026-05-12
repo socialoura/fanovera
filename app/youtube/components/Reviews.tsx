@@ -1,16 +1,16 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import YtSprinkle from "./YtSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Julien D.", d: "il y a 2 jours", t: "Mes vues ont explosé et la vidéo est sortie dans les recommandations.", r: 5 },
-    { n: "Marie L.", d: "il y a 7 jours", t: "Campagne lancée en quelques minutes, premières vues sous 24h.", r: 5 },
-    { n: "Pierre F.", d: "il y a 5 jours", t: "Vues qui montent régulièrement sur 10 jours, rien d'agressif.", r: 5 },
-    { n: "Lucie B.", d: "il y a 10 jours", t: "Première campagne vues YouTube, c'est sérieux et le suivi est top.", r: 5 },
-    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, +50k vues sur ma dernière vidéo en 2 semaines.", r: 5 },
-    { n: "Léa M.", d: "il y a 12 jours", t: "Rien à redire, croissance comme annoncée, garantie respectée.", r: 5 },
-    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous.", r: 5 },
-    { n: "Laurent M.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui était annoncé.", r: 5 },
+    { n: "Julien D.", d: "il y a 2 jours", t: "La video a gagne en visibilite avec un suivi propre.", r: 5 },
+    { n: "Marie L.", d: "il y a 7 jours", t: "Campagne lancÃ©e en quelques minutes, premiÃ¨res vues sous 24h.", r: 5 },
+    { n: "Pierre F.", d: "il y a 5 jours", t: "Vues qui montent rÃ©guliÃ¨rement sur 10 jours, rien d'agressif.", r: 5 },
+    { n: "Lucie B.", d: "il y a 10 jours", t: "PremiÃ¨re campagne vues YouTube, c'est sÃ©rieux et le suivi est top.", r: 5 },
+    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, accompagnement propre sur plusieurs semaines.", r: 5 },
+    { n: "LÃ©a M.", d: "il y a 12 jours", t: "Rien Ã  redire, croissance comme annoncÃ©e, garantie respectÃ©e.", r: 5 },
+    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client rÃ©actif et rÃ©sultats au rendez-vous.", r: 5 },
+    { n: "Laurent M.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui Ã©tait annoncÃ©.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>
@@ -36,7 +36,7 @@ export default function Reviews() {
             <NetIcon kind="youtube" color="var(--yt-red)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle yt">2 348 avis</span> · 4,9/5
+            <span className="squiggle yt">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 

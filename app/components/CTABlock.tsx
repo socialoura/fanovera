@@ -28,7 +28,7 @@ export default function CTABlock() {
                 color: "white",
               }}
             >
-              Prêt à faire <span style={{ color: "var(--yellow)" }}>décoller</span> votre contenu ?
+              Pret a structurer <span style={{ color: "var(--yellow)" }}>votre presence</span> en ligne ?
             </h2>
             <p
               style={{
@@ -38,7 +38,7 @@ export default function CTABlock() {
                 opacity: 0.9,
               }}
             >
-              Choisissez votre plateforme et lancez votre première campagne en moins de 2 minutes.
+              Choisissez votre plateforme et preparez un plan de visibilite adapte a vos contenus.
             </p>
             <div
               style={{
@@ -72,7 +72,7 @@ export default function CTABlock() {
               ))}
             </div>
             <div style={{ fontSize: 13, opacity: 0.8 }}>
-              ✓ À partir de 0,99€ · ✓ Activation en 10 min · ✓ Sans engagement
+              Audit public · Strategie de contenu · Aucun acces au compte demande
             </div>
           </div>
         </div>

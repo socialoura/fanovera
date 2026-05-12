@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -65,12 +65,12 @@ export default function Step2Page({
     if (!pageInput.trim()) { setSubmitError("Collez le lien ou le nom d'utilisateur de votre page Facebook."); return; }
     if (!valid) { setSubmitError("Format invalide. Exemple : facebook.com/votrepage ou votrepage"); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Vérification de la page en cours…");
+      if (verifying) setSubmitError("VÃ©rification de la page en coursâ€¦");
       else if (apiError === "not_found") setSubmitError("Cette page est introuvable sur Facebook.");
-      else setSubmitError("Page non trouvée. Vérifiez qu'elle est publique.");
+      else setSubmitError("Page non trouvÃ©e. VÃ©rifiez qu'elle est publique.");
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reçu."); return; }
+    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
     setSubmitError(null);
     onNext();
   };
@@ -115,10 +115,10 @@ export default function Step2Page({
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quelle <span className="squiggle fb">page</span> booster ?
+            Quelle <span className="squiggle fb">page</span> promouvoir ?
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien de votre page Facebook, ou son nom d&apos;utilisateur. Aucun mot de passe, aucun accès demandé. La page doit être <strong style={{ color: "var(--ink)" }}>publique</strong>.
+            Collez le lien de votre page Facebook, ou son nom d&apos;utilisateur. Aucun mot de passe, aucun accÃ¨s demandÃ©. La page doit Ãªtre <strong style={{ color: "var(--ink)" }}>publique</strong>.
           </p>
         </div>
 
@@ -153,18 +153,18 @@ export default function Step2Page({
 
             {touched && !valid && pageInput.trim().length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Format invalide. Ex : https://facebook.com/votrepage ou votrepage
+                <span>âš </span> Format invalide. Ex : https://facebook.com/votrepage ou votrepage
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Page Facebook introuvable. Vérifiez qu&apos;elle est publique.
+                <span>âš </span> Page Facebook introuvable. VÃ©rifiez qu&apos;elle est publique.
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reçu)
+                Votre e-mail (pour le reÃ§u)
               </label>
               <div className="input-shell fb">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -188,7 +188,7 @@ export default function Step2Page({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(24,119,242,0.08)", border: "1px solid rgba(24,119,242,0.25)", borderRadius: 12, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
+                <span>âš </span> {submitError}
               </div>
             )}
           </div>
@@ -223,7 +223,7 @@ export default function Step2Page({
                   )}
                 </div>
                 <div className="fb-page-meta">
-                  {profile?.categories?.join(" · ") || (handle ? "@" + handle : "Page Facebook")}
+                  {profile?.categories?.join(" Â· ") || (handle ? "@" + handle : "Page Facebook")}
                 </div>
 
                 <div className="fb-stats-row" style={showLikesStat ? undefined : { gridTemplateColumns: "1fr" }}>
@@ -233,22 +233,22 @@ export default function Step2Page({
                         <>
                           {formatQty(profile.likesCount)}
                           <span style={{ fontSize: 12, color: "var(--green)", fontWeight: 700 }}>
-                            {" → "}
+                            {" â†’ "}
                             {formatQty(profile.likesCount + PACKS[pack].qty + PACKS[pack].bonus)}
                           </span>
                         </>
-                      ) : "—"}</strong>
-                      <div>personnes aiment ça</div>
+                      ) : "â€”"}</strong>
+                      <div>personnes aiment Ã§a</div>
                     </div>
                   )}
                   <div className="fb-stat-cell">
-                    <strong>{profile ? formatQty(profile.followersCount) : "—"}</strong>
-                    <div>abonnés</div>
+                    <strong>{profile ? formatQty(profile.followersCount) : "â€”"}</strong>
+                    <div>abonnÃ©s</div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-                  {verified ? "Page trouvée · Publique" : verifying ? "Vérification…" : apiError ? "" : "En attente du lien"}
+                  {verified ? "Page trouvÃ©e Â· Publique" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du lien"}
                 </div>
               </div>
             </div>

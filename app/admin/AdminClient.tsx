@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Ic } from "./components/icons";
 import AnalyticsView from "./components/views/AnalyticsView";
 import OrdersView from "./components/views/OrdersView";
@@ -24,7 +24,99 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
 
 export default function AdminClient() {
   const [view, setView] = useState<ViewId>("analytics");
+  const [authorized, setAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
   const meta = NAV.find((n) => n.id === view)!;
+
+  useEffect(() => {
+    const saved = localStorage.getItem("admin_pw") || "";
+    if (!saved) {
+      setCheckingAuth(false);
+      return;
+    }
+
+    fetch("/api/admin/analytics", {
+      headers: { Authorization: `Bearer ${saved}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("unauthorized");
+        setAuthorized(true);
+      })
+      .catch(() => {
+        localStorage.removeItem("admin_pw");
+        setAuthorized(false);
+      })
+      .finally(() => setCheckingAuth(false));
+  }, []);
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextPassword = password.trim();
+    if (!nextPassword) return;
+
+    setCheckingAuth(true);
+    setAuthError("");
+    try {
+      const res = await fetch("/api/admin/analytics", {
+        headers: { Authorization: `Bearer ${nextPassword}` },
+      });
+      if (!res.ok) throw new Error("Mot de passe incorrect.");
+      localStorage.setItem("admin_pw", nextPassword);
+      setAuthorized(true);
+      setPassword("");
+    } catch (error) {
+      localStorage.removeItem("admin_pw");
+      setAuthorized(false);
+      setAuthError(error instanceof Error ? error.message : "Connexion impossible.");
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_pw");
+    setAuthorized(false);
+    setView("analytics");
+  };
+
+  if (checkingAuth && !authorized) {
+    return (
+      <div className="admin-shell auth-only">
+        <div className="admin-login-card">
+          <div className="logo-mark">F</div>
+          <div className="admin-login-title">Fanovera Admin</div>
+          <div className="admin-login-sub">Verification de session...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <div className="admin-shell auth-only">
+        <form className="admin-login-card" onSubmit={handleLogin}>
+          <div className="logo-mark">F</div>
+          <div className="admin-login-title">Fanovera Admin</div>
+          <label className="label" htmlFor="admin-password">Mot de passe</label>
+          <input
+            id="admin-password"
+            className="input"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoFocus
+            autoComplete="current-password"
+          />
+          {authError ? <div className="admin-login-error">{authError}</div> : null}
+          <button className="btn primary" type="submit" disabled={checkingAuth || !password.trim()}>
+            {checkingAuth ? "Verification..." : "Entrer"}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-shell">
@@ -76,7 +168,13 @@ export default function AdminClient() {
             <div className="who-name">Sami Kacimi</div>
             <div className="who-role">Founder · Admin</div>
           </div>
-          <button className="icon-btn" style={{ background: "transparent", border: "none", color: "rgba(232,228,216,0.5)", width: 28, height: 28 }}>
+          <button
+            className="icon-btn"
+            onClick={handleLogout}
+            aria-label="Se deconnecter"
+            title="Se deconnecter"
+            style={{ background: "transparent", border: "none", color: "rgba(232,228,216,0.5)", width: 28, height: 28 }}
+          >
             {Ic.more()}
           </button>
         </div>

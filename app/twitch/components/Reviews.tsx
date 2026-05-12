@@ -1,16 +1,16 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import TwSprinkle from "./TwSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Kevin D.", d: "il y a 2 jours", t: "J'ai enfin atteint le palier Affilié grâce à ce pack. Parfait.", r: 5 },
-    { n: "Emma L.", d: "il y a 7 jours", t: "Campagne lancée rapidement, premiers followers sous 48h.", r: 5 },
+    { n: "Kevin D.", d: "il y a 2 jours", t: "J'ai enfin atteint le palier AffiliÃ© grÃ¢ce Ã  ce pack. Parfait.", r: 5 },
+    { n: "Emma L.", d: "il y a 7 jours", t: "Campagne lancÃ©e rapidement, premiers followers sous 48h.", r: 5 },
     { n: "Mathis F.", d: "il y a 5 jours", t: "Croissance progressive sur 3 semaines, rien d'agressif.", r: 5 },
-    { n: "Camille B.", d: "il y a 10 jours", t: "Première campagne Twitch, c'est sérieux et le suivi est top.", r: 5 },
-    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, +3k followers sur ma chaîne gaming.", r: 5 },
-    { n: "Léa M.", d: "il y a 12 jours", t: "Rien à redire, croissance comme annoncée, garantie respectée.", r: 5 },
-    { n: "Raphaël C.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous.", r: 5 },
-    { n: "Chloé M.", d: "il y a 15 jours", t: "Ma chaîne ressort mieux dans les recommandations maintenant.", r: 5 },
+    { n: "Camille B.", d: "il y a 10 jours", t: "PremiÃ¨re campagne Twitch, c'est sÃ©rieux et le suivi est top.", r: 5 },
+    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, accompagnement propre sur plusieurs semaines.", r: 5 },
+    { n: "LÃ©a M.", d: "il y a 12 jours", t: "Rien Ã  redire, croissance comme annoncÃ©e, garantie respectÃ©e.", r: 5 },
+    { n: "RaphaÃ«l C.", d: "il y a 14 jours", t: "Service client rÃ©actif et rÃ©sultats au rendez-vous.", r: 5 },
+    { n: "ChloÃ© M.", d: "il y a 15 jours", t: "Ma chaÃ®ne ressort mieux dans les recommandations maintenant.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>
@@ -21,7 +21,7 @@ export default function Reviews() {
             <NetIcon kind="twitch" color="var(--tw-purple)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle tw">2 348 avis</span> · 4,9/5
+            <span className="squiggle tw">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 

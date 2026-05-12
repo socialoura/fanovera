@@ -1,15 +1,15 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import LiSprinkle from "./LiSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Thomas D.", d: "il y a 2 jours", t: "Excellente campagne pour mon profil dirigeant, followers B2B très qualifiés.", r: 5 },
-    { n: "Claire M.", d: "il y a 7 jours", t: "Campagne lancée rapidement, premiers followers sous 48h, service sérieux.", r: 5 },
-    { n: "Nicolas F.", d: "il y a 5 jours", t: "Mes posts ont plus de portée depuis que mes followers ont augmenté.", r: 5 },
-    { n: "Sophie B.", d: "il y a 10 jours", t: "Parfait pour booster mon personal branding, rien à redire.", r: 5 },
-    { n: "Hugo K.", d: "il y a 5 jours", t: "Excellent service, +3k followers en 3 semaines sur mon profil consultant.", r: 5 },
-    { n: "Élise M.", d: "il y a 12 jours", t: "Croissance comme annoncée, garantie respectée, équipe au top.", r: 5 },
-    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous.", r: 5 },
+    { n: "Thomas D.", d: "il y a 2 jours", t: "Excellente campagne pour mon profil dirigeant, followers B2B trÃ¨s qualifiÃ©s.", r: 5 },
+    { n: "Claire M.", d: "il y a 7 jours", t: "Campagne lancÃ©e rapidement, premiers followers sous 48h, service sÃ©rieux.", r: 5 },
+    { n: "Nicolas F.", d: "il y a 5 jours", t: "Mes posts ont plus de portÃ©e depuis que mes followers ont augmentÃ©.", r: 5 },
+    { n: "Sophie B.", d: "il y a 10 jours", t: "Parfait pour travailler mon personal branding, rien Ã  redire.", r: 5 },
+    { n: "Hugo K.", d: "il y a 5 jours", t: "Excellent service, accompagnement propre sur plusieurs semaines.", r: 5 },
+    { n: "Ã‰lise M.", d: "il y a 12 jours", t: "Croissance comme annoncÃ©e, garantie respectÃ©e, Ã©quipe au top.", r: 5 },
+    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client rÃ©actif et rÃ©sultats au rendez-vous.", r: 5 },
     { n: "Laura M.", d: "il y a 15 jours", t: "Bonne progression continue, mon profil ressort mieux dans les recherches.", r: 5 },
   ];
   return (
@@ -21,7 +21,7 @@ export default function Reviews() {
             <NetIcon kind="linkedin" color="var(--li-blue)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle li">2 348 avis</span> · 4,9/5
+            <span className="squiggle li">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 

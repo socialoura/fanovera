@@ -53,7 +53,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               lineHeight: 1.55,
             }}
           >
-            Paiement sécurisé · livraison automatique dès la confirmation.
+            Paiement sécurisé · préparation de la campagne après confirmation.
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               >
                 <div>
                   <div style={{ fontWeight: 600 }}>
-                    {formatQty(PACKS[pack].qty)} abonnés Instagram
+                    Pack visibilité Instagram {formatQty(PACKS[pack].qty)}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
                     {selectedCountry.flag} {selectedCountry.name}
@@ -181,9 +181,9 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               >
                 <div>
                   <div style={{ fontWeight: 600 }}>
-                    +{formatQty(PACKS[pack].bonus)} abonnés offerts
+                    +{formatQty(PACKS[pack].bonus)} crédit inclus
                   </div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Bonus du pack</div>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>Crédit de campagne</div>
                 </div>
                 <div style={{ fontWeight: 700 }}>OFFERT</div>
               </div>
@@ -316,7 +316,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                 >
                   CGV
                 </a>
-                . Aucun abonnement caché. Livraison instantanée après paiement.
+                . Aucun abonnement caché. Déploiement progressif après paiement.
               </div>
 
               <div

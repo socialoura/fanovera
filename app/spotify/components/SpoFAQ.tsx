@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import NetIcon from "../../components/NetIcon";
@@ -8,28 +8,28 @@ export default function SpoFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment vos écoutes sont-elles générées ?",
-      a: "Nos campagnes exposent votre morceau à une audience qualifiée qui correspond à votre genre musical, via des techniques de promotion ciblée. Les écoutes proviennent de vraies personnes qui écoutent réellement votre son. Aucun bot, aucune ferme à streams, aucune automation interdite.",
+      q: "Comment fonctionne la mise en avant ?",
+      a: "Nous preparons une campagne de visibilite autour de votre morceau Spotify et de votre thematique. L objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.",
     },
     {
       q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin du lien Spotify public de votre morceau. Aucun accès à votre compte Spotify for Artists, aucun risque.",
+      a: "Jamais. On a uniquement besoin de votre lien Spotify public de votre morceau. Aucun acces au compte n est demande.",
     },
     {
-      q: "Mon profil artiste risque-t-il d'être pénalisé ?",
-      a: "Non. Notre méthode est conforme aux conditions d'utilisation de Spotify. La montée des écoutes reste progressive et naturelle, sans éveiller l'algo de détection de streaming artificiel.",
+      q: "Est-ce que vous agissez sur mon compte ?",
+      a: "Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s appuie sur une mise en avant externe et progressive.",
     },
     {
-      q: "Les écoutes comptent-elles pour les royalties ?",
-      a: "Oui, ce sont des écoutes réelles depuis de vrais comptes Spotify (gratuits ou Premium). Elles sont comptabilisées normalement par Spotify et remontent dans vos statistiques Spotify for Artists.",
+      q: "Quand la campagne demarre-t-elle ?",
+      a: "La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s etaler sur plusieurs jours selon le volume choisi.",
     },
     {
-      q: "En combien de temps les écoutes arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premières écoutes arrivent sous 24h, puis la livraison s'étale sur 3 à 30 jours selon le pack, pour un rythme 100% naturel.",
+      q: "Que se passe-t-il si le volume n est pas atteint ?",
+      a: "Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n est pas atteint.",
     },
     {
-      q: "Et si certaines écoutes disparaissent ?",
-      a: "Garantie de résultats : si le compteur baisse significativement pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
+      q: "Les statistiques apparaissent-elles tout de suite ?",
+      a: "Les statistiques peuvent varier selon les controles et delais propres a Spotify. Le deploiement reste progressif et suivi.",
     },
   ];
   return (
@@ -41,19 +41,15 @@ export default function SpoFAQ() {
             <NetIcon kind="spotify" color="var(--spo-green-2)" size={13} /> FAQ
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Vos questions, <span className="squiggle spo">nos réponses</span>.
+            Vos questions, <span className="squiggle spo">nos reponses</span>.
           </h2>
         </div>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           {items.map((it, i) => (
-            <div key={i} className={`faq-item spo ${open === i ? "open" : ""}`}>
+            <div key={i} className={"faq-item spo" + (open === i ? " open" : "")}>
               <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                 <span>{it.q}</span>
-                <span className="faq-icon">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
+                <span className="faq-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
               </button>
               <div className="faq-a">{it.a}</div>
             </div>

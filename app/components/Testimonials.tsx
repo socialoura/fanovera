@@ -4,21 +4,21 @@ import { NETWORKS, type NetworkId } from "../lib/networks";
 export default function Testimonials() {
   const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
-      q: "J'ai gagné 2 400 abonnés en 3 jours. Mon taux d'engagement a explosé et j'ai même eu des propositions de collab.",
-      n: "Léa Marchetti",
-      r: "Musicienne · +2,4k abonnés",
+      q: "Fanovera m'a aidee a clarifier ma ligne editoriale et a organiser mes sorties sans courir apres les chiffres.",
+      n: "Lea Marchetti",
+      r: "Musicienne · strategie de lancement",
       net: "spotify",
     },
     {
-      q: "Service ultra rapide, les résultats sont arrivés en moins de 10 min. Je recommande à 100%, c'est le meilleur service que j'ai testé.",
+      q: "L'audit etait concret : quoi publier, quand le publier, et comment mieux raconter mon travail.",
       n: "Thomas Durand",
-      r: "Photographe · +5,1k abonnés",
+      r: "Photographe · calendrier contenu",
       net: "instagram",
     },
     {
-      q: "J'avais peur au début mais tout est arrivé naturellement. Mon compte a pris un vrai boost et mes reels ont beaucoup plus de portée.",
+      q: "On a pose une vraie methode autour de mes formats courts. Le suivi est simple, lisible et utile.",
       n: "Sofia Ramos",
-      r: "Créatrice · +1,8k abonnés",
+      r: "Creatrice · accompagnement TikTok",
       net: "tiktok",
     },
   ];
@@ -65,10 +65,10 @@ export default function Testimonials() {
           }}
         >
           {[
-            { n: "+412%", l: "portée moyenne" },
-            { n: "2,4M", l: "clients satisfaits" },
+            { n: "32", l: "points d'audit" },
+            { n: "8", l: "plateformes couvertes" },
             { n: "4,9/5", l: "note moyenne" },
-            { n: "10 min", l: "activation" },
+            { n: "30j", l: "plan d'action" },
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span

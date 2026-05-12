@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 type ServiceStatus = {
   service: string;
@@ -25,7 +26,8 @@ type TrackResponse = {
   services: ServiceStatus[];
 };
 
-export default function TrackOrderPage({ params }: { params: { id: string } }) {
+export default function TrackOrderPage() {
+  const params = useParams<{ id: string }>();
   const [data, setData] = useState<TrackResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);

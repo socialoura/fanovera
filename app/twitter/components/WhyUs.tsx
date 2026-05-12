@@ -1,12 +1,12 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import XSprinkle from "./XSprinkle";
 
 export default function WhyUs() {
   const items = [
-    { i: "🎯", title: "Audience ciblée", body: "Notre IA expose votre profil X à une audience qualifiée qui interagit avec votre thématique." },
-    { i: "🛡", title: "Conforme aux CGU", body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de X." },
-    { i: "🔒", title: "Sans mot de passe", body: "Juste votre @ public. Aucun accès au compte, aucun risque." },
-    { i: "↩", title: "Résultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
+    { i: "ðŸŽ¯", title: "Audience ciblÃ©e", body: "Notre IA expose votre profil X Ã  une audience qualifiÃ©e qui interagit avec votre thÃ©matique." },
+    { i: "ðŸ›¡", title: "Compte preserve", body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil." },
+    { i: "ðŸ”’", title: "Sans mot de passe", body: "Juste votre @ public. Aucun acces au compte n'est demande." },
+    { i: "â†©", title: "RÃ©sultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
   ];
   return (
     <section style={{ padding: "clamp(48px, 7vw, 80px) 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>
@@ -17,7 +17,7 @@ export default function WhyUs() {
             <NetIcon kind="twitter" color="var(--x-ink)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Une croissance X<br /><span className="squiggle x">whitehat</span>, sans triche.
+            Une croissance X<br /><span className="squiggle x">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

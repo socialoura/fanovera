@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import SpotifyPageClient from "./SpotifyPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Écoutes Spotify ciblées & whitehat",
+  title: "Fanovera - Visibilite Spotify ciblee",
   description:
-    "Campagnes de promotion ciblée pour gagner de vraies écoutes Spotify. Méthode conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Campagnes de visibilite Spotify avec audience ciblee, deploiement progressif, paiement securise et aucun acces artiste demande.",
 };
 
 export default function SpotifyPage() {

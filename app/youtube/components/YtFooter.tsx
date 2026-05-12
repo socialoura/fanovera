@@ -1,4 +1,4 @@
-import { Logo } from "../../components/Header";
+﻿import { Logo } from "../../components/Header";
 import NetIcon from "../../components/NetIcon";
 import { NETWORKS } from "../../lib/networks";
 
@@ -40,7 +40,7 @@ export default function YtFooter() {
           <div>
             <Logo />
             <p style={{ marginTop: 16, fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxWidth: 280 }}>
-              Croissance social media propulsée par IA. Vrais comptes, croissance progressive, 100% whitehat.
+              Croissance social media propulsÃ©e par IA. Campagnes ciblees, suivi clair et progression mesuree.
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -56,29 +56,29 @@ export default function YtFooter() {
               ))}
             </div>
           </div>
-          <FootCol title="Réseaux" links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
+          <FootCol title="RÃ©seaux" links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title=" " links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol
             title="Aide"
             links={[
-              { l: "Comment ça marche", h: "#how" },
-              { l: "Résultats garantis", h: "#guarantee" },
+              { l: "Comment Ã§a marche", h: "#how" },
+              { l: "RÃ©sultats garantis", h: "#guarantee" },
               { l: "Contact", h: "mailto:hello@fanovera.com" },
               { l: "Suivi de commande", h: "/track" },
             ]}
           />
           <FootCol
-            title="Légal"
+            title="LÃ©gal"
             links={[
-              { l: "Mentions légales", h: "#legal" },
+              { l: "Mentions lÃ©gales", h: "#legal" },
               { l: "CGV", h: "#cgv" },
-              { l: "Confidentialité", h: "#privacy" },
+              { l: "ConfidentialitÃ©", h: "#privacy" },
               { l: "Cookies", h: "#cookies" },
             ]}
           />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>
-          <div>© Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris</div>
+          <div>Â© Fanovera SAS 2026 Â· Made in Paris Â· 17 rue de Paradis Â· 75010 Paris</div>
           <div>hello@fanovera.com</div>
         </div>
       </div>

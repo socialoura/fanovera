@@ -1,16 +1,16 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import SpoSprinkle from "./SpoSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Léo M.", d: "il y a 2 jours", t: "Mon single a dépassé les 100k écoutes, croissance super naturelle.", r: 5 },
-    { n: "Sarah B.", d: "il y a 7 jours", t: "Campagne lancée en quelques minutes, premières écoutes sous 24h.", r: 5 },
-    { n: "Thomas R.", d: "il y a 5 jours", t: "Écoutes qui montent régulièrement sur 10 jours, sans artifice.", r: 5 },
-    { n: "Inès D.", d: "il y a 10 jours", t: "Première campagne Spotify, c'est sérieux et le suivi est top.", r: 5 },
-    { n: "Hugo K.", d: "il y a 5 jours", t: "+80k écoutes sur mon EP en 3 semaines, très content du résultat.", r: 5 },
-    { n: "Léa C.", d: "il y a 12 jours", t: "Rien à redire, la progression correspond exactement à ce qui était annoncé.", r: 5 },
-    { n: "Karim S.", d: "il y a 14 jours", t: "Service client réactif et les royalties ont bien été versées.", r: 5 },
-    { n: "Manon F.", d: "il y a 15 jours", t: "Mes auditeurs mensuels ont doublé, je recommande à 100%.", r: 5 },
+    { n: "LÃ©o M.", d: "il y a 2 jours", t: "Mon single a dÃ©passÃ© les 100k Ã©coutes, croissance tres progressifle.", r: 5 },
+    { n: "Sarah B.", d: "il y a 7 jours", t: "Campagne lancÃ©e en quelques minutes, premiÃ¨res Ã©coutes sous 24h.", r: 5 },
+    { n: "Thomas R.", d: "il y a 5 jours", t: "Ã‰coutes qui montent rÃ©guliÃ¨rement sur 10 jours, sans artifice.", r: 5 },
+    { n: "InÃ¨s D.", d: "il y a 10 jours", t: "PremiÃ¨re campagne Spotify, c'est sÃ©rieux et le suivi est top.", r: 5 },
+    { n: "Hugo K.", d: "il y a 5 jours", t: "+80k Ã©coutes sur mon EP en 3 semaines, trÃ¨s content du rÃ©sultat.", r: 5 },
+    { n: "LÃ©a C.", d: "il y a 12 jours", t: "Rien Ã  redire, la progression correspond exactement Ã  ce qui Ã©tait annoncÃ©.", r: 5 },
+    { n: "Karim S.", d: "il y a 14 jours", t: "Service client rÃ©actif et les royalties ont bien Ã©tÃ© versÃ©es.", r: 5 },
+    { n: "Manon F.", d: "il y a 15 jours", t: "Mes auditeurs mensuels ont doublÃ©, je recommande Ã  100%.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>
@@ -21,7 +21,7 @@ export default function Reviews() {
             <NetIcon kind="spotify" color="var(--spo-green-2)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle spo">2 348 avis</span> · 4,9/5
+            <span className="squiggle spo">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 

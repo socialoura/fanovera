@@ -3,13 +3,13 @@ import IgSprinkle from "./IgSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Julien D.", d: "il y a 2 jours", t: "Croissance bien régulière, vrais abonnés FR engagés. Je recommande.", r: 5 },
-    { n: "Marie L.", d: "il y a 7 jours", t: "Campagne lancée en quelques minutes, premiers abonnés sous 48h. Naturel.", r: 5 },
-    { n: "Pierre F.", d: "il y a 5 jours", t: "Top, j'ai vu mes abonnés monter progressivement sur 10 jours.", r: 5 },
+    { n: "Julien D.", d: "il y a 2 jours", t: "Progression régulière et campagne bien suivie. Je recommande.", r: 5 },
+    { n: "Marie L.", d: "il y a 7 jours", t: "Mise en route rapide, suivi clair et rythme progressif.", r: 5 },
+    { n: "Pierre F.", d: "il y a 5 jours", t: "Top, j'ai vu ma visibilité évoluer progressivement sur 10 jours.", r: 5 },
     { n: "Lucie B.", d: "il y a 10 jours", t: "Première campagne, c'est sérieux et le rapport qualité/prix est top.", r: 5 },
-    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, +8k abonnés sur 3 semaines, super naturel.", r: 5 },
-    { n: "Léa M.", d: "il y a 12 jours", t: "Rien à redire, croissance comme annoncée, garantie respectée.", r: 5 },
-    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous sur 2 semaines.", r: 5 },
+    { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, accompagnement propre sur plusieurs semaines.", r: 5 },
+    { n: "Léa M.", d: "il y a 12 jours", t: "Rien à redire, progression conforme à ce qui était annoncé.", r: 5 },
+    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client réactif et suivi au rendez-vous sur 2 semaines.", r: 5 },
     { n: "Laurent M.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui était annoncé.", r: 5 },
   ];
   return (

@@ -59,22 +59,22 @@ export default function HowItWorks() {
   const steps: { num: string; title: string; body: string; icon: StepKind; color: string }[] = [
     {
       num: "01",
-      title: "L'IA scanne votre profil",
-      body: "Entrez votre @ et notre IA analyse vos stats, vos posts et votre engagement en 30 secondes. Aucun mot de passe, aucun accès demandé.",
+      title: "Audit de votre presence",
+      body: "On analyse votre profil public, vos contenus, votre positionnement et vos objectifs. Aucun mot de passe, aucun acces demande.",
       icon: "analyze",
       color: "var(--primary)",
     },
     {
       num: "02",
-      title: "Stratégie personnalisée",
-      body: "L'IA vous recommande un plan sur mesure adapté à votre profil et vos objectifs. On s'occupe de tout pendant que vous vous concentrez sur votre contenu.",
+      title: "Plan editorial cible",
+      body: "Vous recevez une feuille de route claire : angles de contenu, plateformes prioritaires, calendrier et pistes d'amelioration.",
       icon: "target",
       color: "var(--orange)",
     },
     {
       num: "03",
-      title: "Croissance automatique",
-      body: "Résultats visibles rapidement, directement sur votre compte. La livraison démarre en moins de 10 minutes après la commande.",
+      title: "Suivi et optimisation",
+      body: "On suit les signaux utiles, on ajuste les recommandations et on garde une progression coherente avec votre marque.",
       icon: "growth",
       color: "var(--green)",
     },
@@ -102,7 +102,7 @@ export default function HowItWorks() {
             ★ Comment ça marche
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            Trois étapes pour des résultats <span className="squiggle">durables</span>.
+            Trois etapes pour une presence <span className="squiggle">durable</span>.
           </h2>
         </div>
 

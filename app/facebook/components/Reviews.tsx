@@ -1,16 +1,16 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import FbSprinkle from "./FbSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Julien D.", d: "il y a 2 jours", t: "Ma page entreprise a vraiment décollé, likes FR engagés.", r: 5 },
-    { n: "Marie L.", d: "il y a 7 jours", t: "Campagne lancée en quelques minutes, premiers likes sous 48h.", r: 5 },
+    { n: "Julien D.", d: "il y a 2 jours", t: "Ma page entreprise a vraiment dÃ©collÃ©, likes FR engagÃ©s.", r: 5 },
+    { n: "Marie L.", d: "il y a 7 jours", t: "Mise en route rapide, suivi clair et rythme progressif.", r: 5 },
     { n: "Pierre F.", d: "il y a 5 jours", t: "Top, j'ai vu mes likes monter progressivement sur 3 semaines.", r: 5 },
-    { n: "Lucie B.", d: "il y a 10 jours", t: "Première campagne Facebook, c'est sérieux et le suivi est top.", r: 5 },
+    { n: "Lucie B.", d: "il y a 10 jours", t: "PremiÃ¨re campagne Facebook, c'est sÃ©rieux et le suivi est top.", r: 5 },
     { n: "Karim T.", d: "il y a 5 jours", t: "Excellent service, ma page ressort mieux dans les suggestions.", r: 5 },
-    { n: "Léa M.", d: "il y a 12 jours", t: "Rien à redire, croissance comme annoncée, garantie respectée.", r: 5 },
-    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous.", r: 5 },
-    { n: "Laurent M.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui était annoncé.", r: 5 },
+    { n: "LÃ©a M.", d: "il y a 12 jours", t: "Rien Ã  redire, croissance comme annoncÃ©e, garantie respectÃ©e.", r: 5 },
+    { n: "Philippe C.", d: "il y a 14 jours", t: "Service client rÃ©actif et rÃ©sultats au rendez-vous.", r: 5 },
+    { n: "Laurent M.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui Ã©tait annoncÃ©.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>
@@ -21,7 +21,7 @@ export default function Reviews() {
             <NetIcon kind="facebook" color="var(--fb-blue)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle fb">2 348 avis</span> · 4,9/5
+            <span className="squiggle fb">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 

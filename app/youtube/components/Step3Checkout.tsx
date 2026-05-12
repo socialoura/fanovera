@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -38,10 +38,10 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Plus qu&apos;une <span className="squiggle yt">étape</span>.
+            Plus qu&apos;une <span className="squiggle yt">Ã©tape</span>.
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Paiement sécurisé · livraison automatique dès la confirmation.
+            Paiement sécurisé · préparation de la campagne après confirmation.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
               <NetIcon kind="youtube" color="var(--yt-red)" size={20} />
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--yt-red)" }}>
-                Récapitulatif
+                RÃ©capitulatif
               </div>
             </div>
 
@@ -74,10 +74,10 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                  Vidéo destinataire
+                  VidÃ©o destinataire
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                  {profile?.title || "Votre vidéo"}
+                  {profile?.title || "Votre vidÃ©o"}
                 </div>
                 {profile?.channel.name && (
                   <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>
@@ -92,15 +92,15 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14 }}>
               <div>
-                <div style={{ fontWeight: 600 }}>{formatQty(PACKS[pack].qty)} vues YouTube</div>
+                <div style={{ fontWeight: 600 }}>Pack visibilité YouTube {formatQty(PACKS[pack].qty)}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{selectedCountry.flag} {selectedCountry.name}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{fmtEuro(subtotal)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, color: "var(--green)", borderBottom: "1px dashed var(--line)" }}>
               <div>
-                <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} vues offertes</div>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>Bonus du pack</div>
+                <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} crédit inclus</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>Crédit de campagne</div>
               </div>
               <div style={{ fontWeight: 700 }}>OFFERT</div>
             </div>
@@ -112,12 +112,12 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   <input type="text" value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="CODE PROMO" style={{ textTransform: "uppercase", fontSize: 14 }} />
                 </div>
                 <button onClick={() => setCouponApplied(!couponApplied)} style={{ padding: "10px 16px", background: couponApplied ? "var(--green)" : "var(--paper-2)", color: couponApplied ? "white" : "var(--ink)", borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  {couponApplied ? "✓ Appliqué" : "Appliquer"}
+                  {couponApplied ? "âœ“ AppliquÃ©" : "Appliquer"}
                 </button>
               </div>
               {couponApplied && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-                  ✓ −5% appliqué · économie {fmtEuro(discount)}
+                  âœ“ âˆ’5% appliquÃ© Â· Ã©conomie {fmtEuro(discount)}
                 </div>
               )}
             </div>
@@ -134,7 +134,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>
-                Paiement sécurisé
+                Paiement sÃ©curisÃ©
               </div>
               <StripeCheckout
                 amount={Math.round(total * 100)}
@@ -148,13 +148,13 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             </div>
 
             <div style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}>
-              En finalisant le paiement vous acceptez nos <a href="#cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. Aucun abonnement caché.
+              En finalisant le paiement vous acceptez nos <a href="#cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. Aucun abonnement cachÃ©.
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>
-              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>🔒 SSL</span>
-              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>✓ 3D Secure</span>
-              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>🇪🇺 RGPD</span>
+              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>ðŸ”’ SSL</span>
+              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>âœ“ 3D Secure</span>
+              <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>ðŸ‡ªðŸ‡º RGPD</span>
             </div>
 
             <div style={{ textAlign: "center", marginTop: 14 }}>

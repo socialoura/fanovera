@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import TwitterPageClient from "./TwitterPageClient";
 
 export const metadata: Metadata = {
-  title: "Fanovera — Followers X (Twitter) ciblés & whitehat",
+  title: "Fanovera - Visibilite X ciblee",
   description:
-    "Campagnes de promotion ciblée pour gagner de vrais followers X. Méthode conforme aux CGU, croissance progressive, sans mot de passe.",
+    "Campagnes de visibilite X avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
 };
 
 export default function TwitterPage() {

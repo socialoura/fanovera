@@ -7,19 +7,19 @@ export default function FAQ() {
   const items = [
     {
       q: "Comment fonctionne votre service ?",
-      a: "Notre IA analyse votre profil et prépare un plan de croissance personnalisé. On s'occupe de votre visibilité pendant que vous vous concentrez sur votre contenu. La livraison démarre en moins de 10 minutes.",
+      a: "Nous analysons votre presence publique, vos contenus et vos objectifs pour preparer un plan de visibilite concret et progressif.",
     },
     {
       q: "Faut-il vous donner mes mots de passe ?",
-      a: "Jamais. Fanovera fonctionne entièrement à l'extérieur de votre compte. On a juste besoin de votre nom d'utilisateur — aucun accès, aucun risque.",
+      a: "Jamais. Fanovera fonctionne a partir des informations publiques que vous nous indiquez. Aucun acces au compte n'est demande.",
     },
     {
-      q: "En combien de temps voit-on les résultats ?",
-      a: "La livraison démarre en moins de 10 minutes. Les résultats sont visibles progressivement sur 1 à 7 jours selon le plan choisi.",
+      q: "Que vais-je recevoir ?",
+      a: "Un audit, une strategie de contenu, des recommandations par plateforme et un cadre de suivi pour piloter votre visibilite.",
     },
     {
-      q: "Quelle garantie si je ne suis pas satisfait ?",
-      a: "Satisfait ou remboursé sous 30 jours, sans condition. Et en cas de baisse, on recharge gratuitement à vie.",
+      q: "Promettez-vous des chiffres précis ?",
+      a: "Non. Nous aidons a structurer votre presence et vos campagnes, sans promettre de volume artificiel ni de resultat garanti.",
     },
   ];
   return (

@@ -34,12 +34,12 @@ export type NetMeta = {
 };
 
 export const NET_META: Record<NetworkId, NetMeta> = {
-  instagram: { stat: "+412% portée", badge: "POPULAIRE", brand: "#e1407e", brand2: "#fa7e1e" },
-  tiktok: { stat: "+847% vues", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
-  youtube: { stat: "+186% abonnés", badge: null, brand: "#ff3a3a", brand2: "#ff7a5a" },
-  spotify: { stat: "+312% écoutes", badge: null, brand: "#1ed760", brand2: "#16a34a" },
-  twitter: { stat: "+254% impressions", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
-  facebook: { stat: "+198% portée", badge: null, brand: "#3a6ad4", brand2: "#5a8af0" },
-  linkedin: { stat: "+147% leads", badge: null, brand: "#1d6dc1", brand2: "#3a8de0" },
-  twitch: { stat: "+221% viewers", badge: "NOUVEAU", brand: "#9146ff", brand2: "#b56cff" },
+  instagram: { stat: "Audit & contenu", badge: "POPULAIRE", brand: "#e1407e", brand2: "#fa7e1e" },
+  tiktok: { stat: "Calendrier video", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
+  youtube: { stat: "SEO video", badge: null, brand: "#ff3a3a", brand2: "#ff7a5a" },
+  spotify: { stat: "Lancement artiste", badge: null, brand: "#1ed760", brand2: "#16a34a" },
+  twitter: { stat: "Ligne editoriale", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
+  facebook: { stat: "Page & contenus", badge: null, brand: "#3a6ad4", brand2: "#5a8af0" },
+  linkedin: { stat: "Presence B2B", badge: null, brand: "#1d6dc1", brand2: "#3a8de0" },
+  twitch: { stat: "Planning stream", badge: "NOUVEAU", brand: "#9146ff", brand2: "#b56cff" },
 };

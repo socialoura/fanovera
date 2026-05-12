@@ -72,8 +72,8 @@ export default function IgFooter() {
                 maxWidth: 280,
               }}
             >
-              Croissance social media propulsée par IA. Vrais comptes, croissance progressive,
-              100% whitehat.
+              Croissance social media propulsée par IA. Campagnes ciblées, suivi clair et
+              progression mesurée.
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -105,7 +105,7 @@ export default function IgFooter() {
             title="Aide"
             links={[
               { l: "Comment ça marche", h: "#how" },
-              { l: "Garantie à vie", h: "#guarantee" },
+              { l: "Support campagne", h: "#guarantee" },
               { l: "Contact", h: "mailto:hello@fanovera.com" },
               { l: "Affiliation", h: "#aff" },
             ]}

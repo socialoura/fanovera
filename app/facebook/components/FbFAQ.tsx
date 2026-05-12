@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import NetIcon from "../../components/NetIcon";
@@ -8,28 +8,28 @@ export default function FbFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment les likes de ma page sont-ils générés ?",
-      a: "Nos campagnes exposent votre page Facebook à une audience qualifiée correspondant à votre thématique, via des techniques de promotion ciblée. Les likes proviennent de vraies personnes intéressées par votre activité. Aucun bot, aucune ferme à clics, aucune automation interdite.",
+      q: "Comment fonctionne la mise en avant ?",
+      a: "Nous preparons une campagne de visibilite autour de votre page Facebook et de votre thematique. L objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.",
     },
     {
       q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin du lien public de votre page Facebook. Aucun accès au compte administrateur, aucun risque.",
+      a: "Jamais. On a uniquement besoin de votre lien public de votre page Facebook. Aucun acces au compte n est demande.",
     },
     {
-      q: "Ma page risque-t-elle d'être pénalisée ?",
-      a: "Non. Notre méthode est 100% conforme aux conditions d'utilisation de Facebook. Aucune automation interdite, aucune action sur votre compte. La montée des likes reste progressive et naturelle.",
+      q: "Est-ce que vous agissez sur mon compte ?",
+      a: "Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s appuie sur une mise en avant externe et progressive.",
     },
     {
-      q: "En combien de temps les likes arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premiers likes arrivent sous 24 à 48h, puis la campagne s'étale sur 7 à 30 jours selon le pack, pour un rythme 100% naturel.",
+      q: "Quand la campagne demarre-t-elle ?",
+      a: "La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s etaler sur plusieurs jours selon le volume choisi.",
     },
     {
-      q: "Et si je perds des likes après la campagne ?",
-      a: "Garantie de résultats : si le compteur baisse significativement pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
+      q: "Que se passe-t-il si le volume n est pas atteint ?",
+      a: "Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n est pas atteint.",
     },
     {
-      q: "Est-ce que ça booste la portée organique ?",
-      a: "Oui indirectement : une page avec plus de likes et de followers est mieux distribuée par l'algorithme Facebook, ce qui augmente la portée organique de vos publications.",
+      q: "Est-ce que cela peut aider la visibilite de ma page ?",
+      a: "Oui, indirectement. Une page mieux presentee a une audience pertinente peut obtenir davantage de signaux autour de ses publications.",
     },
   ];
   return (
@@ -41,19 +41,15 @@ export default function FbFAQ() {
             <NetIcon kind="facebook" color="var(--fb-blue)" size={13} /> FAQ
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Vos questions, <span className="squiggle fb">nos réponses</span>.
+            Vos questions, <span className="squiggle fb">nos reponses</span>.
           </h2>
         </div>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           {items.map((it, i) => (
-            <div key={i} className={`faq-item fb ${open === i ? "open" : ""}`}>
+            <div key={i} className={"faq-item fb" + (open === i ? " open" : "")}>
               <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                 <span>{it.q}</span>
-                <span className="faq-icon">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
+                <span className="faq-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
               </button>
               <div className="faq-a">{it.a}</div>
             </div>

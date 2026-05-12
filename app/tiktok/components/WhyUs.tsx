@@ -1,26 +1,26 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import TtSprinkle from "./TtSprinkle";
 
 export default function WhyUs() {
   const items = [
     {
-      i: "🎯",
-      title: "Audience ciblée",
-      body: "Notre IA identifie de vraies personnes correspondant à votre niche et leur expose votre profil TikTok.",
+      i: "ðŸŽ¯",
+      title: "Audience ciblÃ©e",
+      body: "Notre IA identifie de vraies personnes correspondant Ã  votre niche et leur expose votre profil TikTok.",
     },
     {
-      i: "🛡",
-      title: "Conforme aux CGU",
-      body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de TikTok.",
+      i: "ðŸ›¡",
+      title: "Compte preserve",
+      body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.",
     },
     {
-      i: "🔒",
+      i: "ðŸ”’",
       title: "Sans mot de passe",
-      body: "Juste votre nom d'utilisateur public. Aucun accès au compte, aucun risque.",
+      body: "Juste votre nom d'utilisateur public. Aucun acces au compte n'est demande.",
     },
     {
-      i: "↩",
-      title: "Résultats garantis",
+      i: "â†©",
+      title: "RÃ©sultats garantis",
       body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours.",
     },
   ];
@@ -35,7 +35,7 @@ export default function WhyUs() {
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
             Une croissance TikTok
             <br />
-            <span className="squiggle tt">whitehat</span>, sans triche.
+            <span className="squiggle tt">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

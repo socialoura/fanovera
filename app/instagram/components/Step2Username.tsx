@@ -132,7 +132,7 @@ export default function Step2Username({
             className="display"
             style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}
           >
-            À quel <span className="squiggle ig">compte</span> les envoyer ?
+            Quel <span className="squiggle ig">profil</span> souhaitez-vous promouvoir ?
           </h1>
           <p
             style={{
@@ -143,8 +143,8 @@ export default function Step2Username({
               lineHeight: 1.55,
             }}
           >
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>pseudo Instagram</strong>,
-            c&apos;est tout. Aucun mot de passe, aucun accès demandé. Le compte doit être{" "}
+            Entrez votre <strong style={{ color: "var(--ink)" }}>pseudo Instagram</strong>.
+            Aucun mot de passe, aucun accès demandé. Le compte doit être{" "}
             <strong style={{ color: "var(--ink)" }}>public</strong>.
           </p>
         </div>
@@ -449,14 +449,14 @@ export default function Step2Username({
                       <span>
                         {formatQty(profile.followersCount)}{" "}
                         <span style={{ fontSize: 12, color: "var(--green)" }}>
-                          → {formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
+                          +{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}
                         </span>
                       </span>
                     ) : (
                       "—"
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>abonnés</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>audience</div>
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 18 }}>
@@ -503,7 +503,7 @@ export default function Step2Username({
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>
-                    NOUVEAU TOTAL
+                    VOLUME PRÉVU
                   </div>
                   <div style={{ fontWeight: 800, fontSize: 13 }}>
                     +{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}

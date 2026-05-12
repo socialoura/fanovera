@@ -1,4 +1,4 @@
-import { useRef } from "react";
+﻿import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
@@ -31,21 +31,21 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
 
         <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>
           <div className="hide-md" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "linear-gradient(135deg, rgba(0,0,0,0.08), rgba(29,155,240,0.10))", color: "var(--x-ink)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", borderRadius: 999, marginBottom: 16, textTransform: "uppercase" }}>
-            <NetIcon kind="twitter" color="var(--x-ink)" size={14} /> X (Twitter)
+            <NetIcon kind="twitter" color="var(--x-ink)" size={14} /> X
           </div>
           <h1 className="display" style={{ margin: 0, fontSize: "clamp(26px, 4.4vw, 48px)" }}>
-            Des followers X <span className="squiggle x">qualifiés</span> & ciblés.
+            Une visibilite X <span className="squiggle x">ciblee</span> & progressive.
           </h1>
         </div>
 
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 12 }}>Quelle quantité ?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 12 }}>Quel volume ?</div>
           <div className="pack-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 32 }}>
             {PACKS.map((p, i) => (
-              <button key={i} onClick={() => handlePackClick(i)} className={`pack-tile x ${pack === i ? "selected" : ""} ${p.popular ? "popular" : ""} ${p.best ? "best" : ""}`}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Followers</div>
+              <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile x" + (pack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Audience</div>
                 <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{formatQty(p.qty)}</div>
-                <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} offerts</div>
+                <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} inclus</div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: pack === i ? "var(--x-ink)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(p, country)}</div>
@@ -59,15 +59,15 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
           <div ref={orderCardRef} style={{ background: "white", border: "2px solid var(--x-ink)", borderRadius: 22, padding: 24, position: "relative", boxShadow: "0 18px 40px -16px rgba(0,0,0,0.3)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <NetIcon kind="twitter" color="var(--x-ink)" size={20} />
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--x-ink)" }}>Votre commande</div>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--x-ink)" }}>Votre campagne</div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px dashed var(--line)" }}>
               <div>
-                <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Pack sélectionné</div>
+                <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Pack selectionne</div>
                 <div style={{ fontWeight: 700, fontSize: 16, marginTop: 2 }}>
-                  {formatQty(selectedPack.qty)} followers
-                  <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700, marginLeft: 8, padding: "2px 6px", background: "rgba(77,191,138,0.12)", borderRadius: 6 }}>+{formatQty(selectedPack.bonus)} offerts</span>
+                  Pack visibilite X {formatQty(selectedPack.qty)}
+                  <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700, marginLeft: 8, padding: "2px 6px", background: "rgba(77,191,138,0.12)", borderRadius: 6 }}>+{formatQty(selectedPack.bonus)} credit inclus</span>
                 </div>
               </div>
             </div>
@@ -79,7 +79,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 13, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(selectedPack, country)}</div>
-                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>Vous économisez {savings.toFixed(2).replace(".", ",")} €</div>
+                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>Remise incluse {savings.toFixed(2).replace(".", ",")} EUR</div>
               </div>
             </div>
 
@@ -89,7 +89,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                 <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>✓ Sans engagement · ✓ Aucun mot de passe demandé</div>
+            <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>Sans engagement · Aucun mot de passe demande</div>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -21,9 +21,9 @@ export default function PromoBanner() {
   return (
     <div className="promo-banner">
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, flexWrap: "wrap", padding: "0 16px" }}>
-        <span style={{ fontWeight: 700 }}>★ Offre spéciale</span>
+        <span style={{ fontWeight: 700 }}>â˜… Offre spÃ©ciale</span>
         <span>
-          Code <span style={{ background: "rgba(255,255,255,0.2)", padding: "2px 10px", borderRadius: 999, fontWeight: 800, letterSpacing: "0.05em" }}>FANO5</span> · −5% sur tout
+          Code <span style={{ background: "rgba(255,255,255,0.2)", padding: "2px 10px", borderRadius: 999, fontWeight: 800, letterSpacing: "0.05em" }}>FANO5</span> Â· âˆ’5% sur tout
         </span>
         <div style={{ display: "flex", gap: 4, fontFamily: "monospace", fontWeight: 700 }}>
           <span style={{ background: "rgba(0,0,0,0.25)", padding: "2px 8px", borderRadius: 6 }}>{pad(time.h)}h</span>

@@ -86,7 +86,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
             className="display"
             style={{ margin: 0, fontSize: "clamp(26px, 4.4vw, 48px)" }}
           >
-            Une croissance Instagram <span className="squiggle ig">organique</span> & ciblée.
+            Une visibilité Instagram <span className="squiggle ig">ciblée</span> & progressive.
           </h1>
         </div>
 
@@ -102,7 +102,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               marginBottom: 12,
             }}
           >
-            Quelle quantité ?
+            Quel volume ?
           </div>
           <div
             className="pack-grid"
@@ -131,7 +131,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                     marginBottom: 4,
                   }}
                 >
-                  Abonnés
+                  Audience
                 </div>
                 <div
                   style={{
@@ -151,7 +151,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                     fontWeight: 700,
                   }}
                 >
-                  +{formatQty(p.bonus)} offerts
+                  +{formatQty(p.bonus)} inclus
                 </div>
                 <div
                   style={{
@@ -215,7 +215,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                   color: "var(--ig-2)",
                 }}
               >
-                Votre commande
+                Votre campagne
               </div>
             </div>
 
@@ -231,7 +231,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               <div>
                 <div style={{ fontSize: 13, color: "var(--ink-2)" }}>Pack sélectionné</div>
                 <div style={{ fontWeight: 700, fontSize: 16, marginTop: 2 }}>
-                  {formatQty(selectedPack.qty)} abonnés
+                  Pack visibilité {formatQty(selectedPack.qty)}
                   <span
                     style={{
                       fontSize: 11,
@@ -243,7 +243,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                       borderRadius: 6,
                     }}
                   >
-                    +{formatQty(selectedPack.bonus)} offerts
+                    +{formatQty(selectedPack.bonus)} crédit inclus
                   </span>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
                     marginTop: 4,
                   }}
                 >
-                  Vous économisez {savings.toFixed(2).replace(".", ",")} €
+                  Remise incluse {savings.toFixed(2).replace(".", ",")} €
                 </div>
               </div>
             </div>

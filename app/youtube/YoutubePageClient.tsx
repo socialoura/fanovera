@@ -12,6 +12,9 @@ import YtFooter from "./components/YtFooter";
 import type { YtPreview } from "./components/Step2Username";
 import { COUNTRIES, PACKS, type CountryId } from "./data";
 import { usePaymentIntent } from "../components/StripePayment";
+import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+
+const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
 export default function YoutubePageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -20,16 +23,21 @@ export default function YoutubePageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<YtPreview | null>(null);
+  const { currency } = useApplyCurrencyPricing("yt_views", PACKS, STATIC_PACKS);
 
-  const subtotal = PACKS[pack].price * (country === "fr" ? COUNTRIES[0].mult : 1);
+  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
+  const selectedPack = PACKS[safePack] ?? PACKS[0];
+
+  const subtotal = selectedPack.price * (country === "fr" ? COUNTRIES[0].mult : 1);
   const total = subtotal * 0.95;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
+    currency: currency.toLowerCase(),
     email,
     username: username.trim(),
     platform: "youtube",
-    cart: [{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country, videoUrl: username.trim(), videoId: profile?.id }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: username.trim(), videoId: profile?.id }],
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -50,11 +58,11 @@ export default function YoutubePageClient() {
     <>
       <div className="paper-frame with-yt-halo">
         <YtHeader />
-        {step === 1 && <Step1Packs country={country} pack={pack} setPack={setPack} onNext={next} />}
+        {step === 1 && <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} />}
         {step === 2 && (
           <Step2Username
             country={country}
-            pack={pack}
+            pack={safePack}
             username={username}
             setUsername={setUsername}
             email={email}
@@ -68,7 +76,7 @@ export default function YoutubePageClient() {
         {step === 3 && (
           <Step3Checkout
             country={country}
-            pack={pack}
+            pack={safePack}
             username={username}
             email={email}
             profile={profile}

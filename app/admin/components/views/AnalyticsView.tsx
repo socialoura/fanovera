@@ -27,7 +27,12 @@ export default function AnalyticsView() {
     fetch("/api/admin/analytics", {
       headers: { Authorization: `Bearer ${pw}` },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        if (!Array.isArray(d.last30days)) throw new Error("Invalid analytics payload");
+        return d;
+      })
       .then((d) => setData(d))
       .catch(() => setData(null))
       .finally(() => setLoading(false));

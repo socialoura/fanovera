@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import NetIcon from "../../components/NetIcon";
@@ -8,28 +8,28 @@ export default function LiFAQ() {
   const [open, setOpen] = useState(0);
   const items = [
     {
-      q: "Comment vos followers sont-ils générés ?",
-      a: "Nos campagnes exposent votre profil LinkedIn à une audience qualifiée de décideurs et professionnels correspondant à votre secteur, via des techniques de promotion ciblée. Les followers gagnés sont de vrais profils actifs. Aucun bot, aucune automation interdite.",
+      q: "Comment fonctionne la mise en avant ?",
+      a: "Nous preparons une campagne de visibilite autour de votre profil LinkedIn et de votre thematique. L objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.",
     },
     {
       q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin du lien public de votre profil LinkedIn (linkedin.com/in/…). Aucun accès au compte, aucun risque.",
+      a: "Jamais. On a uniquement besoin de votre lien public de votre profil LinkedIn. Aucun acces au compte n est demande.",
     },
     {
-      q: "Mon profil risque-t-il d'être suspendu ?",
-      a: "Non. Notre méthode est 100% conforme aux conditions d'utilisation de LinkedIn. Aucune automation interdite, aucune action sur votre compte. La croissance reste progressive et naturelle, en dessous du seuil de détection.",
+      q: "Est-ce que vous agissez sur mon compte ?",
+      a: "Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s appuie sur une mise en avant externe et progressive.",
     },
     {
-      q: "En combien de temps les followers arrivent ?",
-      a: "La campagne démarre sous quelques minutes après le paiement. Les premiers followers arrivent sous 24 à 48h, puis la campagne s'étale sur 14 à 60 jours selon le pack, pour une croissance 100% naturelle adaptée à LinkedIn.",
+      q: "Quand la campagne demarre-t-elle ?",
+      a: "La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s etaler sur plusieurs jours selon le volume choisi.",
     },
     {
-      q: "Et si je perds des followers après la campagne ?",
-      a: "Garantie de résultats : si votre nombre de followers baisse significativement pendant la période de garantie, on relance une campagne complémentaire sans frais supplémentaires.",
+      q: "Que se passe-t-il si le volume n est pas atteint ?",
+      a: "Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n est pas atteint.",
     },
     {
-      q: "Est-ce que ça booste ma visibilité professionnelle ?",
-      a: "Oui. Un profil LinkedIn avec plus de followers apparaît plus souvent dans les recherches et les recommandations, ce qui augmente la portée organique de vos publications et votre attractivité B2B.",
+      q: "Est-ce que cela peut aider ma visibilite professionnelle ?",
+      a: "Oui. Une mise en avant progressive peut soutenir votre presence B2B et donner plus de contexte a vos contenus.",
     },
   ];
   return (
@@ -41,19 +41,15 @@ export default function LiFAQ() {
             <NetIcon kind="linkedin" color="var(--li-blue)" size={13} /> FAQ
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Vos questions, <span className="squiggle li">nos réponses</span>.
+            Vos questions, <span className="squiggle li">nos reponses</span>.
           </h2>
         </div>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           {items.map((it, i) => (
-            <div key={i} className={`faq-item li ${open === i ? "open" : ""}`}>
+            <div key={i} className={"faq-item li" + (open === i ? " open" : "")}>
               <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
                 <span>{it.q}</span>
-                <span className="faq-icon">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
+                <span className="faq-icon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></span>
               </button>
               <div className="faq-a">{it.a}</div>
             </div>

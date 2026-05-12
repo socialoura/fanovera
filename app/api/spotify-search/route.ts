@@ -11,6 +11,29 @@ type SpotifyResult = {
   playCount?: number | null;
 };
 
+type SpotifyRawArtist = {
+  id?: unknown;
+  name?: unknown;
+};
+
+type SpotifyRawTrack = {
+  id?: unknown;
+  name?: unknown;
+  shareUrl?: unknown;
+  durationText?: unknown;
+  artists?: unknown;
+  album?: {
+    cover?: unknown;
+    name?: unknown;
+  };
+  playCount?: unknown;
+  status?: unknown;
+};
+
+type SpotifyRawCover = {
+  url?: unknown;
+};
+
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_MAX = 200;
 const cache = new Map<string, { data: SpotifyResult; ts: number }>();
@@ -42,11 +65,12 @@ function parsePlayCount(value: unknown): number | null {
   return null;
 }
 
-function normalize(raw: any, includePlayCount: boolean): SpotifyResult | null {
+function normalize(raw: SpotifyRawTrack, includePlayCount: boolean): SpotifyResult | null {
   if (!raw?.id || !raw?.name) return null;
 
   const coverList = Array.isArray(raw.album?.cover) ? raw.album.cover : [];
-  const bestCover = coverList.length > 0 ? coverList[coverList.length - 1]?.url ?? null : null;
+  const coverUrl = coverList.length > 0 ? (coverList[coverList.length - 1] as SpotifyRawCover)?.url : null;
+  const bestCover = coverUrl ? String(coverUrl) : null;
 
   const result: SpotifyResult = {
     id: String(raw.id),
@@ -54,7 +78,7 @@ function normalize(raw: any, includePlayCount: boolean): SpotifyResult | null {
     shareUrl: raw.shareUrl ? String(raw.shareUrl) : null,
     durationText: raw.durationText ? String(raw.durationText) : null,
     artists: Array.isArray(raw.artists)
-      ? raw.artists.map((a: any) => ({ name: a?.name ? String(a.name) : "", id: a?.id ? String(a.id) : null }))
+      ? raw.artists.map((a: SpotifyRawArtist) => ({ name: a?.name ? String(a.name) : "", id: a?.id ? String(a.id) : null }))
       : [],
     cover: bestCover,
     albumName: raw.album?.name ? String(raw.album.name) : null,

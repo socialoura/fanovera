@@ -1,12 +1,12 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import TwSprinkle from "./TwSprinkle";
 
 export default function WhyUs() {
   const items = [
-    { i: "🎯", title: "Viewers ciblés", body: "Notre IA expose votre chaîne Twitch à une audience qualifiée de gamers et streamers de votre niche." },
-    { i: "🛡", title: "Conforme aux CGU", body: "Aucune automation interdite, aucun bot. Méthode 100% conforme aux conditions d'utilisation de Twitch." },
-    { i: "🔒", title: "Sans mot de passe", body: "Juste votre nom de chaîne public. Aucun accès au compte, aucun risque." },
-    { i: "↩", title: "Résultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
+    { i: "ðŸŽ¯", title: "Viewers ciblÃ©s", body: "Notre IA expose votre chaÃ®ne Twitch Ã  une audience qualifiÃ©e de gamers et streamers de votre niche." },
+    { i: "ðŸ›¡", title: "Compte preserve", body: "Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil." },
+    { i: "ðŸ”’", title: "Sans mot de passe", body: "Juste votre nom de chaÃ®ne public. Aucun acces au compte n'est demande." },
+    { i: "â†©", title: "RÃ©sultats garantis", body: "Si l'objectif n'est pas atteint, on prolonge la campagne gratuitement. Remboursement sous 30 jours." },
   ];
   return (
     <section style={{ padding: "clamp(48px, 7vw, 80px) 0", background: "var(--frame)", position: "relative", overflow: "hidden" }}>
@@ -17,7 +17,7 @@ export default function WhyUs() {
             <NetIcon kind="twitch" color="var(--tw-purple)" size={13} /> Pourquoi Fanovera
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Une croissance Twitch<br /><span className="squiggle tw">whitehat</span>, sans triche.
+            Une croissance Twitch<br /><span className="squiggle tw">progressive</span> et soignee.
           </h2>
         </div>
         <div className="why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

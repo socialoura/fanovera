@@ -1,0 +1,19 @@
+
+> fanovera@0.1.0 dev
+> next dev -p 3001
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3001
+   - Network:      http://10.5.0.2:3001
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.8s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.4s (742 modules)
+ GET / 200 in 4543ms
+ ○ Compiling /api/geo-currency ...
+ ✓ Compiled /api/geo-currency in 904ms (763 modules)
+ GET /api/geo-currency?mode=auto 200 in 1282ms
+ ✓ Compiled in 1231ms (506 modules)
+[?25h

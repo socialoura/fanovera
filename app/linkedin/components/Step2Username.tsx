@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import LiSprinkle from "./LiSprinkle";
@@ -62,7 +62,7 @@ export default function Step2Username({
   const handleNext = () => {
     if (!username.trim()) { setSubmitError("Collez le lien ou l'identifiant de votre profil LinkedIn."); return; }
     if (!valid) { setSubmitError("Format invalide. Ex : linkedin.com/in/votre-profil ou votre-profil"); return; }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reçu."); return; }
+    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
     setSubmitError(null);
     onNext();
   };
@@ -98,10 +98,10 @@ export default function Step2Username({
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quel <span className="squiggle li">profil</span> booster ?
+            Quel <span className="squiggle li">profil</span> promouvoir ?
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien de votre profil LinkedIn ou votre identifiant. Aucun mot de passe, aucun accès demandé. Le profil doit être <strong style={{ color: "var(--ink)" }}>public</strong>.
+            Collez le lien de votre profil LinkedIn ou votre identifiant. Aucun mot de passe, aucun accÃ¨s demandÃ©. Le profil doit Ãªtre <strong style={{ color: "var(--ink)" }}>public</strong>.
           </p>
         </div>
 
@@ -135,13 +135,13 @@ export default function Step2Username({
 
             {touched && !valid && username.trim().length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--li-blue)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>⚠</span> Format invalide. Ex : https://linkedin.com/in/votre-profil
+                <span>âš </span> Format invalide. Ex : https://linkedin.com/in/votre-profil
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reçu)
+                Votre e-mail (pour le reÃ§u)
               </label>
               <div className="input-shell li">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -165,7 +165,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(10,102,194,0.08)", border: "1px solid rgba(10,102,194,0.25)", borderRadius: 12, fontSize: 13, color: "var(--li-blue)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>⚠</span> {submitError}
+                <span>âš </span> {submitError}
               </div>
             )}
           </div>

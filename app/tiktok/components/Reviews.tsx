@@ -1,16 +1,16 @@
-import NetIcon from "../../components/NetIcon";
+﻿import NetIcon from "../../components/NetIcon";
 import TtSprinkle from "./TtSprinkle";
 
 export default function Reviews() {
   const reviews = [
-    { n: "Yanis K.", d: "il y a 2 jours", t: "Croissance bien régulière, vrais abonnés FR engagés. Je recommande.", r: 5 },
-    { n: "Camille R.", d: "il y a 6 jours", t: "Campagne lancée en quelques minutes, premiers abonnés sous 48h. Naturel.", r: 5 },
-    { n: "Mehdi A.", d: "il y a 4 jours", t: "Mes vues TikTok ont suivi la hausse des abonnés, super naturel.", r: 5 },
-    { n: "Sara P.", d: "il y a 9 jours", t: "Service sérieux, j'ai retesté plusieurs fois sur 3 semaines.", r: 5 },
-    { n: "Tom L.", d: "il y a 5 jours", t: "Top, j'ai vu mes abonnés monter progressivement sur 10 jours.", r: 5 },
-    { n: "Inès B.", d: "il y a 11 jours", t: "Première campagne, c'est sérieux et la garantie a été respectée.", r: 5 },
-    { n: "Hugo M.", d: "il y a 14 jours", t: "Service client réactif et résultats au rendez-vous sur 2 semaines.", r: 5 },
-    { n: "Eva S.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui était annoncé.", r: 5 },
+    { n: "Yanis K.", d: "il y a 2 jours", t: "Progression reguliere et campagne bien suivie. Je recommande.", r: 5 },
+    { n: "Camille R.", d: "il y a 6 jours", t: "Mise en route rapide, suivi clair et rythme progressif. Naturel.", r: 5 },
+    { n: "Mehdi A.", d: "il y a 4 jours", t: "Mes vues TikTok ont suivi la hausse des abonnÃ©s, tres progressif.", r: 5 },
+    { n: "Sara P.", d: "il y a 9 jours", t: "Service sÃ©rieux, j'ai retestÃ© plusieurs fois sur 3 semaines.", r: 5 },
+    { n: "Tom L.", d: "il y a 5 jours", t: "Top, j'ai vu mes abonnÃ©s monter progressivement sur 10 jours.", r: 5 },
+    { n: "InÃ¨s B.", d: "il y a 11 jours", t: "PremiÃ¨re campagne, c'est sÃ©rieux et la garantie a Ã©tÃ© respectÃ©e.", r: 5 },
+    { n: "Hugo M.", d: "il y a 14 jours", t: "Service client rÃ©actif et rÃ©sultats au rendez-vous sur 2 semaines.", r: 5 },
+    { n: "Eva S.", d: "il y a 15 jours", t: "Bonne progression continue, exactement ce qui Ã©tait annoncÃ©.", r: 5 },
   ];
   return (
     <section style={{ padding: "80px 0", position: "relative", overflow: "hidden" }}>
@@ -21,7 +21,7 @@ export default function Reviews() {
             <NetIcon kind="tiktok" color="var(--tt-red)" size={13} /> Avis clients
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle tt">2 348 avis</span> · 4,9/5
+            <span className="squiggle tt">2 348 avis</span> Â· 4,9/5
           </h2>
         </div>
 
