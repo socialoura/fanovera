@@ -1,27 +1,14 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
+import { getPublicCopy } from "./publicCopy";
 
 export default function FAQ() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).faq;
   const [open, setOpen] = useState(0);
-  const items = [
-    {
-      q: "Comment fonctionne votre service ?",
-      a: "Nous analysons votre presence publique, vos contenus et vos objectifs pour preparer un plan de visibilite concret et progressif.",
-    },
-    {
-      q: "Faut-il vous donner mes mots de passe ?",
-      a: "Jamais. Fanovera fonctionne a partir des informations publiques que vous nous indiquez. Aucun acces au compte n'est demande.",
-    },
-    {
-      q: "Que vais-je recevoir ?",
-      a: "Un audit, une strategie de contenu, des recommandations par plateforme et un cadre de suivi pour piloter votre visibilite.",
-    },
-    {
-      q: "Promettez-vous des chiffres précis ?",
-      a: "Non. Nous aidons a structurer votre presence et vos campagnes, sans promettre de volume artificiel ni de resultat garanti.",
-    },
-  ];
+  const items = copy.items;
   return (
     <section id="faq" style={{ background: "var(--frame)", padding: "clamp(56px, 8vw, 100px) 0" }}>
       <div className="container">
@@ -41,10 +28,10 @@ export default function FAQ() {
               border: "1px solid var(--line)",
             }}
           >
-            ★ FAQ
+            {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            Vos questions, <span className="squiggle">nos réponses</span>.
+            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 
@@ -81,7 +68,7 @@ export default function FAQ() {
             color: "var(--ink-2)",
           }}
         >
-          Une autre question ? Écrivez-nous ·{" "}
+          {copy.contactText} ·{" "}
           <a
             href="mailto:support@fanovera.com"
             style={{ color: "var(--primary)", fontWeight: 600 }}

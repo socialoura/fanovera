@@ -8,7 +8,7 @@ import Footer from "./components/Footer";
 
 export default function Page() {
   return (
-    <>
+    <div data-i18n-skip>
       <div className="paper-frame">
         <Header />
         <Hero />
@@ -18,6 +18,6 @@ export default function Page() {
       <FAQ />
       <CTABlock />
       <Footer />
-    </>
+    </div>
   );
 }

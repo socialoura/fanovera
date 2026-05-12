@@ -1,6 +1,7 @@
 ﻿import { Logo } from "../../components/Header";
 import NetIcon from "../../components/NetIcon";
 import { NETWORKS } from "../../lib/networks";
+import { useXCopy } from "../i18n";
 
 function FootCol({ title, links }: { title: string; links: { l: string; h: string }[] }) {
   return (
@@ -18,14 +19,15 @@ function FootCol({ title, links }: { title: string; links: { l: string; h: strin
 }
 
 export default function XFooter() {
+  const t = useXCopy().footer;
   return (
-    <footer style={{ padding: "60px 0 32px" }}>
+    <footer data-i18n-skip style={{ padding: "60px 0 32px" }}>
       <div className="container">
         <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 40, marginBottom: 40, paddingBottom: 40, borderBottom: "1px solid var(--line)" }}>
           <div>
             <Logo />
             <p style={{ marginTop: 16, fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxWidth: 280 }}>
-              Croissance social media propulsÃ©e par IA. Campagnes ciblees, suivi clair et progression mesuree.
+              {t.desc}
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -35,23 +37,23 @@ export default function XFooter() {
               ))}
             </div>
           </div>
-          <FootCol title="RÃ©seaux" links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
+          <FootCol title={t.networks} links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title=" " links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))} />
-          <FootCol title="Aide" links={[
-            { l: "Comment Ã§a marche", h: "#how" },
-            { l: "RÃ©sultats garantis", h: "#guarantee" },
+          <FootCol title={t.help} links={[
+            { l: t.how, h: "#how" },
+            { l: t.support, h: "#guarantee" },
             { l: "Contact", h: "mailto:hello@fanovera.com" },
-            { l: "Suivi de commande", h: "/track" },
+            { l: t.tracking, h: "/track" },
           ]} />
-          <FootCol title="LÃ©gal" links={[
-            { l: "Mentions lÃ©gales", h: "#legal" },
+          <FootCol title={t.legal} links={[
+            { l: t.legalNotice, h: "#legal" },
             { l: "CGV", h: "#cgv" },
-            { l: "ConfidentialitÃ©", h: "#privacy" },
-            { l: "Cookies", h: "#cookies" },
+            { l: t.privacy, h: "#privacy" },
+            { l: t.cookies, h: "#cookies" },
           ]} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>
-          <div>Â© Fanovera SAS 2026 Â· Made in Paris Â· 17 rue de Paradis Â· 75010 Paris</div>
+          <div>© Fanovera SAS 2026 · {t.madeIn} · 17 rue de Paradis · 75010 Paris</div>
           <div>hello@fanovera.com</div>
         </div>
       </div>

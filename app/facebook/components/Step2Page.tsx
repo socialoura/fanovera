@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -6,6 +6,7 @@ import Image from "next/image";
 import FbSprinkle from "./FbSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
+import { useFacebookCopy } from "../i18n";
 
 export type FbProfile = {
   name: string;
@@ -50,6 +51,7 @@ function extractHandle(input: string): string | null {
 export default function Step2Page({
   country, pack, pageInput, setPageInput, email, setEmail, profile, setProfile, onNext, onBack,
 }: Props) {
+  const t = useFacebookCopy().step2;
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -62,15 +64,15 @@ export default function Step2Page({
   const showLikesStat = !profile || profile.likesCount > 0;
 
   const handleNext = () => {
-    if (!pageInput.trim()) { setSubmitError("Collez le lien ou le nom d'utilisateur de votre page Facebook."); return; }
-    if (!valid) { setSubmitError("Format invalide. Exemple : facebook.com/votrepage ou votrepage"); return; }
+    if (!pageInput.trim()) { setSubmitError(t.errors.page); return; }
+    if (!valid) { setSubmitError(t.errors.invalid); return; }
     if (!verified) {
-      if (verifying) setSubmitError("VÃ©rification de la page en coursâ€¦");
-      else if (apiError === "not_found") setSubmitError("Cette page est introuvable sur Facebook.");
-      else setSubmitError("Page non trouvÃ©e. VÃ©rifiez qu'elle est publique.");
+      if (verifying) setSubmitError(t.errors.checking);
+      else if (apiError === "not_found") setSubmitError(t.errors.notFound);
+      else setSubmitError(t.errors.unavailable);
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
+    if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();
   };
@@ -108,30 +110,30 @@ export default function Step2Page({
   void country;
 
   return (
-    <section className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
+    <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
       <FbSprinkle count={5} seed={2} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quelle <span className="squiggle fb">page</span> promouvoir ?
+            {t.titleBefore} <span className="squiggle fb">{t.titleFocus}</span> {t.titleAfter}
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien de votre page Facebook, ou son nom d&apos;utilisateur. Aucun mot de passe, aucun accÃ¨s demandÃ©. La page doit Ãªtre <strong style={{ color: "var(--ink)" }}>publique</strong>.
+            {t.introBefore} <strong style={{ color: "var(--ink)" }}>{t.public}</strong>.
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Lien ou nom d&apos;utilisateur de votre page
+              {t.pageLabel}
             </label>
 
             <div className="input-shell fb">
               <input
                 type="text"
-                placeholder="facebook.com/votrepage ou votrepage"
+                placeholder={t.pagePlaceholder}
                 value={pageInput}
                 onChange={(e) => { setPageInput(e.target.value); setTouched(true); }}
                 onBlur={() => setTouched(true)}
@@ -153,23 +155,20 @@ export default function Step2Page({
 
             {touched && !valid && pageInput.trim().length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Format invalide. Ex : https://facebook.com/votrepage ou votrepage
+                <span>!</span> {t.invalidFormat}
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Page Facebook introuvable. VÃ©rifiez qu&apos;elle est publique.
-              </div>
+                <span>!</span> {t.notFound}</div>
             )}
 
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reÃ§u)
-              </label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>{t.emailLabel}</label>
               <div className="input-shell fb">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>On vous envoie uniquement votre facture. Pas de spam, jamais.</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
@@ -177,10 +176,10 @@ export default function Step2Page({
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-fb" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -188,7 +187,7 @@ export default function Step2Page({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(24,119,242,0.08)", border: "1px solid rgba(24,119,242,0.25)", borderRadius: 12, fontSize: 13, color: "var(--fb-blue)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -201,7 +200,7 @@ export default function Step2Page({
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 21s-7-4.5-7-11a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 6.5-7 11-7 11z" />
                   </svg>
-                  J&apos;aime
+                  {t.like}
                 </div>
               </div>
               <div className="fb-card-body">
@@ -214,7 +213,7 @@ export default function Step2Page({
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div className="fb-page-name" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {profile?.name || (handle ? handle : "Votre page")}
+                    {profile?.name || (handle ? handle : t.fallbackPage)}
                   </div>
                   {profile?.verified && (
                     <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
@@ -223,7 +222,7 @@ export default function Step2Page({
                   )}
                 </div>
                 <div className="fb-page-meta">
-                  {profile?.categories?.join(" Â· ") || (handle ? "@" + handle : "Page Facebook")}
+                  {profile?.categories?.join(" - ") || (handle ? "@" + handle : t.pageMeta)}
                 </div>
 
                 <div className="fb-stats-row" style={showLikesStat ? undefined : { gridTemplateColumns: "1fr" }}>
@@ -233,22 +232,22 @@ export default function Step2Page({
                         <>
                           {formatQty(profile.likesCount)}
                           <span style={{ fontSize: 12, color: "var(--green)", fontWeight: 700 }}>
-                            {" â†’ "}
+                            {" -> "}
                             {formatQty(profile.likesCount + PACKS[pack].qty + PACKS[pack].bonus)}
                           </span>
                         </>
-                      ) : "â€”"}</strong>
-                      <div>personnes aiment Ã§a</div>
+                      ) : "-"}</strong>
+                      <div>{t.likes}</div>
                     </div>
                   )}
                   <div className="fb-stat-cell">
-                    <strong>{profile ? formatQty(profile.followersCount) : "â€”"}</strong>
-                    <div>abonnÃ©s</div>
+                    <strong>{profile ? formatQty(profile.followersCount) : "-"}</strong>
+                    <div>{t.followers}</div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)" }}>
-                  {verified ? "Page trouvÃ©e Â· Publique" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du lien"}
+                  {verified ? t.found : verifying ? t.checking : apiError ? "" : t.waiting}
                 </div>
               </div>
             </div>
@@ -261,7 +260,7 @@ export default function Step2Page({
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>NOUVEAU TOTAL</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>{t.newTotal}</div>
                   <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
                 </div>
               </div>

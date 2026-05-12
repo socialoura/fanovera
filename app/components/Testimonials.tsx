@@ -1,24 +1,30 @@
+"use client";
+
 import NetIcon from "./NetIcon";
+import { useI18n } from "../i18n/I18nProvider";
 import { NETWORKS, type NetworkId } from "../lib/networks";
+import { getPublicCopy } from "./publicCopy";
 
 export default function Testimonials() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).testimonials;
   const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
-      q: "Fanovera m'a aidee a clarifier ma ligne editoriale et a organiser mes sorties sans courir apres les chiffres.",
-      n: "Lea Marchetti",
-      r: "Musicienne · strategie de lancement",
+      q: copy.items[0].q,
+      n: copy.items[0].n,
+      r: copy.items[0].r,
       net: "spotify",
     },
     {
-      q: "L'audit etait concret : quoi publier, quand le publier, et comment mieux raconter mon travail.",
-      n: "Thomas Durand",
-      r: "Photographe · calendrier contenu",
+      q: copy.items[1].q,
+      n: copy.items[1].n,
+      r: copy.items[1].r,
       net: "instagram",
     },
     {
-      q: "On a pose une vraie methode autour de mes formats courts. Le suivi est simple, lisible et utile.",
-      n: "Sofia Ramos",
-      r: "Creatrice · accompagnement TikTok",
+      q: copy.items[2].q,
+      n: copy.items[2].n,
+      r: copy.items[2].r,
       net: "tiktok",
     },
   ];
@@ -40,10 +46,10 @@ export default function Testimonials() {
               textTransform: "uppercase",
             }}
           >
-            ★ Ils nous font confiance
+            {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            Ils nous font <span className="squiggle">confiance</span>.
+            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 
@@ -65,10 +71,7 @@ export default function Testimonials() {
           }}
         >
           {[
-            { n: "32", l: "points d'audit" },
-            { n: "8", l: "plateformes couvertes" },
-            { n: "4,9/5", l: "note moyenne" },
-            { n: "30j", l: "plan d'action" },
+            ...copy.stats,
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span

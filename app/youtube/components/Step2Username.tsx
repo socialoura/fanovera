@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
@@ -6,6 +6,7 @@ import Image from "next/image";
 import YtSprinkle from "./YtSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
+import { useYouTubeCopy } from "../i18n";
 
 export type YtPreview = {
   id: string;
@@ -45,6 +46,7 @@ export default function Step2Username({
   onNext,
   onBack,
 }: Props) {
+  const t = useYouTubeCopy().step2;
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -57,21 +59,21 @@ export default function Step2Username({
 
   const handleNext = () => {
     if (!url) {
-      setSubmitError("Collez le lien de votre vidÃ©o YouTube.");
+      setSubmitError(t.errors.url);
       return;
     }
     if (!validUrl) {
-      setSubmitError("Lien invalide. Format attendu : https://youtube.com/watch?v=â€¦ ou https://youtu.be/â€¦");
+      setSubmitError(t.errors.invalid);
       return;
     }
     if (!verified) {
-      if (verifying) setSubmitError("VÃ©rification de la vidÃ©o en coursâ€¦");
-      else if (apiError === "not_found") setSubmitError("Cette vidÃ©o est introuvable.");
-      else setSubmitError("VidÃ©o non trouvÃ©e. VÃ©rifiez que le lien est public.");
+      if (verifying) setSubmitError(t.errors.checking);
+      else if (apiError === "not_found") setSubmitError(t.errors.notFound);
+      else setSubmitError(t.errors.unavailable);
       return;
     }
     if (!emailValid) {
-      setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u.");
+      setSubmitError(t.errors.email);
       return;
     }
     setSubmitError(null);
@@ -117,17 +119,17 @@ export default function Step2Username({
   void country;
 
   return (
-    <section className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
+    <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
       <YtSprinkle count={5} seed={2} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quelle <span className="squiggle yt">video</span> promouvoir ?
+            {t.titleBefore} <span className="squiggle yt">{t.titleFocus}</span> {t.titleAfter}
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien de votre vidÃ©o YouTube. Aucun mot de passe, aucun accÃ¨s demandÃ©. La vidÃ©o doit Ãªtre <strong style={{ color: "var(--ink)" }}>publique</strong> ou <strong style={{ color: "var(--ink)" }}>non rÃ©pertoriÃ©e</strong>.
+            {t.introBefore} <strong style={{ color: "var(--ink)" }}>{t.public}</strong> {t.or} <strong style={{ color: "var(--ink)" }}>{t.unlisted}</strong>.
           </p>
         </div>
 
@@ -136,14 +138,12 @@ export default function Step2Username({
           style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}
         >
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Lien de votre vidÃ©o YouTube
-            </label>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>{t.videoLabel}</label>
 
             <div className="input-shell yt">
               <input
                 type="url"
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder={t.videoPlaceholder}
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
@@ -170,24 +170,20 @@ export default function Step2Username({
 
             {touched && url.length > 0 && !validUrl && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--yt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Lien invalide. Exemples : youtube.com/watch?v=â€¦ Â· youtu.be/â€¦ Â· youtube.com/shorts/â€¦
-              </div>
+                <span>!</span> {t.invalidFormat}</div>
             )}
             {validUrl && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--yt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> VidÃ©o introuvable. VÃ©rifiez que le lien est correct et public.
-              </div>
+                <span>!</span> {t.notFound}</div>
             )}
 
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reÃ§u)
-              </label>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>{t.emailLabel}</label>
               <div className="input-shell yt">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>
-                On vous envoie uniquement votre facture. Pas de spam, jamais.
+                {t.emailHint}
               </div>
             </div>
 
@@ -196,10 +192,10 @@ export default function Step2Username({
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-yt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -207,7 +203,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,0,0,0.08)", border: "1px solid rgba(255,0,0,0.25)", borderRadius: 12, fontSize: 13, color: "var(--yt-red)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -259,10 +255,10 @@ export default function Step2Username({
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {profile?.title || (validUrl ? "Chargementâ€¦" : "Collez le lien de votre vidÃ©o")}
+                    {profile?.title || (validUrl ? t.loading : t.pasteLink)}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 12, color: "var(--ink-3)" }}>
-                    <span>{profile?.channel.name || "â€”"}</span>
+                    <span>{profile?.channel.name || "-"}</span>
                     {profile?.channel.verified && (
                       <svg width="12" height="12" viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
                         <circle cx="7" cy="7" r="6" fill="var(--yt-red)" />
@@ -271,7 +267,7 @@ export default function Step2Username({
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>
-                    {verified ? "VidÃ©o trouvÃ©e" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du lien"}
+                    {verified ? t.found : verifying ? t.checking : apiError ? "" : t.waiting}
                   </div>
                 </div>
               </div>
@@ -283,24 +279,24 @@ export default function Step2Username({
                       <>
                         {formatQty(profile.views)}{" "}
                         <span style={{ fontSize: 11, color: "var(--green)" }}>
-                          â†’ {formatQty(profile.views + PACKS[pack].qty + PACKS[pack].bonus)}
+                          {"-> "}{formatQty(profile.views + PACKS[pack].qty + PACKS[pack].bonus)}
                         </span>
                       </>
-                    ) : "â€”"}
+                    ) : "-"}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>vues</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{t.views}</div>
                 </div>
                 <div className="yt-stat-cell">
                   <div style={{ fontWeight: 800, fontSize: 16 }}>
-                    {profile ? formatQty(profile.likes) : "â€”"}
+                    {profile ? formatQty(profile.likes) : "-"}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>j&apos;aime</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{t.likes}</div>
                 </div>
                 <div className="yt-stat-cell">
                   <div style={{ fontWeight: 800, fontSize: 16 }}>
-                    {profile ? formatQty(profile.channel.subscribers) : "â€”"}
+                    {profile ? formatQty(profile.channel.subscribers) : "-"}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>abonnÃ©s</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{t.subscribers}</div>
                 </div>
               </div>
             </div>
@@ -313,7 +309,7 @@ export default function Step2Username({
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>NOUVEAU TOTAL</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>{t.newTotal}</div>
                   <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
                 </div>
               </div>

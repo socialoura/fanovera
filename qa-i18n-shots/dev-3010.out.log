@@ -1,0 +1,197 @@
+
+> fanovera@0.1.0 dev
+> next dev -p 3010
+
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3010
+   - Network:      http://10.5.0.2:3010
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.9s
+ ○ Compiling /spotify ...
+ ✓ Compiled /spotify in 8.7s (832 modules)
+ GET /spotify 200 in 10747ms
+ ○ Compiling /api/pricing ...
+ ✓ Compiled /api/pricing in 1517ms (829 modules)
+ GET /api/geo-currency?mode=auto 200 in 1911ms
+ GET /api/geo-locale?locale=fr 200 in 1949ms
+ GET /api/geo-currency?mode=auto 200 in 57ms
+ GET /api/geo-locale?locale=fr 200 in 68ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 2159ms
+ GET /spotify 200 in 730ms
+ GET /api/geo-locale?locale=en 200 in 103ms
+ GET /api/geo-currency?mode=auto 200 in 127ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 261ms
+ GET /api/geo-locale?locale=en 200 in 198ms
+ GET /api/geo-currency?mode=auto 200 in 141ms
+ GET /api/geo-locale?locale=en 200 in 83ms
+ GET /api/geo-currency?mode=auto 200 in 79ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 204ms
+ GET /api/geo-locale?locale=en 200 in 90ms
+ GET /api/geo-currency?mode=auto 200 in 80ms
+ GET /spotify 200 in 314ms
+ GET /api/geo-locale?locale=es 200 in 91ms
+ GET /api/geo-currency?mode=auto 200 in 99ms
+ GET /api/geo-locale?locale=es 200 in 118ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 203ms
+ GET /api/geo-currency?mode=auto 200 in 66ms
+ GET /api/geo-locale?locale=es 200 in 56ms
+ GET /api/geo-currency?mode=auto 200 in 85ms
+ GET /api/geo-locale?locale=es 200 in 76ms
+ GET /api/geo-currency?mode=auto 200 in 63ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 204ms
+ GET /spotify 200 in 403ms
+ GET /api/geo-locale?locale=pt 200 in 68ms
+ GET /api/geo-currency?mode=auto 200 in 81ms
+ GET /api/geo-locale?locale=pt 200 in 113ms
+ GET /api/geo-currency?mode=auto 200 in 101ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 202ms
+ GET /api/geo-locale?locale=pt 200 in 75ms
+ GET /api/geo-currency?mode=auto 200 in 72ms
+ GET /api/geo-locale?locale=pt 200 in 117ms
+ GET /api/geo-currency?mode=auto 200 in 108ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 199ms
+ GET /spotify 200 in 521ms
+ GET /api/geo-locale?locale=de 200 in 96ms
+ GET /api/geo-currency?mode=auto 200 in 194ms
+ GET /api/geo-locale?locale=de 200 in 89ms
+ GET /api/geo-currency?mode=auto 200 in 63ms
+ GET /api/geo-locale?locale=de 200 in 63ms
+ GET /api/geo-currency?mode=auto 200 in 199ms
+ GET /api/geo-locale?locale=de 200 in 84ms
+ GET /api/geo-currency?mode=auto 200 in 79ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 876ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 149ms
+ GET /spotify 200 in 484ms
+ GET /api/geo-locale?locale=it 200 in 101ms
+ GET /api/geo-currency?mode=auto 200 in 227ms
+ GET /api/geo-locale?locale=it 200 in 101ms
+ GET /api/geo-currency?mode=auto 200 in 81ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 345ms
+ GET /api/geo-locale?locale=it 200 in 99ms
+ GET /api/geo-currency?mode=auto 200 in 95ms
+ GET /api/geo-locale?locale=it 200 in 107ms
+ GET /api/geo-currency?mode=auto 200 in 88ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 296ms
+ GET /spotify 200 in 522ms
+ GET /api/geo-locale?locale=tr 200 in 75ms
+ GET /api/geo-currency?mode=auto 200 in 92ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 232ms
+ GET /api/geo-locale?locale=tr 200 in 199ms
+ GET /api/geo-currency?mode=auto 200 in 181ms
+ GET /api/geo-locale?locale=tr 200 in 120ms
+ GET /api/geo-currency?mode=auto 200 in 111ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 232ms
+ GET /api/geo-locale?locale=tr 200 in 96ms
+ GET /api/geo-currency?mode=auto 200 in 87ms
+ ○ Compiling /twitter ...
+ ✓ Compiled /twitter in 1167ms (861 modules)
+ GET /twitter 200 in 1978ms
+ GET /api/geo-locale?locale=fr 200 in 409ms
+ GET /api/geo-currency?mode=auto 200 in 551ms
+ GET /api/geo-locale?locale=fr 200 in 384ms
+ GET /api/geo-currency?mode=auto 200 in 177ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 1061ms
+ GET /twitter 200 in 388ms
+ GET /api/geo-locale?locale=en 200 in 76ms
+ GET /api/geo-currency?mode=auto 200 in 96ms
+ GET /api/geo-locale?locale=en 200 in 123ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 207ms
+ GET /api/geo-currency?mode=auto 200 in 108ms
+ GET /api/geo-locale?locale=en 200 in 76ms
+ GET /api/geo-currency?mode=auto 200 in 90ms
+ GET /api/geo-locale?locale=en 200 in 80ms
+ GET /api/geo-currency?mode=auto 200 in 54ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 204ms
+ GET /twitter 200 in 383ms
+ GET /api/geo-locale?locale=es 200 in 74ms
+ GET /api/geo-currency?mode=auto 200 in 103ms
+ GET /api/geo-locale?locale=es 200 in 100ms
+ GET /api/geo-currency?mode=auto 200 in 87ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 218ms
+ GET /api/geo-locale?locale=es 200 in 51ms
+ GET /api/geo-currency?mode=auto 200 in 63ms
+ GET /api/geo-locale?locale=es 200 in 83ms
+ GET /api/geo-currency?mode=auto 200 in 88ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 224ms
+ GET /twitter 200 in 578ms
+ GET /api/geo-locale?locale=pt 200 in 133ms
+ GET /api/geo-currency?mode=auto 200 in 220ms
+ GET /api/geo-locale?locale=pt 200 in 111ms
+ GET /api/geo-currency?mode=auto 200 in 81ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 353ms
+ GET /api/geo-locale?locale=pt 200 in 93ms
+ GET /api/geo-currency?mode=auto 200 in 104ms
+ GET /api/geo-locale?locale=pt 200 in 122ms
+ GET /api/geo-currency?mode=auto 200 in 62ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 239ms
+ GET /twitter 200 in 614ms
+ GET /api/geo-locale?locale=de 200 in 110ms
+ GET /api/geo-currency?mode=auto 200 in 141ms
+ GET /api/geo-locale?locale=de 200 in 125ms
+ GET /api/geo-currency?mode=auto 200 in 53ms
+ GET /api/geo-locale?locale=de 200 in 57ms
+ GET /api/geo-currency?mode=auto 200 in 62ms
+ GET /api/geo-locale?locale=de 200 in 56ms
+ GET /api/geo-currency?mode=auto 200 in 112ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 530ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 140ms
+ GET /twitter 200 in 438ms
+ GET /api/geo-locale?locale=it 200 in 96ms
+ GET /api/geo-currency?mode=auto 200 in 119ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 275ms
+ GET /api/geo-locale?locale=it 200 in 244ms
+ GET /api/geo-currency?mode=auto 200 in 237ms
+ GET /api/geo-locale?locale=it 200 in 177ms
+ GET /api/pricing?service=x_followers&currency=EUR 200 in 293ms
+ GET /api/geo-currency?mode=auto 200 in 229ms
+ GET /api/geo-locale?locale=it 200 in 174ms
+ GET /api/geo-currency?mode=auto 200 in 58ms
+ GET /twitter 200 in 316ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1481ms (866 modules)
+ GET /api/geo-locale?locale=tr 404 in 2260ms
+ GET /api/geo-currency?mode=auto 404 in 2265ms
+ GET /api/pricing?service=x_followers&currency=EUR 404 in 2264ms
+ ✓ Compiled in 1684ms (866 modules)
+ ✓ Compiled in 567ms (866 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 3.5s (1214 modules)
+ GET /spotify 404 in 4188ms
+ GET /spotify 200 in 776ms
+ GET /api/geo-locale?locale=en 200 in 203ms
+ GET /api/geo-currency?mode=auto 200 in 338ms
+ GET /api/geo-locale?locale=en 200 in 171ms
+ GET /api/geo-currency?mode=auto 200 in 129ms
+ GET /api/geo-locale?locale=en 200 in 105ms
+ GET /api/geo-currency?mode=auto 200 in 121ms
+ GET /api/geo-locale?locale=en 200 in 100ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 761ms
+ GET /api/geo-currency?mode=auto 200 in 100ms
+ GET /api/pricing?service=sp_streams&currency=EUR 200 in 159ms
+ GET /spotify 404 in 142ms
+ GET /api/geo-locale?locale=es 200 in 48ms
+ GET /spotify 404 in 148ms
+ GET /api/geo-locale?locale=pt 200 in 34ms
+ GET /spotify 404 in 203ms
+ GET /api/geo-locale?locale=de 200 in 42ms
+ GET /spotify 404 in 129ms
+ GET /api/geo-locale?locale=it 200 in 53ms
+ GET /spotify 404 in 125ms
+ GET /api/geo-locale?locale=tr 200 in 42ms
+ GET /twitter 404 in 139ms
+ GET /api/geo-locale?locale=fr 200 in 47ms
+ GET /twitter 404 in 175ms
+ GET /api/geo-locale?locale=en 200 in 50ms
+ GET /twitter 404 in 354ms
+ GET /api/geo-locale?locale=es 200 in 44ms
+ GET /twitter 404 in 107ms
+ GET /api/geo-locale?locale=pt 200 in 39ms
+ GET /twitter 404 in 1110ms
+ GET /api/geo-locale?locale=de 200 in 47ms
+ GET /twitter 404 in 85ms
+ GET /api/geo-locale?locale=it 200 in 53ms
+ GET /twitter 404 in 113ms
+ GET /api/geo-locale?locale=tr 200 in 66ms
+[?25h

@@ -3,11 +3,15 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useI18n } from "../i18n/I18nProvider";
+import { getPublicCopy } from "../components/publicCopy";
 
 type ConfirmState = "idle" | "loading" | "ok" | "error";
 
 function OrderSuccessContent() {
   const search = useSearchParams();
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).order;
   const [state, setState] = useState<ConfirmState>("idle");
   const [orderId, setOrderId] = useState<string>(search.get("orderId") || "");
   const [error, setError] = useState<string>("");
@@ -31,7 +35,7 @@ function OrderSuccessContent() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data?.orderId) {
-          throw new Error(data?.error || "Impossible de confirmer votre commande.");
+          throw new Error(data?.error || copy.confirmError);
         }
         if (!cancelled) {
           setOrderId(String(data.orderId));
@@ -40,7 +44,7 @@ function OrderSuccessContent() {
       } catch (e) {
         if (!cancelled) {
           setState("error");
-          setError(e instanceof Error ? e.message : "Erreur inattendue.");
+          setError(e instanceof Error ? e.message : copy.unexpected);
         }
       }
     };
@@ -49,27 +53,27 @@ function OrderSuccessContent() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, paymentIntentId]);
+  }, [copy.confirmError, copy.unexpected, orderId, paymentIntentId]);
 
   const done = !!orderId;
 
   return (
     <main style={{ maxWidth: 760, margin: "48px auto", padding: "0 20px" }}>
       <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 16, padding: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Commande confirmée</h1>
+        <h1 style={{ margin: 0, fontSize: 28 }}>{copy.title}</h1>
         <p style={{ color: "var(--ink-2)", marginTop: 10 }}>
-          Merci pour votre achat. Votre commande a bien été prise en compte.
+          {copy.thanks}
         </p>
 
         {!done && state !== "error" && (
           <p style={{ marginTop: 14, color: "var(--ink-3)" }}>
-            {state === "loading" ? "Finalisation de la commande..." : "Vérification du paiement..."}
+            {state === "loading" ? copy.finalizing : copy.verifying}
           </p>
         )}
 
         {state === "error" && (
           <p style={{ marginTop: 14, color: "#b42318" }}>
-            {error || "Nous n'avons pas pu finaliser automatiquement votre commande."}
+            {error || copy.fallbackError}
           </p>
         )}
 
@@ -87,7 +91,7 @@ function OrderSuccessContent() {
                 fontWeight: 700,
               }}
             >
-              Suivre ma commande #{orderId}
+              {copy.track(orderId)}
             </Link>
             <Link
               href="/"
@@ -102,7 +106,7 @@ function OrderSuccessContent() {
                 fontWeight: 600,
               }}
             >
-              Retour à l&apos;accueil
+              {copy.home}
             </Link>
           </div>
         )}

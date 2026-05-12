@@ -1,0 +1,399 @@
+import type { LocaleDictionary, SupportedLocale } from "./types";
+import fr from "./locales/fr";
+import en from "./locales/en";
+import es from "./locales/es";
+import pt from "./locales/pt";
+import de from "./locales/de";
+import it from "./locales/it";
+import tr from "./locales/tr";
+
+export const dictionaries: Record<SupportedLocale, LocaleDictionary> = {
+  fr,
+  en,
+  es,
+  pt,
+  de,
+  it,
+  tr,
+};
+
+const broadReplacements: Record<Exclude<SupportedLocale, "fr">, Array<[string, string]>> = {
+  en: [
+    ["Tous les réseaux", "All networks"],
+    ["Tous les rÃ©seaux", "All networks"],
+    ["Comment ça marche", "How it works"],
+    ["Comment Ã§a marche", "How it works"],
+    ["Résultats garantis", "Follow-up plan"],
+    ["RÃ©sultats garantis", "Follow-up plan"],
+    ["Légal", "Legal"],
+    ["LÃ©gal", "Legal"],
+    ["Mentions légales", "Legal notice"],
+    ["Mentions lÃ©gales", "Legal notice"],
+    ["Confidentialité", "Privacy"],
+    ["ConfidentialitÃ©", "Privacy"],
+    ["Suivi de commande", "Order tracking"],
+    ["Croissance social media propulsée par IA", "AI-assisted online presence strategy"],
+    ["Croissance social media propulsÃ©e par IA", "AI-assisted online presence strategy"],
+    ["Campagnes ciblées, suivi clair et progression mesurée", "Focused campaigns, clear tracking and measured progress"],
+    ["Campagnes ciblees, suivi clair et progression mesuree", "Focused campaigns, clear tracking and measured progress"],
+    ["Paiement sécurisé", "Secure payment"],
+    ["Paiement sÃ©curisÃ©", "Secure payment"],
+    ["préparation de la campagne après confirmation", "campaign preparation after confirmation"],
+    ["préparation de la campagne aprÃ¨s confirmation", "campaign preparation after confirmation"],
+    ["Récapitulatif", "Summary"],
+    ["RÃ©capitulatif", "Summary"],
+    ["Appliquer", "Apply"],
+    ["Appliqué", "Applied"],
+    ["AppliquÃ©", "Applied"],
+    ["économie", "saving"],
+    ["Ã©conomie", "saving"],
+    ["Aucun abonnement caché", "No hidden subscription"],
+    ["Aucun abonnement cachÃ©", "No hidden subscription"],
+    ["Retour au choix des packs", "Back to pack selection"],
+    ["Compte préservé", "Account protected"],
+    ["Compte preserve", "Account protected"],
+    ["Audience ciblée", "Targeted audience"],
+    ["Audience ciblÃ©e", "Targeted audience"],
+    ["Sans mot de passe", "No password"],
+    ["Aucun acces au compte n'est demande", "No account access requested"],
+    ["Aucun accès au compte n'est demandé", "No account access requested"],
+    ["Votre page", "Your page"],
+    ["Votre vidéo", "Your video"],
+    ["Votre vidÃ©o", "Your video"],
+    ["Votre morceau", "Your track"],
+    ["Votre chaîne", "Your channel"],
+    ["Votre chaÃ®ne", "Your channel"],
+    ["Quel morceau", "Which track"],
+    ["Quelle vidéo", "Which video"],
+    ["Quelle vidÃ©o", "Which video"],
+    ["Quelle page", "Which page"],
+    ["Quelle chaine", "Which channel"],
+    ["Quelle chaîne", "Which channel"],
+    ["promouvoir", "promote"],
+    ["Lien invalide", "Invalid link"],
+    ["Compte introuvable", "Account not found"],
+    ["Vidéo introuvable", "Video not found"],
+    ["VidÃ©o introuvable", "Video not found"],
+    ["Morceau introuvable", "Track not found"],
+    ["Email invalide", "Invalid email"],
+    ["Message trop court", "Message too short"],
+    ["Erreur réseau, réessayez", "Network error, try again"],
+    ["Erreur rÃ©seau, rÃ©essayez", "Network error, try again"],
+    ["Ouvrir le chat", "Open chat"],
+    ["Une question ?", "A question?"],
+    ["Bonjour ! Comment pouvons-nous vous aider ?", "Hello! How can we help?"],
+    ["Entrez votre email pour commencer", "Enter your email to start"],
+    ["Votre email", "Your email"],
+    ["Votre message", "Your message"],
+    ["Décrivez votre demande", "Describe your request"],
+    ["DÃ©crivez votre demande", "Describe your request"],
+    ["Envoyer le message", "Send message"],
+    ["Envoi", "Sending"],
+    ["Message envoyé", "Message sent"],
+    ["Message envoyÃ©", "Message sent"],
+    ["Support", "Support"],
+    ["en ligne", "online"],
+    ["Merci", "Thank you"],
+    ["On vous répondra", "We will reply"],
+    ["On vous rÃ©pondra", "We will reply"],
+    ["dans les plus brefs délais", "as soon as possible"],
+    ["dans les plus brefs dÃ©lais", "as soon as possible"],
+    ["Fermer", "Close"],
+    ["Vos données sont protégées et chiffrées", "Your data is protected and encrypted"],
+    ["Vos donnÃ©es sont protÃ©gÃ©es et chiffrÃ©es", "Your data is protected and encrypted"],
+    ["Tous nos services sont opérationnels", "All services are operational"],
+    ["Tous nos services sont opÃ©rationnels", "All services are operational"],
+    ["Ils nous font confiance", "Trusted by creators"],
+    ["Ils nous font", "Trusted by creators"],
+    ["confiance", ""],
+    ["points d'audit", "audit points"],
+    ["plateformes couvertes", "covered platforms"],
+    ["note moyenne", "average rating"],
+    ["plan d'action", "action plan"],
+    ["Audit de votre presence", "Your presence audit"],
+    ["Plan editorial cible", "Targeted editorial plan"],
+    ["Suivi et optimisation", "Tracking and optimization"],
+    ["Trois etapes pour une presence durable", "Three steps for a lasting presence"],
+    ["Pret a structurer votre presence", "Ready to structure your presence"],
+    ["Choisissez votre plateforme", "Choose your platform"],
+    ["Audit public", "Public audit"],
+    ["Strategie de contenu", "Content strategy"],
+    ["Aucun acces au compte demande", "No account access requested"],
+    ["Vos questions", "Your questions"],
+    ["nos réponses", "our answers"],
+    ["nos rÃ©ponses", "our answers"],
+    ["Une autre question", "Another question"],
+    ["Écrivez-nous", "Write to us"],
+    ["Ecrivez-nous", "Write to us"],
+    ["★ POPULAIRE", "★ POPULAR"],
+    ["★ NOUVEAU", "★ NEW"],
+    ["POPULAIRE", "POPULAR"],
+    ["NOUVEAU", "NEW"],
+    ["avis", "reviews"],
+    ["Note", "Rating"],
+    ["★ POPULAIRE", "★ POPULAR"],
+    ["★ NOUVEAU", "★ NEW"],
+    ["Audit clair et plan actionnable", "Clear audit and actionable plan"],
+    ["Service serieux, suivi lisible", "Reliable service, clear tracking"],
+    ["Un vrai cadre pour publier mieux", "A real framework for better publishing"],
+    ["musicienne", "musician"],
+    ["Tableau de bord", "Dashboard"],
+    ["Tableas of de bord", "Dashboard"],
+    ["Nouvelle campagne", "New campaign"],
+    ["Audience IA", "AI audience"],
+    ["Statistiques", "Analytics"],
+    ["Reseaux", "Networks"],
+    ["Facturation", "Billing"],
+    ["RÃ‰SEAUX ACTIFS", "ACTIVE NETWORKS"],
+    ["RESEAUX ACTIFS", "ACTIVE NETWORKS"],
+    ["Campagne", "Campaign"],
+    ["Jour", "Day"],
+    ["sur", "of"],
+    ["priorises", "prioritized"],
+    ["Contenus", "Content"],
+    ["idees", "ideas"],
+    ["pretes", "ready"],
+    ["cadence", "cadence"],
+    ["Plan de visibilite", "Visibility plan"],
+    ["30 jours", "30 days"],
+    ["plan de lancement", "launch plan"],
+    ["titres et calendrier", "titles and calendar"],
+    ["Audit & contenu", "Audit & content"],
+    ["Calendrier video", "Video calendar"],
+    ["Lancement artiste", "Artist launch"],
+    ["Ligne editoriale", "Editorial line"],
+    ["Page & contenus", "Page & content"],
+    ["Presence B2B", "B2B presence"],
+    ["Planning stream", "Stream planning"],
+    ["Trois etapes pour une presence durable", "Three steps for a lasting presence"],
+    ["Three steps pour une presence durable", "Three steps for a lasting presence"],
+    ["Trois etapes", "Three steps"],
+    ["pour une presence", "for a"],
+    ["presence durable", "lasting presence"],
+    ["durable", "lasting presence"],
+    ["On analyse votre profil public, vos contenus, votre positionnement et vos objectifs", "We analyze your public profile, content, positioning and goals"],
+    ["aucun acces demande", "no access requested"],
+    ["Vous recevez une feuille de route claire", "You receive a clear roadmap"],
+    ["angles de contenu", "content angles"],
+    ["plateformes prioritaires", "priority platforms"],
+    ["calendrier et pistes d'amelioration", "calendar and improvement ideas"],
+    ["On suit les signaux utiles", "We track useful signals"],
+    ["on ajuste les recommandations", "we adjust recommendations"],
+    ["on garde une progression coherente avec votre marque", "we keep progress aligned with your brand"],
+    [" et ", " and "],
+    ["Pret a structurer", "Ready to structure"],
+    ["votre presence", "your presence"],
+    ["Choisissez votre plateforme et preparez un plan de visibilite adapte a vos contenus", "Choose your platform and prepare a visibility plan suited to your content"],
+    ["Fanovera m'a aidee a clarifier ma ligne editoriale et a organiser mes sorties sans courir apres les chiffres", "Fanovera helped me clarify my editorial line and organize launches without chasing numbers"],
+    ["Fanovera m'a aidee a clarifier ma ligne editoriale", "Fanovera helped me clarify my editorial line"],
+    ["a organiser mes sorties", "organize launches"],
+    ["sans courir apres les chiffres", "without chasing numbers"],
+    ["L'audit etait concret", "The audit was practical"],
+    ["quoi publier", "what to publish"],
+    ["quand le publier", "when to publish"],
+    ["comment mieux raconter mon travail", "how to better explain my work"],
+    ["On a pose une vraie methode autour de mes formats courts", "We built a real method around my short formats"],
+    ["Le suivi est simple, lisible et utile", "The tracking is simple, clear and useful"],
+    ["Le suivi est simple, lisible and utile", "The tracking is simple, clear and useful"],
+    ["strategie de lancement", "launch strategy"],
+    ["calendrier contenu", "content calendar"],
+    ["Musicienne", "Musician"],
+    ["Photographe", "Photographer"],
+    ["Creatrice", "Creator"],
+    ["accompagnement TikTok", "TikTok support"],
+    ["Comment fonctionne votre service ?", "How does your service work?"],
+    ["Nous analysons votre presence publique, vos contenus et vos objectifs pour preparer un plan de visibilite concret et progressif", "We analyze your public presence, content and goals to prepare a concrete, progressive visibility plan"],
+    ["Nous analysons", "We analyze"],
+    ["your presence publique", "your public presence"],
+    ["vos contenus", "your content"],
+    ["vos objectifs", "your goals"],
+    ["pour preparer", "to prepare"],
+    ["un plan de visibilite", "a visibility plan"],
+    ["concret and progressif", "concrete and progressive"],
+    ["concret et progressif", "concrete and progressive"],
+    ["Faut-il vous donner mes mots de passe ?", "Do I need to give you my passwords?"],
+    ["Jamais", "Never"],
+    ["Fanovera fonctionne a partir des informations publiques que vous nous indiquez", "Fanovera works from the public information you provide"],
+    ["Que vais-je recevoir ?", "What will I receive?"],
+    ["Un audit, une strategie de contenu, des recommandations par plateforme et un cadre de suivi pour piloter votre visibilite", "An audit, a content strategy, platform recommendations and a tracking framework for your visibility"],
+    ["Un audit", "An audit"],
+    ["une strategie de contenu", "a content strategy"],
+    ["des recommandations par plateforme", "platform recommendations"],
+    ["un cadre de suivi", "a tracking framework"],
+    ["pour piloter votre visibilite", "to manage your visibility"],
+    ["Promettez-vous des chiffres précis ?", "Do you promise precise numbers?"],
+    ["Promettez-vous des chiffres prÃ©cis ?", "Do you promise precise numbers?"],
+    ["Non", "No"],
+    ["Nous aidons a structurer votre presence et vos campagnes, sans promettre de volume artificiel ni de resultat garanti", "We help structure your presence and campaigns without promising artificial volume or guaranteed results"],
+    ["Nous aidons a structurer", "We help structure"],
+    ["vos campagnes", "your campaigns"],
+    ["sans promettre", "without promising"],
+    ["de artificial volume", "artificial volume"],
+    ["ni de guaranteed result", "or a guaranteed result"],
+    ["volume artificiel", "artificial volume"],
+    ["resultat garanti", "guaranteed result"],
+    ["preparez un plan de visibilite adapte a vos contenus", "prepare a visibility plan suited to your content"],
+    ["preparez a visibility plan adapte a your content", "prepare a visibility plan suited to your content"],
+  ],
+  es: [
+    ["Tous les réseaux", "Todas las redes"], ["Tous les rÃ©seaux", "Todas las redes"],
+    ["Comment ça marche", "Cómo funciona"], ["Comment Ã§a marche", "Cómo funciona"],
+    ["Résultats garantis", "Plan de seguimiento"], ["RÃ©sultats garantis", "Plan de seguimiento"],
+    ["Légal", "Legal"], ["LÃ©gal", "Legal"], ["Mentions légales", "Aviso legal"], ["Mentions lÃ©gales", "Aviso legal"],
+    ["Suivi de commande", "Seguimiento del pedido"], ["Paiement sécurisé", "Pago seguro"], ["Paiement sÃ©curisÃ©", "Pago seguro"],
+    ["Récapitulatif", "Resumen"], ["RÃ©capitulatif", "Resumen"], ["Appliquer", "Aplicar"], ["Appliqué", "Aplicado"], ["AppliquÃ©", "Aplicado"],
+    ["économie", "ahorro"], ["Ã©conomie", "ahorro"], ["Aucun abonnement caché", "Sin suscripción oculta"], ["Aucun abonnement cachÃ©", "Sin suscripción oculta"],
+    ["Retour au choix des packs", "Volver a elegir pack"], ["Compte préservé", "Cuenta protegida"], ["Compte preserve", "Cuenta protegida"],
+    ["Audience ciblée", "Audiencia enfocada"], ["Audience ciblÃ©e", "Audiencia enfocada"], ["Sans mot de passe", "Sin contraseña"],
+    ["Votre page", "Tu página"], ["Votre vidéo", "Tu video"], ["Votre vidÃ©o", "Tu video"], ["Votre morceau", "Tu canción"], ["Votre chaîne", "Tu canal"], ["Votre chaÃ®ne", "Tu canal"],
+    ["promouvoir", "promocionar"], ["Lien invalide", "Enlace inválido"], ["Compte introuvable", "Cuenta no encontrada"], ["Vidéo introuvable", "Video no encontrado"], ["VidÃ©o introuvable", "Video no encontrado"], ["Morceau introuvable", "Canción no encontrada"],
+    ["Email invalide", "Email inválido"], ["Message trop court", "Mensaje demasiado corto"], ["Ouvrir le chat", "Abrir chat"], ["Une question ?", "¿Una pregunta?"], ["Votre email", "Tu email"], ["Votre message", "Tu mensaje"],
+    ["Envoyer le message", "Enviar mensaje"], ["Envoi", "Enviando"], ["Message envoyé", "Mensaje enviado"], ["Message envoyÃ©", "Mensaje enviado"], ["Fermer", "Cerrar"],
+    ["Tous nos services sont opérationnels", "Todos los servicios están operativos"], ["Tous nos services sont opÃ©rationnels", "Todos los servicios están operativos"],
+    ["Ils nous font confiance", "Confían en nosotros"], ["Vos questions", "Tus preguntas"], ["nos réponses", "nuestras respuestas"], ["nos rÃ©ponses", "nuestras respuestas"],
+    ["Audit public", "Auditoría pública"], ["Strategie de contenu", "Estrategia de contenido"], ["Aucun acces au compte demande", "Sin acceso a la cuenta"],
+  ],
+  pt: [
+    ["Tous les réseaux", "Todas as redes"], ["Tous les rÃ©seaux", "Todas as redes"], ["Comment ça marche", "Como funciona"], ["Comment Ã§a marche", "Como funciona"],
+    ["Résultats garantis", "Plano de acompanhamento"], ["RÃ©sultats garantis", "Plano de acompanhamento"], ["Légal", "Legal"], ["LÃ©gal", "Legal"], ["Mentions légales", "Aviso legal"], ["Mentions lÃ©gales", "Aviso legal"],
+    ["Suivi de commande", "Acompanhamento do pedido"], ["Paiement sécurisé", "Pagamento seguro"], ["Paiement sÃ©curisÃ©", "Pagamento seguro"], ["Récapitulatif", "Resumo"], ["RÃ©capitulatif", "Resumo"],
+    ["Appliquer", "Aplicar"], ["Appliqué", "Aplicado"], ["AppliquÃ©", "Aplicado"], ["économie", "economia"], ["Ã©conomie", "economia"], ["Aucun abonnement caché", "Sem assinatura oculta"], ["Aucun abonnement cachÃ©", "Sem assinatura oculta"],
+    ["Retour au choix des packs", "Voltar à escolha dos pacotes"], ["Compte préservé", "Conta protegida"], ["Compte preserve", "Conta protegida"], ["Audience ciblée", "Audiência segmentada"], ["Audience ciblÃ©e", "Audiência segmentada"],
+    ["Sans mot de passe", "Sem senha"], ["Votre page", "Sua página"], ["Votre vidéo", "Seu vídeo"], ["Votre vidÃ©o", "Seu vídeo"], ["Votre morceau", "Sua faixa"], ["Votre chaîne", "Seu canal"], ["Votre chaÃ®ne", "Seu canal"],
+    ["promouvoir", "promover"], ["Lien invalide", "Link inválido"], ["Compte introuvable", "Conta não encontrada"], ["Vidéo introuvable", "Vídeo não encontrado"], ["VidÃ©o introuvable", "Vídeo não encontrado"], ["Morceau introuvable", "Faixa não encontrada"],
+    ["Email invalide", "Email inválido"], ["Message trop court", "Mensagem muito curta"], ["Ouvrir le chat", "Abrir chat"], ["Une question ?", "Alguma pergunta?"], ["Votre email", "Seu email"], ["Votre message", "Sua mensagem"],
+    ["Envoyer le message", "Enviar mensagem"], ["Envoi", "Enviando"], ["Message envoyé", "Mensagem enviada"], ["Message envoyÃ©", "Mensagem enviada"], ["Fermer", "Fechar"],
+    ["Tous nos services sont opérationnels", "Todos os serviços estão operacionais"], ["Tous nos services sont opÃ©rationnels", "Todos os serviços estão operacionais"], ["Ils nous font confiance", "Eles confiam em nós"], ["Vos questions", "Suas perguntas"], ["nos réponses", "nossas respostas"],
+  ],
+  de: [
+    ["Tous les réseaux", "Alle Netzwerke"], ["Tous les rÃ©seaux", "Alle Netzwerke"], ["Comment ça marche", "So funktioniert es"], ["Comment Ã§a marche", "So funktioniert es"],
+    ["Résultats garantis", "Begleitplan"], ["RÃ©sultats garantis", "Begleitplan"], ["Légal", "Rechtliches"], ["LÃ©gal", "Rechtliches"], ["Mentions légales", "Impressum"], ["Mentions lÃ©gales", "Impressum"],
+    ["Suivi de commande", "Bestellstatus"], ["Paiement sécurisé", "Sichere Zahlung"], ["Paiement sÃ©curisÃ©", "Sichere Zahlung"], ["Récapitulatif", "Zusammenfassung"], ["RÃ©capitulatif", "Zusammenfassung"],
+    ["Appliquer", "Anwenden"], ["Appliqué", "Angewendet"], ["AppliquÃ©", "Angewendet"], ["économie", "Ersparnis"], ["Ã©conomie", "Ersparnis"], ["Aucun abonnement caché", "Kein verstecktes Abo"], ["Aucun abonnement cachÃ©", "Kein verstecktes Abo"],
+    ["Retour au choix des packs", "Zur Paketauswahl"], ["Compte préservé", "Konto geschützt"], ["Compte preserve", "Konto geschützt"], ["Audience ciblée", "Zielgruppe"], ["Audience ciblÃ©e", "Zielgruppe"],
+    ["Sans mot de passe", "Ohne Passwort"], ["Votre page", "Deine Seite"], ["Votre vidéo", "Dein Video"], ["Votre vidÃ©o", "Dein Video"], ["Votre morceau", "Dein Track"], ["Votre chaîne", "Dein Kanal"], ["Votre chaÃ®ne", "Dein Kanal"],
+    ["promouvoir", "bewerben"], ["Lien invalide", "Ungültiger Link"], ["Compte introuvable", "Konto nicht gefunden"], ["Vidéo introuvable", "Video nicht gefunden"], ["VidÃ©o introuvable", "Video nicht gefunden"], ["Morceau introuvable", "Track nicht gefunden"],
+    ["Email invalide", "Ungültige E-Mail"], ["Message trop court", "Nachricht zu kurz"], ["Ouvrir le chat", "Chat öffnen"], ["Une question ?", "Eine Frage?"], ["Votre email", "Deine E-Mail"], ["Votre message", "Deine Nachricht"],
+    ["Envoyer le message", "Nachricht senden"], ["Envoi", "Senden"], ["Message envoyé", "Nachricht gesendet"], ["Message envoyÃ©", "Nachricht gesendet"], ["Fermer", "Schließen"],
+    ["Tous nos services sont opérationnels", "Alle Dienste sind betriebsbereit"], ["Tous nos services sont opÃ©rationnels", "Alle Dienste sind betriebsbereit"], ["Ils nous font confiance", "Sie vertrauen uns"], ["Vos questions", "Deine Fragen"], ["nos réponses", "unsere Antworten"],
+  ],
+  it: [
+    ["Tous les réseaux", "Tutte le reti"], ["Tous les rÃ©seaux", "Tutte le reti"], ["Comment ça marche", "Come funziona"], ["Comment Ã§a marche", "Come funziona"],
+    ["Résultats garantis", "Piano di monitoraggio"], ["RÃ©sultats garantis", "Piano di monitoraggio"], ["Légal", "Legale"], ["LÃ©gal", "Legale"], ["Mentions légales", "Note legali"], ["Mentions lÃ©gales", "Note legali"],
+    ["Suivi de commande", "Monitoraggio ordine"], ["Paiement sécurisé", "Pagamento sicuro"], ["Paiement sÃ©curisÃ©", "Pagamento sicuro"], ["Récapitulatif", "Riepilogo"], ["RÃ©capitulatif", "Riepilogo"],
+    ["Appliquer", "Applica"], ["Appliqué", "Applicato"], ["AppliquÃ©", "Applicato"], ["économie", "risparmio"], ["Ã©conomie", "risparmio"], ["Aucun abonnement caché", "Nessun abbonamento nascosto"], ["Aucun abonnement cachÃ©", "Nessun abbonamento nascosto"],
+    ["Retour au choix des packs", "Torna alla scelta dei pacchetti"], ["Compte préservé", "Account protetto"], ["Compte preserve", "Account protetto"], ["Audience ciblée", "Pubblico mirato"], ["Audience ciblÃ©e", "Pubblico mirato"],
+    ["Sans mot de passe", "Senza password"], ["Votre page", "La tua pagina"], ["Votre vidéo", "Il tuo video"], ["Votre vidÃ©o", "Il tuo video"], ["Votre morceau", "Il tuo brano"], ["Votre chaîne", "Il tuo canale"], ["Votre chaÃ®ne", "Il tuo canale"],
+    ["promouvoir", "promuovere"], ["Lien invalide", "Link non valido"], ["Compte introuvable", "Account non trovato"], ["Vidéo introuvable", "Video non trovato"], ["VidÃ©o introuvable", "Video non trovato"], ["Morceau introuvable", "Brano non trovato"],
+    ["Email invalide", "Email non valida"], ["Message trop court", "Messaggio troppo breve"], ["Ouvrir le chat", "Apri chat"], ["Une question ?", "Una domanda?"], ["Votre email", "La tua email"], ["Votre message", "Il tuo messaggio"],
+    ["Envoyer le message", "Invia messaggio"], ["Envoi", "Invio"], ["Message envoyé", "Messaggio inviato"], ["Message envoyÃ©", "Messaggio inviato"], ["Fermer", "Chiudi"],
+    ["Tous nos services sont opérationnels", "Tutti i servizi sono operativi"], ["Tous nos services sont opÃ©rationnels", "Tutti i servizi sono operativi"], ["Ils nous font confiance", "Si fidano di noi"], ["Vos questions", "Le tue domande"], ["nos réponses", "le nostre risposte"],
+  ],
+  tr: [
+    ["Tous les réseaux", "Tüm ağlar"], ["Tous les rÃ©seaux", "Tüm ağlar"], ["Comment ça marche", "Nasıl çalışır"], ["Comment Ã§a marche", "Nasıl çalışır"],
+    ["Résultats garantis", "Takip planı"], ["RÃ©sultats garantis", "Takip planı"], ["Légal", "Yasal"], ["LÃ©gal", "Yasal"], ["Mentions légales", "Yasal bilgiler"], ["Mentions lÃ©gales", "Yasal bilgiler"],
+    ["Suivi de commande", "Sipariş takibi"], ["Paiement sécurisé", "Güvenli ödeme"], ["Paiement sÃ©curisÃ©", "Güvenli ödeme"], ["Récapitulatif", "Özet"], ["RÃ©capitulatif", "Özet"],
+    ["Appliquer", "Uygula"], ["Appliqué", "Uygulandı"], ["AppliquÃ©", "Uygulandı"], ["économie", "tasarruf"], ["Ã©conomie", "tasarruf"], ["Aucun abonnement caché", "Gizli abonelik yok"], ["Aucun abonnement cachÃ©", "Gizli abonelik yok"],
+    ["Retour au choix des packs", "Paket seçimine dön"], ["Compte préservé", "Hesap korunur"], ["Compte preserve", "Hesap korunur"], ["Audience ciblée", "Hedef kitle"], ["Audience ciblÃ©e", "Hedef kitle"],
+    ["Sans mot de passe", "Şifresiz"], ["Votre page", "Sayfanız"], ["Votre vidéo", "Videonuz"], ["Votre vidÃ©o", "Videonuz"], ["Votre morceau", "Parçanız"], ["Votre chaîne", "Kanalınız"], ["Votre chaÃ®ne", "Kanalınız"],
+    ["promouvoir", "öne çıkarmak"], ["Lien invalide", "Geçersiz bağlantı"], ["Compte introuvable", "Hesap bulunamadı"], ["Vidéo introuvable", "Video bulunamadı"], ["VidÃ©o introuvable", "Video bulunamadı"], ["Morceau introuvable", "Parça bulunamadı"],
+    ["Email invalide", "Geçersiz e-posta"], ["Message trop court", "Mesaj çok kısa"], ["Ouvrir le chat", "Sohbeti aç"], ["Une question ?", "Bir sorunuz mu var?"], ["Votre email", "E-postanız"], ["Votre message", "Mesajınız"],
+    ["Envoyer le message", "Mesaj gönder"], ["Envoi", "Gönderiliyor"], ["Message envoyé", "Mesaj gönderildi"], ["Message envoyÃ©", "Mesaj gönderildi"], ["Fermer", "Kapat"],
+    ["Tous nos services sont opérationnels", "Tüm hizmetler çalışıyor"], ["Tous nos services sont opÃ©rationnels", "Tüm hizmetler çalışıyor"], ["Ils nous font confiance", "Bize güveniyorlar"], ["Vos questions", "Sorularınız"], ["nos réponses", "cevaplarımız"],
+  ],
+};
+
+const commonAscii: Record<Exclude<SupportedLocale, "fr">, Array<[string, string]>> = {
+  en: [
+    ["Tous les reseaux", "All networks"], ["Choisir un pack", "Choose a pack"], ["Votre campagne", "Your campaign"], ["Paiement securise", "Secure payment"], ["Quel volume ?", "Which volume?"], ["Pourquoi Fanovera", "Why Fanovera"], ["Avis clients", "Customer reviews"], ["avis", "reviews"], ["Pack selectionne", "Selected pack"], ["Vos questions, nos reponses", "Your questions, our answers"], ["Reseaux", "Networks"], ["Aide", "Help"], ["Mentions legales", "Legal notice"], ["Support campagne", "Campaign support"], ["credit inclus", "included credit"], ["inclus", "included"], ["Remise incluse", "Discount included"], ["Sans engagement", "No commitment"], ["Aucun mot de passe demande", "No password required"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "Our AI helps define an audience aligned with your niche and content."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "No account access, no posting on your behalf, and no direct action on your profile."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Only your public username is needed to prepare the visibility campaign."], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "If the planned volume is not reached, our support team reviews and extends the campaign."],
+  ],
+  es: [
+    ["Tous les reseaux", "Todas las redes"], ["Choisir un pack", "Elegir un pack"], ["Votre campagne", "Tu campana"], ["Paiement securise", "Pago seguro"], ["Quel volume ?", "Que volumen?"], ["Pourquoi Fanovera", "Por que Fanovera"], ["Avis clients", "Opiniones de clientes"], ["avis", "opiniones"], ["Pack selectionne", "Pack seleccionado"], ["Vos questions, nos reponses", "Tus preguntas, nuestras respuestas"], ["Reseaux", "Redes"], ["Aide", "Ayuda"], ["Mentions legales", "Aviso legal"], ["Support campagne", "Soporte de campana"], ["credit inclus", "credito incluido"], ["inclus", "incluido"], ["Remise incluse", "Descuento incluido"], ["Sans engagement", "Sin compromiso"], ["Aucun mot de passe demande", "Sin contrasena requerida"], ["Votre Instagram", "Tu Instagram"], ["Votre TikTok", "Tu TikTok"], ["Votre profil", "Tu perfil"], ["Votre chaine", "Tu canal"], ["Contact", "Contacto"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "Nuestra IA ayuda a definir una audiencia coherente con tu nicho y tus contenidos."], ["Notre IA aide a presenter votre profil a une audience professionnelle coherente avec votre secteur.", "Nuestra IA ayuda a presentar tu perfil a una audiencia profesional coherente con tu sector."], ["Notre IA aide a presenter votre chaine Twitch a une audience coherente avec votre niche.", "Nuestra IA ayuda a presentar tu canal Twitch a una audiencia coherente con tu nicho."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "Sin acceso a la cuenta, sin publicaciones en tu nombre y sin acciones directas en tu perfil."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre chaine.", "Sin acceso a la cuenta, sin publicaciones en tu nombre y sin acciones directas en tu canal."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Solo necesitamos tu nombre de usuario publico para preparar la campana de visibilidad."], ["Juste le lien public de votre profil pour preparer la campagne de visibilite.", "Solo necesitamos el enlace publico de tu perfil para preparar la campana de visibilidad."], ["Juste votre nom de chaine public pour preparer la campagne de visibilite.", "Solo necesitamos el nombre publico de tu canal para preparar la campana de visibilidad."], ["Suivi inclus", "Seguimiento incluido"], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "Si no se alcanza el volumen previsto, nuestro soporte revisa y amplia la campana."], ["Si le volume prevu n'est pas atteint, notre support verifie et peut prolonger la campagne.", "Si no se alcanza el volumen previsto, nuestro soporte revisa y puede ampliar la campana."],
+    ["il y a 2 jours", "hace 2 dias"], ["il y a 4 jours", "hace 4 dias"], ["il y a 5 jours", "hace 5 dias"], ["il y a 6 jours", "hace 6 dias"], ["il y a 7 jours", "hace 7 dias"], ["il y a 9 jours", "hace 9 dias"], ["il y a 10 jours", "hace 10 dias"], ["il y a 11 jours", "hace 11 dias"], ["il y a 12 jours", "hace 12 dias"], ["il y a 14 jours", "hace 14 dias"], ["il y a 15 jours", "hace 15 dias"],
+    ["Progression reguliere et campagne bien suivie. Je recommande.", "Progreso regular y campana bien seguida. Lo recomiendo."], ["Mise en route rapide, suivi clair et rythme progressif.", "Inicio rapido, seguimiento claro y ritmo progresivo."], ["Mise en route rapide et suivi serieux.", "Inicio rapido y seguimiento serio."], ["Service client reactif et suivi au rendez-vous.", "Soporte reactivo y seguimiento fiable."], ["Bonne progression continue", "Buena progresion continua"], ["Strategie de presence en ligne assistee par IA. Campagnes ciblees, suivi clair et progression mesuree.", "Estrategia de presencia online asistida por IA. Campanas enfocadas, seguimiento claro y progreso medido."],
+    ["Est-ce que cela peut aider ma visibilite professionnelle ?", "Puede ayudar a mi visibilidad profesional?"], ["Est-ce que cela peut aider la visibilite de ma page ?", "Puede ayudar a la visibilidad de mi pagina?"], ["Progression reguliere pour ma chaine Twitch.", "Progreso regular para mi canal Twitch."],
+    ["Comment fonctionne la mise en avant ?", "Como funciona la promocion?"], ["Est-ce que je dois vous donner mon mot de passe ?", "Debo dar mi contrasena?"], ["Est-ce que vous agissez sur mon compte ?", "Actuan sobre mi cuenta?"], ["Quand la campagne demarre-t-elle ?", "Cuando empieza la campana?"], ["Que se passe-t-il si le volume n'est pas atteint ?", "Que pasa si no se alcanza el volumen?"], ["Puis-je commander plusieurs campagnes ?", "Puedo pedir varias campanas?"], ["Nous preparons une campagne de visibilite autour de votre profil public et de votre thematique. L'objectif est de presenter votre compte a une audience plus pertinente, avec un rythme progressif et mesure.", "Preparamos una campana de visibilidad alrededor de tu perfil publico y tu tematica. El objetivo es presentar tu cuenta a una audiencia mas pertinente, con un ritmo progresivo y medido."], ["Nous preparons une campagne de visibilite autour de votre profil TikTok et de votre thematique. L'objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.", "Preparamos una campana de visibilidad alrededor de tu perfil TikTok y tu tematica. El objetivo es presentar tu contenido a una audiencia mas pertinente, con un ritmo progresivo y medido."], ["Nous preparons une campagne de visibilite autour de votre profil LinkedIn et de votre thematique. L'objectif est de presenter votre profil a une audience plus pertinente, avec un rythme progressif et mesure.", "Preparamos una campana de visibilidad alrededor de tu perfil LinkedIn y tu tematica. El objetivo es presentar tu perfil a una audiencia mas pertinente, con un ritmo progresivo y medido."], ["Nous preparons une campagne de visibilite autour de votre chaine Twitch et de votre thematique. L'objectif est de presenter votre contenu a une audience plus pertinente, avec un rythme progressif et mesure.", "Preparamos una campana de visibilidad alrededor de tu canal Twitch y tu tematica. El objetivo es presentar tu contenido a una audiencia mas pertinente, con un ritmo progresivo y medido."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur Instagram public. Aucun acces au compte n'est demande.", "Nunca. Solo necesitamos tu nombre de usuario publico de Instagram. No pedimos acceso a la cuenta."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur TikTok public. Aucun acces au compte n'est demande.", "Nunca. Solo necesitamos tu nombre de usuario publico de TikTok. No pedimos acceso a la cuenta."], ["Jamais. Nous avons uniquement besoin du lien public de votre profil LinkedIn. Aucun acces au compte n'est demande.", "Nunca. Solo necesitamos el enlace publico de tu perfil LinkedIn. No pedimos acceso a la cuenta."], ["Jamais. Nous avons uniquement besoin de votre nom de chaine Twitch public. Aucun acces au compte n'est demande.", "Nunca. Solo necesitamos el nombre publico de tu canal Twitch. No pedimos acceso a la cuenta."], ["Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s'appuie sur une mise en avant externe et progressive.", "No. No iniciamos sesion en tu cuenta ni publicamos en tu nombre. El servicio se basa en una promocion externa y progresiva."], ["La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s'etaler sur plusieurs jours selon le volume choisi.", "La preparacion empieza tras la confirmacion del pago. El despliegue es progresivo y puede durar varios dias segun el volumen elegido."], ["Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n'est pas atteint.", "Nuestro soporte revisa la campana y puede ampliar la promocion sin coste adicional cuando no se alcanza el volumen previsto."],
+  ],
+  pt: [
+    ["Tous les reseaux", "Todas as redes"], ["Choisir un pack", "Escolher um pack"], ["Votre campagne", "Sua campanha"], ["Paiement securise", "Pagamento seguro"], ["Quel volume ?", "Qual volume?"], ["Pourquoi Fanovera", "Por que Fanovera"], ["Avis clients", "Avaliacoes de clientes"], ["avis", "avaliacoes"], ["Pack selectionne", "Pack selecionado"], ["Vos questions, nos reponses", "Suas perguntas, nossas respostas"], ["Reseaux", "Redes"], ["Aide", "Ajuda"], ["Mentions legales", "Aviso legal"], ["Support campagne", "Suporte da campanha"], ["credit inclus", "credito incluido"], ["inclus", "incluido"], ["Remise incluse", "Desconto incluido"], ["Sans engagement", "Sem compromisso"], ["Aucun mot de passe demande", "Sem senha solicitada"], ["Votre Instagram", "Seu Instagram"], ["Votre TikTok", "Seu TikTok"], ["Votre profil", "Seu perfil"], ["Votre chaine", "Seu canal"], ["Contact", "Contato"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "Nossa IA ajuda a definir uma audiencia coerente com seu nicho e seus conteudos."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "Sem acesso a conta, sem publicacoes em seu nome e sem acao direta no seu perfil."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Apenas seu nome de usuario publico e necessario para preparar a campanha de visibilidade."], ["Suivi inclus", "Acompanhamento incluido"], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "Se o volume previsto nao for atingido, nosso suporte revisa e amplia a campanha."], ["Strategie de presence en ligne assistee par IA. Campagnes ciblees, suivi clair et progression mesuree.", "Estrategia de presenca online assistida por IA. Campanhas segmentadas, acompanhamento claro e progresso medido."],
+    ["il y a 2 jours", "ha 2 dias"], ["il y a 4 jours", "ha 4 dias"], ["il y a 5 jours", "ha 5 dias"], ["il y a 6 jours", "ha 6 dias"], ["il y a 7 jours", "ha 7 dias"], ["il y a 9 jours", "ha 9 dias"], ["il y a 10 jours", "ha 10 dias"], ["il y a 11 jours", "ha 11 dias"], ["il y a 12 jours", "ha 12 dias"], ["il y a 14 jours", "ha 14 dias"], ["il y a 15 jours", "ha 15 dias"],
+    ["Progression reguliere et campagne bien suivie. Je recommande.", "Progresso regular e campanha bem acompanhada. Recomendo."], ["Mise en route rapide, suivi clair et rythme progressif.", "Inicio rapido, acompanhamento claro e ritmo progressivo."], ["Mise en route rapide et suivi serieux.", "Inicio rapido e acompanhamento serio."], ["Service client reactif et suivi au rendez-vous.", "Suporte responsivo e acompanhamento consistente."], ["Bonne progression continue", "Bom progresso continuo"], ["Est-ce que cela peut aider ma visibilite professionnelle ?", "Isso pode ajudar minha visibilidade profissional?"], ["Est-ce que cela peut aider la visibilite de ma page ?", "Isso pode ajudar a visibilidade da minha pagina?"], ["Progression reguliere pour ma chaine Twitch.", "Progresso regular para meu canal Twitch."],
+    ["Comment fonctionne la mise en avant ?", "Como funciona a promocao?"], ["Est-ce que je dois vous donner mon mot de passe ?", "Preciso dar minha senha?"], ["Est-ce que vous agissez sur mon compte ?", "Voces agem na minha conta?"], ["Quand la campagne demarre-t-elle ?", "Quando a campanha comeca?"], ["Que se passe-t-il si le volume n'est pas atteint ?", "O que acontece se o volume nao for atingido?"], ["Puis-je commander plusieurs campagnes ?", "Posso pedir varias campanhas?"], ["Nous preparons une campagne de visibilite autour de votre profil public et de votre thematique. L'objectif est de presenter votre compte a une audience plus pertinente, avec un rythme progressif et mesure.", "Preparamos uma campanha de visibilidade em torno do seu perfil publico e da sua tematica, com ritmo progressivo e medido."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur Instagram public. Aucun acces au compte n'est demande.", "Nunca. Precisamos apenas do seu nome de usuario publico do Instagram. Nenhum acesso a conta e solicitado."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur TikTok public. Aucun acces au compte n'est demande.", "Nunca. Precisamos apenas do seu nome de usuario publico do TikTok. Nenhum acesso a conta e solicitado."], ["Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s'appuie sur une mise en avant externe et progressive.", "Nao. Nao acessamos sua conta e nao publicamos em seu nome. O servico se baseia em uma promocao externa e progressiva."], ["La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s'etaler sur plusieurs jours selon le volume choisi.", "A preparacao comeca apos a confirmacao do pagamento. A implantacao e progressiva e pode durar varios dias."], ["Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n'est pas atteint.", "Nosso suporte revisa a campanha e pode ampliar a promocao sem custo adicional quando o volume previsto nao e atingido."],
+  ],
+  de: [
+    ["Tous les reseaux", "Alle Netzwerke"], ["Choisir un pack", "Paket auswahlen"], ["Votre campagne", "Deine Kampagne"], ["Paiement securise", "Sichere Zahlung"], ["Quel volume ?", "Welches Volumen?"], ["Pourquoi Fanovera", "Warum Fanovera"], ["Avis clients", "Kundenbewertungen"], ["avis", "Bewertungen"], ["Pack selectionne", "Ausgewahltes Paket"], ["Vos questions, nos reponses", "Deine Fragen, unsere Antworten"], ["Reseaux", "Netzwerke"], ["Aide", "Hilfe"], ["Mentions legales", "Impressum"], ["Support campagne", "Kampagnen-Support"], ["credit inclus", "Guthaben inklusive"], ["inclus", "inklusive"], ["Remise incluse", "Rabatt inklusive"], ["Sans engagement", "Ohne Verpflichtung"], ["Aucun mot de passe demande", "Kein Passwort erforderlich"], ["Votre Instagram", "Dein Instagram"], ["Votre TikTok", "Dein TikTok"], ["Votre profil", "Dein Profil"], ["Votre chaine", "Dein Kanal"], ["Contact", "Kontakt"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "Unsere KI hilft, eine Zielgruppe passend zu deiner Nische und deinen Inhalten zu definieren."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "Kein Kontozugriff, keine Beitrage in deinem Namen und keine direkten Aktionen auf deinem Profil."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Nur dein offentlicher Benutzername wird zur Vorbereitung der Sichtbarkeitskampagne benotigt."], ["Suivi inclus", "Begleitung inklusive"], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "Wenn das geplante Volumen nicht erreicht wird, pruft unser Support die Kampagne und verlangert sie."], ["Strategie de presence en ligne assistee par IA. Campagnes ciblees, suivi clair et progression mesuree.", "KI-gestutzte Online-Prasenzstrategie. Gezielte Kampagnen, klares Tracking und messbarer Fortschritt."],
+    ["il y a 2 jours", "vor 2 Tagen"], ["il y a 4 jours", "vor 4 Tagen"], ["il y a 5 jours", "vor 5 Tagen"], ["il y a 6 jours", "vor 6 Tagen"], ["il y a 7 jours", "vor 7 Tagen"], ["il y a 9 jours", "vor 9 Tagen"], ["il y a 10 jours", "vor 10 Tagen"], ["il y a 11 jours", "vor 11 Tagen"], ["il y a 12 jours", "vor 12 Tagen"], ["il y a 14 jours", "vor 14 Tagen"], ["il y a 15 jours", "vor 15 Tagen"],
+    ["Progression reguliere et campagne bien suivie. Je recommande.", "Regelmassiger Fortschritt und gut betreute Kampagne. Ich empfehle es."], ["Mise en route rapide, suivi clair et rythme progressif.", "Schneller Start, klares Tracking und progressives Tempo."], ["Mise en route rapide et suivi serieux.", "Schneller Start und seriose Begleitung."], ["Service client reactif et suivi au rendez-vous.", "Reaktiver Support und zuverlassige Begleitung."], ["Bonne progression continue", "Guter kontinuierlicher Fortschritt"], ["Est-ce que cela peut aider ma visibilite professionnelle ?", "Kann das meiner beruflichen Sichtbarkeit helfen?"], ["Est-ce que cela peut aider la visibilite de ma page ?", "Kann das der Sichtbarkeit meiner Seite helfen?"], ["Progression reguliere pour ma chaine Twitch.", "Regelmassiger Fortschritt fur meinen Twitch-Kanal."],
+    ["Comment fonctionne la mise en avant ?", "Wie funktioniert die Sichtbarkeitskampagne?"], ["Est-ce que je dois vous donner mon mot de passe ?", "Muss ich mein Passwort angeben?"], ["Est-ce que vous agissez sur mon compte ?", "Handelt ihr auf meinem Konto?"], ["Quand la campagne demarre-t-elle ?", "Wann startet die Kampagne?"], ["Que se passe-t-il si le volume n'est pas atteint ?", "Was passiert, wenn das Volumen nicht erreicht wird?"], ["Puis-je commander plusieurs campagnes ?", "Kann ich mehrere Kampagnen bestellen?"], ["Nous preparons une campagne de visibilite autour de votre profil public et de votre thematique. L'objectif est de presenter votre compte a une audience plus pertinente, avec un rythme progressif et mesure.", "Wir bereiten eine Sichtbarkeitskampagne rund um dein offentliches Profil und dein Thema vor, mit einem progressiven und kontrollierten Tempo."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur Instagram public. Aucun acces au compte n'est demande.", "Nie. Wir brauchen nur deinen offentlichen Instagram-Benutzernamen. Kein Kontozugriff wird angefordert."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur TikTok public. Aucun acces au compte n'est demande.", "Nie. Wir brauchen nur deinen offentlichen TikTok-Benutzernamen. Kein Kontozugriff wird angefordert."], ["Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s'appuie sur une mise en avant externe et progressive.", "Nein. Wir loggen uns nicht in dein Konto ein und posten nichts in deinem Namen. Der Service basiert auf externer und progressiver Sichtbarkeit."], ["La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s'etaler sur plusieurs jours selon le volume choisi.", "Die Vorbereitung beginnt nach Zahlungsbestatigung. Die Umsetzung ist progressiv und kann je nach Volumen mehrere Tage dauern."], ["Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n'est pas atteint.", "Unser Support pruft die Kampagne und kann sie ohne Zusatzkosten verlangern, wenn das geplante Volumen nicht erreicht wird."],
+  ],
+  it: [
+    ["Tous les reseaux", "Tutte le reti"], ["Choisir un pack", "Scegli un pack"], ["Votre campagne", "La tua campagna"], ["Paiement securise", "Pagamento sicuro"], ["Quel volume ?", "Quale volume?"], ["Pourquoi Fanovera", "Perche Fanovera"], ["Avis clients", "Recensioni clienti"], ["avis", "recensioni"], ["Pack selectionne", "Pack selezionato"], ["Vos questions, nos reponses", "Le tue domande, le nostre risposte"], ["Reseaux", "Reti"], ["Aide", "Aiuto"], ["Mentions legales", "Note legali"], ["Support campagne", "Supporto campagna"], ["credit inclus", "credito incluso"], ["inclus", "incluso"], ["Remise incluse", "Sconto incluso"], ["Sans engagement", "Senza impegno"], ["Aucun mot de passe demande", "Nessuna password richiesta"], ["Votre Instagram", "Il tuo Instagram"], ["Votre TikTok", "Il tuo TikTok"], ["Votre profil", "Il tuo profilo"], ["Votre chaine", "Il tuo canale"], ["Contact", "Contatto"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "La nostra IA aiuta a definire un pubblico coerente con la tua nicchia e i tuoi contenuti."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "Nessun accesso all'account, nessuna pubblicazione al tuo posto e nessuna azione diretta sul profilo."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Serve solo il tuo nome utente pubblico per preparare la campagna di visibilita."], ["Suivi inclus", "Monitoraggio incluso"], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "Se il volume previsto non viene raggiunto, il supporto verifica ed estende la campagna."], ["Strategie de presence en ligne assistee par IA. Campagnes ciblees, suivi clair et progression mesuree.", "Strategia di presenza online assistita da IA. Campagne mirate, monitoraggio chiaro e progresso misurato."],
+    ["il y a 2 jours", "2 giorni fa"], ["il y a 4 jours", "4 giorni fa"], ["il y a 5 jours", "5 giorni fa"], ["il y a 6 jours", "6 giorni fa"], ["il y a 7 jours", "7 giorni fa"], ["il y a 9 jours", "9 giorni fa"], ["il y a 10 jours", "10 giorni fa"], ["il y a 11 jours", "11 giorni fa"], ["il y a 12 jours", "12 giorni fa"], ["il y a 14 jours", "14 giorni fa"], ["il y a 15 jours", "15 giorni fa"],
+    ["Progression reguliere et campagne bien suivie. Je recommande.", "Progressione regolare e campagna ben seguita. Lo consiglio."], ["Mise en route rapide, suivi clair et rythme progressif.", "Avvio rapido, monitoraggio chiaro e ritmo progressivo."], ["Mise en route rapide et suivi serieux.", "Avvio rapido e monitoraggio serio."], ["Service client reactif et suivi au rendez-vous.", "Assistenza reattiva e monitoraggio puntuale."], ["Bonne progression continue", "Buona progressione continua"], ["Est-ce que cela peut aider ma visibilite professionnelle ?", "Puo aiutare la mia visibilita professionale?"], ["Est-ce que cela peut aider la visibilite de ma page ?", "Puo aiutare la visibilita della mia pagina?"], ["Progression reguliere pour ma chaine Twitch.", "Progressione regolare per il mio canale Twitch."],
+    ["Comment fonctionne la mise en avant ?", "Come funziona la promozione?"], ["Est-ce que je dois vous donner mon mot de passe ?", "Devo fornire la password?"], ["Est-ce que vous agissez sur mon compte ?", "Agite sul mio account?"], ["Quand la campagne demarre-t-elle ?", "Quando parte la campagna?"], ["Que se passe-t-il si le volume n'est pas atteint ?", "Cosa succede se il volume non viene raggiunto?"], ["Puis-je commander plusieurs campagnes ?", "Posso ordinare piu campagne?"], ["Nous preparons une campagne de visibilite autour de votre profil public et de votre thematique. L'objectif est de presenter votre compte a une audience plus pertinente, avec un rythme progressif et mesure.", "Prepariamo una campagna di visibilita intorno al tuo profilo pubblico e al tuo tema, con un ritmo progressivo e misurato."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur Instagram public. Aucun acces au compte n'est demande.", "Mai. Ci serve solo il tuo nome utente Instagram pubblico. Non viene richiesto alcun accesso all'account."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur TikTok public. Aucun acces au compte n'est demande.", "Mai. Ci serve solo il tuo nome utente TikTok pubblico. Non viene richiesto alcun accesso all'account."], ["Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s'appuie sur une mise en avant externe et progressive.", "No. Non accediamo al tuo account e non pubblichiamo al tuo posto. Il servizio si basa su una promozione esterna e progressiva."], ["La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s'etaler sur plusieurs jours selon le volume choisi.", "La preparazione inizia dopo la conferma del pagamento. La distribuzione e progressiva e puo durare diversi giorni."], ["Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n'est pas atteint.", "Il supporto verifica la campagna e puo estenderla senza costi aggiuntivi quando il volume previsto non viene raggiunto."],
+  ],
+  tr: [
+    ["Tous les reseaux", "Tum aglar"], ["Choisir un pack", "Paket sec"], ["Votre campagne", "Kampanyaniz"], ["Paiement securise", "Guvenli odeme"], ["Quel volume ?", "Hangi hacim?"], ["Pourquoi Fanovera", "Neden Fanovera"], ["Avis clients", "Musteri yorumlari"], ["avis", "yorum"], ["Pack selectionne", "Secilen paket"], ["Vos questions, nos reponses", "Sorulariniz, cevaplarimiz"], ["Reseaux", "Aglar"], ["Aide", "Yardim"], ["Mentions legales", "Yasal bilgiler"], ["Support campagne", "Kampanya destegi"], ["credit inclus", "dahil kredi"], ["inclus", "dahil"], ["Remise incluse", "Indirim dahil"], ["Sans engagement", "Taahhutsuz"], ["Aucun mot de passe demande", "Sifre gerekmez"], ["Votre Instagram", "Instagram hesabiniz"], ["Votre TikTok", "TikTok hesabiniz"], ["Votre profil", "Profiliniz"], ["Votre chaine", "Kanaliniz"], ["Contact", "Iletisim"],
+    ["Notre IA aide a definir une audience coherente avec votre niche et vos contenus.", "Yapay zekamiz, alaniniz ve iceriklerinizle uyumlu bir hedef kitle tanimlamaya yardim eder."], ["Aucun acces au compte, aucune publication a votre place, aucune action directe sur votre profil.", "Hesap erisimi yok, sizin adiniza paylasim yok ve profilinizde dogrudan islem yok."], ["Juste votre nom d'utilisateur public pour preparer la campagne de visibilite.", "Gorunurluk kampanyasini hazirlamak icin yalnizca herkese acik kullanici adiniz gerekir."], ["Suivi inclus", "Takip dahil"], ["Si le volume prevu n'est pas atteint, notre support verifie et prolonge la campagne.", "Planlanan hacme ulasilmazsa destek ekibimiz kampanyayi inceler ve uzatir."], ["Strategie de presence en ligne assistee par IA. Campagnes ciblees, suivi clair et progression mesuree.", "Yapay zeka destekli online varlik stratejisi. Hedefli kampanyalar, net takip ve olculu ilerleme."],
+    ["il y a 2 jours", "2 gun once"], ["il y a 4 jours", "4 gun once"], ["il y a 5 jours", "5 gun once"], ["il y a 6 jours", "6 gun once"], ["il y a 7 jours", "7 gun once"], ["il y a 9 jours", "9 gun once"], ["il y a 10 jours", "10 gun once"], ["il y a 11 jours", "11 gun once"], ["il y a 12 jours", "12 gun once"], ["il y a 14 jours", "14 gun once"], ["il y a 15 jours", "15 gun once"],
+    ["Progression reguliere et campagne bien suivie. Je recommande.", "Duzenli ilerleme ve iyi takip edilen kampanya. Tavsiye ederim."], ["Mise en route rapide, suivi clair et rythme progressif.", "Hizli baslangic, net takip ve kademeli tempo."], ["Mise en route rapide et suivi serieux.", "Hizli baslangic ve ciddi takip."], ["Service client reactif et suivi au rendez-vous.", "Hizli destek ve duzenli takip."], ["Bonne progression continue", "Iyi ve surekli ilerleme"], ["Est-ce que cela peut aider ma visibilite professionnelle ?", "Profesyonel gorunurlugume yardimci olabilir mi?"], ["Est-ce que cela peut aider la visibilite de ma page ?", "Sayfamin gorunurlugune yardimci olabilir mi?"], ["Progression reguliere pour ma chaine Twitch.", "Twitch kanalım icin duzenli ilerleme."],
+    ["Comment fonctionne la mise en avant ?", "Tanitim nasil calisir?"], ["Est-ce que je dois vous donner mon mot de passe ?", "Sifremi vermem gerekiyor mu?"], ["Est-ce que vous agissez sur mon compte ?", "Hesabimda islem yapiyor musunuz?"], ["Quand la campagne demarre-t-elle ?", "Kampanya ne zaman baslar?"], ["Que se passe-t-il si le volume n'est pas atteint ?", "Hacim tamamlanmazsa ne olur?"], ["Puis-je commander plusieurs campagnes ?", "Birden fazla kampanya siparis edebilir miyim?"], ["Nous preparons une campagne de visibilite autour de votre profil public et de votre thematique. L'objectif est de presenter votre compte a une audience plus pertinente, avec un rythme progressif et mesure.", "Herkese acik profiliniz ve konunuz etrafinda, kademeli ve olculu bir gorunurluk kampanyasi hazirlariz."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur Instagram public. Aucun acces au compte n'est demande.", "Asla. Yalnizca herkese acik Instagram kullanici adiniz gerekir. Hesap erisimi istenmez."], ["Jamais. Nous avons uniquement besoin de votre nom d'utilisateur TikTok public. Aucun acces au compte n'est demande.", "Asla. Yalnizca herkese acik TikTok kullanici adiniz gerekir. Hesap erisimi istenmez."], ["Non. Nous ne nous connectons pas a votre compte et nous ne publions rien a votre place. Le service s'appuie sur une mise en avant externe et progressive.", "Hayir. Hesabiniza giris yapmayiz ve sizin adiniza paylasim yapmayiz. Hizmet harici ve kademeli tanitima dayanir."], ["La preparation demarre apres confirmation du paiement. Le deploiement est progressif et peut s'etaler sur plusieurs jours selon le volume choisi.", "Hazirlik odeme onayindan sonra baslar. Uygulama kademelidir ve secilen hacme gore birkac gun surebilir."], ["Notre support verifie la campagne et peut prolonger la mise en avant sans frais supplementaires lorsque le volume prevu n'est pas atteint.", "Planlanan hacim tamamlanmazsa destek ekibimiz kampanyayi inceler ve ek ucret olmadan uzatabilir."],
+  ],
+};
+
+export function getDictionary(locale: SupportedLocale) {
+  return dictionaries[locale] || dictionaries.fr;
+}
+
+function loose(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function replaceLoose(input: string, from: string, to: string) {
+  const looseFrom = loose(from);
+  if (looseFrom === from.toLowerCase()) return input;
+  return input.replace(new RegExp(escapeRegExp(looseFrom), "gi"), to);
+}
+
+export function translateVisibleText(text: string, locale: SupportedLocale) {
+  if (locale === "fr") return text;
+
+  const dict = getDictionary(locale);
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+
+  const exact = dict.exact[trimmed];
+  if (exact) {
+    return text.replace(trimmed, exact);
+  }
+
+  let translated = trimmed;
+  for (const [from, to] of dict.fragments) {
+    translated = translated.replaceAll(from, to);
+    translated = replaceLoose(translated, from, to);
+  }
+
+  for (const [from, to] of broadReplacements[locale]) {
+    translated = translated.replaceAll(from, to);
+    translated = replaceLoose(translated, from, to);
+  }
+
+  for (const [from, to] of commonAscii[locale]) {
+    translated = translated.replaceAll(from, to);
+    translated = replaceLoose(translated, from, to);
+  }
+
+  return text.replace(trimmed, translated);
+}

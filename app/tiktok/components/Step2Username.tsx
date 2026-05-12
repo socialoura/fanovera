@@ -49,14 +49,14 @@ export default function Step2Username({ country, pack, username, setUsername, em
       return;
     }
     if (!verified) {
-      if (verifying) setSubmitError("VÃ©rification du compte en coursâ€¦");
+      if (verifying) setSubmitError("Verification du compte en cours...");
       else if (apiError === "not_found") setSubmitError("Ce compte est introuvable sur TikTok.");
-      else if (apiError === "private") setSubmitError("Ce compte est privÃ©. Passez-le en public pour continuer.");
+      else if (apiError === "private") setSubmitError("Ce compte est prive. Passez-le en public pour continuer.");
       else setSubmitError("Entrez un pseudo TikTok valide et public.");
       return;
     }
     if (!emailValid) {
-      setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u.");
+      setSubmitError("Entrez votre e-mail pour recevoir le recu.");
       return;
     }
     setSubmitError(null);
@@ -114,7 +114,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
             Quel <span className="squiggle tt">profil</span> souhaitez-vous promouvoir ?
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>pseudo TikTok</strong>, c&apos;est tout. Aucun mot de passe, aucun accÃ¨s demandÃ©. Le compte doit Ãªtre <strong style={{ color: "var(--ink)" }}>public</strong>.
+            Entrez juste votre <strong style={{ color: "var(--ink)" }}>pseudo TikTok</strong>, c&apos;est tout. Aucun mot de passe, aucun acces demande. Le compte doit etre <strong style={{ color: "var(--ink)" }}>public</strong>.
           </p>
         </div>
 
@@ -152,23 +152,23 @@ export default function Step2Username({ country, pack, username, setUsername, em
 
             {touched && !valid && clean.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Format invalide. Lettres, chiffres, &quot;.&quot; et &quot;_&quot; uniquement (2-24 caractÃ¨res).
+                <span>!</span> Format invalide. Lettres, chiffres, &quot;.&quot; et &quot;_&quot; uniquement (2-24 caracteres).
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Compte introuvable sur TikTok.
+                <span>!</span> Compte introuvable sur TikTok.
               </div>
             )}
             {valid && apiError === "private" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>ðŸ”’</span> Ce compte est privÃ©. Passez-le en public pour continuer.
+                <span>!</span> Ce compte est prive. Passez-le en public pour continuer.
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reÃ§u)
+                Votre e-mail (pour le recu)
               </label>
               <div className="input-shell">
                 <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -194,7 +194,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(254,44,85,0.08)", border: "1px solid rgba(254,44,85,0.25)", borderRadius: 12, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -235,7 +235,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-                    {verified ? "Compte trouvÃ© Â· Public" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du pseudo"}
+                    {verified ? "Compte trouve - Public" : verifying ? "Verification..." : apiError ? "" : "En attente du pseudo"}
                   </div>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", textAlign: "center", padding: "16px 0", borderBottom: "1px solid var(--line)" }}>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 18 }}>
-                    {profile ? formatQty(profile.followingCount) : "â€”"}
+                    {profile ? formatQty(profile.followingCount) : "-"}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)" }}>abonnements</div>
                 </div>
@@ -252,16 +252,16 @@ export default function Step2Username({ country, pack, username, setUsername, em
                     {profile ? (
                       <span>
                         {formatQty(profile.followersCount)} <span style={{ fontSize: 12, color: "var(--green)" }}>
-                          â†’ {formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
+                          {"-> "}{formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
                         </span>
                       </span>
-                    ) : "â€”"}
+                    ) : "-"}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)" }}>followers</div>
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 18 }}>
-                    {profile ? formatQty(profile.likesCount) : "â€”"}
+                    {profile ? formatQty(profile.likesCount) : "-"}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)" }}>j&apos;aime</div>
                 </div>

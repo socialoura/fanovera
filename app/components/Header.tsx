@@ -1,8 +1,13 @@
+ "use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import CurrencySelector from "./CurrencySelector";
+import LanguageSelector from "./LanguageSelector";
 import NetIcon from "./NetIcon";
+import { useI18n } from "../i18n/I18nProvider";
 import { NETWORKS } from "../lib/networks";
+import { getPublicCopy } from "./publicCopy";
 
 export function Logo() {
   return (
@@ -20,6 +25,9 @@ export function Logo() {
 }
 
 export default function Header() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).header;
+
   return (
     <div style={{ padding: "24px 0" }}>
       <div className="container header-row">
@@ -45,18 +53,19 @@ export default function Header() {
               margin: "0 4px",
             }}
           />
-          <Link href="/track">Suivi</Link>
-          <Link href="/#faq">FAQ</Link>
-          <Link href="/contact">Contact</Link>
+          <Link href="/track">{copy.track}</Link>
+          <Link href="/#faq">{copy.faq}</Link>
+          <Link href="/contact">{copy.contact}</Link>
         </nav>
         <div className="header-cta-group" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LanguageSelector compact />
           <CurrencySelector compact />
           <a
             href="#start"
             className="btn-primary hide-md"
             style={{ padding: "10px 20px", fontSize: 14 }}
           >
-            Commencer
+            {copy.start}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path
                 d="M3 7h8M7 3l4 4-4 4"

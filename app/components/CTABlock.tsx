@@ -1,9 +1,13 @@
 "use client";
 
 import NetIcon from "./NetIcon";
+import { useI18n } from "../i18n/I18nProvider";
 import { NETWORKS } from "../lib/networks";
+import { getPublicCopy } from "./publicCopy";
 
 export default function CTABlock() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).cta;
   return (
     <section id="start" style={{ padding: "clamp(56px, 8vw, 100px) 0", position: "relative" }}>
       <div className="container">
@@ -28,7 +32,7 @@ export default function CTABlock() {
                 color: "white",
               }}
             >
-              Pret a structurer <span style={{ color: "var(--yellow)" }}>votre presence</span> en ligne ?
+              {copy.titleBefore}<span style={{ color: "var(--yellow)" }}>{copy.titleHighlight}</span>{copy.titleAfter}
             </h2>
             <p
               style={{
@@ -38,7 +42,7 @@ export default function CTABlock() {
                 opacity: 0.9,
               }}
             >
-              Choisissez votre plateforme et preparez un plan de visibilite adapte a vos contenus.
+              {copy.body}
             </p>
             <div
               style={{
@@ -72,7 +76,7 @@ export default function CTABlock() {
               ))}
             </div>
             <div style={{ fontSize: 13, opacity: 0.8 }}>
-              Audit public · Strategie de contenu · Aucun acces au compte demande
+              {copy.footer}
             </div>
           </div>
         </div>

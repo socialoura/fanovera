@@ -1,14 +1,13 @@
-﻿import type { CSSProperties } from "react";
+"use client";
+
+import type { CSSProperties } from "react";
 import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
+import { useI18n } from "../i18n/I18nProvider";
 import { NETWORKS, NET_META, type Network } from "../lib/networks";
+import { getPublicCopy } from "./publicCopy";
 
-function StarsRow() {
-  const items = [
-    { q: "Audit clair et plan actionnable", a: "Lea M., musicienne" },
-    { q: "Service serieux, suivi lisible", a: "Karim T., DTC founder" },
-    { q: "Un vrai cadre pour publier mieux", a: "Studio Metrique" },
-  ];
+function StarsRow({ items }: { items: { q: string; a: string }[] }) {
   return (
     <div
       className="hide-md"
@@ -39,7 +38,7 @@ function StarsRow() {
   );
 }
 
-function MockDashboard() {
+function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"] }) {
   return (
     <div className="mock-window" style={{ width: "100%", maxWidth: 700 }}>
       <div className="mock-titlebar">
@@ -82,9 +81,9 @@ function MockDashboard() {
                 strokeLinejoin="round"
               />
             </svg>
-            + Nouvelle campagne
+            {copy.newCampaign}
           </div>
-          {["Tableau de bord", "Campagnes", "Audience IA", "Statistiques", "Reseaux", "Facturation"].map(
+          {copy.menu.map(
             (label, i) => (
               <div
                 key={label}
@@ -112,7 +111,7 @@ function MockDashboard() {
               padding: "0 10px",
             }}
           >
-            RESEAUX ACTIFS
+            {copy.activeNetworks}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 10px" }}>
             {NETWORKS.slice(0, 8).map((n) => (
@@ -133,8 +132,8 @@ function MockDashboard() {
             }}
           >
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Campagne #042</div>
-              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Active · Jour 18 sur 30</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{copy.campaign}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{copy.campaignMeta}</div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               <div
@@ -183,9 +182,9 @@ function MockDashboard() {
             }}
           >
             {[
-              { l: "Audit", v: "32 pts", d: "priorises", c: "var(--green)" },
-              { l: "Contenus", v: "18 idees", d: "pretes", c: "var(--primary)" },
-              { l: "Planning", v: "30 j", d: "cadence", c: "var(--orange)" },
+              { ...copy.stats[0], c: "var(--green)" },
+              { ...copy.stats[1], c: "var(--primary)" },
+              { ...copy.stats[2], c: "var(--orange)" },
             ].map((s, i) => (
               <div key={i} style={{ padding: 12, border: "1px solid var(--line)", borderRadius: 8 }}>
                 <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{s.l}</div>
@@ -205,7 +204,7 @@ function MockDashboard() {
             <div
               style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}
             >
-              Plan de visibilite - 30 jours
+              {copy.chartTitle}
             </div>
             <svg viewBox="0 0 300 130" style={{ width: "100%", height: 140 }}>
               <defs>
@@ -245,7 +244,7 @@ function MockDashboard() {
   );
 }
 
-function NetCard({ n }: { n: Network }) {
+function NetCard({ n, copy }: { n: Network; copy: ReturnType<typeof getPublicCopy>["hero"] }) {
   const meta = NET_META[n.id];
   const cardStyle = {
     "--brand": meta.brand,
@@ -295,9 +294,9 @@ function NetCard({ n }: { n: Network }) {
       {/* Foot: CTA + arrow */}
       <div className="netcard-foot">
         <div>
-          <div className="netcard-cta-label">Audit et strategie</div>
+          <div className="netcard-cta-label">{copy.cardLabel}</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: "white" }}>
-            Voir la solution
+            {copy.cardCta}
           </div>
         </div>
         <div className="netcard-arrow">
@@ -317,11 +316,14 @@ function NetCard({ n }: { n: Network }) {
 }
 
 export default function Hero() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).hero;
+
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
       <div className="container">
         <StatusBadge />
-        <StarsRow />
+        <StarsRow items={copy.stars} />
         <h1
           className="display"
           style={{
@@ -331,7 +333,7 @@ export default function Hero() {
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          Une presence en ligne <span className="squiggle">plus claire</span>, sans promesses artificielles.
+          {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
         </h1>
 
         {/* 8 BIG network cards - primary hero CTA, above the fold */}
@@ -346,7 +348,7 @@ export default function Hero() {
           }}
         >
           {NETWORKS.map((n) => (
-            <NetCard key={n.id} n={n} />
+            <NetCard key={n.id} n={n} copy={copy} />
           ))}
         </div>
 
@@ -365,7 +367,7 @@ export default function Hero() {
           <div
             style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}
           >
-            <span style={{ color: "var(--ink-2)" }}>Note 4,9/5</span>
+            <span style={{ color: "var(--ink-2)" }}>{copy.rating}</span>
             <div style={{ display: "flex", gap: 2 }}>
               {[...Array(5)].map((_, j) => (
                 <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)">
@@ -373,14 +375,14 @@ export default function Hero() {
                 </svg>
               ))}
             </div>
-            <span style={{ color: "var(--ink-3)" }}>· 2 348 avis</span>
+            <span style={{ color: "var(--ink-3)" }}>· {copy.reviews}</span>
           </div>
         </div>
 
         {/* Mock with floating cards */}
         <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <MockDashboard />
+            <MockDashboard copy={copy} />
           </div>
 
           {/* Floating left icons */}
@@ -409,8 +411,8 @@ export default function Hero() {
             <div className="sticker" style={{ borderRadius: 999 }}>
               <NetIcon kind="tiktok" color="#1d1d2c" size={20} />
               <div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)", fontWeight: 600 }}>TIKTOK</div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>audit</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)", fontWeight: 600 }}>{copy.tiktokLabel}</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{copy.tiktokValue}</div>
               </div>
             </div>
           </div>
@@ -434,8 +436,8 @@ export default function Hero() {
                 <NetIcon kind="spotify" color="white" size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>Audit Spotify</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>plan de lancement</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.spotifyTitle}</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.spotifyMeta}</div>
               </div>
             </div>
           </div>
@@ -460,7 +462,7 @@ export default function Hero() {
               </div>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>4,9/5</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>2 348 avis</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.reviewsMeta}</div>
               </div>
             </div>
           </div>
@@ -482,8 +484,8 @@ export default function Hero() {
                 <NetIcon kind="youtube" color="white" size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>SEO video</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>titres et calendrier</div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.youtubeTitle}</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.youtubeMeta}</div>
               </div>
             </div>
           </div>

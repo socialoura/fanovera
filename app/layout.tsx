@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import PostHogProvider from "./PostHogProvider";
 import ChatWidget from "./components/ChatWidget";
+import { I18nProvider } from "./i18n/I18nProvider";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -21,9 +22,9 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Fanovera — Croissance social media propulsée par IA",
+  title: "Fanovera - Presence en ligne accompagnee par IA",
   description:
-    "Fanovera oriente votre contenu vers de vraies audiences sur 8 réseaux sociaux. Croissance progressive, 100% whitehat, livraison instantanée.",
+    "Fanovera aide a structurer votre presence en ligne avec audit, strategie, calendrier de contenu et suivi clair.",
 };
 
 export default function RootLayout({
@@ -34,10 +35,12 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${jakarta.variable} ${caveat.variable}`}>
       <body>
-        <PostHogProvider>{children}</PostHogProvider>
-        <ChatWidget />
-        <Analytics />
-        <SpeedInsights />
+        <I18nProvider>
+          <PostHogProvider>{children}</PostHogProvider>
+          <ChatWidget />
+          <Analytics />
+          <SpeedInsights />
+        </I18nProvider>
       </body>
     </html>
   );

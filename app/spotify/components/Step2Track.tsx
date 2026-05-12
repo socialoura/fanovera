@@ -6,6 +6,7 @@ import Image from "next/image";
 import SpoSprinkle from "./SpoSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
+import { useSpotifyCopy } from "../i18n";
 
 export type SpoPreview = {
   id: string | null;
@@ -97,6 +98,7 @@ function formatDuration(ms: number) {
 export default function Step2Track({
   country, pack, trackInput, setTrackInput, email, setEmail, profile, setProfile, onNext, onBack,
 }: Props) {
+  const t = useSpotifyCopy().step2;
   const [mode, setMode] = useState<Mode>("search");
   const [trackName, setTrackName] = useState("");
   const [artistName, setArtistName] = useState("");
@@ -116,22 +118,22 @@ export default function Step2Track({
   // Keep username/trackInput in sync with search mode so the PageClient always has a meaningful value for Stripe.
   useEffect(() => {
     if (mode === "search") {
-      const combined = `${trackName.trim()} â€” ${artistName.trim()}`;
+      const combined = `${trackName.trim()} - ${artistName.trim()}`;
       if (trackName.trim() || artistName.trim()) setTrackInput(combined);
     }
   }, [mode, trackName, artistName, setTrackInput]);
 
   const handleNext = () => {
-    if (mode === "url" && !url) { setSubmitError("Collez le lien Spotify de votre morceau."); return; }
-    if (mode === "url" && !validUrl) { setSubmitError("Lien Spotify invalide. Format : open.spotify.com/track/â€¦"); return; }
-    if (mode === "search" && !validSearch) { setSubmitError("Renseignez le titre et l'artiste."); return; }
+    if (mode === "url" && !url) { setSubmitError(t.errors.missingUrl); return; }
+    if (mode === "url" && !validUrl) { setSubmitError(t.errors.invalidUrl); return; }
+    if (mode === "search" && !validSearch) { setSubmitError(t.errors.missingSearch); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Recherche du morceau en coursâ€¦");
-      else if (apiError) setSubmitError("Morceau introuvable sur Spotify.");
-      else setSubmitError("Morceau non trouvÃ©.");
+      if (verifying) setSubmitError(t.errors.verifying);
+      else if (apiError) setSubmitError(t.errors.notFound);
+      else setSubmitError(t.errors.missingTrack);
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
+    if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();
   };
@@ -192,31 +194,31 @@ export default function Step2Track({
   void country;
 
   return (
-    <section className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
+    <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
       <SpoSprinkle count={5} seed={2} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quel <span className="squiggle spo">morceau</span> promouvoir ?
+            {t.titleBefore} <span className="squiggle spo">{t.titleFocus}</span> {t.titleAfter}
           </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Collez le lien Spotify de votre morceau, ou cherchez par titre + artiste. Aucun mot de passe demandÃ©.
+            {t.intro}
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <div className="spo-mode-toggle">
-              <button className={mode === "search" ? "active" : ""} onClick={() => setMode("search")}>Titre + Artiste</button>
-              <button className={mode === "url" ? "active" : ""} onClick={() => setMode("url")}>Lien Spotify</button>
+              <button className={mode === "search" ? "active" : ""} onClick={() => setMode("search")}>{t.searchMode}</button>
+              <button className={mode === "url" ? "active" : ""} onClick={() => setMode("url")}>{t.urlMode}</button>
             </div>
 
             {mode === "url" ? (
               <>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                  Lien de votre morceau Spotify
+                  {t.urlLabel}
                 </label>
                 <div className="input-shell spo">
                   <input
@@ -242,20 +244,20 @@ export default function Step2Track({
                 </div>
                 {touched && url.length > 0 && !validUrl && (
                   <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 6, alignItems: "center" }}>
-                    <span>âš </span> Lien invalide. Exemple : https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx
+                    <span>!</span> {t.invalidUrl}
                   </div>
                 )}
               </>
             ) : (
               <>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                  Titre du morceau
+                  {t.trackLabel}
                 </label>
                 <div className="input-shell spo">
                   <input type="text" placeholder="Blinding Lights" value={trackName} onChange={(e) => setTrackName(e.target.value)} />
                 </div>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginTop: 16, marginBottom: 10 }}>
-                  Artiste
+                  {t.artistLabel}
                 </label>
                 <div className="input-shell spo">
                   <input type="text" placeholder="The Weeknd" value={artistName} onChange={(e) => setArtistName(e.target.value)} />
@@ -274,18 +276,18 @@ export default function Step2Track({
             )}
             {hasInput && apiError && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Morceau introuvable sur Spotify.
+                <span>!</span> {t.notFound}
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reÃ§u)
+                {t.emailLabel}
               </label>
               <div className="input-shell spo">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>On vous envoie uniquement votre facture. Pas de spam, jamais.</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
@@ -293,10 +295,10 @@ export default function Step2Track({
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-spo" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -304,7 +306,7 @@ export default function Step2Track({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.25)", borderRadius: 12, fontSize: 13, color: "var(--spo-green-2)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -334,14 +336,14 @@ export default function Step2Track({
                     Spotify
                   </div>
                   <div className="spo-track-title" style={{ marginTop: 8 }}>
-                    {profile?.trackName || (hasInput ? "Chargementâ€¦" : "Votre morceau")}
+                    {profile?.trackName || (hasInput ? t.loading : t.trackFallback)}
                   </div>
                   <div className="spo-artist" style={{ marginTop: 4 }}>
-                    {profile?.artistName || "Artiste"}
+                    {profile?.artistName || t.artistFallback}
                   </div>
                   {profile && (
                     <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-                      {profile.album} Â· {formatDuration(profile.durationMs)}
+                      {profile.album} · {formatDuration(profile.durationMs)}
                     </div>
                   )}
                 </div>
@@ -349,25 +351,26 @@ export default function Step2Track({
 
               <div className="spo-stats-row">
                 <div>
-                  <div className="spo-stat-label">Ã‰coutes totales</div>
+                  <div className="spo-stat-label">{t.totalStreams}</div>
                   <div className="spo-stat-value" style={{ color: verified ? "var(--spo-green)" : "white" }}>
                     {profile ? (
                       <>
                         {formatQty(profile.totalStreams)}{" "}
                         <span style={{ fontSize: 11, color: "var(--spo-green)" }}>
-                          â†’ {formatQty(profile.totalStreams + PACKS[pack].qty + PACKS[pack].bonus)}
+                          {" -> "}
+                          {formatQty(profile.totalStreams + PACKS[pack].qty + PACKS[pack].bonus)}
                         </span>
                       </>
-                    ) : "â€”"}
+                    ) : "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="spo-stat-label">Auditeurs mensuels</div>
-                  <div className="spo-stat-value">{profile ? formatQty(profile.monthlyListeners) : "â€”"}</div>
+                  <div className="spo-stat-label">{t.monthlyListeners}</div>
+                  <div className="spo-stat-value">{profile ? formatQty(profile.monthlyListeners) : "-"}</div>
                 </div>
                 <div>
-                  <div className="spo-stat-label">PopularitÃ©</div>
-                  <div className="spo-stat-value">{profile ? `${profile.popularity}/100` : "â€”"}</div>
+                  <div className="spo-stat-label">{t.popularity}</div>
+                  <div className="spo-stat-value">{profile ? `${profile.popularity}/100` : "-"}</div>
                 </div>
               </div>
             </div>
@@ -380,7 +383,7 @@ export default function Step2Track({
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>NOUVEAU TOTAL</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>{t.newTotal}</div>
                   <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
                 </div>
               </div>

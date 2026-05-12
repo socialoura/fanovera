@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
+import { getDictionary } from "../i18n/dictionaries";
 
 export default function StatusBadge() {
   const [today, setToday] = useState<string | null>(null);
+  const { locale } = useI18n();
+  const dict = getDictionary(locale);
 
   useEffect(() => {
     setToday(
-      new Intl.DateTimeFormat("fr-FR", {
+      new Intl.DateTimeFormat(dict.htmlLang, {
         day: "numeric",
         month: "long",
         year: "numeric",
       }).format(new Date()),
     );
-  }, []);
+  }, [dict.htmlLang, locale]);
 
   return (
     <div
@@ -41,9 +45,11 @@ export default function StatusBadge() {
           }}
         >
           <span className="ping-dot" />
-          <span>
-            Tous nos services sont opérationnels ·{" "}
-            <strong style={{ color: "var(--ink)", fontWeight: 700 }}>au {today}</strong>
+          <span data-i18n-skip>
+            {dict.status.operational} ·{" "}
+            <strong style={{ color: "var(--ink)", fontWeight: 700 }}>
+              {dict.status.asOf} {today}
+            </strong>
           </span>
         </div>
       )}

@@ -1,14 +1,11 @@
+"use client";
+
 import { Logo } from "../../components/Header";
 import NetIcon from "../../components/NetIcon";
 import { NETWORKS } from "../../lib/networks";
+import { useInstagramCopy } from "../i18n";
 
-function FootCol({
-  title,
-  links,
-}: {
-  title: string;
-  links: { l: string; h: string }[];
-}) {
+function FootCol({ title, links }: { title: string; links: { l: string; h: string }[] }) {
   return (
     <div>
       <div
@@ -24,16 +21,7 @@ function FootCol({
       >
         {title}
       </div>
-      <ul
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         {links.map((l, i) => (
           <li key={i}>
             <a href={l.h} style={{ fontSize: 14, color: "var(--ink-2)" }}>
@@ -47,8 +35,10 @@ function FootCol({
 }
 
 export default function IgFooter() {
+  const t = useInstagramCopy().footer;
+
   return (
-    <footer style={{ padding: "60px 0 32px" }}>
+    <footer data-i18n-skip style={{ padding: "60px 0 32px" }}>
       <div className="container">
         <div
           className="footer-grid"
@@ -63,73 +53,39 @@ export default function IgFooter() {
         >
           <div>
             <Logo />
-            <p
-              style={{
-                marginTop: 16,
-                fontSize: 14,
-                lineHeight: 1.55,
-                color: "var(--ink-2)",
-                maxWidth: 280,
-              }}
-            >
-              Croissance social media propulsée par IA. Campagnes ciblées, suivi clair et
-              progression mesurée.
+            <p style={{ marginTop: 16, fontSize: 14, lineHeight: 1.55, color: "var(--ink-2)", maxWidth: 280 }}>
+              {t.desc}
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
-                <a
-                  key={n.id}
-                  href={"/" + n.id}
-                  aria-label={n.name}
-                  title={n.name}
-                  className={`net-icon ${n.id === "instagram" ? "active" : ""}`}
-                >
-                  <NetIcon
-                    kind={n.icon}
-                    color={n.id === "instagram" ? "white" : "currentColor"}
-                    size={18}
-                  />
+                <a key={n.id} href={"/" + n.id} aria-label={n.name} title={n.name} className={`net-icon ${n.id === "instagram" ? "active" : ""}`}>
+                  <NetIcon kind={n.icon} color={n.id === "instagram" ? "white" : "currentColor"} size={18} />
                 </a>
               ))}
             </div>
           </div>
+          <FootCol title={t.networks} links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
+          <FootCol title=" " links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol
-            title="Réseaux"
-            links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))}
-          />
-          <FootCol
-            title=" "
-            links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))}
-          />
-          <FootCol
-            title="Aide"
+            title={t.help}
             links={[
-              { l: "Comment ça marche", h: "#how" },
-              { l: "Support campagne", h: "#guarantee" },
+              { l: t.how, h: "#how" },
+              { l: t.support, h: "#guarantee" },
               { l: "Contact", h: "mailto:hello@fanovera.com" },
-              { l: "Affiliation", h: "#aff" },
+              { l: t.affiliation, h: "#aff" },
             ]}
           />
           <FootCol
-            title="Légal"
+            title={t.legal}
             links={[
-              { l: "Mentions légales", h: "#legal" },
+              { l: t.legalNotice, h: "#legal" },
               { l: "CGV", h: "#cgv" },
-              { l: "Confidentialité", h: "#privacy" },
+              { l: t.privacy, h: "#privacy" },
               { l: "Cookies", h: "#cookies" },
             ]}
           />
         </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-            fontSize: 13,
-            color: "var(--ink-3)",
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>
           <div>© Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris</div>
           <div>hello@fanovera.com</div>
         </div>

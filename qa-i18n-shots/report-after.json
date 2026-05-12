@@ -1,0 +1,102 @@
+[
+  {
+    "page": "spotify",
+    "locale": "fr",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-fr.png",
+    "bad": [],
+    "text": "404\nThis page could not be found."
+  },
+  {
+    "page": "spotify",
+    "locale": "en",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-en.png",
+    "bad": [
+      "Spotify streams"
+    ],
+    "text": "Instagram\nTikTok\nYouTube\nSpotify\nAll networks\nTracking\nLANGUAGE\nEN\nMANUAL\nCURRENCY\nEUR\nAUTO\n4,9\n· 2,348 reviews\n1\nChoose a pack\n2\nYour track\n3\nSecure payment\nSPOTIFY\nTargeted Spotify visibility focused and progressive.\nWHICH VOLUME?\nSTREAMS\n1 000\n+150 included\n3,18 €\n7,98 €\nSTREAMS\n5 000\n+750 included\n12,78 €\n31,98 €\nSTREAMS\n10 000\n+1 500 included\n20,78 €\n47,98 €\nSTREAMS\n25 000\n+4 000 included\n44,78 €\n95,98 €\nSTREAMS\n50 000\n+8 000 included\n79,98 €\n175,98 €\nSTREAMS\n100 000\n+16 000 included\n143,98 €\n319,98 €\nSTREAMS\n250 000\n+40 000 included\n319,98 €\n719,98 €\nSTREAMS\n500 000\n+80 000 included\n607,98 €\n1 279,98 €\nSTREAMS\n1 000 000\n+200 000 included\n1 119,98 €\n2 399,98 €\nSTREAMS\n5 000 000\n+1 000 000 included\n4 799,98 €\n10 399,98 €\nYOUR CAMPAIGN\nSelected pack\nSpotify visibility pack 25 000+4 000 included credit\nTotal\n44,78 €\n95,98 €\nDiscount included 51,20 EUR\nContinue\nNo commitment · No password required\nWHY FANOVERA\nProgressive\nSpotify streams with careful delivery.\n*\nFocused audience\n\nOur AI helps present your track to an audience aligned with your music genre.\n\n+\nAccount protected\n\nNo account access, no posting on your behalf, and no direct action on your profile.\n\n#\nNo password\n\nOnly your public track link is needed to prepare the visibility campaign.\n\n~\nFollow-up included\n\nIf the planned volume is not reached, our support team reviews and extends the campaign.\n\nCUSTOMER REVIEWS\n2,348 reviews · 4,9/5\nLeo M.\n2 days ago\n\nSteady progress and a well-monitored campaign. I recommend it.\n\nSarah B.\n7 days ago\n\nFast setup, clear tracking and a progressive pace.\n\nThomas R.\n5 days ago\n\nStreams increased gradually over 10 days.\n\nInes D.\n10 days ago\n\nFirst Spotify campaign, serious service and clear follow-up.\n\nHugo K.\n5 days ago\n\nGood progress on my EP over several weeks.\n\nLea C.\n12 days ago\n\nNothing to add, the progress matched what was announced.\n\nKarim S.\n14 days ago\n\nResponsive support and reliable follow-up.\n\nManon F.\n15 days ago\n\nMy monthly listeners grew at a steady pace.\n\nFAQ\nYour questions, our answers.\nHow does the visibility campaign work?\nWe prepare a visibility campaign around your Spotify track and topic. The goal is to present your content to a more relevant audience, with a measured and progressive pace.\nDo I need to give you my password?\nNever. We only need the public Spotify link for your track. No account access is requested.\nDo you act on my account?\nNo. We do not log into your account and we do not publish anything on your behalf. The service relies on external and progressive promotion.\nWhen does the campaign start?\nPreparation starts after payment confirmation. Deployment is progressive and can span several days depending on the selected volume.\nWhat happens if the volume is not reached?\nOur support team reviews the campaign and can extend the promotion at no extra cost when the planned volume is not reached.\nDo stats appear immediately?\nStats can vary depending on Spotify's own checks and delays. Deployment remains progressive and monitored.\n\nAI-assisted online presence strategy. Focused campaigns, clear tracking and measured progress.\n\nNETWORKS\nInstagram\nTikTok\nYouTube\nSpotify\nTwitter\nFacebook\nLinkedIn\nTwitch\nHELP\nHow it works\nCampaign support\nContact\nOrder tracking\nLEGAL\nLegal notice\nCGV\nPrivacy\nCookies\n© Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris\nhello@fanovera.com\nA question?"
+  },
+  {
+    "page": "spotify",
+    "locale": "es",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-es.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\n¿Una pregunta?"
+  },
+  {
+    "page": "spotify",
+    "locale": "pt",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-pt.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nAlguma pergunta?"
+  },
+  {
+    "page": "spotify",
+    "locale": "de",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-de.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nEine Frage?"
+  },
+  {
+    "page": "spotify",
+    "locale": "it",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-it.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nUna domanda?"
+  },
+  {
+    "page": "spotify",
+    "locale": "tr",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\spotify-tr.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nBir sorunuz mu var?"
+  },
+  {
+    "page": "twitter",
+    "locale": "fr",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-fr.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nUne question ?"
+  },
+  {
+    "page": "twitter",
+    "locale": "en",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-en.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nA question?"
+  },
+  {
+    "page": "twitter",
+    "locale": "es",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-es.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\n¿Una pregunta?"
+  },
+  {
+    "page": "twitter",
+    "locale": "pt",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-pt.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nAlguma pergunta?"
+  },
+  {
+    "page": "twitter",
+    "locale": "de",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-de.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nEine Frage?"
+  },
+  {
+    "page": "twitter",
+    "locale": "it",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-it.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nUna domanda?"
+  },
+  {
+    "page": "twitter",
+    "locale": "tr",
+    "shot": "C:\\Users\\ilyee\\Fanovera\\qa-i18n-shots\\twitter-tr.png",
+    "bad": [],
+    "text": "404\nThis page could not be found.\nBir sorunuz mu var?"
+  }
+]

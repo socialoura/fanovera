@@ -3,37 +3,15 @@
 import { useState } from "react";
 import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
+import { useInstagramCopy } from "../i18n";
 
 export default function IgFAQ() {
   const [open, setOpen] = useState(0);
-  const items = [
-    {
-      q: "Comment fonctionne la mise en avant ?",
-      a: "Nous préparons une campagne de visibilité autour de votre profil public et de votre thématique. L'objectif est de présenter votre compte à une audience plus pertinente, avec un rythme progressif et mesuré.",
-    },
-    {
-      q: "Est-ce que je dois vous donner mon mot de passe ?",
-      a: "Jamais. On a uniquement besoin de votre nom d'utilisateur Instagram public. Aucun accès au compte n'est demandé.",
-    },
-    {
-      q: "Est-ce que vous agissez sur mon compte ?",
-      a: "Non. Nous ne nous connectons pas à votre compte et nous ne publions rien à votre place. Le service s'appuie sur une mise en avant externe et progressive de votre profil public.",
-    },
-    {
-      q: "Quand la campagne démarre-t-elle ?",
-      a: "La préparation démarre après confirmation du paiement. Le déploiement est progressif et peut s'étaler sur plusieurs jours selon le volume choisi.",
-    },
-    {
-      q: "Que se passe-t-il si le volume n'est pas atteint ?",
-      a: "Notre support vérifie la campagne et peut prolonger la mise en avant sans frais supplémentaires lorsque le volume prévu n'est pas atteint.",
-    },
-    {
-      q: "Puis-je commander plusieurs campagnes ?",
-      a: "Oui. Nous recommandons de travailler par paliers afin de garder une progression régulière et cohérente dans le temps.",
-    },
-  ];
+  const t = useInstagramCopy().faq;
+
   return (
     <section
+      data-i18n-skip
       id="faq"
       style={{
         padding: "80px 0",
@@ -65,33 +43,21 @@ export default function IgFAQ() {
             <NetIcon kind="instagram" color="var(--ig-2)" size={13} /> FAQ
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: 0 }}>
-            Vos questions, <span className="squiggle ig">nos réponses</span>.
+            {t.titleBefore} <span className="squiggle ig">{t.titleFocus}</span>.
           </h2>
         </div>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          {items.map((it, i) => (
-            <div
-              key={i}
-              className={`faq-item ig ${open === i ? "open" : ""}`}
-            >
-              <button
-                className="faq-q"
-                onClick={() => setOpen(open === i ? -1 : i)}
-                aria-expanded={open === i}
-              >
-                <span>{it.q}</span>
+          {t.items.map(([question, answer], i) => (
+            <div key={i} className={`faq-item ig ${open === i ? "open" : ""}`}>
+              <button className="faq-q" onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
+                <span>{question}</span>
                 <span className="faq-icon">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M6 2v8M2 6h8"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
+                    <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </span>
               </button>
-              <div className="faq-a">{it.a}</div>
+              <div className="faq-a">{answer}</div>
             </div>
           ))}
         </div>

@@ -1,6 +1,10 @@
-﻿import { Logo } from "./Header";
+"use client";
+
+import { Logo } from "./Header";
 import NetIcon from "./NetIcon";
+import { useI18n } from "../i18n/I18nProvider";
 import { NETWORKS } from "../lib/networks";
+import { getPublicCopy } from "./publicCopy";
 
 function FootCol({
   title,
@@ -47,6 +51,9 @@ function FootCol({
 }
 
 export default function Footer() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).footer;
+
   return (
     <footer style={{ padding: "48px 0 24px" }}>
       <div className="container">
@@ -72,7 +79,7 @@ export default function Footer() {
                 maxWidth: 320,
               }}
             >
-              Strategie de presence en ligne propulsee par IA : audit, calendrier de contenu et suivi de visibilite.
+              {copy.description}
             </p>
             <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
               {NETWORKS.map((n) => (
@@ -96,26 +103,26 @@ export default function Footer() {
             </div>
           </div>
           <FootCol
-            title="Produit"
+            title={copy.product}
             links={[
-              { l: "Fonctionnement", h: "#how" },
-              { l: "Suivi", h: "/track" },
-              { l: "Témoignages", h: "#proof" },
-              { l: "FAQ", h: "#faq" },
+              { l: copy.links.how, h: "#how" },
+              { l: copy.links.track, h: "/track" },
+              { l: copy.links.testimonials, h: "#proof" },
+              { l: copy.links.faq, h: "#faq" },
             ]}
           />
           <FootCol
-            title="Société"
+            title={copy.company}
             links={[
-              { l: "Mentions légales", h: "/mentions-legales" },
-              { l: "CGV", h: "/cgv" },
-              { l: "Confidentialité", h: "/confidentialite" },
-              { l: "Contact", h: "mailto:support@fanovera.com" },
+              { l: copy.links.legal, h: "/mentions-legales" },
+              { l: copy.links.terms, h: "/cgv" },
+              { l: copy.links.privacy, h: "/confidentialite" },
+              { l: copy.links.contact, h: "mailto:support@fanovera.com" },
             ]}
           />
         </div>
         <div className="footer-bottom">
-          <div>© Fanovera SAS 2026 · Made in Paris</div>
+          <div>© Fanovera SAS 2026 · {copy.madeIn}</div>
           <div>17 rue de Paradis · 75010 Paris · support@fanovera.com</div>
         </div>
       </div>

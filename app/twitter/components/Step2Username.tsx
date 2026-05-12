@@ -6,6 +6,7 @@ import Image from "next/image";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
+import { useXCopy } from "../i18n";
 
 export type XProfile = {
   username: string;
@@ -35,6 +36,7 @@ type Props = {
 export default function Step2Username({
   country, pack, username, setUsername, email, setEmail, profile, setProfile, onNext, onBack,
 }: Props) {
+  const t = useXCopy().step2;
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -47,14 +49,14 @@ export default function Step2Username({
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const handleNext = () => {
-    if (!username.trim()) { setSubmitError("Entrez votre @ X (Twitter)."); return; }
+    if (!username.trim()) { setSubmitError(t.errors.missingUrl); return; }
     if (!verified) {
-      if (verifying) setSubmitError("VÃ©rification du compte en coursâ€¦");
-      else if (apiError === "not_found") setSubmitError("Ce compte est introuvable sur X.");
-      else setSubmitError("Entrez un @ X valide et public.");
+      if (verifying) setSubmitError(t.errors.verifying);
+      else if (apiError === "not_found") setSubmitError(t.errors.notFound);
+      else setSubmitError(t.errors.invalidUrl);
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le reÃ§u."); return; }
+    if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();
   };
@@ -92,24 +94,24 @@ export default function Step2Username({
   void country;
 
   return (
-    <section className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
+    <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
       <XSprinkle count={5} seed={2} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quel <span className="squiggle x">profil</span> souhaitez-vous promouvoir ?
+            {t.titleBefore} <span className="squiggle x">{t.titleFocus}</span> {t.titleAfter}
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>@ X (Twitter)</strong>, c&apos;est tout. Aucun mot de passe, aucun accÃ¨s demandÃ©. Le compte doit Ãªtre <strong style={{ color: "var(--ink)" }}>public</strong>.
+            {t.intro}
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Votre @ X (Twitter)
+              {t.urlLabel}
             </label>
 
             <div className="input-shell x">
@@ -138,23 +140,23 @@ export default function Step2Username({
 
             {touched && !valid && clean.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Format invalide. 4-15 caractÃ¨res : lettres, chiffres, &quot;_&quot; uniquement.
+                <span>!</span> {t.invalidUrl}
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Compte introuvable sur X.
+                <span>!</span> {t.notFound}
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le reÃ§u)
+                {t.emailLabel}
               </label>
               <div className="input-shell x">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>On vous envoie uniquement votre facture. Pas de spam, jamais.</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
@@ -162,10 +164,10 @@ export default function Step2Username({
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-x" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -173,7 +175,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 12, fontSize: 13, color: "var(--x-ink)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -182,7 +184,7 @@ export default function Step2Username({
           <div className="x-preview-col" style={{ position: "relative" }}>
             <div className="x-card">
               <div className="x-banner">
-                <div className="x-follow-pill">Suivre</div>
+                <div className="x-follow-pill">X</div>
               </div>
               <div className="x-card-body">
                 <div className="x-avatar" style={{ overflow: "hidden" }}>
@@ -194,7 +196,7 @@ export default function Step2Username({
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ fontWeight: 800, fontSize: 18, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {profile?.fullName || (clean ? clean : "Votre nom")}
+                    {profile?.fullName || (clean ? clean : t.trackFallback)}
                   </div>
                   {profile?.verified && (
                     <svg width="16" height="16" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
@@ -210,8 +212,8 @@ export default function Step2Username({
                 )}
                 <div className="x-stats-row">
                   <div>
-                    <span style={{ fontWeight: 800, color: "white" }}>{profile ? formatQty(profile.followingCount) : "â€”"}</span>
-                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>Abonnements</span>
+                    <span style={{ fontWeight: 800, color: "white" }}>{profile ? formatQty(profile.followingCount) : "-"}</span>
+                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>{t.monthlyListeners}</span>
                   </div>
                   <div>
                     <span style={{ fontWeight: 800, color: verified ? "#1d9bf0" : "white" }}>
@@ -219,17 +221,17 @@ export default function Step2Username({
                         <>
                           {formatQty(profile.followersCount)}
                           <span style={{ fontSize: 12, color: "var(--green)" }}>
-                            {" â†’ "}
+                            {" -> "}
                             {formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
                           </span>
                         </>
-                      ) : "â€”"}
+                      ) : "-"}
                     </span>
-                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>AbonnÃ©s</span>
+                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>{t.totalStreams}</span>
                   </div>
                 </div>
                 <div style={{ marginTop: 10, fontSize: 11, color: "#71767b" }}>
-                  {verified ? "Compte trouvÃ© Â· Public" : verifying ? "VÃ©rificationâ€¦" : apiError ? "" : "En attente du @"}
+                  {verified ? "X · Public" : verifying ? t.loading : apiError ? "" : "@"}
                 </div>
               </div>
             </div>
@@ -242,7 +244,7 @@ export default function Step2Username({
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>NOUVEAU TOTAL</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>{t.newTotal}</div>
                   <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
                 </div>
               </div>

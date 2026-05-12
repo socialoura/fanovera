@@ -1,3 +1,8 @@
+"use client";
+
+import { useI18n } from "../i18n/I18nProvider";
+import { getPublicCopy } from "./publicCopy";
+
 type StepKind = "analyze" | "target" | "growth";
 
 function StepIcon({ kind }: { kind: StepKind }) {
@@ -56,25 +61,27 @@ function StepIcon({ kind }: { kind: StepKind }) {
 }
 
 export default function HowItWorks() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).how;
   const steps: { num: string; title: string; body: string; icon: StepKind; color: string }[] = [
     {
       num: "01",
-      title: "Audit de votre presence",
-      body: "On analyse votre profil public, vos contenus, votre positionnement et vos objectifs. Aucun mot de passe, aucun acces demande.",
+      title: copy.steps[0].title,
+      body: copy.steps[0].body,
       icon: "analyze",
       color: "var(--primary)",
     },
     {
       num: "02",
-      title: "Plan editorial cible",
-      body: "Vous recevez une feuille de route claire : angles de contenu, plateformes prioritaires, calendrier et pistes d'amelioration.",
+      title: copy.steps[1].title,
+      body: copy.steps[1].body,
       icon: "target",
       color: "var(--orange)",
     },
     {
       num: "03",
-      title: "Suivi et optimisation",
-      body: "On suit les signaux utiles, on ajuste les recommandations et on garde une progression coherente avec votre marque.",
+      title: copy.steps[2].title,
+      body: copy.steps[2].body,
       icon: "growth",
       color: "var(--green)",
     },
@@ -99,10 +106,10 @@ export default function HowItWorks() {
               textTransform: "uppercase",
             }}
           >
-            ★ Comment ça marche
+            {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            Trois etapes pour une presence <span className="squiggle">durable</span>.
+            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 

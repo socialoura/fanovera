@@ -1,13 +1,13 @@
-﻿import { Fragment } from "react";
+"use client";
+
+import { Fragment } from "react";
+import { useFacebookCopy } from "../i18n";
 
 export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
-  const steps = [
-    { n: 1, label: "Choisir un pack" },
-    { n: 2, label: "Votre page" },
-    { n: 3, label: "Paiement sÃ©curisÃ©" },
-  ] as const;
+  const steps = useFacebookCopy().stepper.map((label, index) => ({ n: (index + 1) as 1 | 2 | 3, label }));
+
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+    <div data-i18n-skip style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
       <div className="stepper">
         {steps.map((s, i) => (
           <Fragment key={s.n}>

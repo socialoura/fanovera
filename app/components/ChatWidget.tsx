@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
+import { getPublicCopy } from "./publicCopy";
 
 type Step = "closed" | "email" | "message" | "sent";
 
 export default function ChatWidget() {
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).chat;
   const [step, setStep] = useState<Step>("closed");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -15,7 +19,7 @@ export default function ChatWidget() {
 
   const handleEmailSubmit = () => {
     if (!emailValid) {
-      setError("Email invalide.");
+      setError(copy.invalidEmail);
       return;
     }
     setError("");
@@ -24,7 +28,7 @@ export default function ChatWidget() {
 
   const handleSend = async () => {
     if (!message.trim() || message.trim().length < 3) {
-      setError("Message trop court.");
+      setError(copy.shortMessage);
       return;
     }
     setError("");
@@ -37,12 +41,12 @@ export default function ChatWidget() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Erreur, réessayez.");
+        setError(data.error || copy.retry);
       } else {
         setStep("sent");
       }
     } catch {
-      setError("Erreur réseau, réessayez.");
+      setError(copy.networkRetry);
     } finally {
       setSending(false);
     }
@@ -58,10 +62,10 @@ export default function ChatWidget() {
     return (
       <button
         onClick={() => setStep("email")}
-        aria-label="Ouvrir le chat"
+        aria-label={copy.open}
         className="chat-fab"
       >
-        <span className="chat-fab-text">Une question ?</span>
+        <span className="chat-fab-text">{copy.question}</span>
         <span className="chat-fab-dot" />
       </button>
     );
@@ -75,7 +79,7 @@ export default function ChatWidget() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/fanovera-logo.png" alt="Fanovera" style={{ height: 22 }} />
           <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
-            {step === "sent" ? "Message envoyé !" : "Support · en ligne"}
+            {step === "sent" ? copy.sentHeader : copy.online}
           </div>
         </div>
         <button onClick={reset} className="chat-widget-close">
@@ -90,10 +94,9 @@ export default function ChatWidget() {
         {step === "email" && (
           <>
             <div className="chat-widget-bubble">
-              Bonjour ! Comment pouvons-nous vous aider ?
-              Entrez votre email pour commencer.
+              {copy.greeting}
             </div>
-            <label className="chat-widget-label">Votre email</label>
+            <label className="chat-widget-label">{copy.emailLabel}</label>
             <input
               type="email"
               placeholder="vous@exemple.com"
@@ -105,7 +108,7 @@ export default function ChatWidget() {
             />
             {error && <div className="chat-widget-error">{error}</div>}
             <button onClick={handleEmailSubmit} className="chat-widget-btn">
-              Continuer
+              {copy.continue}
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 7h8M7 3l4 4-4 4" />
               </svg>
@@ -121,9 +124,9 @@ export default function ChatWidget() {
               </svg>
               {email}
             </div>
-            <label className="chat-widget-label">Votre message</label>
+            <label className="chat-widget-label">{copy.messageLabel}</label>
             <textarea
-              placeholder="Décrivez votre demande…"
+              placeholder={copy.messagePlaceholder}
               value={message}
               onChange={(e) => { setMessage(e.target.value); setError(""); }}
               autoFocus
@@ -137,7 +140,7 @@ export default function ChatWidget() {
               className="chat-widget-btn"
               style={{ opacity: sending ? 0.7 : 1 }}
             >
-              {sending ? "Envoi…" : "Envoyer le message"}
+              {sending ? copy.sending : copy.send}
               {!sending && (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
@@ -155,13 +158,13 @@ export default function ChatWidget() {
               </svg>
             </div>
             <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)", marginTop: 14 }}>
-              Merci !
+              {copy.thanks}
             </div>
             <p style={{ fontSize: 13, color: "var(--ink-2)", margin: "8px 0 0", lineHeight: 1.5 }}>
-              On vous répondra à <strong style={{ color: "var(--ink)" }}>{email}</strong> dans les plus brefs délais.
+              {copy.reply(email)}
             </p>
             <button onClick={reset} className="chat-widget-btn-soft" style={{ marginTop: 18 }}>
-              Fermer
+              {copy.close}
             </button>
           </div>
         )}
@@ -172,7 +175,7 @@ export default function ChatWidget() {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        Vos données sont protégées et chiffrées
+        {copy.privacy}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import Image from "next/image";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
 import { type CountryId } from "../data";
+import { useTwitchCopy } from "../i18n";
 
 export type TwProfile = {
   username: string;
@@ -37,6 +38,7 @@ type Props = {
 export default function Step2Username({
   country, pack, username, setUsername, email, setEmail, profile, setProfile, onNext, onBack,
 }: Props) {
+  const t = useTwitchCopy();
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -49,15 +51,15 @@ export default function Step2Username({
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const handleNext = () => {
-    if (!username.trim()) { setSubmitError("Entrez votre nom de chaine Twitch."); return; }
-    if (!valid) { setSubmitError("Format invalide. 4-25 caract€¨res : lettres, chiffres, \"_\"."); return; }
+    if (!username.trim()) { setSubmitError(t.step2.errors.username); return; }
+    if (!valid) { setSubmitError(t.step2.errors.invalid); return; }
     if (!verified) {
-      if (verifying) setSubmitError("Verification de la chaine en cours...");
-      else if (apiError === "not_found") setSubmitError("Cette chaine est introuvable sur Twitch.");
-      else setSubmitError("Chaine non trouvee.");
+      if (verifying) setSubmitError(t.step2.errors.checking);
+      else if (apiError === "not_found") setSubmitError(t.step2.errors.notFound);
+      else setSubmitError(t.step2.errors.generic);
       return;
     }
-    if (!emailValid) { setSubmitError("Entrez votre e-mail pour recevoir le recu."); return; }
+    if (!emailValid) { setSubmitError(t.step2.errors.email); return; }
     setSubmitError(null);
     onNext();
   };
@@ -96,29 +98,29 @@ export default function Step2Username({
   void pack;
 
   return (
-    <section className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
+    <section className="slide-in" data-i18n-skip style={{ padding: "40px 0 56px", position: "relative" }}>
       <TwSprinkle count={5} seed={2} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
-          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>Quelle <span className="squiggle tw">chaine</span> souhaitez-vous promouvoir ?</h1>
+          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>{t.step2.titleBefore} <span className="squiggle tw">{t.step2.titleFocus}</span> {t.step2.titleAfter}</h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez votre <strong style={{ color: "var(--ink)" }}>nom de chaine Twitch</strong>. Aucun mot de passe, aucun acces demande. La chaine doit etre <strong style={{ color: "var(--ink)" }}>publique</strong>.
+            {t.step2.intro}
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Nom de votre chaine Twitch
+              {t.step2.usernameLabel}
             </label>
 
             <div className="input-shell tw">
               <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 14 }}>twitch.tv/</span>
               <input
                 type="text"
-                placeholder="votrechaine"
+                placeholder={t.step2.usernamePlaceholder}
                 value={clean}
                 onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
                 onBlur={() => setTouched(true)}
@@ -140,23 +142,23 @@ export default function Step2Username({
 
             {touched && !valid && clean.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Format invalide. 4-25 caracteres : lettres, chiffres, &quot;_&quot; uniquement.
+                <span>!</span> {t.step2.invalidFormat}
               </div>
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>âš </span> Chaine Twitch introuvable.
+                <span>!</span> {t.step2.notFound}
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le recu)
+                {t.step2.emailLabel}
               </label>
               <div className="input-shell tw">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.step2.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>On vous envoie uniquement votre facture. Pas de spam, jamais.</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.step2.emailHint}</div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
@@ -164,10 +166,10 @@ export default function Step2Username({
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.step2.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-tw" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.step2.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -175,7 +177,7 @@ export default function Step2Username({
             </div>
             {submitError && (
               <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(145,70,255,0.08)", border: "1px solid rgba(145,70,255,0.25)", borderRadius: 12, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 8, alignItems: "center" }}>
-                <span>âš </span> {submitError}
+                <span>!</span> {submitError}
               </div>
             )}
           </div>
@@ -193,9 +195,9 @@ export default function Step2Username({
                       <span style={{ fontSize: 24, fontWeight: 800, color: "white" }}>{clean ? clean.charAt(0).toUpperCase() : "?"}</span>
                     )}
                   </div>
-                  <div className="tw-channel-name">@{profile?.username || clean || "votrechaine"}</div>
+                  <div className="tw-channel-name">@{profile?.username || clean || t.step2.fallbackChannel}</div>
                   <div style={{ marginTop: 10, fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.45 }}>
-                    {profile?.bio?.trim() || "Bio non disponible"}
+                    {profile?.bio?.trim() || t.step2.bioUnavailable}
                   </div>
                 </div>
               </div>

@@ -11,9 +11,22 @@ import {
   setManualCurrency,
   useCurrencyPreference,
 } from "../lib/useCurrencyPricing";
+import { useI18n } from "../i18n/I18nProvider";
+
+const CURRENCY_COPY = {
+  fr: { label: "Devise", aria: "Choisir la devise", auto: "Auto", manual: "Manuel", titleAuto: "Detection auto", titleManual: "Devise manuelle", menu: "Devise", hint: "Selon votre position", active: "Actif" },
+  en: { label: "Currency", aria: "Choose currency", auto: "Auto", manual: "Manual", titleAuto: "Auto detection", titleManual: "Manual currency", menu: "Currency", hint: "Based on your location", active: "Active" },
+  es: { label: "Divisa", aria: "Elegir divisa", auto: "Auto", manual: "Manual", titleAuto: "Deteccion automatica", titleManual: "Divisa manual", menu: "Divisa", hint: "Segun tu ubicacion", active: "Activo" },
+  pt: { label: "Moeda", aria: "Escolher moeda", auto: "Auto", manual: "Manual", titleAuto: "Deteccao automatica", titleManual: "Moeda manual", menu: "Moeda", hint: "Com base na sua localizacao", active: "Ativo" },
+  de: { label: "Wahrung", aria: "Wahrung wahlen", auto: "Auto", manual: "Manuell", titleAuto: "Automatische Erkennung", titleManual: "Manuelle Wahrung", menu: "Wahrung", hint: "Nach deinem Standort", active: "Aktiv" },
+  it: { label: "Valuta", aria: "Scegli valuta", auto: "Auto", manual: "Manuale", titleAuto: "Rilevamento automatico", titleManual: "Valuta manuale", menu: "Valuta", hint: "In base alla tua posizione", active: "Attiva" },
+  tr: { label: "Para", aria: "Para birimi sec", auto: "Auto", manual: "Manuel", titleAuto: "Otomatik algilama", titleManual: "Manuel para birimi", menu: "Para", hint: "Konumunuza gore", active: "Aktif" },
+} as const;
 
 export default function CurrencySelector({ compact = false }: { compact?: boolean }) {
   const { currency, mode, country } = useCurrencyPreference();
+  const { locale } = useI18n();
+  const t = CURRENCY_COPY[locale] || CURRENCY_COPY.fr;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -64,22 +77,22 @@ export default function CurrencySelector({ compact = false }: { compact?: boolea
         }}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Choisir la devise"
-        title={mode === "auto" && country ? `Detection auto: ${country}` : "Devise manuelle"}
+        aria-label={t.aria}
+        title={mode === "auto" && country ? `${t.titleAuto}: ${country}` : t.titleManual}
       >
-        <span className="currency-select-label">Devise</span>
+        <span className="currency-select-label">{t.label}</span>
         <span className="currency-trigger-value" aria-hidden="true">
           <span>{currency}</span>
-          <span>{mode === "auto" ? "Auto" : "Manuel"}</span>
+          <span>{mode === "auto" ? t.auto : t.manual}</span>
         </span>
         <span className="currency-chevron" aria-hidden />
       </button>
 
       {open && (
-        <div className="currency-menu" role="listbox" aria-label="Devise">
+        <div className="currency-menu" role="listbox" aria-label={t.menu}>
           <div className="currency-menu-title">
-            <span>Devise</span>
-            <span>{mode === "auto" ? "Auto" : "Manuel"}</span>
+            <span>{t.menu}</span>
+            <span>{mode === "auto" ? t.auto : t.manual}</span>
           </div>
           <button
             type="button"
@@ -88,8 +101,8 @@ export default function CurrencySelector({ compact = false }: { compact?: boolea
             role="option"
             aria-selected={value === "auto"}
           >
-            <span className="currency-code">Auto</span>
-            <span className="currency-name">Selon votre position</span>
+            <span className="currency-code">{t.auto}</span>
+            <span className="currency-name">{t.hint}</span>
             <span className="currency-meta">{currency}</span>
           </button>
           {SUPPORTED_CURRENCIES.map((code: SupportedCurrency) => (
@@ -103,7 +116,7 @@ export default function CurrencySelector({ compact = false }: { compact?: boolea
             >
               <span className="currency-code">{code}</span>
               <span className="currency-name">{CURRENCY_LABELS[code]}</span>
-              <span className="currency-meta">{value === code ? "Actif" : ""}</span>
+              <span className="currency-meta">{value === code ? t.active : ""}</span>
             </button>
           ))}
         </div>

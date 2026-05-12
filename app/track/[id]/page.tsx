@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useI18n } from "../../i18n/I18nProvider";
+import { getPublicCopy } from "../../components/publicCopy";
 
 type ServiceStatus = {
   service: string;
@@ -28,6 +30,8 @@ type TrackResponse = {
 
 export default function TrackOrderPage() {
   const params = useParams<{ id: string }>();
+  const { locale } = useI18n();
+  const copy = getPublicCopy(locale).track;
   const [data, setData] = useState<TrackResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -41,11 +45,11 @@ export default function TrackOrderPage() {
         const res = await fetch(`/api/order/${encodeURIComponent(params.id)}`);
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(json?.error || "Commande introuvable.");
+          throw new Error(json?.error || copy.notFound);
         }
         if (!cancelled) setData(json as TrackResponse);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Erreur inattendue.");
+        if (!cancelled) setError(e instanceof Error ? e.message : copy.unexpected);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -55,21 +59,21 @@ export default function TrackOrderPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id]);
+  }, [copy.notFound, copy.unexpected, params.id]);
 
   return (
     <main style={{ maxWidth: 860, margin: "48px auto", padding: "0 20px" }}>
       <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 16, padding: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Suivi de commande</h1>
+        <h1 style={{ margin: 0, fontSize: 28 }}>{copy.title}</h1>
 
-        {loading && <p style={{ marginTop: 12, color: "var(--ink-3)" }}>Chargement...</p>}
+        {loading && <p style={{ marginTop: 12, color: "var(--ink-3)" }}>{copy.loading}</p>}
 
         {error && !loading && <p style={{ marginTop: 12, color: "#b42318" }}>{error}</p>}
 
         {!loading && data && (
           <>
             <p style={{ marginTop: 10, color: "var(--ink-2)" }}>
-              Commande <strong>#{data.id}</strong> · {data.platform} · statut global <strong>{data.status}</strong>
+              {copy.summary(data.id, data.platform, data.status)}
             </p>
 
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
@@ -80,8 +84,8 @@ export default function TrackOrderPage() {
                     <span style={{ color: "var(--ink-2)" }}>{s.status}</span>
                   </div>
                   <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-2)" }}>
-                    Livré: {s.delivered}/{s.qty} ({s.pct}%)
-                    {typeof s.remains === "number" ? ` · Restant: ${s.remains}` : ""}
+                    {copy.delivered}: {s.delivered}/{s.qty} ({s.pct}%)
+                    {typeof s.remains === "number" ? ` · ${copy.remaining}: ${s.remains}` : ""}
                   </div>
                   <div
                     style={{

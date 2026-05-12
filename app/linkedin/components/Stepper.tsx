@@ -1,13 +1,15 @@
-﻿import { Fragment } from "react";
+import { Fragment } from "react";
+import { useLinkedinCopy } from "../i18n";
 
 export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
+  const t = useLinkedinCopy();
   const steps = [
-    { n: 1, label: "Choisir un pack" },
-    { n: 2, label: "Votre profil" },
-    { n: 3, label: "Paiement sÃ©curisÃ©" },
+    { n: 1, label: t.stepper[0] },
+    { n: 2, label: t.stepper[1] },
+    { n: 3, label: t.stepper[2] },
   ] as const;
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+    <div data-i18n-skip style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
       <div className="stepper">
         {steps.map((s, i) => (
           <Fragment key={s.n}>
