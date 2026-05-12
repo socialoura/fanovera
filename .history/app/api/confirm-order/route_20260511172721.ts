@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createOrder, getCheckoutPayload, getOrderByPaymentIntent, sql } from "@/app/lib/db";
+import { createOrder, getOrderByPaymentIntent, sql } from "@/app/lib/db";
 import { runSmmForOrder } from "@/app/lib/smm";
 import { sendOrderConfirmation } from "@/app/lib/email";
 
@@ -34,15 +34,12 @@ export async function POST(req: NextRequest) {
     }
 
     const meta = pi.metadata || {};
-    const persisted = await getCheckoutPayload(paymentIntentId);
-    const email = persisted?.email || meta.email || "";
-    const username = persisted?.username || meta.username || "";
-    const platform = persisted?.platform || meta.platform || "";
-    let cart: unknown = persisted?.cart || [];
+    const email = meta.email || "";
+    const username = meta.username || "";
+    const platform = meta.platform || "";
+    let cart: unknown = [];
     try {
-      if (!persisted?.cart) {
-        cart = JSON.parse(meta.cart || "[]");
-      }
+      cart = JSON.parse(meta.cart || "[]");
     } catch { /* ignore */ }
 
     const orderId = await createOrder({

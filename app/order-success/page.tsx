@@ -1,0 +1,112 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+
+type ConfirmState = "idle" | "loading" | "ok" | "error";
+
+export default function OrderSuccessPage() {
+  const search = useSearchParams();
+  const [state, setState] = useState<ConfirmState>("idle");
+  const [orderId, setOrderId] = useState<string>(search.get("orderId") || "");
+  const [error, setError] = useState<string>("");
+
+  const paymentIntentId = useMemo(() => {
+    return search.get("payment_intent") || "";
+  }, [search]);
+
+  useEffect(() => {
+    if (orderId || !paymentIntentId) return;
+
+    let cancelled = false;
+    const run = async () => {
+      setState("loading");
+      setError("");
+      try {
+        const res = await fetch("/api/confirm-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentIntentId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.orderId) {
+          throw new Error(data?.error || "Impossible de confirmer votre commande.");
+        }
+        if (!cancelled) {
+          setOrderId(String(data.orderId));
+          setState("ok");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setState("error");
+          setError(e instanceof Error ? e.message : "Erreur inattendue.");
+        }
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, paymentIntentId]);
+
+  const done = !!orderId;
+
+  return (
+    <main style={{ maxWidth: 760, margin: "48px auto", padding: "0 20px" }}>
+      <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 16, padding: 24 }}>
+        <h1 style={{ margin: 0, fontSize: 28 }}>Commande confirmée</h1>
+        <p style={{ color: "var(--ink-2)", marginTop: 10 }}>
+          Merci pour votre achat. Votre commande a bien été prise en compte.
+        </p>
+
+        {!done && state !== "error" && (
+          <p style={{ marginTop: 14, color: "var(--ink-3)" }}>
+            {state === "loading" ? "Finalisation de la commande..." : "Vérification du paiement..."}
+          </p>
+        )}
+
+        {state === "error" && (
+          <p style={{ marginTop: 14, color: "#b42318" }}>
+            {error || "Nous n'avons pas pu finaliser automatiquement votre commande."}
+          </p>
+        )}
+
+        {done && (
+          <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link
+              href={`/track/${encodeURIComponent(orderId)}`}
+              style={{
+                display: "inline-block",
+                padding: "10px 14px",
+                background: "var(--ink)",
+                color: "white",
+                borderRadius: 10,
+                textDecoration: "none",
+                fontWeight: 700,
+              }}
+            >
+              Suivre ma commande #{orderId}
+            </Link>
+            <Link
+              href="/"
+              style={{
+                display: "inline-block",
+                padding: "10px 14px",
+                background: "white",
+                color: "var(--ink)",
+                border: "1px solid var(--line)",
+                borderRadius: 10,
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Retour à l'accueil
+            </Link>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}

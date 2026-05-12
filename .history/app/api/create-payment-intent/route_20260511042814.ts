@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { upsertCheckoutPayload } from "@/app/lib/db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   // @ts-expect-error Stripe SDK version mismatch
@@ -23,23 +22,10 @@ export async function POST(req: NextRequest) {
         email: email || "",
         username: username || "",
         platform: platform || "",
+        cart: JSON.stringify(cart || []).slice(0, 490),
       },
       automatic_payment_methods: { enabled: true },
     });
-
-    try {
-      await upsertCheckoutPayload({
-        paymentIntentId: paymentIntent.id,
-        email,
-        username,
-        platform,
-        cart,
-        amountCents: Math.round(amount),
-        currency: currency || "eur",
-      });
-    } catch (payloadErr) {
-      console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);
-    }
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {

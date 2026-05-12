@@ -44,8 +44,6 @@ export async function initDb() {
     )
   `;
 
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_pi_unique ON orders(stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL`;
-
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`;
@@ -129,19 +127,6 @@ export async function initDb() {
     )
   `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS checkout_payloads (
-      payment_intent_id VARCHAR(255) PRIMARY KEY,
-      email VARCHAR(255) DEFAULT '',
-      username VARCHAR(100) DEFAULT '',
-      platform VARCHAR(20) DEFAULT '',
-      cart JSONB NOT NULL DEFAULT '[]',
-      amount_cents INTEGER NOT NULL DEFAULT 0,
-      currency VARCHAR(3) DEFAULT 'eur',
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-
   // Seed global SMM toggle if missing
   const smmToggle = await sql`SELECT key FROM smm_settings WHERE key = 'auto_order_enabled'`;
   if (smmToggle.length === 0) {
@@ -209,19 +194,6 @@ export async function createOrder(params: {
       ${params.country || null},
       ${params.lang || "fr"}
     )
-    ON CONFLICT (stripe_payment_intent_id)
-    DO UPDATE SET
-      email = EXCLUDED.email,
-      username = EXCLUDED.username,
-      platform = EXCLUDED.platform,
-      cart = EXCLUDED.cart,
-      post_assignments = EXCLUDED.post_assignments,
-      total_cents = EXCLUDED.total_cents,
-      status = EXCLUDED.status,
-      followers_before = EXCLUDED.followers_before,
-      currency = EXCLUDED.currency,
-      country = EXCLUDED.country,
-      lang = EXCLUDED.lang
     RETURNING id
   `;
   return result[0].id;
@@ -274,45 +246,5 @@ export async function replySupportMessage(id: number, replyText: string) {
 
 export async function getSupportMessageById(id: number) {
   const rows = await sql`SELECT * FROM support_messages WHERE id = ${id} LIMIT 1`;
-  return rows[0] || null;
-}
-
-export async function upsertCheckoutPayload(params: {
-  paymentIntentId: string;
-  email?: string;
-  username?: string;
-  platform?: string;
-  cart?: unknown;
-  amountCents: number;
-  currency?: string;
-}) {
-  await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency)
-    VALUES (
-      ${params.paymentIntentId},
-      ${params.email || ""},
-      ${params.username || ""},
-      ${params.platform || ""},
-      ${JSON.stringify(params.cart || [])},
-      ${params.amountCents},
-      ${params.currency || "eur"}
-    )
-    ON CONFLICT (payment_intent_id)
-    DO UPDATE SET
-      email = EXCLUDED.email,
-      username = EXCLUDED.username,
-      platform = EXCLUDED.platform,
-      cart = EXCLUDED.cart,
-      amount_cents = EXCLUDED.amount_cents,
-      currency = EXCLUDED.currency
-  `;
-}
-
-export async function getCheckoutPayload(paymentIntentId: string) {
-  const rows = await sql`
-    SELECT * FROM checkout_payloads
-    WHERE payment_intent_id = ${paymentIntentId}
-    LIMIT 1
-  `;
   return rows[0] || null;
 }

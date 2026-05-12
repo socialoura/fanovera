@@ -129,19 +129,6 @@ export async function initDb() {
     )
   `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS checkout_payloads (
-      payment_intent_id VARCHAR(255) PRIMARY KEY,
-      email VARCHAR(255) DEFAULT '',
-      username VARCHAR(100) DEFAULT '',
-      platform VARCHAR(20) DEFAULT '',
-      cart JSONB NOT NULL DEFAULT '[]',
-      amount_cents INTEGER NOT NULL DEFAULT 0,
-      currency VARCHAR(3) DEFAULT 'eur',
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-
   // Seed global SMM toggle if missing
   const smmToggle = await sql`SELECT key FROM smm_settings WHERE key = 'auto_order_enabled'`;
   if (smmToggle.length === 0) {

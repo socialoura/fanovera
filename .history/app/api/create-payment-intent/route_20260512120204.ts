@@ -27,19 +27,15 @@ export async function POST(req: NextRequest) {
       automatic_payment_methods: { enabled: true },
     });
 
-    try {
-      await upsertCheckoutPayload({
-        paymentIntentId: paymentIntent.id,
-        email,
-        username,
-        platform,
-        cart,
-        amountCents: Math.round(amount),
-        currency: currency || "eur",
-      });
-    } catch (payloadErr) {
-      console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);
-    }
+    await upsertCheckoutPayload({
+      paymentIntentId: paymentIntent.id,
+      email,
+      username,
+      platform,
+      cart,
+      amountCents: Math.round(amount),
+      currency: currency || "eur",
+    });
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
   } catch (err) {
