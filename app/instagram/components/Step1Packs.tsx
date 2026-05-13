@@ -4,7 +4,7 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
 import { useInstagramCopy } from "../i18n";
 
 type Props = {
@@ -169,7 +169,12 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               </div>
             </div>
 
-            <button className="btn-primary btn-ig" onClick={onNext} style={{ width: "100%", padding: "16px 26px", fontSize: 16, marginTop: 8 }}>
+            <button
+              className="btn-primary btn-ig"
+              data-testid="pricing-continue"
+              onClick={onNext}
+              style={{ width: "100%", padding: "16px 26px", fontSize: 16, marginTop: 8 }}
+            >
               {t.continue}
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

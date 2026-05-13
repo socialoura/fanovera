@@ -5,6 +5,9 @@ import Testimonials from "./components/Testimonials";
 import FAQ from "./components/FAQ";
 import CTABlock from "./components/CTABlock";
 import Footer from "./components/Footer";
+import { generateLocalizedMetadata } from "./lib/metadata";
+
+export const generateMetadata = () => generateLocalizedMetadata("home");
 
 export default function Page() {
   return (

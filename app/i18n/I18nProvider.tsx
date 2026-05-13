@@ -40,8 +40,14 @@ function translateAttributes(element: Element, locale: SupportedLocale) {
   }
 }
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const preference = useLocalePreference();
+export function I18nProvider({
+  children,
+  initialLocale = "fr",
+}: {
+  children: React.ReactNode;
+  initialLocale?: SupportedLocale;
+}) {
+  const preference = useLocalePreference(initialLocale);
   const originals = useRef<WeakMap<Text, string>>(new WeakMap());
 
   const t = useMemo(() => {

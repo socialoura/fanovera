@@ -3,10 +3,10 @@ import Stripe from "stripe";
 import { createOrder, getCheckoutPayload, getOrderByPaymentIntent, sql } from "@/app/lib/db";
 import { runSmmForOrder } from "@/app/lib/smm";
 import { sendOrderConfirmation } from "@/app/lib/email";
+import { captureServerEvent } from "@/app/lib/analytics.server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // @ts-expect-error Stripe SDK version mismatch
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2026-04-22.dahlia",
 });
 
 export async function POST(req: NextRequest) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     const meta = pi.metadata || {};
+    const checkoutE2E = process.env.ALLOW_CHECKOUT_E2E === "1" && meta.e2e === "true";
     const persisted = await getCheckoutPayload(paymentIntentId);
     const email = persisted?.email || meta.email || "";
     const username = persisted?.username || meta.username || "";
@@ -57,8 +58,21 @@ export async function POST(req: NextRequest) {
       currency: pi.currency || "eur",
     });
 
+    void captureServerEvent("checkout_completed", meta.anonymousId || email || paymentIntentId, {
+      orderId,
+      product_area: platform,
+      platform,
+      amount_cents: pi.amount,
+      currency: pi.currency || "eur",
+      locale: meta.locale || "",
+      pathname: meta.source_page || "",
+      experimentId: meta.experimentId || "",
+      variantId: meta.variantId || "",
+      pricing_strategy: meta.pricing_strategy || "",
+    });
+
     // Order confirmation email (non-blocking — never breaks checkout)
-    if (email) {
+    if (email && !checkoutE2E) {
       sendOrderConfirmation({
         to: email,
         orderId,
@@ -73,7 +87,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Discord notification
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const webhookUrl = checkoutE2E ? "" : process.env.DISCORD_WEBHOOK_URL;
     if (webhookUrl) {
       try {
         await fetch(webhookUrl, {
@@ -102,15 +116,17 @@ export async function POST(req: NextRequest) {
 
     // Auto-place SMM orders if enabled
     let smmResult = null;
-    try {
-      const toggle = await sql`SELECT value FROM smm_settings WHERE key = 'auto_order_enabled' LIMIT 1`;
-      const autoEnabled = toggle[0]?.value === "true";
-      if (autoEnabled) {
-        smmResult = await runSmmForOrder(orderId);
+    if (!checkoutE2E) {
+      try {
+        const toggle = await sql`SELECT value FROM smm_settings WHERE key = 'auto_order_enabled' LIMIT 1`;
+        const autoEnabled = toggle[0]?.value === "true";
+        if (autoEnabled) {
+          smmResult = await runSmmForOrder(orderId);
+        }
+      } catch (smmErr) {
+        console.error("[confirm-order] SMM auto-order error:", smmErr);
+        // Non-blocking: order is still confirmed even if SMM fails
       }
-    } catch (smmErr) {
-      console.error("[confirm-order] SMM auto-order error:", smmErr);
-      // Non-blocking: order is still confirmed even if SMM fails
     }
 
     return NextResponse.json({ success: true, orderId, smm: smmResult ? "placed" : "skipped" });

@@ -1,0 +1,35 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://user:pass@localhost:5432/fanovera
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      NEXT_PUBLIC_SITE_URL: https://fanovera.com
+      NEXT_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify
+        run: npm run verify

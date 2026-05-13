@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useI18n } from "../i18n/I18nProvider";
 import { getDisplayCurrency } from "../lib/pricingCurrency";
+import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
+import { usePricingExperiment } from "../lib/usePricingExperiment";
+import { trackEvent } from "../lib/analytics";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -40,32 +45,69 @@ export function usePaymentIntent(args: {
   enabled?: boolean;
 }) {
   const { amount, currency = "eur", email, username, platform, cart, enabled = true } = args;
+  const { locale, country } = useI18n();
+  const pathname = usePathname();
+  const normalizedPlatform = normalizePlatform(platform);
+  const productArea = normalizedPlatform ? getProductConfig(normalizedPlatform).productArea : platform;
+  const experiment = usePricingExperiment(productArea, { locale, country, page: pathname || platform });
+  const cartKey = useMemo(() => {
+    try {
+      return JSON.stringify(cart ?? null);
+    } catch {
+      return String(cart ?? "");
+    }
+  }, [cart]);
+  const cartRef = useRef(cart);
+  const lastCartKeyRef = useRef(cartKey);
+  if (lastCartKeyRef.current !== cartKey) {
+    cartRef.current = cart;
+    lastCartKeyRef.current = cartKey;
+  }
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !amount || amount < 100) return;
+    if (!enabled || !amount || amount < 100 || !experiment.anonymousId) return;
     let aborted = false;
     setClientSecret(null);
     setError(null);
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, currency, email, username, platform, cart }),
+      body: JSON.stringify({
+        clientAmount: amount,
+        currency,
+        email,
+        username,
+        platform,
+        cart: cartRef.current,
+        locale,
+        sourcePage: pathname,
+        anonymousId: experiment.anonymousId,
+        experimentId: experiment.assignment.experimentId,
+        variantId: experiment.assignment.variantId,
+        pricingStrategy: experiment.assignment.pricingStrategy,
+      }),
     })
       .then((r) => r.json())
       .then((data) => {
         if (aborted) return;
         if (data.clientSecret) setClientSecret(data.clientSecret);
-        else setError(data.error || "Erreur de paiement");
+        else {
+          setError(data.error || "Erreur de paiement");
+          trackEvent("checkout_failed", { platform, product_area: productArea, reason: data.error || "payment_intent_error" });
+        }
       })
       .catch(() => {
-        if (!aborted) setError("Connexion impossible au service de paiement");
+        if (!aborted) {
+          setError("Connexion impossible au service de paiement");
+          trackEvent("checkout_failed", { platform, product_area: productArea, reason: "payment_intent_network_error" });
+        }
       });
     return () => {
       aborted = true;
     };
-  }, [enabled, amount, currency, email, username, platform, cart]);
+  }, [enabled, amount, currency, email, username, platform, cartKey, locale, pathname, productArea, experiment.anonymousId, experiment.assignment]);
 
   return { clientSecret, error };
 }
@@ -93,6 +135,7 @@ function ExpressCheckout({
           buttonTheme: { applePay: "black", googlePay: "black", paypal: "gold" },
         }}
         onConfirm={async () => {
+          trackEvent("pricing_cta_clicked", { platform, feature_name: "express_checkout" });
           const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
@@ -100,7 +143,10 @@ function ExpressCheckout({
             },
             redirect: "if_required",
           });
-          if (error) setErr(error.message || "Erreur de paiement");
+          if (error) {
+            setErr(error.message || "Erreur de paiement");
+            trackEvent("checkout_failed", { platform, reason: error.message || "express_checkout_error" });
+          }
           else {
             const paymentIntentId = paymentIntentIdFromClientSecret(clientSecret);
             if (paymentIntentId) {
@@ -112,6 +158,7 @@ function ExpressCheckout({
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data?.orderId) {
+                  trackEvent("checkout_completed", { platform, orderId: String(data.orderId), feature_name: "express_checkout" });
                   window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
                   return;
                 }
@@ -160,6 +207,7 @@ function CardPayment({
     if (!stripe || !elements) return;
     setSubmitting(true);
     setErr(null);
+    trackEvent("pricing_cta_clicked", { platform, amount, currency, feature_name: "card_checkout" });
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
@@ -170,7 +218,10 @@ function CardPayment({
       },
       redirect: "if_required",
     });
-    if (error) setErr(error.message || "Erreur de paiement");
+    if (error) {
+      setErr(error.message || "Erreur de paiement");
+      trackEvent("checkout_failed", { platform, amount, currency, reason: error.message || "card_checkout_error" });
+    }
     else {
       const paymentIntentId = paymentIntentIdFromClientSecret(clientSecret);
       if (paymentIntentId) {
@@ -182,6 +233,7 @@ function CardPayment({
           });
           const data = await res.json().catch(() => ({}));
           if (res.ok && data?.orderId) {
+            trackEvent("checkout_completed", { platform, amount, currency, orderId: String(data.orderId), feature_name: "card_checkout" });
             window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
             return;
           }
@@ -195,19 +247,22 @@ function CardPayment({
 
   return (
     <div>
-      <PaymentElement
-        options={{
-          layout: "tabs",
-          paymentMethodOrder: ["card"],
-          fields: { billingDetails: { email: email ? "never" : "auto" } },
-        }}
-      />
+      <div data-testid="stripe-payment-element">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+            paymentMethodOrder: ["card"],
+            fields: { billingDetails: { email: email ? "never" : "auto" } },
+          }}
+        />
+      </div>
       {err && (
         <div style={{ marginTop: 10, fontSize: 13, color: "var(--ig-2)" }}>{err}</div>
       )}
       <button
         onClick={submit}
         disabled={submitting}
+        data-testid="stripe-card-submit"
         className="stripe-pay-btn"
         style={{ ["--brand" as string]: brandColor || "#5260e6" } as React.CSSProperties}
       >
@@ -259,6 +314,7 @@ export default function StripeCheckout({
   clientSecret: prefetchedSecret,
 }: StripeCheckoutProps) {
   const effectiveCurrency = (currency || getDisplayCurrency() || "EUR").toLowerCase();
+  const usesPrefetchedSecret = prefetchedSecret !== undefined;
 
   // If a pre-fetched secret is provided, use it directly; otherwise fetch locally.
   const { clientSecret: fetchedSecret, error: fetchError } = usePaymentIntent({
@@ -268,10 +324,10 @@ export default function StripeCheckout({
     username,
     platform,
     cart,
-    enabled: !prefetchedSecret,
+    enabled: !usesPrefetchedSecret,
   });
-  const clientSecret = prefetchedSecret ?? fetchedSecret;
-  const error = prefetchedSecret ? null : fetchError;
+  const clientSecret = usesPrefetchedSecret ? prefetchedSecret : fetchedSecret;
+  const error = usesPrefetchedSecret ? null : fetchError;
 
   if (error) {
     return (
@@ -308,6 +364,7 @@ export default function StripeCheckout({
 
   return (
     <Elements
+      key={clientSecret}
       stripe={getStripe()}
       options={{
         clientSecret,

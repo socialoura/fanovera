@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
 import { Ic } from "../icons";
 
 interface Order {
@@ -31,14 +32,331 @@ interface ApiResponse {
 }
 
 const STATUS_MAP: Record<string, { label: string; pill: string }> = {
-  delivered: { label: "Livree", pill: "green" },
+  delivered: { label: "Livrée", pill: "green" },
   processing: { label: "En cours", pill: "blue" },
-  paid: { label: "Payee", pill: "violet" },
+  paid: { label: "Payée", pill: "violet" },
   pending: { label: "En attente", pill: "amber" },
-  failed: { label: "Echouee", pill: "red" },
+  failed: { label: "Échouée", pill: "red" },
 };
 
 const STATUSES = ["pending", "paid", "processing", "delivered", "failed"] as const;
+
+const SERVICE_LABELS: Record<string, string> = {
+  followers: "Followers",
+  ig_followers: "Followers Instagram",
+  likes: "Likes",
+  views: "Vues",
+  subscribers: "Abonnés",
+  comments: "Commentaires",
+};
+
+const SMM_STATUS_MAP: Record<string, { label: string; pill: string }> = {
+  pending: { label: "À lancer", pill: "amber" },
+  placed: { label: "Envoyée", pill: "blue" },
+  completed: { label: "Terminée", pill: "green" },
+  partial: { label: "Partielle", pill: "amber" },
+  failed: { label: "Erreur", pill: "red" },
+  canceled: { label: "Annulée", pill: "red" },
+};
+
+type CartItem = {
+  qty?: number;
+  quantity?: number;
+  bonus?: number;
+  country?: string;
+  service?: string;
+  platform?: string;
+  postUrl?: string;
+  link?: string;
+};
+
+type SmmOrderItem = {
+  cartIndex?: number;
+  service?: string;
+  platform?: string;
+  qty?: number;
+  bfServiceId?: number;
+  bfOrderId?: number | null;
+  status?: string;
+  charge?: number | null;
+  error?: string | null;
+  placedAt?: string | null;
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function asArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function formatMoney(cents: number, currency = "EUR") {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: currency || "EUR",
+  }).format((cents || 0) / 100);
+}
+
+function formatQty(value: number | undefined) {
+  return new Intl.NumberFormat("fr-FR").format(value || 0);
+}
+
+function getServiceLabel(service?: string) {
+  if (!service) return "Service";
+  return SERVICE_LABELS[service] || service.replace(/_/g, " ");
+}
+
+function getInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "?";
+}
+
+function Field({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="order-field">
+      <span>{label}</span>
+      <strong>{value || "Non renseigné"}</strong>
+    </div>
+  );
+}
+
+function JsonDetails({ cart, smmOrders }: { cart: unknown; smmOrders: unknown }) {
+  return (
+    <details className="order-json-details">
+      <summary>Données techniques</summary>
+      <div className="order-json-grid">
+        <div>
+          <div className="order-json-title">Cart brut</div>
+          <pre>{JSON.stringify(cart, null, 2)}</pre>
+        </div>
+        <div>
+          <div className="order-json-title">SMM brut</div>
+          <pre>{JSON.stringify(smmOrders, null, 2)}</pre>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function OrderDetail({
+  order,
+  editingStatus,
+  editingCost,
+  saving,
+  formatDate,
+  formatShortDate,
+  onStatusChange,
+  onCostChange,
+  onSaveStatus,
+}: {
+  order: Order;
+  editingStatus: string;
+  editingCost: string;
+  saving: boolean;
+  formatDate: (dateStr: string) => string;
+  formatShortDate: (dateStr: string | null) => string;
+  onStatusChange: (status: string) => void;
+  onCostChange: (cost: string) => void;
+  onSaveStatus: (orderId: number) => void;
+}) {
+  const cart = asArray<CartItem>(order.cart);
+  const smmOrders = asArray<SmmOrderItem>(order.smm_orders);
+  const firstItem = cart[0] ? asRecord(cart[0]) : {};
+  const paidAt = formatDate(order.created_at);
+  const totalQty = cart.reduce((sum, item) => sum + (item.qty || item.quantity || 0), 0);
+  const totalBonus = cart.reduce((sum, item) => sum + (item.bonus || 0), 0);
+  const margin = order.total_cents - order.cost_cents;
+  const marginRate = order.total_cents > 0 ? Math.round((margin / order.total_cents) * 100) : 0;
+  const activeSmm = smmOrders.filter((item) => item.status && item.status !== "failed").length;
+
+  return (
+    <div className="order-detail">
+      <div className="order-detail-hero">
+        <div className="order-customer">
+          <div className="order-avatar">{getInitial(order.email)}</div>
+          <div>
+            <div className="order-detail-kicker">Commande #{order.id}</div>
+            <div className="order-detail-title">{order.email}</div>
+            <div className="order-detail-sub">
+              {order.username ? `@${order.username.replace(/^@/, "")}` : "Client sans username"} · {paidAt}
+            </div>
+          </div>
+        </div>
+        <div className="order-finance-grid">
+          <div>
+            <span>Montant</span>
+            <strong>{formatMoney(order.total_cents, order.currency)}</strong>
+          </div>
+          <div>
+            <span>Coût</span>
+            <strong>{formatMoney(order.cost_cents, order.currency)}</strong>
+          </div>
+          <div>
+            <span>Marge</span>
+            <strong>
+              {formatMoney(margin, order.currency)} <em>{marginRate}%</em>
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="order-detail-grid">
+        <section className="order-panel order-panel-main">
+          <div className="order-panel-head">
+            <div>
+              <h3>Panier client</h3>
+              <p>
+                {cart.length} ligne{cart.length > 1 ? "s" : ""} · {formatQty(totalQty)} unités
+                {totalBonus ? ` · ${formatQty(totalBonus)} bonus` : ""}
+              </p>
+            </div>
+            <span className="pill ink" style={{ textTransform: "capitalize" }}>
+              {order.platform}
+            </span>
+          </div>
+
+          {cart.length ? (
+            <div className="order-items">
+              {cart.map((item, index) => {
+                const qty = item.qty || item.quantity || 0;
+                const service = item.service || String(firstItem.service || "service");
+                return (
+                  <div className="order-item-card" key={`${service}-${index}`}>
+                    <div className="order-item-main">
+                      <div className="order-item-icon">{getInitial(service)}</div>
+                      <div>
+                        <strong>{getServiceLabel(service)}</strong>
+                        <span>
+                          {formatQty(qty)} unité{qty > 1 ? "s" : ""}
+                          {item.bonus ? ` + ${formatQty(item.bonus)} bonus` : ""}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="order-item-meta">
+                      <span>{(item.platform || order.platform).toString()}</span>
+                      <span>{(item.country || order.country || "Pays inconnu").toString().toUpperCase()}</span>
+                    </div>
+                    {(item.postUrl || item.link) && (
+                      <a className="order-link" href={(item.postUrl || item.link) as string} target="_blank" rel="noreferrer">
+                        Voir le lien {Ic.external()}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="order-empty">Aucun panier enregistré sur cette commande.</div>
+          )}
+        </section>
+
+        <aside className="order-panel">
+          <div className="order-panel-head">
+            <div>
+              <h3>Traitement</h3>
+              <p>{activeSmm ? `${activeSmm} sous-commande(s) active(s)` : "Aucune sous-commande lancée"}</p>
+            </div>
+          </div>
+
+          <div className="order-status-box">
+            <label htmlFor={`status-${order.id}`}>Statut commande</label>
+            <div className="order-status-actions">
+              <select id={`status-${order.id}`} className="input" value={editingStatus} onChange={(e) => onStatusChange(e.target.value)}>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_MAP[s]?.label || s}
+                  </option>
+                ))}
+              </select>
+              <div className="order-cost-input-wrap">
+                <input
+                  id={`cost-${order.id}`}
+                  className="input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editingCost}
+                  onChange={(e) => onCostChange(e.target.value)}
+                  aria-label="Coût commande"
+                />
+                <span>{order.currency || "EUR"}</span>
+              </div>
+              <button
+                className="btn primary"
+                disabled={saving || (editingStatus === order.status && Math.round(Number(editingCost || 0) * 100) === order.cost_cents)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSaveStatus(order.id);
+                }}
+              >
+                {saving ? "..." : "Sauvegarder"}
+              </button>
+            </div>
+          </div>
+
+          <div className="order-fields">
+            <Field label="Pays" value={(order.country || "Non renseigné").toUpperCase()} />
+            <Field label="Langue" value={(order.lang || "Non renseignée").toUpperCase()} />
+            <Field label="Followers avant" value={formatQty(order.followers_before)} />
+            <Field label="Livraison" value={formatShortDate(order.delivered_at)} />
+          </div>
+        </aside>
+      </div>
+
+      <section className="order-panel">
+        <div className="order-panel-head">
+          <div>
+            <h3>Commandes SMM</h3>
+            <p>Suivi des commandes envoyées au fournisseur</p>
+          </div>
+        </div>
+
+        {smmOrders.length ? (
+          <div className="smm-list">
+            {smmOrders.map((item, index) => {
+              const status = item.status || "pending";
+              const st = SMM_STATUS_MAP[status] || { label: status, pill: "ink" };
+              return (
+                <div className="smm-row" key={`${item.bfOrderId || "smm"}-${index}`}>
+                  <span className={"pill " + st.pill}>
+                    <span className="dot" />
+                    {st.label}
+                  </span>
+                  <strong>{getServiceLabel(item.service)}</strong>
+                  <span>{formatQty(item.qty)} unités</span>
+                  <span>BF #{item.bfOrderId || "-"}</span>
+                  <span>Service #{item.bfServiceId || "-"}</span>
+                  {item.charge ? <span>{item.charge.toFixed(4)} USD</span> : <span>Coût à venir</span>}
+                  {item.error ? <em title={item.error}>{item.error}</em> : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="order-empty">Aucune commande SMM enregistrée pour le moment.</div>
+        )}
+      </section>
+
+      {order.stripe_payment_intent_id ? (
+        <div className="order-technical-strip">
+          <span>Payment Intent</span>
+          <code>{order.stripe_payment_intent_id}</code>
+        </div>
+      ) : null}
+
+      <JsonDetails cart={order.cart} smmOrders={order.smm_orders} />
+    </div>
+  );
+}
 
 export default function OrdersView() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -54,6 +372,7 @@ export default function OrdersView() {
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingStatus, setEditingStatus] = useState<string>("");
+  const [editingCost, setEditingCost] = useState<string>("0.00");
   const [saving, setSaving] = useState(false);
 
   const limit = 20;
@@ -91,7 +410,6 @@ export default function OrdersView() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Reset page when filter/search changes
   useEffect(() => {
     setPage(1);
   }, [statusFilter, search]);
@@ -110,10 +428,17 @@ export default function OrdersView() {
     } else {
       setExpandedId(order.id);
       setEditingStatus(order.status);
+      setEditingCost((order.cost_cents / 100).toFixed(2));
     }
   };
 
   const handleSaveStatus = async (orderId: number) => {
+    const costValue = Number(editingCost);
+    if (!Number.isFinite(costValue) || costValue < 0) {
+      alert("Le coût doit être un montant positif.");
+      return;
+    }
+
     setSaving(true);
     const token = localStorage.getItem("admin_pw") || "";
     try {
@@ -123,13 +448,16 @@ export default function OrdersView() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id: orderId, status: editingStatus }),
+        body: JSON.stringify({
+          id: orderId,
+          status: editingStatus,
+          cost_cents: Math.round(costValue * 100),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      // Refresh list
       await fetchOrders();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Erreur lors de la sauvegarde");
@@ -149,12 +477,16 @@ export default function OrdersView() {
     });
   };
 
+  const formatShortDate = (dateStr: string | null) => {
+    if (!dateStr) return "Non renseignée";
+    return formatDate(dateStr);
+  };
+
   const startItem = (page - 1) * limit + 1;
   const endItem = Math.min(page * limit, total);
 
   return (
     <div>
-      {/* Toolbar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <div className="search-box" style={{ width: 320 }}>
           {Ic.search()}
@@ -173,8 +505,8 @@ export default function OrdersView() {
               ["pending", "Pending"],
               ["paid", "Paid"],
               ["processing", "En cours"],
-              ["delivered", "Livrees"],
-              ["failed", "Echouees"],
+              ["delivered", "Livrées"],
+              ["failed", "Échouées"],
             ] as const
           ).map(([k, l]) => (
             <button
@@ -189,12 +521,11 @@ export default function OrdersView() {
         </div>
         <div style={{ marginLeft: "auto" }}>
           <button className="btn" onClick={fetchOrders}>
-            {Ic.refresh()} Rafraichir
+            {Ic.refresh()} Rafraîchir
           </button>
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div
           style={{
@@ -211,22 +542,21 @@ export default function OrdersView() {
         </div>
       )}
 
-      {/* Orders table */}
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--a-ink-3)" }}>Chargement...</div>
         ) : orders.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--a-ink-3)" }}>Aucune commande trouvee.</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--a-ink-3)" }}>Aucune commande trouvée.</div>
         ) : (
           <table className="table">
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Email</th>
-                <th>Platform</th>
+                <th>Plateforme</th>
                 <th className="num">Montant</th>
-                <th className="num">Cout</th>
-                <th>Status</th>
+                <th className="num">Coût</th>
+                <th>Statut</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -235,9 +565,8 @@ export default function OrdersView() {
                 const st = STATUS_MAP[o.status] || { label: o.status, pill: "" };
                 const isExpanded = expandedId === o.id;
                 return (
-                  <>
+                  <Fragment key={o.id}>
                     <tr
-                      key={o.id}
                       onClick={() => handleRowClick(o)}
                       style={{ cursor: "pointer", background: isExpanded ? "var(--a-card)" : undefined }}
                     >
@@ -257,10 +586,10 @@ export default function OrdersView() {
                         </span>
                       </td>
                       <td className="num" style={{ fontWeight: 700, color: "var(--a-ink)" }}>
-                        {(o.total_cents / 100).toFixed(2)} &euro;
+                        {formatMoney(o.total_cents, o.currency)}
                       </td>
                       <td className="num" style={{ color: "var(--a-ink-3)" }}>
-                        {(o.cost_cents / 100).toFixed(2)} &euro;
+                        {formatMoney(o.cost_cents, o.currency)}
                       </td>
                       <td>
                         <span className={"pill " + st.pill}>
@@ -273,98 +602,29 @@ export default function OrdersView() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${o.id}-detail`}>
-                        <td colSpan={7} style={{ padding: "16px 20px", background: "var(--a-card)", borderTop: "1px solid var(--a-line)" }}>
-                          <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
-                            {/* Cart details */}
-                            <div style={{ flex: 1, minWidth: 250 }}>
-                              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: "var(--a-ink)" }}>
-                                Cart
-                              </div>
-                              <pre
-                                style={{
-                                  fontSize: 11,
-                                  background: "rgba(0,0,0,0.2)",
-                                  padding: 12,
-                                  borderRadius: 8,
-                                  overflow: "auto",
-                                  maxHeight: 200,
-                                  color: "var(--a-ink-3)",
-                                  border: "1px solid var(--a-line)",
-                                }}
-                              >
-                                {JSON.stringify(o.cart, null, 2)}
-                              </pre>
-                            </div>
-                            {/* SMM Orders */}
-                            <div style={{ flex: 1, minWidth: 250 }}>
-                              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: "var(--a-ink)" }}>
-                                SMM Orders
-                              </div>
-                              <pre
-                                style={{
-                                  fontSize: 11,
-                                  background: "rgba(0,0,0,0.2)",
-                                  padding: 12,
-                                  borderRadius: 8,
-                                  overflow: "auto",
-                                  maxHeight: 200,
-                                  color: "var(--a-ink-3)",
-                                  border: "1px solid var(--a-line)",
-                                }}
-                              >
-                                {JSON.stringify(o.smm_orders, null, 2)}
-                              </pre>
-                            </div>
-                            {/* Status change */}
-                            <div style={{ minWidth: 200 }}>
-                              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 8, color: "var(--a-ink)" }}>
-                                Changer le statut
-                              </div>
-                              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <select
-                                  value={editingStatus}
-                                  onChange={(e) => setEditingStatus(e.target.value)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: 6,
-                                    border: "1px solid var(--a-line)",
-                                    background: "var(--a-card)",
-                                    color: "var(--a-ink)",
-                                    fontSize: 12,
-                                  }}
-                                >
-                                  {STATUSES.map((s) => (
-                                    <option key={s} value={s}>
-                                      {STATUS_MAP[s]?.label || s}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  className="btn primary"
-                                  disabled={saving || editingStatus === o.status}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSaveStatus(o.id);
-                                  }}
-                                  style={{ padding: "6px 14px", fontSize: 12 }}
-                                >
-                                  {saving ? "..." : "Sauvegarder"}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                      <tr>
+                        <td colSpan={7} className="order-detail-cell">
+                          <OrderDetail
+                            order={o}
+                            editingStatus={editingStatus}
+                            editingCost={editingCost}
+                            saving={saving}
+                            formatDate={formatDate}
+                            formatShortDate={formatShortDate}
+                            onStatusChange={setEditingStatus}
+                            onCostChange={setEditingCost}
+                            onSaveStatus={handleSaveStatus}
+                          />
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         )}
 
-        {/* Pagination */}
         {!loading && orders.length > 0 && (
           <div
             style={{
@@ -377,7 +637,7 @@ export default function OrdersView() {
             }}
           >
             <div style={{ fontSize: 12, color: "var(--a-ink-3)", fontWeight: 600 }}>
-              {startItem}–{endItem} sur {total} commandes
+              {startItem}-{endItem} sur {total} commandes
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
@@ -386,7 +646,7 @@ export default function OrdersView() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                Previous
+                Précédent
               </button>
               <span style={{ fontSize: 12, color: "var(--a-ink-3)", fontWeight: 600 }}>
                 Page {page} / {totalPages}
@@ -397,7 +657,7 @@ export default function OrdersView() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
-                Next
+                Suivant
               </button>
             </div>
           </div>

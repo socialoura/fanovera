@@ -9,16 +9,24 @@ import CombosView from "./components/views/CombosView";
 import UpsellsView from "./components/views/UpsellsView";
 import SmmView from "./components/views/SmmView";
 import SupportView from "./components/views/SupportView";
+import I18nSyncView from "./components/views/I18nSyncView";
+import MarketingModeView from "./components/views/MarketingModeView";
 
-type ViewId = "analytics" | "orders" | "pricing" | "combos" | "upsells" | "smm" | "support";
+type ViewId = "analytics" | "orders" | "pricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
 
-const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string; badge?: number }[] = [
+type AdminAnalyticsSummary = {
+  ordersToday?: number;
+};
+
+const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string }[] = [
   { id: "analytics", label: "Analytics", icon: () => Ic.dashboard(), sub: "Vue d'ensemble" },
-  { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients", badge: 6 },
+  { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients" },
   { id: "pricing", label: "Prix", icon: () => Ic.tag(), sub: "Packs multi-devises" },
   { id: "combos", label: "Combos", icon: () => Ic.layers(), sub: "Packs combinés" },
   { id: "upsells", label: "Upsells", icon: () => Ic.zap(), sub: "Ventes additionnelles" },
   { id: "smm", label: "SMM", icon: () => Ic.cog(), sub: "BulkFollows" },
+  { id: "i18n", label: "i18n", icon: () => Ic.edit(), sub: "Traductions" },
+  { id: "marketing", label: "Mode site", icon: () => Ic.zap(), sub: "Copy FR/EN" },
   { id: "support", label: "Support", icon: () => Ic.chat(), sub: "Messages clients" },
 ];
 
@@ -28,6 +36,7 @@ export default function AdminClient() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const [ordersToday, setOrdersToday] = useState(0);
   const meta = NAV.find((n) => n.id === view)!;
 
   useEffect(() => {
@@ -40,13 +49,16 @@ export default function AdminClient() {
     fetch("/api/admin/analytics", {
       headers: { Authorization: `Bearer ${saved}` },
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) throw new Error("unauthorized");
+        const data = (await res.json()) as AdminAnalyticsSummary;
+        setOrdersToday(Number(data.ordersToday) || 0);
         setAuthorized(true);
       })
       .catch(() => {
         localStorage.removeItem("admin_pw");
         setAuthorized(false);
+        setOrdersToday(0);
       })
       .finally(() => setCheckingAuth(false));
   }, []);
@@ -63,12 +75,15 @@ export default function AdminClient() {
         headers: { Authorization: `Bearer ${nextPassword}` },
       });
       if (!res.ok) throw new Error("Mot de passe incorrect.");
+      const data = (await res.json()) as AdminAnalyticsSummary;
+      setOrdersToday(Number(data.ordersToday) || 0);
       localStorage.setItem("admin_pw", nextPassword);
       setAuthorized(true);
       setPassword("");
     } catch (error) {
       localStorage.removeItem("admin_pw");
       setAuthorized(false);
+      setOrdersToday(0);
       setAuthError(error instanceof Error ? error.message : "Connexion impossible.");
     } finally {
       setCheckingAuth(false);
@@ -79,6 +94,7 @@ export default function AdminClient() {
     localStorage.removeItem("admin_pw");
     setAuthorized(false);
     setView("analytics");
+    setOrdersToday(0);
   };
 
   if (checkingAuth && !authorized) {
@@ -87,7 +103,7 @@ export default function AdminClient() {
         <div className="admin-login-card">
           <div className="logo-mark">F</div>
           <div className="admin-login-title">Fanovera Admin</div>
-          <div className="admin-login-sub">Verification de session...</div>
+          <div className="admin-login-sub">Vérification de session...</div>
         </div>
       </div>
     );
@@ -111,7 +127,7 @@ export default function AdminClient() {
           />
           {authError ? <div className="admin-login-error">{authError}</div> : null}
           <button className="btn primary" type="submit" disabled={checkingAuth || !password.trim()}>
-            {checkingAuth ? "Verification..." : "Entrer"}
+            {checkingAuth ? "Vérification..." : "Entrer"}
           </button>
         </form>
       </div>
@@ -134,7 +150,7 @@ export default function AdminClient() {
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
-            {n.badge && <span className="badge">{n.badge}</span>}
+            {n.id === "orders" && ordersToday > 0 ? <span className="badge">{ordersToday}</span> : null}
           </button>
         ))}
 
@@ -147,7 +163,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Système</div>
-        {NAV.slice(5, 6).map((n) => (
+        {NAV.slice(5, 8).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -155,7 +171,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Support</div>
-        {NAV.slice(6).map((n) => (
+        {NAV.slice(8).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -211,6 +227,8 @@ export default function AdminClient() {
           {view === "combos" && <CombosView />}
           {view === "upsells" && <UpsellsView />}
           {view === "smm" && <SmmView />}
+          {view === "i18n" && <I18nSyncView />}
+          {view === "marketing" && <MarketingModeView />}
           {view === "support" && <SupportView />}
         </div>
       </main>

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { getPublicCopy } from "./publicCopy";
 
 export default function FAQ() {
   const { locale } = useI18n();
-  const copy = getPublicCopy(locale).faq;
+  const { mode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode).faq;
   const [open, setOpen] = useState(0);
   const items = copy.items;
   return (

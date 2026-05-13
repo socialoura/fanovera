@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   SUPPORTED_CURRENCIES,
   setDisplayCurrency,
   type SupportedCurrency,
 } from "./pricingCurrency";
+import { applyPricingAssignment } from "./pricingExperiments";
+import { PRODUCT_CATALOG, getProductAreaForService } from "./productCatalog";
+import { usePricingExperiment } from "./usePricingExperiment";
 
 type PricingPack = { qty: number; price: number; popular?: boolean };
+type PricingStatus = "loading" | "ready" | "error";
 type CurrencyMode = "auto" | "manual";
 
 type PackLike = {
@@ -39,6 +43,140 @@ function derivedBonus(qty: number, fallbackPacks: readonly PackLike[]) {
 const CURRENCY_EVENT = "fanovera:currency-change";
 const MODE_KEY = "fanovera_currency_mode";
 const CURRENCY_KEY = "fanovera_currency";
+const PRICING_CACHE_MAX_AGE = 5 * 60 * 1000;
+const PRICING_CACHE_KEY = "fanovera_pricing_cache_v1";
+
+const pricingMemoryCache = new Map<string, { packs: PricingPack[]; ts: number; promise?: Promise<PricingPack[]> }>();
+const pricingBatchPromises = new Map<string, Promise<void>>();
+
+function pricingCacheKey(service: string, currency: string) {
+  return `${service}:${currency.toUpperCase()}`;
+}
+
+function cleanPricingPacks(value: unknown): PricingPack[] {
+  const packs: PricingPack[] = Array.isArray((value as { packs?: unknown })?.packs)
+    ? ((value as { packs: PricingPack[] }).packs)
+    : [];
+
+  return packs.flatMap((pack) => {
+    const qty = Number(pack.qty);
+    const price = Number(pack.price);
+    if (!Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price < 0) return [];
+    return [{ qty, price, popular: Boolean(pack.popular) }];
+  });
+}
+
+function readPricingStorage(key: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(PRICING_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, { packs: PricingPack[]; ts: number }>;
+    const entry = parsed[key];
+    if (!entry || Date.now() - entry.ts > PRICING_CACHE_MAX_AGE) return null;
+    return entry.packs;
+  } catch {
+    return null;
+  }
+}
+
+function writePricingStorage(key: string, packs: PricingPack[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(PRICING_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) as Record<string, { packs: PricingPack[]; ts: number }> : {};
+    parsed[key] = { packs, ts: Date.now() };
+    window.sessionStorage.setItem(PRICING_CACHE_KEY, JSON.stringify(parsed));
+  } catch {
+  }
+}
+
+function storePricingPacks(service: string, currency: string, packs: PricingPack[]) {
+  const key = pricingCacheKey(service, currency);
+  pricingMemoryCache.set(key, { packs, ts: Date.now() });
+  writePricingStorage(key, packs);
+}
+
+export function getCachedPricingPacks(service: string, currency: string) {
+  const key = pricingCacheKey(service, currency);
+  const memory = pricingMemoryCache.get(key);
+  if (memory && Date.now() - memory.ts <= PRICING_CACHE_MAX_AGE) return memory.packs;
+
+  const stored = readPricingStorage(key);
+  if (stored) {
+    pricingMemoryCache.set(key, { packs: stored, ts: Date.now() });
+    return stored;
+  }
+
+  return null;
+}
+
+export async function fetchPricingPacks(service: string, currency: string) {
+  const key = pricingCacheKey(service, currency);
+  const cached = getCachedPricingPacks(service, currency);
+  if (cached) return cached;
+
+  const pending = pricingMemoryCache.get(key)?.promise;
+  if (pending) return pending;
+
+  const promise = fetch(`/api/pricing?service=${encodeURIComponent(service)}&currency=${encodeURIComponent(currency)}`)
+    .then(async (pricingRes) => {
+      if (!pricingRes.ok) throw new Error(`pricing_${pricingRes.status}`);
+      const pricing = await pricingRes.json().catch(() => ({}));
+      const packs = cleanPricingPacks(pricing);
+      if (packs.length === 0) throw new Error("pricing_empty");
+      storePricingPacks(service, currency, packs);
+      return packs;
+    })
+    .catch((error) => {
+      pricingMemoryCache.delete(key);
+      throw error;
+    });
+
+  pricingMemoryCache.set(key, { packs: [], ts: Date.now(), promise });
+  return promise;
+}
+
+export function prefetchProductPricing(currency: string) {
+  const upperCurrency = currency.toUpperCase();
+  const services = Object.values(PRODUCT_CATALOG).map((config) => config.service);
+  const missingServices = services.filter((service) => !getCachedPricingPacks(service, upperCurrency));
+  if (missingServices.length === 0) return Promise.resolve();
+
+  const pending = pricingBatchPromises.get(upperCurrency);
+  if (pending) return pending;
+
+  const promise = fetch(`/api/pricing/all?currency=${encodeURIComponent(upperCurrency)}`)
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`pricing_all_${res.status}`);
+      const payload = await res.json().catch(() => ({}));
+      const serviceMap = payload?.services && typeof payload.services === "object"
+        ? payload.services as Record<string, unknown>
+        : {};
+
+      for (const service of services) {
+        const packs = cleanPricingPacks({ packs: serviceMap[service] });
+        if (packs.length > 0) storePricingPacks(service, upperCurrency, packs);
+      }
+    })
+    .catch(async () => {
+      await Promise.allSettled(missingServices.map((service) => fetchPricingPacks(service, upperCurrency)));
+    })
+    .finally(() => {
+      pricingBatchPromises.delete(upperCurrency);
+    });
+
+  pricingBatchPromises.set(upperCurrency, promise);
+  return promise;
+}
+
+export function usePrefetchProductPricing() {
+  const { currency } = useCurrencyPreference();
+
+  useEffect(() => {
+    void prefetchProductPricing(currency);
+  }, [currency]);
+}
 
 function isSupportedCurrency(value: string): value is SupportedCurrency {
   return SUPPORTED_CURRENCIES.includes(value.toUpperCase() as SupportedCurrency);
@@ -146,34 +284,44 @@ export function useCurrencyPreference() {
 
 export function useCurrencyPricing(service: string) {
   const { currency, locale, mode, country } = useCurrencyPreference();
-  const [priceByQty, setPriceByQty] = useState<Record<number, number>>({});
-  const [dbPacks, setDbPacks] = useState<PricingPack[]>([]);
+  const [pricingStatus, setPricingStatus] = useState<PricingStatus>(() =>
+    getCachedPricingPacks(service, "EUR") ? "ready" : "loading",
+  );
+  const [priceByQty, setPriceByQty] = useState<Record<number, number>>(() => {
+    const cached = getCachedPricingPacks(service, "EUR") || [];
+    return Object.fromEntries(cached.map((pack) => [pack.qty, pack.price]));
+  });
+  const [dbPacks, setDbPacks] = useState<PricingPack[]>(() => getCachedPricingPacks(service, "EUR") || []);
+  const experimentSegment = useMemo(
+    () => ({ country, locale, page: service }),
+    [country, locale, service],
+  );
+  const experiment = usePricingExperiment(getProductAreaForService(service), experimentSegment);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
       try {
-        const pricingRes = await fetch(
-          `/api/pricing?service=${encodeURIComponent(service)}&currency=${encodeURIComponent(currency)}`,
-        );
-        const pricing = await pricingRes.json().catch(() => ({}));
+        const cached = getCachedPricingPacks(service, currency);
+        if (cached) {
+          const map = Object.fromEntries(cached.map((pack) => [pack.qty, pack.price]));
+          setPriceByQty(map);
+          setDbPacks(cached);
+          setPricingStatus("ready");
+          return;
+        }
+
+        setPricingStatus("loading");
+        const cleanPacks = await fetchPricingPacks(service, currency);
         if (cancelled) return;
 
-        const map: Record<number, number> = {};
-        const packs: PricingPack[] = Array.isArray(pricing?.packs) ? pricing.packs : [];
-        const cleanPacks: PricingPack[] = [];
-        for (const p of packs) {
-          const qty = Number(p.qty);
-          const price = Number(p.price);
-          if (Number.isFinite(qty) && Number.isFinite(price) && qty > 0 && price >= 0) {
-            map[qty] = price;
-            cleanPacks.push({ qty, price, popular: Boolean(p.popular) });
-          }
-        }
+        const map = Object.fromEntries(cleanPacks.map((pack) => [pack.qty, pack.price]));
         setPriceByQty(map);
         setDbPacks(cleanPacks);
+        setPricingStatus("ready");
       } catch {
+        if (!cancelled) setPricingStatus("error");
       }
     };
 
@@ -194,11 +342,11 @@ export function useCurrencyPricing(service: string) {
 
   const resolvePrice = useCallback((qty: number, fallback: number) => {
     const fromDb = priceByQty[qty];
-    if (typeof fromDb === "number" && Number.isFinite(fromDb) && fromDb >= 0) {
-      return fromDb;
-    }
-    return fallback;
-  }, [priceByQty]);
+    const basePrice = typeof fromDb === "number" && Number.isFinite(fromDb) && fromDb >= 0
+      ? fromDb
+      : fallback;
+    return applyPricingAssignment(basePrice, experiment.assignment);
+  }, [experiment.assignment, priceByQty]);
 
   const resolvePacks = useCallback(<T extends PackLike>(fallbackPacks: readonly T[]): T[] => {
     if (dbPacks.length === 0) {
@@ -219,16 +367,32 @@ export function useCurrencyPricing(service: string) {
       return {
         ...(fallback ?? {}),
         qty: dbPack.qty,
-        price: dbPack.price,
+        price: applyPricingAssignment(dbPack.price, experiment.assignment),
         old,
         bonus: fallback?.bonus ?? derivedBonus(dbPack.qty, fallbackPacks),
         popular: dbPack.popular || fallback?.popular || false,
         best: fallback?.best || false,
       } as T;
     });
-  }, [dbPacks, resolvePrice]);
+  }, [dbPacks, experiment.assignment, resolvePrice]);
 
-  return { currency, locale, mode, country, formatter, resolvePrice, resolvePacks, dbPacks };
+  const hasDatabasePricing = pricingStatus === "ready" && dbPacks.length > 0;
+  const canDisplayPricing = hasDatabasePricing || pricingStatus === "error";
+
+  return {
+    currency,
+    locale,
+    mode,
+    country,
+    formatter,
+    resolvePrice,
+    resolvePacks,
+    dbPacks,
+    experiment,
+    pricingStatus,
+    hasDatabasePricing,
+    canDisplayPricing,
+  };
 }
 
 export function useApplyCurrencyPricing<T extends PackLike>(
@@ -238,15 +402,16 @@ export function useApplyCurrencyPricing<T extends PackLike>(
 ) {
   const [version, setVersion] = useState(0);
   const pricing = useCurrencyPricing(service);
-  const { currency, locale, resolvePacks } = pricing;
+  const { canDisplayPricing, currency, locale, resolvePacks } = pricing;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!canDisplayPricing) return;
     setDisplayCurrency(currency, locale);
     const resolved = resolvePacks(fallbackPacks);
 
     targetPacks.splice(0, targetPacks.length, ...resolved);
     setVersion((current) => current + 1);
-  }, [currency, fallbackPacks, locale, resolvePacks, targetPacks]);
+  }, [canDisplayPricing, currency, fallbackPacks, locale, resolvePacks, targetPacks]);
 
   return { ...pricing, version };
 }

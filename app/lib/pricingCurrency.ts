@@ -17,13 +17,13 @@ export const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   EUR: "Euro",
   USD: "US Dollar",
   GBP: "Livre sterling",
-  BRL: "Real bresilien",
+  BRL: "Real brésilien",
   TRY: "Livre turque",
   CAD: "Dollar canadien",
   AUD: "Dollar australien",
   CHF: "Franc suisse",
   MXN: "Peso mexicain",
-  SEK: "Couronne suedoise",
+  SEK: "Couronne suédoise",
 };
 
 type CurrencyState = {

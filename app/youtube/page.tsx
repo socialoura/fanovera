@@ -1,12 +1,17 @@
-﻿import type { Metadata } from "next";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 import YoutubePageClient from "./YoutubePageClient";
 
-export const metadata: Metadata = {
-  title: "Fanovera - Visibilite YouTube ciblee",
-  description:
-    "Campagnes de visibilite YouTube avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("youtube");
 
-export default function YoutubePage() {
-  return <YoutubePageClient />;
+export default async function YoutubePage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("youtube", locale, marketingMode)} />
+      <YoutubePageClient />
+    </>
+  );
 }

@@ -2,12 +2,14 @@
 
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
 
 export default function CTABlock() {
   const { locale } = useI18n();
-  const copy = getPublicCopy(locale).cta;
+  const { mode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode).cta;
   return (
     <section id="start" style={{ padding: "clamp(56px, 8vw, 100px) 0", position: "relative" }}>
       <div className="container">

@@ -99,7 +99,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
       controller.abort();
       setVerifying(false);
     };
-  }, [clean, valid]);
+  }, [clean, setProfile, valid]);
 
   void country;
 

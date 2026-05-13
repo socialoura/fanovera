@@ -22,13 +22,25 @@ function setCookie(name: string, value: string, maxAge = 60 * 60 * 24 * 180) {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; samesite=lax`;
 }
 
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
+  const prefix = `${name}=`;
+  const match = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix));
+  return match ? decodeURIComponent(match.slice(prefix.length)) : null;
+}
+
 function getStoredLocale() {
   if (typeof window === "undefined") {
     return { mode: "auto" as LocaleMode, locale: null as SupportedLocale | null };
   }
 
-  const mode = localStorage.getItem(LOCALE_MODE_KEY) === "manual" ? "manual" : "auto";
-  const locale = normalizeLocale(localStorage.getItem(LOCALE_KEY));
+  const storedMode = localStorage.getItem(LOCALE_MODE_KEY) || getCookie(LOCALE_MODE_KEY);
+  const storedLocale = localStorage.getItem(LOCALE_KEY) || getCookie(LOCALE_KEY);
+  const mode = storedMode === "manual" ? "manual" : "auto";
+  const locale = normalizeLocale(storedLocale);
   return {
     mode: mode === "manual" && locale ? "manual" as const : "auto" as const,
     locale,
@@ -61,12 +73,12 @@ export function setAutoLocale() {
   emitLocaleChange();
 }
 
-export function useLocalePreference() {
+export function useLocalePreference(initialLocale: SupportedLocale = "fr") {
   const [state, setState] = useState<LocaleState>({
-    locale: "fr",
+    locale: initialLocale,
     mode: "auto",
     country: null,
-    source: "fallback",
+    source: initialLocale === "fr" ? "fallback" : "route",
   });
 
   const refresh = useCallback(async () => {

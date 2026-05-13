@@ -10,9 +10,12 @@ import Reviews from "./components/Reviews";
 import SpoFAQ from "./components/SpoFAQ";
 import SpoFooter from "./components/SpoFooter";
 import type { SpoPreview } from "./components/Step2Track";
-import { COUNTRIES, PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId } from "./data";
+import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useProductAnalytics } from "../lib/useProductAnalytics";
+import { trackEvent } from "../lib/analytics";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -23,10 +26,20 @@ export default function SpotifyPageClient() {
   const [trackInput, setTrackInput] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<SpoPreview | null>(null);
-  const { currency } = useApplyCurrencyPricing("sp_streams", PACKS, STATIC_PACKS);
+  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("sp_streams", PACKS, STATIC_PACKS);
 
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
+  useProductAnalytics({
+    productArea: "spotify",
+    step,
+    plan: String(selectedPack.qty),
+    price: selectedPack.price,
+    currency,
+    assignment: experiment.assignment,
+    anonymousId: experiment.anonymousId,
+    enabled: canDisplayPricing,
+  });
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
@@ -50,6 +63,14 @@ export default function SpotifyPageClient() {
   });
 
   const next = () => {
+    trackEvent(step === 1 ? "pricing_cta_clicked" : "cta_clicked", {
+      product_area: "spotify",
+      feature_name: step === 1 ? "pricing" : "checkout_steps",
+      step,
+      plan: String(selectedPack.qty),
+      price: selectedPack.price,
+      currency,
+    });
     setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -66,7 +87,7 @@ export default function SpotifyPageClient() {
     <>
       <div className="paper-frame with-spo-halo">
         <SpoHeader />
-        {step === 1 && <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} />}
+        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--spo-green-2)" />)}
         {step === 2 && (
           <Step2Track
             country={country}

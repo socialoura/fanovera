@@ -9,27 +9,43 @@ export async function initDb() {
       service VARCHAR(20) NOT NULL,
       qty INTEGER NOT NULL,
       price NUMERIC(8,2) NOT NULL,
-      price_usd NUMERIC(8,2) DEFAULT 0,
-      price_gbp NUMERIC(8,2) DEFAULT 0,
-      price_brl NUMERIC(8,2) DEFAULT 0,
-      price_try NUMERIC(8,2) DEFAULT 0,
-      price_cad NUMERIC(8,2) DEFAULT 0,
-      price_nzd NUMERIC(8,2) DEFAULT 0,
-      price_aud NUMERIC(8,2) DEFAULT 0,
-      price_chf NUMERIC(8,2) DEFAULT 0,
-      price_mxn NUMERIC(8,2) DEFAULT 0,
-      price_sek NUMERIC(8,2) DEFAULT 0,
+      price_usd NUMERIC(8,1) DEFAULT 0,
+      price_gbp NUMERIC(8,1) DEFAULT 0,
+      price_brl NUMERIC(8,1) DEFAULT 0,
+      price_try NUMERIC(8,1) DEFAULT 0,
+      price_cad NUMERIC(8,1) DEFAULT 0,
+      price_nzd NUMERIC(8,1) DEFAULT 0,
+      price_aud NUMERIC(8,1) DEFAULT 0,
+      price_chf NUMERIC(8,1) DEFAULT 0,
+      price_mxn NUMERIC(8,1) DEFAULT 0,
+      price_sek NUMERIC(8,1) DEFAULT 0,
       popular BOOLEAN DEFAULT false,
       active BOOLEAN DEFAULT true,
+      sort_order INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(service, qty)
     )
   `;
 
-  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_brl NUMERIC(8,2) DEFAULT 0`;
-  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_try NUMERIC(8,2) DEFAULT 0`;
-  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_mxn NUMERIC(8,2) DEFAULT 0`;
-  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_sek NUMERIC(8,2) DEFAULT 0`;
+  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_brl NUMERIC(8,1) DEFAULT 0`;
+  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_try NUMERIC(8,1) DEFAULT 0`;
+  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_mxn NUMERIC(8,1) DEFAULT 0`;
+  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS price_sek NUMERIC(8,1) DEFAULT 0`;
+  await sql`ALTER TABLE pricing ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`;
+
+  await sql`
+    ALTER TABLE pricing
+      ALTER COLUMN price_usd TYPE NUMERIC(8,1) USING ROUND(price_usd::numeric, 1),
+      ALTER COLUMN price_gbp TYPE NUMERIC(8,1) USING ROUND(price_gbp::numeric, 1),
+      ALTER COLUMN price_brl TYPE NUMERIC(8,1) USING ROUND(price_brl::numeric, 1),
+      ALTER COLUMN price_try TYPE NUMERIC(8,1) USING ROUND(price_try::numeric, 1),
+      ALTER COLUMN price_cad TYPE NUMERIC(8,1) USING ROUND(price_cad::numeric, 1),
+      ALTER COLUMN price_nzd TYPE NUMERIC(8,1) USING ROUND(price_nzd::numeric, 1),
+      ALTER COLUMN price_aud TYPE NUMERIC(8,1) USING ROUND(price_aud::numeric, 1),
+      ALTER COLUMN price_chf TYPE NUMERIC(8,1) USING ROUND(price_chf::numeric, 1),
+      ALTER COLUMN price_mxn TYPE NUMERIC(8,1) USING ROUND(price_mxn::numeric, 1),
+      ALTER COLUMN price_sek TYPE NUMERIC(8,1) USING ROUND(price_sek::numeric, 1)
+  `;
 
   await sql`
     DO $$
@@ -83,6 +99,39 @@ export async function initDb() {
       END IF;
     END
     $$;
+  `;
+
+  await sql`
+    UPDATE pricing
+    SET popular = false
+    WHERE id IN (
+      SELECT id
+      FROM (
+        SELECT
+          id,
+          ROW_NUMBER() OVER (PARTITION BY service ORDER BY active DESC, qty ASC, id ASC) AS rank
+        FROM pricing
+        WHERE popular = true
+      ) ranked
+      WHERE rank > 1
+    )
+  `;
+
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pricing_one_popular_per_service
+    ON pricing(service)
+    WHERE popular = true
+  `;
+
+  await sql`
+    UPDATE pricing
+    SET sort_order = ranked.rank * 1000
+    FROM (
+      SELECT id, ROW_NUMBER() OVER (PARTITION BY service ORDER BY qty ASC, id ASC) AS rank
+      FROM pricing
+      WHERE COALESCE(sort_order, 0) = 0
+    ) ranked
+    WHERE pricing.id = ranked.id
   `;
 
   await sql`
@@ -210,6 +259,11 @@ export async function initDb() {
   if (smmToggle.length === 0) {
     await sql`INSERT INTO smm_settings (key, value) VALUES ('auto_order_enabled', 'true')`;
   }
+  await sql`
+    INSERT INTO smm_settings (key, value)
+    VALUES ('marketing_mode', 'clean')
+    ON CONFLICT (key) DO NOTHING
+  `;
 
   // Seed smm_config if empty
   const smmCount = await sql`SELECT COUNT(*) as cnt FROM smm_config`;

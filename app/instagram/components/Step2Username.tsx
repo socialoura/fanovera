@@ -135,6 +135,7 @@ export default function Step2Username({
             <div className="input-shell">
               <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
               <input
+                data-testid="checkout-username"
                 type="text"
                 placeholder={t.usernamePlaceholder}
                 value={clean}
@@ -177,7 +178,7 @@ export default function Step2Username({
                 {t.emailLabel}
               </label>
               <div className="input-shell">
-                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input data-testid="checkout-email" type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
             </div>
@@ -189,7 +190,7 @@ export default function Step2Username({
                 </svg>
                 {t.back}
               </button>
-              <button onClick={handleNext} className="btn-primary btn-ig" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
+              <button data-testid="checkout-profile-next" onClick={handleNext} className="btn-primary btn-ig" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
                 {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

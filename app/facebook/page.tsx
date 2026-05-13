@@ -1,12 +1,17 @@
-﻿import type { Metadata } from "next";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 import FacebookPageClient from "./FacebookPageClient";
 
-export const metadata: Metadata = {
-  title: "Fanovera - Visibilite Facebook ciblee",
-  description:
-    "Campagnes de visibilite Facebook avec audience ciblee, deploiement progressif, paiement securise et aucun acces administrateur demande.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("facebook");
 
-export default function FacebookPage() {
-  return <FacebookPageClient />;
+export default async function FacebookPage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("facebook", locale, marketingMode)} />
+      <FacebookPageClient />
+    </>
+  );
 }

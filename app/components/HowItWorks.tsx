@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "../i18n/I18nProvider";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { getPublicCopy } from "./publicCopy";
 
 type StepKind = "analyze" | "target" | "growth";
@@ -62,7 +63,8 @@ function StepIcon({ kind }: { kind: StepKind }) {
 
 export default function HowItWorks() {
   const { locale } = useI18n();
-  const copy = getPublicCopy(locale).how;
+  const { mode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode).how;
   const steps: { num: string; title: string; body: string; icon: StepKind; color: string }[] = [
     {
       num: "01",

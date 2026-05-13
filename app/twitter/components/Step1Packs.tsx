@@ -2,7 +2,7 @@
 import NetIcon from "../../components/NetIcon";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
 import { useXCopy } from "../i18n";
 
 type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void };

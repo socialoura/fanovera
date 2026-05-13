@@ -10,9 +10,12 @@ import Reviews from "./components/Reviews";
 import YtFAQ from "./components/YtFAQ";
 import YtFooter from "./components/YtFooter";
 import type { YtPreview } from "./components/Step2Username";
-import { COUNTRIES, PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId } from "./data";
+import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useProductAnalytics } from "../lib/useProductAnalytics";
+import { trackEvent } from "../lib/analytics";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -23,10 +26,20 @@ export default function YoutubePageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<YtPreview | null>(null);
-  const { currency } = useApplyCurrencyPricing("yt_views", PACKS, STATIC_PACKS);
+  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("yt_views", PACKS, STATIC_PACKS);
 
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
+  useProductAnalytics({
+    productArea: "youtube",
+    step,
+    plan: String(selectedPack.qty),
+    price: selectedPack.price,
+    currency,
+    assignment: experiment.assignment,
+    anonymousId: experiment.anonymousId,
+    enabled: canDisplayPricing,
+  });
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
@@ -42,6 +55,14 @@ export default function YoutubePageClient() {
   });
 
   const next = () => {
+    trackEvent(step === 1 ? "pricing_cta_clicked" : "cta_clicked", {
+      product_area: "youtube",
+      feature_name: step === 1 ? "pricing" : "checkout_steps",
+      step,
+      plan: String(selectedPack.qty),
+      price: selectedPack.price,
+      currency,
+    });
     setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -58,7 +79,7 @@ export default function YoutubePageClient() {
     <div data-i18n-skip>
       <div className="paper-frame with-yt-halo">
         <YtHeader />
-        {step === 1 && <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} />}
+        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--yt-red)" />)}
         {step === 2 && (
           <Step2Username
             country={country}

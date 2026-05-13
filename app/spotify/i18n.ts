@@ -1,6 +1,8 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
+import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 function translateLocalCopy<T>(source: T, locale: SupportedLocale): T {
   const translated = locale === "en" ? deepTranslateCopy(source, locale) : source;
@@ -79,9 +81,16 @@ const localized: Record<SupportedLocale, SpotifyCopy> = {
 
 export function useSpotifyCopy() {
   const { locale } = useI18n();
+  const { mode } = useMarketingMode();
   const manualLocale =
     typeof window !== "undefined" && window.localStorage.getItem("fanovera_locale_mode") === "manual"
       ? (window.localStorage.getItem("fanovera_locale") as SupportedLocale | null)
       : null;
-  return localized[manualLocale || locale] || copy.fr;
+  const activeLocale = manualLocale || locale;
+  return applyPerformanceProductCopy(localized[activeLocale] || copy.fr, {
+    locale: activeLocale,
+    mode,
+    product: "Spotify",
+    audience: "Streams",
+  });
 }

@@ -1,12 +1,17 @@
-﻿import type { Metadata } from "next";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 import TwitchPageClient from "./TwitchPageClient";
 
-export const metadata: Metadata = {
-  title: "Fanovera - Visibilite Twitch ciblee",
-  description:
-    "Campagnes de visibilite Twitch avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("twitch");
 
-export default function TwitchPage() {
-  return <TwitchPageClient />;
+export default async function TwitchPage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("twitch", locale, marketingMode)} />
+      <TwitchPageClient />
+    </>
+  );
 }

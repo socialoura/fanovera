@@ -1,12 +1,17 @@
-﻿import type { Metadata } from "next";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 import TiktokPageClient from "./TiktokPageClient";
 
-export const metadata: Metadata = {
-  title: "Fanovera - Visibilite TikTok ciblee",
-  description:
-    "Campagnes de visibilite TikTok avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("tiktok");
 
-export default function TiktokPage() {
-  return <TiktokPageClient />;
+export default async function TiktokPage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("tiktok", locale, marketingMode)} />
+      <TiktokPageClient />
+    </>
+  );
 }

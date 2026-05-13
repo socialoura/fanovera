@@ -91,6 +91,7 @@ export default function Step2Username({
 
   void country;
   void pack;
+  void profile;
 
   return (
     <section className="slide-in" data-i18n-skip style={{ padding: "40px 0 56px", position: "relative" }}>

@@ -2,12 +2,14 @@
 
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, type NetworkId } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
 
 export default function Testimonials() {
   const { locale } = useI18n();
-  const copy = getPublicCopy(locale).testimonials;
+  const { mode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode).testimonials;
   const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
       q: copy.items[0].q,

@@ -114,7 +114,7 @@ export default function Step2Username({
       controller.abort();
       setVerifying(false);
     };
-  }, [url, validUrl]);
+  }, [setProfile, url, validUrl]);
 
   void country;
 

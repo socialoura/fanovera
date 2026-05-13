@@ -1,6 +1,8 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
+import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
   fr: {
@@ -327,6 +329,7 @@ const copy = {
       edit: "Editar",
       visibilityPack: "Pack de visibilidad YouTube",
       includedCredit: "credito incluido",
+      included: "incluido",
       campaignCredit: "Credito de campana",
       free: "GRATIS",
       coupon: "Codigo promo",
@@ -448,5 +451,11 @@ const localized: Record<SupportedLocale, YouTubeCopy> = {
 
 export function useYouTubeCopy() {
   const { locale } = useI18n();
-  return localized[locale] || copy.fr;
+  const { mode } = useMarketingMode();
+  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+    locale,
+    mode,
+    product: "YouTube",
+    audience: "Views",
+  });
 }

@@ -3,6 +3,7 @@
 import { Logo } from "./Header";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
 
@@ -52,7 +53,8 @@ function FootCol({
 
 export default function Footer() {
   const { locale } = useI18n();
-  const copy = getPublicCopy(locale).footer;
+  const { mode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode).footer;
 
   return (
     <footer style={{ padding: "48px 0 24px" }}>

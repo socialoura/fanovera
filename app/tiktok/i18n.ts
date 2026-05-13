@@ -1,6 +1,8 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
+import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
   fr: {
@@ -159,5 +161,11 @@ const localized: Record<SupportedLocale, TikTokCopy> = {
 
 export function useTikTokCopy() {
   const { locale } = useI18n();
-  return localized[locale] || copy.fr;
+  const { mode } = useMarketingMode();
+  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+    locale,
+    mode,
+    product: "TikTok",
+    audience: "Followers",
+  });
 }

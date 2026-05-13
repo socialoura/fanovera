@@ -1,12 +1,17 @@
-import type { Metadata } from "next";
 import InstagramPageClient from "./InstagramPageClient";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 
-export const metadata: Metadata = {
-  title: "Fanovera — Croissance Instagram ciblée",
-  description:
-    "Campagnes de visibilité Instagram avec audience ciblée, déploiement progressif, paiement sécurisé et aucun accès au compte demandé.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("instagram");
 
-export default function InstagramPage() {
-  return <InstagramPageClient />;
+export default async function InstagramPage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("instagram", locale, marketingMode)} />
+      <InstagramPageClient />
+    </>
+  );
 }

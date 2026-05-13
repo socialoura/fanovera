@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
 import { getPublicCopy } from "./publicCopy";
 
 type Step = "closed" | "email" | "message" | "sent";
 
 export default function ChatWidget() {
+  const pathname = usePathname();
   const { locale } = useI18n();
   const copy = getPublicCopy(locale).chat;
   const [step, setStep] = useState<Step>("closed");
@@ -16,6 +18,8 @@ export default function ChatWidget() {
   const [error, setError] = useState("");
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  if (pathname?.startsWith("/admin")) return null;
 
   const handleEmailSubmit = () => {
     if (!emailValid) {

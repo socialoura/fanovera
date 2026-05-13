@@ -2,7 +2,7 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import FbSprinkle from "./FbSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
 import { useFacebookCopy } from "../i18n";
 
 type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void };

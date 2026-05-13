@@ -1,12 +1,17 @@
-﻿import type { Metadata } from "next";
+import JsonLd from "../components/JsonLd";
+import { getMarketingMode } from "../lib/marketingMode.server";
+import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { productJsonLd } from "../lib/siteMetadata";
 import LinkedinPageClient from "./LinkedinPageClient";
 
-export const metadata: Metadata = {
-  title: "Fanovera - Visibilite LinkedIn ciblee",
-  description:
-    "Campagnes de visibilite LinkedIn avec audience ciblee, deploiement progressif, paiement securise et aucun acces au compte demande.",
-};
+export const generateMetadata = () => generateLocalizedMetadata("linkedin");
 
-export default function LinkedinPage() {
-  return <LinkedinPageClient />;
+export default async function LinkedinPage() {
+  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  return (
+    <>
+      <JsonLd data={productJsonLd("linkedin", locale, marketingMode)} />
+      <LinkedinPageClient />
+    </>
+  );
 }

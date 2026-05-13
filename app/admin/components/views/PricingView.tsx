@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Ic } from "../icons";
+import { applyPopularPackSelection, sortAdminPricingPacks } from "@/app/lib/adminPricing";
 
 /* ─── Types ─── */
 interface Pack {
@@ -20,6 +21,7 @@ interface Pack {
   price_sek: number;
   popular: boolean;
   active: boolean;
+  sort_order: number;
 }
 
 type NewPack = Omit<Pack, "id">;
@@ -86,17 +88,25 @@ const EUR_RATES: Record<string, number> = {
   price_sek: 11.5,
 };
 
-function convertFromEur(eur: number): Omit<Pack, 'id' | 'service' | 'qty' | 'price' | 'popular' | 'active'> {
+function roundCurrencyConversion(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function formatConvertedPrice(value: number): string {
+  return value.toFixed(1);
+}
+
+function convertFromEur(eur: number): Omit<Pack, 'id' | 'service' | 'qty' | 'price' | 'popular' | 'active' | 'sort_order'> {
   return {
-    price_usd: Math.round(eur * EUR_RATES.price_usd * 100) / 100,
-    price_gbp: Math.round(eur * EUR_RATES.price_gbp * 100) / 100,
-    price_brl: Math.round(eur * EUR_RATES.price_brl * 100) / 100,
-    price_try: Math.round(eur * EUR_RATES.price_try * 100) / 100,
-    price_cad: Math.round(eur * EUR_RATES.price_cad * 100) / 100,
-    price_aud: Math.round(eur * EUR_RATES.price_aud * 100) / 100,
-    price_chf: Math.round(eur * EUR_RATES.price_chf * 100) / 100,
-    price_mxn: Math.round(eur * EUR_RATES.price_mxn * 100) / 100,
-    price_sek: Math.round(eur * EUR_RATES.price_sek * 100) / 100,
+    price_usd: roundCurrencyConversion(eur * EUR_RATES.price_usd),
+    price_gbp: roundCurrencyConversion(eur * EUR_RATES.price_gbp),
+    price_brl: roundCurrencyConversion(eur * EUR_RATES.price_brl),
+    price_try: roundCurrencyConversion(eur * EUR_RATES.price_try),
+    price_cad: roundCurrencyConversion(eur * EUR_RATES.price_cad),
+    price_aud: roundCurrencyConversion(eur * EUR_RATES.price_aud),
+    price_chf: roundCurrencyConversion(eur * EUR_RATES.price_chf),
+    price_mxn: roundCurrencyConversion(eur * EUR_RATES.price_mxn),
+    price_sek: roundCurrencyConversion(eur * EUR_RATES.price_sek),
   };
 }
 
@@ -136,6 +146,7 @@ function normalizePack(p: Record<string, unknown>): Pack {
     price_sek: Number(p.price_sek) || 0,
     popular: Boolean(p.popular),
     active: p.active !== false,
+    sort_order: Number(p.sort_order) || 0,
   };
 }
 
@@ -209,6 +220,7 @@ export default function PricingView() {
       price_sek: 0,
       popular: false,
       active: true,
+      sort_order: 0,
     };
   }
 
@@ -228,14 +240,15 @@ export default function PricingView() {
   useEffect(() => { load(); }, [load]);
 
   /* Grouped packs for current tab */
-  const filtered = packs.filter((p) => p.service === activeService);
+  const filtered = sortAdminPricingPacks(packs.filter((p) => p.service === activeService));
+  const popularPack = filtered.find((p) => p.popular);
 
   /* Handlers */
   const handleAdd = async () => {
     try {
       setError(null);
       const created = await createPack(newPack);
-      setPacks((prev) => [...prev, created]);
+      setPacks((prev) => applyPopularPackSelection([...prev, created], created));
       setShowAddForm(false);
       setNewPack(emptyPack(activeService));
       setSuccess("Pack créé avec succès.");
@@ -260,8 +273,8 @@ export default function PricingView() {
     try {
       setError(null);
       const updated = await updatePack(pack.id, { popular: !pack.popular });
-      setPacks((prev) => prev.map((p) => (p.id === pack.id ? updated : p)));
-      setSuccess("Pack mis à jour.");
+      setPacks((prev) => applyPopularPackSelection(prev, updated));
+      setSuccess(updated.popular ? "Pack défini comme le plus populaire." : "Pack retiré des populaires.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update pack");
     }
@@ -271,10 +284,38 @@ export default function PricingView() {
     try {
       setError(null);
       const updated = await updatePack(pack.id, { active: !pack.active });
-      setPacks((prev) => prev.map((p) => (p.id === pack.id ? updated : p)));
+      setPacks((prev) => applyPopularPackSelection(prev, updated));
       setSuccess("Pack mis à jour.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to update pack");
+    }
+  };
+
+  const handleMovePack = async (pack: Pack, direction: -1 | 1) => {
+    const index = filtered.findIndex((p) => p.id === pack.id);
+    const target = filtered[index + direction];
+    if (!target) return;
+
+    const currentOrder = pack.sort_order || (index + 1) * 1000;
+    const targetOrder = target.sort_order || (index + direction + 1) * 1000;
+
+    try {
+      setError(null);
+      const [updatedPack, updatedTarget] = await Promise.all([
+        updatePack(pack.id, { sort_order: targetOrder }),
+        updatePack(target.id, { sort_order: currentOrder }),
+      ]);
+
+      setPacks((prev) =>
+        prev.map((p) => {
+          if (p.id === updatedPack.id) return updatedPack;
+          if (p.id === updatedTarget.id) return updatedTarget;
+          return p;
+        }),
+      );
+      setSuccess("Ordre des packs mis à jour.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to reorder packs");
     }
   };
 
@@ -294,6 +335,7 @@ export default function PricingView() {
       price_sek: pack.price_sek,
       popular: pack.popular,
       active: pack.active,
+      sort_order: pack.sort_order,
     });
   };
 
@@ -302,7 +344,7 @@ export default function PricingView() {
     try {
       setError(null);
       const updated = await updatePack(editingId, editFields);
-      setPacks((prev) => prev.map((p) => (p.id === editingId ? updated : p)));
+      setPacks((prev) => applyPopularPackSelection(prev, updated));
       setEditingId(null);
       setEditFields({});
       setSuccess("Pack mis à jour avec succès.");
@@ -341,10 +383,11 @@ export default function PricingView() {
           price_sek: p.price_sek,
           popular: p.popular,
           active: p.active,
+          sort_order: p.sort_order,
         };
         created.push(await createPack(np));
       }
-      setPacks((prev) => [...prev, ...created]);
+      setPacks((prev) => created.reduce((next, pack) => applyPopularPackSelection([...next, pack], pack), prev));
       setSuccess(`${created.length} pack(s) copiés vers ${SERVICE_LABELS[copyTarget]}.`);
       setCopyTarget("");
     } catch (e) {
@@ -363,6 +406,9 @@ export default function PricingView() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, gap: 16 }}>
         <div style={{ fontSize: 13, color: "var(--a-ink-3)", fontWeight: 600 }}>
           {SERVICES.length} services &middot; {packs.length} packs
+          <span style={{ marginLeft: 10, color: "var(--a-ink)" }}>
+            Populaire actuel : {popularPack ? `${popularPack.qty.toLocaleString("fr-FR")} unités` : "aucun"}
+          </span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <select value={copyTarget} onChange={(e) => setCopyTarget(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--a-line)", background: "var(--a-card)", color: "var(--a-ink)", fontSize: 12 }}>
@@ -412,6 +458,7 @@ export default function PricingView() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--a-line)" }}>
+                <th style={thStyle}>Ordre</th>
                 <th style={thStyle}>Qty</th>
                 <th style={thStyle}>EUR</th>
                 <th style={thStyle}>USD</th>
@@ -423,15 +470,16 @@ export default function PricingView() {
                 <th style={thStyle}>CHF</th>
                 <th style={thStyle}>MXN</th>
                 <th style={thStyle}>SEK</th>
-                <th style={thStyle}>Popular</th>
+                <th style={thStyle}>Plus populaire</th>
                 <th style={thStyle}>Active</th>
                 <th style={thStyle}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((pack) =>
+              {filtered.map((pack, index) =>
                 editingId === pack.id ? (
                   <tr key={pack.id} style={{ borderBottom: "1px solid var(--a-line)", background: "var(--a-card)" }}>
+                    <td style={tdStyle}><input type="number" value={editFields.sort_order ?? ""} onChange={(e) => setEditFields({ ...editFields, sort_order: Number(e.target.value) })} style={inputStyle} /></td>
                     <td style={tdStyle}><input type="number" value={editFields.qty ?? ""} onChange={(e) => setEditFields({ ...editFields, qty: Number(e.target.value) })} style={inputStyle} /></td>
                     <td style={tdStyle}><input type="number" step="0.01" value={editFields.price ?? ""} onChange={(e) => setEditFields({ ...editFields, price: Number(e.target.value) })} style={inputStyle} /></td>
                     <td style={tdStyle}><input type="number" step="0.01" value={editFields.price_usd ?? ""} onChange={(e) => setEditFields({ ...editFields, price_usd: Number(e.target.value) })} style={inputStyle} /></td>
@@ -444,7 +492,10 @@ export default function PricingView() {
                     <td style={tdStyle}><input type="number" step="0.01" value={editFields.price_mxn ?? ""} onChange={(e) => setEditFields({ ...editFields, price_mxn: Number(e.target.value) })} style={inputStyle} /></td>
                     <td style={tdStyle}><input type="number" step="0.01" value={editFields.price_sek ?? ""} onChange={(e) => setEditFields({ ...editFields, price_sek: Number(e.target.value) })} style={inputStyle} /></td>
                     <td style={tdStyle}>
-                      <input type="checkbox" checked={editFields.popular ?? false} onChange={(e) => setEditFields({ ...editFields, popular: e.target.checked })} />
+                      <label className="admin-radio-choice">
+                        <input type="radio" name={`popular-${activeService}`} checked={editFields.popular ?? false} onChange={() => setEditFields({ ...editFields, popular: true })} />
+                        Choisir
+                      </label>
                     </td>
                     <td style={tdStyle}>
                       <input type="checkbox" checked={editFields.active ?? false} onChange={(e) => setEditFields({ ...editFields, active: e.target.checked })} />
@@ -459,22 +510,37 @@ export default function PricingView() {
                   </tr>
                 ) : (
                   <tr key={pack.id} style={{ borderBottom: "1px solid var(--a-line)" }}>
+                    <td style={tdStyle}>
+                      <div className="admin-pack-order">
+                        <span>#{index + 1}</span>
+                        <button className="icon-btn" onClick={() => handleMovePack(pack, -1)} disabled={index === 0} title="Monter ce pack">
+                          {Ic.arrowUp()}
+                        </button>
+                        <button className="icon-btn" onClick={() => handleMovePack(pack, 1)} disabled={index === filtered.length - 1} title="Descendre ce pack">
+                          {Ic.arrowDown()}
+                        </button>
+                      </div>
+                    </td>
                     <td style={tdStyle}><strong>{pack.qty.toLocaleString()}</strong></td>
                     <td style={tdStyle}>{pack.price.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_usd.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_gbp.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_brl.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_try.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_cad.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_aud.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_chf.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_mxn.toFixed(2)}</td>
-                    <td style={tdStyle}>{pack.price_sek.toFixed(2)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_usd)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_gbp)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_brl)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_try)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_cad)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_aud)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_chf)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_mxn)}</td>
+                    <td style={tdStyle}>{formatConvertedPrice(pack.price_sek)}</td>
                     <td style={tdStyle}>
                       {pack.popular ? (
-                        <span className="pill" style={{ background: "var(--a-accent)", color: "#fff", border: "none", cursor: "pointer" }} onClick={() => handleTogglePopular(pack)}>{Ic.star()} Popular</span>
+                        <button className="admin-popular-btn active" onClick={() => handleTogglePopular(pack)} title="Retirer le badge populaire">
+                          {Ic.star()} Populaire
+                        </button>
                       ) : (
-                        <span style={{ cursor: "pointer", color: "var(--a-ink-3)" }} onClick={() => handleTogglePopular(pack)}>-</span>
+                        <button className="admin-popular-btn" onClick={() => handleTogglePopular(pack)} title="Définir ce pack comme le plus populaire">
+                          Choisir
+                        </button>
                       )}
                     </td>
                     <td style={tdStyle}>
@@ -491,7 +557,7 @@ export default function PricingView() {
               )}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={14} style={{ ...tdStyle, textAlign: "center", color: "var(--a-ink-3)" }}>No packs for this service</td>
+                  <td colSpan={15} style={{ ...tdStyle, textAlign: "center", color: "var(--a-ink-3)" }}>No packs for this service</td>
                 </tr>
               )}
             </tbody>
@@ -554,7 +620,7 @@ export default function PricingView() {
             </label>
             <label style={{ ...labelStyle, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <input type="checkbox" checked={newPack.popular} onChange={(e) => setNewPack({ ...newPack, popular: e.target.checked })} />
-              Popular
+              Plus populaire
             </label>
             <label style={{ ...labelStyle, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <input type="checkbox" checked={newPack.active} onChange={(e) => setNewPack({ ...newPack, active: e.target.checked })} />

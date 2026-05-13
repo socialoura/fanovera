@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { getDictionary } from "../i18n/dictionaries";
 import { SUPPORTED_LOCALES, type LocaleOption, type SupportedLocale } from "../i18n/types";
 import { setAutoLocale, setManualLocale, useLocalePreference } from "../i18n/useLocale";
+import { trackEvent } from "../lib/analytics";
 
 const OPTIONS: Record<SupportedLocale, LocaleOption> = {
   fr: { code: "fr", name: "Français", short: "FR" },
@@ -26,10 +27,12 @@ export default function LanguageSelector({ compact = false }: { compact?: boolea
   const handleChange = (next: string) => {
     if (next === "auto") {
       setAutoLocale();
+      trackEvent("locale_changed", { locale, next_locale: "auto", mode: "auto" });
       setOpen(false);
       return;
     }
     setManualLocale(next);
+    trackEvent("locale_changed", { locale, next_locale: next, mode: "manual" });
     setOpen(false);
   };
 

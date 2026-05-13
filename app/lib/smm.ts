@@ -6,6 +6,7 @@
  */
 
 import { sql } from "./db";
+import { bulkFollowsCostCents, estimateBulkFollowsCharge, resolveBulkFollowsCharge } from "./smmCost";
 
 const BF_URL = "https://bulkfollows.com/api/v2";
 
@@ -175,7 +176,6 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
   }
 
   const subOrders: SmmSubOrder[] = [];
-  let totalCostUsd = 0;
 
   for (let i = 0; i < cart.length; i++) {
     const item = cart[i];
@@ -189,7 +189,6 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     );
     if (prev) {
       subOrders.push(prev);
-      if (prev.charge) totalCostUsd += prev.charge;
       continue;
     }
 
@@ -220,11 +219,11 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
       });
 
       // Immediately fetch status to get the charge
-      let charge: number | null = null;
+      const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, qty);
+      let charge: number | null = estimatedCharge;
       try {
         const st = await getOrderStatus(result.orderId);
-        charge = parseFloat(st.charge) || null;
-        if (charge) totalCostUsd += charge;
+        charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
       } catch {
         // non-critical — charge will be picked up on status refresh
       }
@@ -258,7 +257,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
   }
 
   // Convert USD cost → cents (stored as integer)
-  const costCents = Math.round(totalCostUsd * 100);
+  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge));
 
   // Determine overall status
   const allPlacedOrDone = subOrders.every(
@@ -323,10 +322,11 @@ export async function retrySmmSubOrder(
       quantity: sub.qty,
     });
 
-    let charge: number | null = null;
+    const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, sub.qty);
+    let charge: number | null = estimatedCharge;
     try {
       const st = await getOrderStatus(result.orderId);
-      charge = parseFloat(st.charge) || null;
+      charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
     } catch { /* non-critical */ }
 
     sub.bfServiceId = config.bulkfollows_service_id;
@@ -341,8 +341,7 @@ export async function retrySmmSubOrder(
   }
 
   // Recalculate total cost
-  const totalCostUsd = subOrders.reduce((sum, s) => sum + (s.charge || 0), 0);
-  const costCents = Math.round(totalCostUsd * 100);
+  const costCents = bulkFollowsCostCents(subOrders.map((subOrder) => subOrder.charge));
 
   const allPlacedOrDone = subOrders.every(
     (s) => s.status === "placed" || s.status === "completed",
@@ -392,7 +391,7 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
       const st = statuses[String(sub.bfOrderId)];
       if (!st) continue;
 
-      const charge = parseFloat(st.charge) || null;
+      const charge = resolveBulkFollowsCharge(st.charge, sub.charge);
       if (charge) sub.charge = charge;
 
       const bfStatus = st.status?.toLowerCase() || "";
@@ -407,8 +406,7 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
     console.error(`[refreshSmmStatus] BF status check failed for order ${orderId}:`, err);
   }
 
-  const totalCostUsd = subOrders.reduce((sum, s) => sum + (s.charge || 0), 0);
-  const costCents = Math.round(totalCostUsd * 100);
+  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge));
 
   const allDone = subOrders.every(
     (s) =>

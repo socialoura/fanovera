@@ -1,7 +1,9 @@
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
+import { applyPerformancePublicCopy } from "../lib/performanceCopy";
+import type { MarketingMode } from "../lib/marketingModeTypes";
 
-type PublicCopy = {
+export type PublicCopy = {
   header: {
     track: string;
     faq: string;
@@ -428,6 +430,6 @@ for (const locale of ["es", "pt", "de", "it", "tr"] as const) {
   };
 }
 
-export function getPublicCopy(locale: SupportedLocale) {
-  return PUBLIC_COPY[locale] || PUBLIC_COPY.fr;
+export function getPublicCopy(locale: SupportedLocale, marketingMode: MarketingMode = "clean") {
+  return applyPerformancePublicCopy(locale, marketingMode, PUBLIC_COPY[locale] || PUBLIC_COPY.fr);
 }

@@ -54,7 +54,11 @@ export const COUNTRIES: Country[] = [
 
 export const formatQty = (q: number) => q.toLocaleString("fr-FR");
 export const fmtEuro = (n: number) => formatMoney(n);
-export const formatPrice = (p: Pack, _country?: CountryId) =>
-  fmtEuro(p.price);
-export const formatOld = (p: Pack, _country?: CountryId) =>
-  fmtEuro(p.old);
+export const formatPrice = (p: Pack, country?: CountryId) => {
+  void country;
+  return fmtEuro(p.price);
+};
+export const formatOld = (p: Pack, country?: CountryId) => {
+  void country;
+  return fmtEuro(p.old);
+};
