@@ -350,16 +350,6 @@ export function buildPageMetadata(
     robots: route.index
       ? { index: true, follow: true }
       : { index: false, follow: false, googleBot: { index: false, follow: false } },
-    icons: {
-      icon: [
-        { url: "/icon.png", type: "image/png", sizes: "any" },
-        { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
-        { url: "/favicon-192.png", type: "image/png", sizes: "192x192" },
-      ],
-      apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-      shortcut: ["/icon.png"],
-    },
-    manifest: "/site.webmanifest",
   };
 }
 

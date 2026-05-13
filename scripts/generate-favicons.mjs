@@ -1,0 +1,68 @@
+/* eslint-disable no-console */
+/**
+ * Génère les favicons et icônes carrées à partir de public/fanovera-logo.png
+ *
+ * Sortie :
+ *   - app/icon.png            (512x512, fond blanc, padding) -> favicon principal Next.js
+ *   - app/apple-icon.png      (180x180, fond blanc)          -> iOS / Apple touch icon
+ *   - public/favicon-32.png   (32x32)                        -> compat navigateurs
+ *   - public/favicon-192.png  (192x192)                      -> manifest / Android
+ *   - public/favicon-512.png  (512x512)                      -> manifest / haute résolution
+ *
+ * Usage : node scripts/generate-favicons.mjs
+ */
+import sharp from "sharp";
+import { mkdir } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, "..");
+const SOURCE = resolve(ROOT, "public/fanovera-logo.png");
+
+// Fond blanc pour bonne visibilité dans les onglets navigateur et SERP Google
+const BG = { r: 255, g: 255, b: 255, alpha: 1 };
+const PADDING_RATIO = 0.12; // 12% de marge intérieure
+
+async function ensureDir(p) {
+  await mkdir(dirname(p), { recursive: true });
+}
+
+async function generateSquare(size, outPath) {
+  const innerSize = Math.round(size * (1 - PADDING_RATIO * 2));
+  const inner = await sharp(SOURCE)
+    .resize(innerSize, innerSize, { fit: "contain", background: BG })
+    .toBuffer();
+
+  await ensureDir(outPath);
+  await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: BG,
+    },
+  })
+    .composite([{ input: inner, gravity: "center" }])
+    .png({ compressionLevel: 9 })
+    .toFile(outPath);
+
+  console.log(`  generated ${outPath} (${size}x${size})`);
+}
+
+async function main() {
+  console.log("Generating favicons from:", SOURCE);
+  await Promise.all([
+    generateSquare(512, resolve(ROOT, "app/icon.png")),
+    generateSquare(180, resolve(ROOT, "app/apple-icon.png")),
+    generateSquare(32, resolve(ROOT, "public/favicon-32.png")),
+    generateSquare(192, resolve(ROOT, "public/favicon-192.png")),
+    generateSquare(512, resolve(ROOT, "public/favicon-512.png")),
+  ]);
+  console.log("Done.");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

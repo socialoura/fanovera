@@ -12,8 +12,7 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:checkout": "playwright test tests/e2e/stripe-checkout.spec.ts",
-    "verify": "npm run typecheck && npm run lint && npm run test:unit && npm run build && npm run test:e2e",
-    "favicons": "node scripts/generate-favicons.mjs"
+    "verify": "npm run typecheck && npm run lint && npm run test:unit && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
