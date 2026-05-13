@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 /**
- * Génère les favicons et icônes carrées à partir de public/fanovera-logo.png
+ * Génère les favicons et icônes carrées à partir de public/fanovera-icon-source.png
  *
  * Sortie :
- *   - app/icon.png            (512x512, fond blanc, padding) -> favicon principal Next.js
- *   - app/apple-icon.png      (180x180, fond blanc)          -> iOS / Apple touch icon
- *   - public/favicon-32.png   (32x32)                        -> compat navigateurs
- *   - public/favicon-192.png  (192x192)                      -> manifest / Android
- *   - public/favicon-512.png  (512x512)                      -> manifest / haute résolution
+ *   - app/icon.png            (512x512, fond transparent) -> favicon principal Next.js
+ *   - app/apple-icon.png      (180x180, fond blanc)       -> iOS / Apple touch icon
+ *   - public/favicon-32.png   (32x32, fond transparent)   -> compat navigateurs
+ *   - public/favicon-192.png  (192x192, fond transparent) -> manifest / Android
+ *   - public/favicon-512.png  (512x512, fond transparent) -> manifest / haute résolution
  *
  * Usage : node scripts/generate-favicons.mjs
  */
@@ -20,19 +20,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const SOURCE = resolve(ROOT, "public/fanovera-icon-source.png");
 
-// Fond blanc pour bonne visibilité dans les onglets navigateur et SERP Google
-const BG = { r: 255, g: 255, b: 255, alpha: 1 };
+const TRANSPARENT_BG = { r: 0, g: 0, b: 0, alpha: 0 };
+const WHITE_BG = { r: 255, g: 255, b: 255, alpha: 1 };
 const PADDING_RATIO = 0.08; // 8% de marge intérieure
 
-// Crop la marge transparente/blanche une seule fois pour gagner en netteté
 async function getTrimmedSource() {
-  // 1) Aplatir d'abord sur fond blanc pour gérer les sources transparentes ET blanches
-  const flattened = await sharp(SOURCE)
-    .flatten({ background: BG })
-    .toBuffer();
-  // 2) Crop les marges blanches uniformes autour du symbole
-  return await sharp(flattened)
-    .trim({ background: BG, threshold: 5 })
+  return await sharp(SOURCE)
+    .ensureAlpha()
+    .trim({ background: TRANSPARENT_BG, threshold: 5 })
     .toBuffer();
 }
 
@@ -40,10 +35,10 @@ async function ensureDir(p) {
   await mkdir(dirname(p), { recursive: true });
 }
 
-async function generateSquare(size, outPath, trimmedBuffer) {
+async function generateSquare(size, outPath, trimmedBuffer, background = TRANSPARENT_BG) {
   const innerSize = Math.round(size * (1 - PADDING_RATIO * 2));
   const inner = await sharp(trimmedBuffer)
-    .resize(innerSize, innerSize, { fit: "contain", background: BG })
+    .resize(innerSize, innerSize, { fit: "contain", background: TRANSPARENT_BG })
     .toBuffer();
 
   await ensureDir(outPath);
@@ -52,7 +47,7 @@ async function generateSquare(size, outPath, trimmedBuffer) {
       width: size,
       height: size,
       channels: 4,
-      background: BG,
+      background,
     },
   })
     .composite([{ input: inner, gravity: "center" }])
@@ -67,7 +62,7 @@ async function main() {
   const trimmed = await getTrimmedSource();
   await Promise.all([
     generateSquare(512, resolve(ROOT, "app/icon.png"), trimmed),
-    generateSquare(180, resolve(ROOT, "app/apple-icon.png"), trimmed),
+    generateSquare(180, resolve(ROOT, "app/apple-icon.png"), trimmed, WHITE_BG),
     generateSquare(32, resolve(ROOT, "public/favicon-32.png"), trimmed),
     generateSquare(192, resolve(ROOT, "public/favicon-192.png"), trimmed),
     generateSquare(512, resolve(ROOT, "public/favicon-512.png"), trimmed),
