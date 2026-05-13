@@ -54,7 +54,6 @@ export default function Step2Username({
   const clean = username.replace(/^@/, "").trim().toLowerCase();
   const valid = /^[a-zA-Z0-9._]{2,30}$/.test(clean);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const showPreview = Boolean(profile) || verifying || (valid && !apiError);
 
   const handleNext = () => {
     if (!username.trim()) return setSubmitError(t.errors.username);
@@ -257,9 +256,8 @@ export default function Step2Username({
               </div>
             </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
-    </section>
-  );
-}
+    </div>
+  </section>
+);

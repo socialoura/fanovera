@@ -185,14 +185,7 @@ export async function GET(req: NextRequest) {
     setCache(username, data);
     return NextResponse.json(data);
   } catch (err) {
-    const isTimeout =
-      err instanceof Error &&
-      (err.name === "TimeoutError" || err.name === "AbortError");
-    if (isTimeout) {
-      console.warn(`[Instagram profile] upstream timeout for "${username}", returning mock`);
-    } else {
-      console.error("[Instagram profile]", err);
-    }
+    console.error("[Instagram profile]", err);
     return NextResponse.json(mockProfile(username));
   }
 }

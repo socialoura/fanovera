@@ -101,31 +101,17 @@ export async function GET(req: NextRequest) {
   const host = "instagram120.p.rapidapi.com";
   const key = process.env.RAPIDAPI_KEY;
 
-  async function callUpstream(timeoutMs: number) {
-    return fetch(`https://${host}/api/instagram/profile`, {
+  try {
+    const res = await fetch(`https://${host}/api/instagram/profile`, {
       method: "POST",
       headers: {
         "x-rapidapi-host": host,
-        "x-rapidapi-key": key!,
+        "x-rapidapi-key": key,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ username }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(8000),
     });
-  }
-
-  try {
-    let res: Response;
-    try {
-      res = await callUpstream(12000);
-    } catch (firstErr) {
-      const isTimeout =
-        firstErr instanceof Error &&
-        (firstErr.name === "TimeoutError" || firstErr.name === "AbortError");
-      if (!isTimeout) throw firstErr;
-      // Un seul retry rapide après timeout (l'API se réveille souvent au 2e appel)
-      res = await callUpstream(15000);
-    }
 
     if (!res.ok) {
       if (res.status === 404) {
@@ -185,14 +171,7 @@ export async function GET(req: NextRequest) {
     setCache(username, data);
     return NextResponse.json(data);
   } catch (err) {
-    const isTimeout =
-      err instanceof Error &&
-      (err.name === "TimeoutError" || err.name === "AbortError");
-    if (isTimeout) {
-      console.warn(`[Instagram profile] upstream timeout for "${username}", returning mock`);
-    } else {
-      console.error("[Instagram profile]", err);
-    }
+    console.error("[Instagram profile]", err);
     return NextResponse.json(mockProfile(username));
   }
 }

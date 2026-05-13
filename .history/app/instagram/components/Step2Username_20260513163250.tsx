@@ -54,7 +54,6 @@ export default function Step2Username({
   const clean = username.replace(/^@/, "").trim().toLowerCase();
   const valid = /^[a-zA-Z0-9._]{2,30}$/.test(clean);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const showPreview = Boolean(profile) || verifying || (valid && !apiError);
 
   const handleNext = () => {
     if (!username.trim()) return setSubmitError(t.errors.username);
@@ -124,7 +123,7 @@ export default function Step2Username({
           </p>
         </div>
 
-        <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: showPreview ? "1fr 0.9fr" : "1fr", gap: 36, maxWidth: showPreview ? 1320 : 720, margin: "0 auto" }}>
+        <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
               {t.usernameLabel}
@@ -199,8 +198,7 @@ export default function Step2Username({
             {submitError && <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(225,64,126,0.08)", border: "1px solid rgba(225,64,126,0.25)", borderRadius: 12, fontSize: 13, color: "var(--ig-2)" }}>! {submitError}</div>}
           </div>
 
-          {showPreview && (
-          <div className="ig-preview-col" style={{ position: "relative" }}>
+          <div className="ig-preview-col" style={{ position: "relative", display: profile || verifying || !apiError ? "block" : "none" }}>
             <div className="ig-card">
               <div className="ig-card-top">
                 <div className="ig-avatar">
@@ -257,7 +255,6 @@ export default function Step2Username({
               </div>
             </div>
           </div>
-          )}
         </div>
       </div>
     </section>

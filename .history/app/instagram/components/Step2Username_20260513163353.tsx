@@ -257,9 +257,8 @@ export default function Step2Username({
               </div>
             </div>
           </div>
-          )}
-        </div>
+        )}
       </div>
-    </section>
-  );
-}
+    </div>
+  </section>
+);
