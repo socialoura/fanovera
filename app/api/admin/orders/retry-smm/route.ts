@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrySmmSubOrder } from "@/app/lib/smm";
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 /**
  * POST /api/admin/orders/retry-smm
  * Body: { orderId: number, cartIndex: number }
@@ -18,7 +10,7 @@ function checkAuth(req: NextRequest) {
  * Re-reads the SMM config so you can fix the service ID before retrying.
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();

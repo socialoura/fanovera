@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { refreshServiceRates, getServices } from "@/app/lib/smm";
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 /**
  * GET /api/admin/smm/services
  * Returns the full list of BulkFollows services (with rates).
  */
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const services = await getServices();
@@ -37,7 +29,7 @@ export async function GET(req: NextRequest) {
  * and updates the rate_per_1k column with the latest prices.
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();

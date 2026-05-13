@@ -275,6 +275,8 @@ export async function initDb() {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS pricing_strategy VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_country ON orders(country)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS pricing_experiment_exposures (
@@ -496,14 +498,20 @@ export async function upsertCheckoutPayload(params: {
   pricingStrategy?: string | null;
   sourcePage?: string | null;
   plan?: string | null;
+  /** ISO-3166-1 alpha-2 country code captured server-side (Vercel/CF geo). */
+  country?: string | null;
 }) {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS pricing_strategy VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT NULL`;
+
+  const normalizedCountry = normalizeCountryCode(params.country);
+
   await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan)
+    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country)
     VALUES (
       ${params.paymentIntentId},
       ${params.email || ""},
@@ -516,7 +524,8 @@ export async function upsertCheckoutPayload(params: {
       ${params.variantId || ""},
       ${params.pricingStrategy || ""},
       ${params.sourcePage || ""},
-      ${params.plan || ""}
+      ${params.plan || ""},
+      ${normalizedCountry}
     )
     ON CONFLICT (payment_intent_id)
     DO UPDATE SET
@@ -530,8 +539,20 @@ export async function upsertCheckoutPayload(params: {
       variant_id = EXCLUDED.variant_id,
       pricing_strategy = EXCLUDED.pricing_strategy,
       source_page = EXCLUDED.source_page,
-      plan = EXCLUDED.plan
+      plan = EXCLUDED.plan,
+      country = COALESCE(EXCLUDED.country, checkout_payloads.country)
   `;
+}
+
+/**
+ * Returns a clean 2-letter uppercase ISO country code, or null if invalid.
+ * Accepts inputs like " fr ", "FRA", "us", undefined, etc.
+ */
+export function normalizeCountryCode(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(trimmed)) return null;
+  return trimmed;
 }
 
 export async function getCheckoutPayload(paymentIntentId: string) {

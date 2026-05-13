@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById } from "@/app/lib/db";
-import { getMultipleOrderStatus, type SmmSubOrder } from "@/app/lib/smm";
+import { getMultipleOrderStatusCached, type SmmSubOrder } from "@/app/lib/smm";
 
 /**
  * GET /api/order/[id]
@@ -46,7 +46,7 @@ export async function GET(
     const liveStatuses: Record<string, { status: string; remains?: number; charge?: string }> = {};
     if (bfIds.length > 0) {
       try {
-        const result = await getMultipleOrderStatus(bfIds);
+        const result = await getMultipleOrderStatusCached(bfIds);
         for (const [bfId, st] of Object.entries(result)) {
           liveStatuses[bfId] = {
             status: st.status,

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const upsells = await sql`SELECT * FROM upsells ORDER BY sort_order, id`;
@@ -23,7 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();
@@ -47,7 +39,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();
@@ -73,7 +65,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();

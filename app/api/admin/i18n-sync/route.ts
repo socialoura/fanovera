@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 import {
   ADMIN_TRANSLATION_LANGUAGE_NAMES,
   ADMIN_TRANSLATION_TARGET_LOCALES,
@@ -16,15 +17,6 @@ type OpenAiTranslationResponse = {
   exact?: Record<string, string>;
   fragments?: Record<string, string>;
 };
-
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
 
 function localePath(locale: string) {
   return path.join(process.cwd(), "app", "i18n", "locales", `${locale}.ts`);
@@ -149,7 +141,7 @@ async function translateMissing(locale: AdminTranslationTargetLocale, missing: L
 }
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const missing = await getMissing();
@@ -161,7 +153,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json().catch(() => ({}));

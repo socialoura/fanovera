@@ -6,12 +6,17 @@ import { assignPricingVariant } from "@/app/lib/pricingExperiments";
 import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
 import { getProductConfig, normalizePlatform } from "@/app/lib/productCatalog";
 import { captureServerEvent } from "@/app/lib/analytics.server";
+import { rateLimit, tooManyRequests } from "@/app/lib/rateLimit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 payment-intent creations / 5 min / IP. Caps Stripe API abuse.
+  const rl = rateLimit(req, { key: "create-payment-intent", max: 20, windowMs: 5 * 60_000 });
+  if (!rl.allowed) return tooManyRequests(rl);
+
   try {
     const body = await req.json();
     const { currency, email, username, platform, cart, locale, sourcePage, anonymousId, userId } = body;
@@ -55,6 +60,14 @@ export async function POST(req: NextRequest) {
       assignment,
     });
 
+    // Capture the visitor's country server-side. Vercel sets x-vercel-ip-country;
+    // Cloudflare uses cf-ipcountry. We persist it on checkout_payloads so the
+    // webhook + confirm-order paths can later attach it to the order row.
+    const geoCountry =
+      req.headers.get("x-vercel-ip-country") ||
+      req.headers.get("cf-ipcountry") ||
+      "";
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: pricing.amountCents,
       currency: pricing.currency.toLowerCase(),
@@ -72,6 +85,7 @@ export async function POST(req: NextRequest) {
         userId: typeof userId === "string" ? userId.slice(0, 120) : "",
         anonymousId: typeof anonymousId === "string" ? anonymousId.slice(0, 120) : "",
         e2e: checkoutE2E ? "true" : "",
+        country: geoCountry.slice(0, 4),
         cart: JSON.stringify(pricing.sanitizedCart).slice(0, 490),
       },
       automatic_payment_methods: { enabled: true },
@@ -91,6 +105,7 @@ export async function POST(req: NextRequest) {
         pricingStrategy: assignment.pricingStrategy,
         sourcePage: typeof sourcePage === "string" ? sourcePage.slice(0, 160) : "",
         plan: pricing.plan,
+        country: geoCountry,
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);

@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initDb } from "@/app/lib/db";
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+/**
+ * Initialises / migrates the Postgres schema.
+ *
+ * In production this is gated behind an explicit opt-in (`ALLOW_INIT_DB=1`)
+ * because:
+ *  - the operation is idempotent but slow (many CREATE/ALTER round-trips),
+ *  - the endpoint should not be reachable by accident, even with the admin
+ *    password compromised.
+ *
+ * To run a migration in prod: set `ALLOW_INIT_DB=1` in Vercel env, redeploy,
+ * curl with the admin Bearer token, then unset the flag and redeploy.
+ */
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdmin(req)) return unauthorized();
+
+  const isProd = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production";
+  if (isProd && process.env.ALLOW_INIT_DB !== "1") {
+    return NextResponse.json(
+      { error: "init-db is disabled in production (set ALLOW_INIT_DB=1 to enable)" },
+      { status: 403 },
+    );
   }
 
   try {
@@ -18,7 +32,7 @@ export async function GET(req: NextRequest) {
     console.error("[init-db]", err);
     return NextResponse.json(
       { error: "Failed to initialize database", detail: String(err) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

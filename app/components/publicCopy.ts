@@ -121,6 +121,13 @@ export type PublicCopy = {
     delivered: string;
     remaining: string;
   };
+  payment: {
+    paying: string;
+    pay: string;
+    loading: string;
+    paymentError: string;
+    orPayByCard: string;
+  };
 };
 
 export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
@@ -254,6 +261,13 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       delivered: "Livré",
       remaining: "Restant",
     },
+    payment: {
+      paying: "Paiement en cours…",
+      pay: "Payer",
+      loading: "Chargement du paiement sécurisé…",
+      paymentError: "Erreur de paiement",
+      orPayByCard: "ou payer par carte",
+    },
   },
   en: {
     header: { track: "Track", faq: "FAQ", contact: "Contact", start: "Start" },
@@ -378,6 +392,13 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       summary: (id, platform, status) => `Order #${id} - ${platform} - overall status ${status}`,
       delivered: "Delivered",
       remaining: "Remaining",
+    },
+    payment: {
+      paying: "Processing payment…",
+      pay: "Pay",
+      loading: "Loading secure payment…",
+      paymentError: "Payment error",
+      orPayByCard: "or pay by card",
     },
   },
   es: {} as PublicCopy,

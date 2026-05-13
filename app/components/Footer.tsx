@@ -120,7 +120,7 @@ export default function Footer() {
               { l: copy.links.terms, h: `/${locale}/cgv` },
               { l: copy.links.privacy, h: `/${locale}/confidentialite` },
               { l: "Cookies", h: `/${locale}/cookies` },
-              { l: copy.links.contact, h: "mailto:support@fanovera.com" },
+              { l: copy.links.contact, h: `/${locale}/contact` },
             ]}
           />
         </div>

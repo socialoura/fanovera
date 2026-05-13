@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 async function ensureExperimentColumns() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
@@ -41,7 +33,7 @@ async function ensureExperimentColumns() {
 }
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     await ensureExperimentColumns();

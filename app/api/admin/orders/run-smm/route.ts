@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runSmmForOrder } from "@/app/lib/smm";
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-function checkAuth(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
-
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 /**
  * POST /api/admin/orders/run-smm
  * Body: { orderId: number }
@@ -18,7 +10,7 @@ function checkAuth(req: NextRequest) {
  * Skips any sub-orders that are already placed/completed.
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();

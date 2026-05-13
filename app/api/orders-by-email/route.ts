@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
+import { rateLimit, tooManyRequests } from "@/app/lib/rateLimit";
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,6 +13,10 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * "ownership proof" since only the customer knows their own email.
  */
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 lookups / minute / IP. Mitigates email enumeration scans.
+  const rl = rateLimit(req, { key: "orders-by-email", max: 10, windowMs: 60_000 });
+  if (!rl.allowed) return tooManyRequests(rl);
+
   try {
     const body = await req.json();
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";

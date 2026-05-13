@@ -43,9 +43,19 @@ const CURRENCY_SYMBOL: Record<string, string> = {
   chf: "CHF",
 };
 
-function fmtPrice(cents: number, currency = "eur"): string {
-  const sym = CURRENCY_SYMBOL[currency.toLowerCase()] || "€";
-  return `${(cents / 100).toFixed(2)} ${sym}`;
+function fmtPrice(cents: number, currency = "eur", locale: EmailLocale = "fr"): string {
+  const cur = currency.toUpperCase();
+  try {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", {
+      style: "currency",
+      currency: cur,
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  } catch {
+    // Fallback if the runtime doesn't know the currency code.
+    const sym = CURRENCY_SYMBOL[currency.toLowerCase()] || "€";
+    return `${(cents / 100).toFixed(2)} ${sym}`;
+  }
 }
 
 function fmtQty(n: number): string {
@@ -61,6 +71,86 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+// ── Localized copy ──
+
+type EmailLocale = "fr" | "en";
+
+function normalizeEmailLocale(locale?: string): EmailLocale {
+  const short = (locale || "").toLowerCase().split("-")[0];
+  return short === "en" ? "en" : "fr";
+}
+
+type EmailCopy = {
+  subject: (orderId: number) => string;
+  htmlLang: EmailLocale;
+  title: string;
+  heroTitle: string;
+  heroBody: (orderId: number) => string;
+  detailsLabel: string;
+  platformLabel: string;
+  accountLabel: string;
+  totalLabel: string;
+  trackingIntro: string;
+  trackingButton: string;
+  orCopyLink: string;
+  whatsNextLabel: string;
+  step1: string;
+  step2: string;
+  step3: string;
+  footerLine: string;
+  // Plain-text labels
+  textDetails: string;
+  textTracking: string;
+  textWhatsNext: string;
+};
+
+const EMAIL_COPY: Record<EmailLocale, EmailCopy> = {
+  fr: {
+    subject: (id) => `Confirmation de commande #${id} — Fanovera`,
+    htmlLang: "fr",
+    title: "Confirmation de commande",
+    heroTitle: "Merci pour ta commande !",
+    heroBody: (id) => `Ta commande <strong style="color:#111827;">#${id}</strong> est confirmée. On la lance immédiatement.`,
+    detailsLabel: "Détail de la commande",
+    platformLabel: "Plateforme",
+    accountLabel: "Compte",
+    totalLabel: "Total payé",
+    trackingIntro: "Tu peux suivre la livraison en temps réel ici :",
+    trackingButton: "Suivre ma commande →",
+    orCopyLink: "ou copie ce lien :",
+    whatsNextLabel: "Et maintenant ?",
+    step1: "Activation immédiate (en moins de 60 secondes)",
+    step2: "Livraison progressive pour un effet 100&nbsp;% naturel",
+    step3: "Une question ? Réponds simplement à cet email — on est là.",
+    footerLine: "Tu reçois cet email car tu as passé une commande sur Fanovera.",
+    textDetails: "DÉTAIL",
+    textTracking: "SUIVI",
+    textWhatsNext: "Et maintenant ?",
+  },
+  en: {
+    subject: (id) => `Order confirmation #${id} — Fanovera`,
+    htmlLang: "en",
+    title: "Order confirmation",
+    heroTitle: "Thanks for your order!",
+    heroBody: (id) => `Your order <strong style="color:#111827;">#${id}</strong> is confirmed. We're starting it right away.`,
+    detailsLabel: "Order details",
+    platformLabel: "Platform",
+    accountLabel: "Account",
+    totalLabel: "Total paid",
+    trackingIntro: "Track delivery in real time here:",
+    trackingButton: "Track my order →",
+    orCopyLink: "or copy this link:",
+    whatsNextLabel: "What's next?",
+    step1: "Immediate activation (under 60 seconds)",
+    step2: "Gradual delivery for a 100&nbsp;% natural effect",
+    step3: "Got a question? Just reply to this email — we're here.",
+    footerLine: "You're receiving this email because you placed an order on Fanovera.",
+    textDetails: "DETAILS",
+    textTracking: "TRACKING",
+    textWhatsNext: "What's next?",
+  },
+};
 
 // ── Order confirmation ──
 
@@ -78,6 +168,24 @@ export interface OrderConfirmationParams {
   }>;
   totalCents: number;
   currency?: string;
+  /**
+   * Customer-facing locale at checkout time. Used to build the right tracking
+   * URL (e.g. `/en/track/123` for an English visitor) so the page renders in
+   * the right language when they click from their inbox (no cookie there).
+   * Defaults to the FR routing if missing.
+   */
+  locale?: string;
+}
+
+/** Whitelist of supported tracking-URL locale prefixes. */
+const TRACK_URL_LOCALES = new Set(["fr", "en", "es", "pt", "de", "it", "tr"]);
+
+function buildTrackingUrl(orderId: number, locale?: string): string {
+  const normalized = (locale || "").toLowerCase().split("-")[0];
+  if (normalized && TRACK_URL_LOCALES.has(normalized) && normalized !== "fr") {
+    return `${APP_URL}/${normalized}/track/${orderId}`;
+  }
+  return `${APP_URL}/track/${orderId}`;
 }
 
 /**
@@ -94,11 +202,12 @@ export async function sendOrderConfirmation(
   try {
     const html = renderOrderConfirmationHtml(params);
     const text = renderOrderConfirmationText(params);
+    const copy = EMAIL_COPY[normalizeEmailLocale(params.locale)];
 
     const result = await resend.emails.send({
       from: RESEND_FROM,
       to: params.to,
-      subject: `Confirmation de commande #${params.orderId} — Fanovera`,
+      subject: copy.subject(params.orderId),
       html,
       text,
     });
@@ -118,8 +227,10 @@ export async function sendOrderConfirmation(
 // ── HTML template ──
 
 function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
+  const locale = normalizeEmailLocale(p.locale);
+  const copy = EMAIL_COPY[locale];
   const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
-  const trackingUrl = `${APP_URL}/track/${p.orderId}`;
+  const trackingUrl = buildTrackingUrl(p.orderId, p.locale);
   const currency = p.currency || "eur";
 
   const itemsHtml = p.cart
@@ -128,7 +239,7 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
       const lbl = escapeHtml(it.label || it.service || "Service");
       const priceCell =
         it.price !== undefined
-          ? `<td align="right" style="padding:12px 0;font-size:14px;color:#6b7280;">${it.price.toFixed(2)} €</td>`
+          ? `<td align="right" style="padding:12px 0;font-size:14px;color:#6b7280;">${fmtPrice(Math.round(it.price * 100), currency, locale)}</td>`
           : "";
       return `
         <tr>
@@ -141,11 +252,11 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
     .join("");
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${copy.htmlLang}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Confirmation de commande</title>
+<title>${copy.title}</title>
 </head>
 <body style="margin:0;padding:0;background:#f8f6f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;color:#111827;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f6f1;padding:32px 16px;">
@@ -167,10 +278,10 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
             <td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:36px 32px;text-align:center;">
               <div style="font-size:44px;line-height:1;margin-bottom:12px;">🎉</div>
               <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#111827;letter-spacing:-0.02em;">
-                Merci pour ta commande !
+                ${copy.heroTitle}
               </h1>
               <p style="margin:0;font-size:15px;color:#6b7280;line-height:1.55;">
-                Ta commande <strong style="color:#111827;">#${p.orderId}</strong> est confirmée. On la lance immédiatement.
+                ${copy.heroBody(p.orderId)}
               </p>
             </td>
           </tr>
@@ -182,16 +293,16 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
           <tr>
             <td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:24px 28px;">
               <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:14px;">
-                Détail de la commande
+                ${copy.detailsLabel}
               </div>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
                 <tr>
-                  <td style="font-size:14px;color:#6b7280;padding-bottom:6px;">Plateforme</td>
+                  <td style="font-size:14px;color:#6b7280;padding-bottom:6px;">${copy.platformLabel}</td>
                   <td align="right" style="font-size:14px;font-weight:600;color:#111827;padding-bottom:6px;">${escapeHtml(platformLabel)}</td>
                 </tr>
                 <tr>
-                  <td style="font-size:14px;color:#6b7280;padding-bottom:6px;">Compte</td>
+                  <td style="font-size:14px;color:#6b7280;padding-bottom:6px;">${copy.accountLabel}</td>
                   <td align="right" style="font-size:14px;font-weight:600;color:#111827;padding-bottom:6px;">@${escapeHtml(p.username)}</td>
                 </tr>
               </table>
@@ -199,9 +310,9 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 ${itemsHtml}
                 <tr>
-                  <td style="padding:14px 0 0;border-top:2px solid #111827;font-size:15px;font-weight:700;color:#111827;">Total payé</td>
+                  <td style="padding:14px 0 0;border-top:2px solid #111827;font-size:15px;font-weight:700;color:#111827;">${copy.totalLabel}</td>
                   <td align="right" style="padding:14px 0 0;border-top:2px solid #111827;font-size:16px;font-weight:800;color:#111827;">
-                    ${fmtPrice(p.totalCents, currency)}
+                    ${fmtPrice(p.totalCents, currency, locale)}
                   </td>
                 </tr>
               </table>
@@ -215,14 +326,14 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
           <tr>
             <td align="center" style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:28px 28px;">
               <div style="font-size:15px;color:#374151;margin-bottom:18px;line-height:1.55;">
-                Tu peux suivre la livraison en temps réel ici :
+                ${copy.trackingIntro}
               </div>
               <a href="${trackingUrl}"
                  style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:14px 28px;border-radius:12px;">
-                Suivre ma commande →
+                ${copy.trackingButton}
               </a>
               <div style="margin-top:14px;font-size:12px;color:#9ca3af;">
-                ou copie ce lien : <a href="${trackingUrl}" style="color:#6b7280;">${trackingUrl}</a>
+                ${copy.orCopyLink} <a href="${trackingUrl}" style="color:#6b7280;">${trackingUrl}</a>
               </div>
             </td>
           </tr>
@@ -234,22 +345,22 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
           <tr>
             <td style="padding:0 8px;">
               <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:12px;">
-                Et maintenant ?
+                ${copy.whatsNextLabel}
               </div>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td valign="top" style="font-size:14px;color:#374151;line-height:1.6;padding:6px 0;">
-                    <strong style="color:#111827;">1.</strong> Activation immédiate (en moins de 60 secondes)
+                    <strong style="color:#111827;">1.</strong> ${copy.step1}
                   </td>
                 </tr>
                 <tr>
                   <td valign="top" style="font-size:14px;color:#374151;line-height:1.6;padding:6px 0;">
-                    <strong style="color:#111827;">2.</strong> Livraison progressive pour un effet 100&nbsp;% naturel
+                    <strong style="color:#111827;">2.</strong> ${copy.step2}
                   </td>
                 </tr>
                 <tr>
                   <td valign="top" style="font-size:14px;color:#374151;line-height:1.6;padding:6px 0;">
-                    <strong style="color:#111827;">3.</strong> Une question ? Réponds simplement à cet email — on est là.
+                    <strong style="color:#111827;">3.</strong> ${copy.step3}
                   </td>
                 </tr>
               </table>
@@ -260,7 +371,7 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
           <tr>
             <td style="padding:32px 8px 0;border-top:1px solid #e5e7eb;margin-top:32px;">
               <div style="font-size:12px;color:#9ca3af;line-height:1.55;text-align:center;padding-top:24px;">
-                Tu reçois cet email car tu as passé une commande sur Fanovera.<br>
+                ${copy.footerLine}<br>
                 <a href="${APP_URL}" style="color:#6b7280;text-decoration:underline;">fanovera.com</a> · 17 rue de Paradis · 75010 Paris<br>
                 © Fanovera SAS ${new Date().getFullYear()}
               </div>
@@ -278,8 +389,10 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
 // ── Plain-text fallback ──
 
 function renderOrderConfirmationText(p: OrderConfirmationParams): string {
+  const locale = normalizeEmailLocale(p.locale);
+  const copy = EMAIL_COPY[locale];
   const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
-  const trackingUrl = `${APP_URL}/track/${p.orderId}`;
+  const trackingUrl = buildTrackingUrl(p.orderId, p.locale);
   const currency = p.currency || "eur";
 
   const items = p.cart
@@ -290,27 +403,31 @@ function renderOrderConfirmationText(p: OrderConfirmationParams): string {
     })
     .join("\n");
 
-  return `Merci pour ta commande !
+  // Strip HTML tags & entities from copy values that may contain inline markup.
+  const stripHtml = (s: string) =>
+    s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
 
-Ta commande #${p.orderId} est confirmée. On la lance immédiatement.
+  return `${copy.heroTitle}
 
-DÉTAIL
+${stripHtml(copy.heroBody(p.orderId))}
+
+${copy.textDetails}
 ------
-Plateforme : ${platformLabel}
-Compte     : @${p.username}
+${copy.platformLabel} : ${platformLabel}
+${copy.accountLabel}    : @${p.username}
 
 ${items}
 
-Total payé : ${fmtPrice(p.totalCents, currency)}
+${copy.totalLabel} : ${fmtPrice(p.totalCents, currency, locale)}
 
-SUIVI
+${copy.textTracking}
 -----
 ${trackingUrl}
 
-Et maintenant ?
-1. Activation immédiate (en moins de 60 secondes)
-2. Livraison progressive pour un effet 100 % naturel
-3. Une question ? Réponds à cet email — on est là.
+${copy.textWhatsNext}
+1. ${stripHtml(copy.step1)}
+2. ${stripHtml(copy.step2)}
+3. ${stripHtml(copy.step3)}
 
 —
 Fanovera SAS · 17 rue de Paradis · 75010 Paris

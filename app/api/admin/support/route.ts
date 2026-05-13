@@ -2,24 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupportMessages, getSupportMessageById, replySupportMessage } from "@/app/lib/db";
 import { RESEND_FROM } from "@/app/lib/email";
 
-function checkAuth(req: NextRequest): boolean {
-  const auth = req.headers.get("authorization") || "";
-  const token = auth.replace("Bearer ", "");
-  return token === process.env.ADMIN_PASSWORD;
-}
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!isAdmin(req)) return unauthorized();
   const messages = await getSupportMessages();
   return NextResponse.json(messages);
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!isAdmin(req)) return unauthorized();
 
   const body = await req.json();
   const { id, replyText } = body;

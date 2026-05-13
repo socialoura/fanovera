@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupportMessage } from "@/app/lib/db";
+import { rateLimit, tooManyRequests } from "@/app/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 messages / 10 minutes / IP. Blocks support spam + Discord webhook flood.
+  const rl = rateLimit(req, { key: "chat-message", max: 5, windowMs: 10 * 60_000 });
+  if (!rl.allowed) return tooManyRequests(rl);
+
   const body = await req.json();
   const email = (body.email || "").trim();
   const message = (body.message || "").trim();

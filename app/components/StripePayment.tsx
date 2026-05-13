@@ -9,6 +9,7 @@ import { getDisplayCurrency } from "../lib/pricingCurrency";
 import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
 import { usePricingExperiment } from "../lib/usePricingExperiment";
 import { trackEvent } from "../lib/analytics";
+import { getPublicCopy } from "./publicCopy";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -94,7 +95,8 @@ export function usePaymentIntent(args: {
         if (aborted) return;
         if (data.clientSecret) setClientSecret(data.clientSecret);
         else {
-          setError(data.error || "Erreur de paiement");
+          const fallback = getPublicCopy(locale).payment.paymentError;
+          setError(data.error || fallback);
           trackEvent("checkout_failed", { platform, product_area: productArea, reason: data.error || "payment_intent_error" });
         }
       })
@@ -123,6 +125,8 @@ function ExpressCheckout({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { locale } = useI18n();
+  const paymentCopy = getPublicCopy(locale).payment;
   const [err, setErr] = useState<string | null>(null);
 
   if (!stripe || !elements) return null;
@@ -144,7 +148,7 @@ function ExpressCheckout({
             redirect: "if_required",
           });
           if (error) {
-            setErr(error.message || "Erreur de paiement");
+            setErr(error.message || paymentCopy.paymentError);
             trackEvent("checkout_failed", { platform, reason: error.message || "express_checkout_error" });
           }
           else {
@@ -195,10 +199,12 @@ function CardPayment({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { locale } = useI18n();
+  const paymentCopy = getPublicCopy(locale).payment;
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const formattedAmount = new Intl.NumberFormat(undefined, {
+  const formattedAmount = new Intl.NumberFormat(locale === "en" ? "en-US" : locale, {
     style: "currency",
     currency: (currency || "eur").toUpperCase(),
   }).format((amount || 0) / 100);
@@ -219,7 +225,7 @@ function CardPayment({
       redirect: "if_required",
     });
     if (error) {
-      setErr(error.message || "Erreur de paiement");
+      setErr(error.message || paymentCopy.paymentError);
       trackEvent("checkout_failed", { platform, amount, currency, reason: error.message || "card_checkout_error" });
     }
     else {
@@ -269,7 +275,7 @@ function CardPayment({
         {submitting ? (
           <>
             <span className="pay-spinner" />
-            <span>Paiement en cours…</span>
+            <span>{paymentCopy.paying}</span>
           </>
         ) : (
           <>
@@ -282,7 +288,7 @@ function CardPayment({
                 strokeLinejoin="round"
               />
             </svg>
-            <span>Payer</span>
+            <span>{paymentCopy.pay}</span>
             <span className="pay-amount">
               {formattedAmount}
             </span>
@@ -313,6 +319,8 @@ export default function StripeCheckout({
   brandColor,
   clientSecret: prefetchedSecret,
 }: StripeCheckoutProps) {
+  const { locale } = useI18n();
+  const paymentCopy = getPublicCopy(locale).payment;
   const effectiveCurrency = (currency || getDisplayCurrency() || "EUR").toLowerCase();
   const usesPrefetchedSecret = prefetchedSecret !== undefined;
 
@@ -357,7 +365,7 @@ export default function StripeCheckout({
         }}
       >
         <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
-        Chargement du paiement sécurisé…
+        {paymentCopy.loading}
       </div>
     );
   }
@@ -383,7 +391,7 @@ export default function StripeCheckout({
     >
       <ExpressCheckout platform={platform} clientSecret={clientSecret} onSuccess={onSuccess} />
       <div style={{ textAlign: "center", margin: "16px 0" }}>
-        <span style={{ color: "var(--ink-3)", fontSize: 12 }}>ou payer par carte</span>
+        <span style={{ color: "var(--ink-3)", fontSize: 12 }}>{paymentCopy.orPayByCard}</span>
       </div>
       <CardPayment
         email={email}

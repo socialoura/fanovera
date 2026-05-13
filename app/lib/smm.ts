@@ -76,6 +76,59 @@ export async function getMultipleOrderStatus(
   });
 }
 
+// ─── Cache layer for BulkFollows status ──────────────────────────────────────
+// Customers hitting refresh on /track every few seconds would otherwise hammer
+// the BulkFollows API. We cache per-bfOrderId statuses for 30s in-memory.
+//
+// Caveat: Vercel serverless instances are isolated, so the actual rate to BF
+// is capped at (1 / 30s) × concurrent_instances. Acceptable trade-off; swap
+// to Redis if you need a hard global cap.
+
+const STATUS_CACHE_TTL_MS = 30_000;
+type StatusCacheEntry = { value: BfOrderStatus; expires: number };
+const statusCache = new Map<number, StatusCacheEntry>();
+
+/**
+ * Cached variant of {@link getMultipleOrderStatus} — fetches only the BF order
+ * IDs whose cached value is stale or missing, and returns the merged result.
+ */
+export async function getMultipleOrderStatusCached(
+  orderIds: number[],
+): Promise<Record<string, BfOrderStatus>> {
+  const now = Date.now();
+  const merged: Record<string, BfOrderStatus> = {};
+  const toFetch: number[] = [];
+
+  for (const id of orderIds) {
+    const hit = statusCache.get(id);
+    if (hit && hit.expires > now) {
+      merged[String(id)] = hit.value;
+    } else {
+      toFetch.push(id);
+    }
+  }
+
+  if (toFetch.length === 0) return merged;
+
+  const fresh = await getMultipleOrderStatus(toFetch);
+  for (const [k, v] of Object.entries(fresh)) {
+    merged[k] = v;
+    const idNum = Number(k);
+    if (!Number.isNaN(idNum)) {
+      statusCache.set(idNum, { value: v, expires: now + STATUS_CACHE_TTL_MS });
+    }
+  }
+
+  // Opportunistic cleanup if the cache grows too large.
+  if (statusCache.size > 1000) {
+    for (const [k, entry] of statusCache) {
+      if (entry.expires <= now) statusCache.delete(k);
+    }
+  }
+
+  return merged;
+}
+
 /** Fetch all BulkFollows services with their rates */
 export interface BfService {
   service: number;

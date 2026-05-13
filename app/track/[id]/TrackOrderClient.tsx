@@ -28,6 +28,41 @@ type TrackResponse = {
   services: ServiceStatus[];
 };
 
+const STATUS_LABELS_FR: Record<string, string> = {
+  paid: "Payée",
+  processing: "En cours",
+  placed: "En cours",
+  pending: "En attente",
+  delivered: "Livrée",
+  completed: "Livrée",
+  partial: "Partielle",
+  canceled: "Annulée",
+  cancelled: "Annulée",
+  refunded: "Remboursée",
+};
+
+const STATUS_LABELS_EN: Record<string, string> = {
+  paid: "Paid",
+  processing: "Processing",
+  placed: "Processing",
+  pending: "Pending",
+  delivered: "Delivered",
+  completed: "Delivered",
+  partial: "Partial",
+  canceled: "Canceled",
+  cancelled: "Canceled",
+  refunded: "Refunded",
+};
+
+function translateStatus(raw: string | null | undefined, locale: string): string {
+  if (!raw) return "—";
+  const lower = raw.toLowerCase();
+  // UX: never expose "failed" — show as "paid" instead
+  const normalized = lower === "failed" ? "paid" : lower;
+  const map = locale === "en" ? STATUS_LABELS_EN : STATUS_LABELS_FR;
+  return map[normalized] || raw;
+}
+
 export default function TrackOrderClient() {
   const params = useParams<{ id: string }>();
   const { locale } = useI18n();
@@ -72,14 +107,14 @@ export default function TrackOrderClient() {
 
         {!loading && data && (
           <>
-            <p style={{ marginTop: 10, color: "var(--ink-2)" }}>{copy.summary(data.id, data.platform, data.status)}</p>
+            <p style={{ marginTop: 10, color: "var(--ink-2)" }}>{copy.summary(data.id, data.platform, translateStatus(data.status, locale))}</p>
 
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
               {data.services.map((service, idx) => (
                 <div key={`${service.service}-${idx}`} style={{ border: "1px solid var(--line)", borderRadius: 12, padding: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                     <strong>{service.service}</strong>
-                    <span style={{ color: "var(--ink-2)" }}>{service.status}</span>
+                    <span style={{ color: "var(--ink-2)" }}>{translateStatus(service.status, locale)}</span>
                   </div>
                   <div style={{ marginTop: 8, fontSize: 13, color: "var(--ink-2)" }}>
                     {copy.delivered}: {service.delivered}/{service.qty} ({service.pct}%)
