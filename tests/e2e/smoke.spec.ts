@@ -6,11 +6,13 @@ const routes = [
   { path: "/fr/instagram", expectedText: "Fanovera" },
   { path: "/en/youtube", expectedText: "Fanovera" },
   { path: "/fr/twitch", expectedText: "Fanovera" },
+  { path: "/fr/cgv", expectedText: "Conditions générales de vente" },
+  { path: "/en/confidentialite", expectedText: "Fanovera" },
   { path: "/fr/order-success", expectedText: "Commande confirmée" },
   { path: "/en/track/test-order", expectedText: "Order tracking" },
 ];
 const locales = ["fr", "en", "es", "pt", "de", "it", "tr"];
-const publicPages = ["", "instagram", "tiktok", "youtube", "spotify", "twitch", "facebook", "linkedin", "twitter"];
+const publicPages = ["", "instagram", "tiktok", "youtube", "spotify", "twitch", "facebook", "linkedin", "twitter", "mentions-legales", "cgv", "confidentialite", "cookies", "remboursement"];
 
 for (const route of routes) {
   test(`${route.path} renders meaningful content`, async ({ page }) => {

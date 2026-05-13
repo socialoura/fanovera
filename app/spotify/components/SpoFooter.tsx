@@ -72,10 +72,10 @@ export default function SpoFooter() {
           <FootCol
             title={t.legal}
             links={[
-              { l: t.legalNotice, h: "#legal" },
-              { l: "CGV", h: "#cgv" },
-              { l: t.privacy, h: "#privacy" },
-              { l: t.cookies, h: "#cookies" },
+              { l: t.legalNotice, h: "/mentions-legales" },
+              { l: "CGV", h: "/cgv" },
+              { l: t.privacy, h: "/confidentialite" },
+              { l: t.cookies, h: "/cookies" },
             ]}
           />
         </div>

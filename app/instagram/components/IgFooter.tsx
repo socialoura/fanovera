@@ -78,10 +78,10 @@ export default function IgFooter() {
           <FootCol
             title={t.legal}
             links={[
-              { l: t.legalNotice, h: "#legal" },
-              { l: "CGV", h: "#cgv" },
-              { l: t.privacy, h: "#privacy" },
-              { l: "Cookies", h: "#cookies" },
+              { l: t.legalNotice, h: "/mentions-legales" },
+              { l: "CGV", h: "/cgv" },
+              { l: t.privacy, h: "/confidentialite" },
+              { l: "Cookies", h: "/cookies" },
             ]}
           />
         </div>

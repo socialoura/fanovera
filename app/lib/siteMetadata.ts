@@ -17,12 +17,17 @@ export type PublicRouteId =
   | "linkedin"
   | "twitter"
   | "orderSuccess"
-  | "track";
+  | "track"
+  | "legalNotice"
+  | "terms"
+  | "privacy"
+  | "cookies"
+  | "refund";
 
 type RouteConfig = {
   id: PublicRouteId;
   path: string;
-  pageType: "home" | "product" | "checkout" | "support";
+  pageType: "home" | "product" | "checkout" | "support" | "legal";
   productArea?: string;
   index: boolean;
 };
@@ -34,6 +39,8 @@ type MetadataCopy = {
 };
 
 type ProductRouteId = Exclude<PublicRouteId, "home" | "orderSuccess" | "track">;
+export type LegalRouteId = "legalNotice" | "terms" | "privacy" | "cookies" | "refund";
+type ProductPageRouteId = Exclude<ProductRouteId, LegalRouteId>;
 
 export const PUBLIC_ROUTES: Record<PublicRouteId, RouteConfig> = {
   home: { id: "home", path: "", pageType: "home", index: true },
@@ -47,6 +54,11 @@ export const PUBLIC_ROUTES: Record<PublicRouteId, RouteConfig> = {
   twitter: { id: "twitter", path: "twitter", pageType: "product", productArea: "twitter", index: true },
   orderSuccess: { id: "orderSuccess", path: "order-success", pageType: "checkout", index: false },
   track: { id: "track", path: "track", pageType: "support", index: false },
+  legalNotice: { id: "legalNotice", path: "mentions-legales", pageType: "legal", index: true },
+  terms: { id: "terms", path: "cgv", pageType: "legal", index: true },
+  privacy: { id: "privacy", path: "confidentialite", pageType: "legal", index: true },
+  cookies: { id: "cookies", path: "cookies", pageType: "legal", index: true },
+  refund: { id: "refund", path: "remboursement", pageType: "legal", index: true },
 };
 
 const HOME_COPY: Record<SupportedLocale, MetadataCopy> = {
@@ -94,7 +106,7 @@ const HOME_COPY: Record<SupportedLocale, MetadataCopy> = {
   },
 };
 
-const PRODUCT_COPY: Record<ProductRouteId, Record<SupportedLocale, MetadataCopy>> = {
+const PRODUCT_COPY: Record<ProductPageRouteId, Record<SupportedLocale, MetadataCopy>> = {
   instagram: productCopy("Instagram", {
     fr: "Campagnes de visibilité Instagram avec audience ciblée, déploiement progressif, paiement sécurisé et aucun accès au compte demandé.",
     en: "Instagram visibility campaigns with targeted audience, progressive delivery, secure payment and no account access requested.",
@@ -209,6 +221,26 @@ function productCopy(product: string, descriptions: Record<SupportedLocale, stri
   };
 }
 
+function legalMetadata(frTitle: string, enTitle: string, frDescription: string, enDescription: string): Record<SupportedLocale, MetadataCopy> {
+  return {
+    fr: { title: frTitle, description: frDescription, keywords: ["Fanovera", "légal", "conditions"] },
+    en: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+    es: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+    pt: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+    de: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+    it: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+    tr: { title: enTitle, description: enDescription, keywords: ["Fanovera", "legal", "terms"] },
+  };
+}
+
+export function isLegalRouteId(routeId: PublicRouteId): routeId is LegalRouteId {
+  return routeId === "legalNotice" || routeId === "terms" || routeId === "privacy" || routeId === "cookies" || routeId === "refund";
+}
+
+function isProductPageRouteId(routeId: PublicRouteId): routeId is ProductPageRouteId {
+  return PUBLIC_ROUTES[routeId].pageType === "product";
+}
+
 const SUPPORT_COPY: Record<"orderSuccess" | "track", Record<SupportedLocale, MetadataCopy>> = {
   orderSuccess: {
     fr: { title: "Commande confirmée - Fanovera", description: "Votre commande Fanovera est confirmée. Retrouvez votre lien de suivi.", keywords: ["commande Fanovera"] },
@@ -230,7 +262,40 @@ const SUPPORT_COPY: Record<"orderSuccess" | "track", Record<SupportedLocale, Met
   },
 };
 
-const PRODUCT_LABELS: Record<ProductRouteId, string> = {
+const LEGAL_COPY: Record<LegalRouteId, Record<SupportedLocale, MetadataCopy>> = {
+  legalNotice: legalMetadata(
+    "Mentions légales - Fanovera",
+    "Legal notice - Fanovera",
+    "Informations légales de Fanovera : identité de l’éditeur, contact, hébergement, propriété intellectuelle et responsabilité du site.",
+    "Legal information for Fanovera: publisher identity, contact details, hosting, intellectual property and website liability.",
+  ),
+  terms: legalMetadata(
+    "Conditions générales de vente - Fanovera",
+    "Terms of sale - Fanovera",
+    "Conditions générales applicables aux commandes Fanovera : services, prix, paiement, exécution, support, annulation et responsabilité.",
+    "Terms that apply to Fanovera orders: services, pricing, payment, delivery, support, cancellation and liability.",
+  ),
+  privacy: legalMetadata(
+    "Politique de confidentialité - Fanovera",
+    "Privacy policy - Fanovera",
+    "Politique de confidentialité Fanovera : données collectées, finalités, conservation, droits RGPD, sécurité et contact.",
+    "Fanovera privacy policy: data collected, purposes, retention, GDPR rights, security and contact details.",
+  ),
+  cookies: legalMetadata(
+    "Politique cookies - Fanovera",
+    "Cookie policy - Fanovera",
+    "Informations sur les cookies et traceurs utilisés par Fanovera pour le fonctionnement du site, la mesure d’audience et l’amélioration produit.",
+    "Information about cookies and trackers used by Fanovera for website functionality, analytics and product improvement.",
+  ),
+  refund: legalMetadata(
+    "Remboursements et exécution - Fanovera",
+    "Refunds and delivery - Fanovera",
+    "Règles Fanovera sur l’exécution des commandes, les délais indicatifs, les incidents de livraison, les avoirs et les remboursements.",
+    "Fanovera rules for order delivery, indicative timelines, delivery incidents, credits and refunds.",
+  ),
+};
+
+const PRODUCT_LABELS: Record<ProductPageRouteId, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",
   youtube: "YouTube",
@@ -256,7 +321,7 @@ const PERFORMANCE_HOME_COPY: Record<"fr" | "en", MetadataCopy> = {
   },
 };
 
-function performanceProductCopy(routeId: ProductRouteId, locale: "fr" | "en"): MetadataCopy {
+function performanceProductCopy(routeId: ProductPageRouteId, locale: "fr" | "en"): MetadataCopy {
   const product = PRODUCT_LABELS[routeId];
   return locale === "fr"
     ? {
@@ -304,10 +369,11 @@ export function getMetadataCopy(routeId: PublicRouteId, locale: SupportedLocale,
   const effectiveMode = getEffectiveMarketingMode(locale, marketingMode);
   if (effectiveMode === "performance" && (locale === "fr" || locale === "en")) {
     if (routeId === "home") return PERFORMANCE_HOME_COPY[locale];
-    if (routeId !== "orderSuccess" && routeId !== "track") return performanceProductCopy(routeId, locale);
+    if (isProductPageRouteId(routeId)) return performanceProductCopy(routeId, locale);
   }
   if (routeId === "home") return HOME_COPY[locale];
   if (routeId === "orderSuccess" || routeId === "track") return SUPPORT_COPY[routeId][locale];
+  if (isLegalRouteId(routeId)) return LEGAL_COPY[routeId][locale];
   return PRODUCT_COPY[routeId][locale];
 }
 

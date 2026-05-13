@@ -46,10 +46,10 @@ export default function XFooter() {
             { l: t.tracking, h: "/track" },
           ]} />
           <FootCol title={t.legal} links={[
-            { l: t.legalNotice, h: "#legal" },
-            { l: "CGV", h: "#cgv" },
-            { l: t.privacy, h: "#privacy" },
-            { l: t.cookies, h: "#cookies" },
+            { l: t.legalNotice, h: "/mentions-legales" },
+            { l: "CGV", h: "/cgv" },
+            { l: t.privacy, h: "/confidentialite" },
+            { l: t.cookies, h: "/cookies" },
           ]} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>

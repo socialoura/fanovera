@@ -133,7 +133,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             </div>
 
             <div style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}>
-              {t.step3.legalBefore} <a href="#cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. {t.step3.legalAfter}
+              {t.step3.legalBefore} <a href="/cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. {t.step3.legalAfter}
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>

@@ -21,7 +21,7 @@ export default function TwFooter() {
           <FootCol title={t.footer.networks} links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title=" " links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title={t.footer.help} links={[{ l: t.footer.how, h: "#how" }, { l: t.footer.support, h: "#guarantee" }, { l: "Contact", h: "mailto:hello@fanovera.com" }, { l: t.footer.tracking, h: "/track" }]} />
-          <FootCol title={t.footer.legal} links={[{ l: t.footer.legalNotice, h: "#legal" }, { l: t.footer.terms, h: "#cgv" }, { l: t.footer.privacy, h: "#privacy" }, { l: t.footer.cookies, h: "#cookies" }]} />
+          <FootCol title={t.footer.legal} links={[{ l: t.footer.legalNotice, h: "/mentions-legales" }, { l: t.footer.terms, h: "/cgv" }, { l: t.footer.privacy, h: "/confidentialite" }, { l: t.footer.cookies, h: "/cookies" }]} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>
           <div>© Fanovera SAS 2026 - {t.footer.made} - 17 rue de Paradis - 75010 Paris</div>

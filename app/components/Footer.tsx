@@ -116,9 +116,10 @@ export default function Footer() {
           <FootCol
             title={copy.company}
             links={[
-              { l: copy.links.legal, h: "/mentions-legales" },
-              { l: copy.links.terms, h: "/cgv" },
-              { l: copy.links.privacy, h: "/confidentialite" },
+              { l: copy.links.legal, h: `/${locale}/mentions-legales` },
+              { l: copy.links.terms, h: `/${locale}/cgv` },
+              { l: copy.links.privacy, h: `/${locale}/confidentialite` },
+              { l: "Cookies", h: `/${locale}/cookies` },
               { l: copy.links.contact, h: "mailto:support@fanovera.com" },
             ]}
           />

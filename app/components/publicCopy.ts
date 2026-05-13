@@ -128,9 +128,9 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     header: { track: "Suivi", faq: "FAQ", contact: "Contact", start: "Commencer" },
     hero: {
       stars: [
-        { q: "Audit clair et plan actionnable", a: "Lea M., musicienne" },
-        { q: "Service serieux, suivi lisible", a: "Karim T., fondateur DTC" },
-        { q: "Un vrai cadre pour publier mieux", a: "Studio Metrique" },
+        { q: "Audit clair et plan actionnable", a: "Léa M., musicienne" },
+        { q: "Service sérieux, suivi lisible", a: "Karim T., fondateur DTC" },
+        { q: "Un vrai cadre pour publier mieux", a: "Studio Métrique" },
       ],
       newCampaign: "+ Nouvelle campagne",
       menu: ["Tableau de bord", "Campagnes", "Audience IA", "Statistiques", "Réseaux", "Facturation"],
@@ -259,9 +259,9 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     header: { track: "Track", faq: "FAQ", contact: "Contact", start: "Start" },
     hero: {
       stars: [
-        { q: "Clear audit and actionable plan", a: "Lea M., musician" },
+        { q: "Clear audit and actionable plan", a: "Léa M., musician" },
         { q: "Serious service, clear follow-up", a: "Karim T., DTC founder" },
-        { q: "A real framework to publish better", a: "Studio Metrique" },
+        { q: "A real framework to publish better", a: "Studio Métrique" },
       ],
       newCampaign: "+ New campaign",
       menu: ["Dashboard", "Campaigns", "AI audience", "Analytics", "Networks", "Billing"],
@@ -312,7 +312,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
         { n: "30d", l: "action plan" },
       ],
       items: [
-        { q: "Fanovera helped me clarify my editorial line and organize releases without chasing numbers.", n: "Lea Marchetti", r: "Musician - launch strategy" },
+        { q: "Fanovera helped me clarify my editorial line and organize releases without chasing numbers.", n: "Léa Marchetti", r: "Musician - launch strategy" },
         { q: "The audit was concrete: what to publish, when to publish it, and how to tell my work better.", n: "Thomas Durand", r: "Photographer - content calendar" },
         { q: "We built a real method around my short-form formats. The follow-up is simple, readable and useful.", n: "Sofia Ramos", r: "Creator - TikTok support" },
       ],

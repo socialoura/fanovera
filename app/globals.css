@@ -2910,6 +2910,16 @@ input { font: inherit; color: inherit; }
   .footer-grid > :first-child { grid-column: 1 / -1; }
 }
 
+@media (max-width: 900px) {
+  .legal-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .legal-layout aside {
+    position: static !important;
+    order: -1;
+  }
+}
+
 /* Hide above 1099px (Hero floating decorative stickers) */
 @media (max-width: 1099px) {
   .hide-lg-down { display: none !important; }

@@ -32,7 +32,7 @@ export default function TtFooter() {
           <FootCol title={t.networks} links={NETWORKS.slice(0, 4).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title=" " links={NETWORKS.slice(4, 8).map((n) => ({ l: n.name, h: "/" + n.id }))} />
           <FootCol title={t.help} links={[{ l: t.how, h: "#how" }, { l: t.support, h: "#guarantee" }, { l: "Contact", h: "mailto:hello@fanovera.com" }, { l: t.tracking, h: "/track" }]} />
-          <FootCol title={t.legal} links={[{ l: t.legalNotice, h: "#legal" }, { l: "CGV", h: "#cgv" }, { l: t.privacy, h: "#privacy" }, { l: "Cookies", h: "#cookies" }]} />
+          <FootCol title={t.legal} links={[{ l: t.legalNotice, h: "/mentions-legales" }, { l: "CGV", h: "/cgv" }, { l: t.privacy, h: "/confidentialite" }, { l: "Cookies", h: "/cookies" }]} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "var(--ink-3)" }}>
           <div>© Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris</div>

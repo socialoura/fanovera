@@ -8,7 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: localizedUrl(locale, routeId),
       lastModified: new Date(),
       changeFrequency: PUBLIC_ROUTES[routeId].pageType === "home" ? "weekly" : "monthly",
-      priority: PUBLIC_ROUTES[routeId].pageType === "home" ? 1 : 0.8,
+      priority: PUBLIC_ROUTES[routeId].pageType === "home" ? 1 : PUBLIC_ROUTES[routeId].pageType === "legal" ? 0.35 : 0.8,
       alternates: {
         languages: alternateLanguages(routeId),
       },

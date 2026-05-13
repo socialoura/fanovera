@@ -257,7 +257,7 @@ function applyPromoPublicCopy<T extends Record<string, unknown>>(
     ...base,
     hero: {
       ...hero,
-      newCampaign: isFr ? "Code de bienvenue : GRAM10" : "Welcome code: GRAM10",
+      newCampaign: isFr ? "Code de bienvenue : FANO5" : "Welcome code: FANO5",
       activeNetworks: isFr ? "TOUS LES SERVICES" : "ALL SERVICES",
       campaign: isFr ? "Campagne active" : "Active campaign",
       campaignMeta: isFr ? "Livraison progressive - suivi live" : "Progressive delivery - live tracking",
@@ -340,9 +340,9 @@ function applyPromoPublicCopy<T extends Record<string, unknown>>(
       titleHighlight: isFr ? "visibilité" : "visibility",
       titleAfter: isFr ? " dès aujourd'hui ?" : " today?",
       body: isFr
-        ? "Choisissez votre réseau, utilisez le code GRAM10 et lancez votre campagne de visibilité."
-        : "Choose your network, use code GRAM10 and launch your visibility campaign.",
-      footer: isFr ? "Code de bienvenue GRAM10 - Paiement sécurisé - Suivi inclus" : "Welcome code GRAM10 - Secure payment - Tracking included",
+        ? "Choisissez votre réseau, utilisez le code FANO5 et lancez votre campagne de visibilité."
+        : "Choose your network, use code FANO5 and launch your visibility campaign.",
+      footer: isFr ? "-5% avec le code FANO5 - Paiement sécurisé - Suivi inclus" : "-5% with code FANO5 - Secure payment - Tracking included",
     },
     footer: {
       ...footer,
