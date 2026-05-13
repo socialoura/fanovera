@@ -18,31 +18,19 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const SOURCE = resolve(ROOT, "public/fanovera-icon-source.png");
+const SOURCE = resolve(ROOT, "public/fanovera-logo.png");
 
 // Fond blanc pour bonne visibilité dans les onglets navigateur et SERP Google
 const BG = { r: 255, g: 255, b: 255, alpha: 1 };
-const PADDING_RATIO = 0.08; // 8% de marge intérieure
-
-// Crop la marge transparente/blanche une seule fois pour gagner en netteté
-async function getTrimmedSource() {
-  // 1) Aplatir d'abord sur fond blanc pour gérer les sources transparentes ET blanches
-  const flattened = await sharp(SOURCE)
-    .flatten({ background: BG })
-    .toBuffer();
-  // 2) Crop les marges blanches uniformes autour du symbole
-  return await sharp(flattened)
-    .trim({ background: BG, threshold: 5 })
-    .toBuffer();
-}
+const PADDING_RATIO = 0.12; // 12% de marge intérieure
 
 async function ensureDir(p) {
   await mkdir(dirname(p), { recursive: true });
 }
 
-async function generateSquare(size, outPath, trimmedBuffer) {
+async function generateSquare(size, outPath) {
   const innerSize = Math.round(size * (1 - PADDING_RATIO * 2));
-  const inner = await sharp(trimmedBuffer)
+  const inner = await sharp(SOURCE)
     .resize(innerSize, innerSize, { fit: "contain", background: BG })
     .toBuffer();
 
@@ -64,13 +52,12 @@ async function generateSquare(size, outPath, trimmedBuffer) {
 
 async function main() {
   console.log("Generating favicons from:", SOURCE);
-  const trimmed = await getTrimmedSource();
   await Promise.all([
-    generateSquare(512, resolve(ROOT, "app/icon.png"), trimmed),
-    generateSquare(180, resolve(ROOT, "app/apple-icon.png"), trimmed),
-    generateSquare(32, resolve(ROOT, "public/favicon-32.png"), trimmed),
-    generateSquare(192, resolve(ROOT, "public/favicon-192.png"), trimmed),
-    generateSquare(512, resolve(ROOT, "public/favicon-512.png"), trimmed),
+    generateSquare(512, resolve(ROOT, "app/icon.png")),
+    generateSquare(180, resolve(ROOT, "app/apple-icon.png")),
+    generateSquare(32, resolve(ROOT, "public/favicon-32.png")),
+    generateSquare(192, resolve(ROOT, "public/favicon-192.png")),
+    generateSquare(512, resolve(ROOT, "public/favicon-512.png")),
   ]);
   console.log("Done.");
 }

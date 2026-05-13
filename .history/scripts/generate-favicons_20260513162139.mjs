@@ -26,13 +26,8 @@ const PADDING_RATIO = 0.08; // 8% de marge intérieure
 
 // Crop la marge transparente/blanche une seule fois pour gagner en netteté
 async function getTrimmedSource() {
-  // 1) Aplatir d'abord sur fond blanc pour gérer les sources transparentes ET blanches
-  const flattened = await sharp(SOURCE)
-    .flatten({ background: BG })
-    .toBuffer();
-  // 2) Crop les marges blanches uniformes autour du symbole
-  return await sharp(flattened)
-    .trim({ background: BG, threshold: 5 })
+  return await sharp(SOURCE)
+    .trim({ background: BG, threshold: 10 })
     .toBuffer();
 }
 
