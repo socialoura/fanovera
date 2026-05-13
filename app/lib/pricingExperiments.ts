@@ -45,7 +45,7 @@ const CONTROL_ASSIGNMENT: PricingAssignment = {
   reason: "fallback",
 };
 
-const DEFAULT_EXPERIMENTS: PricingExperiment[] = [
+export const DEFAULT_EXPERIMENTS: PricingExperiment[] = [
   {
     id: "pricing_public_pages_v1",
     enabled: false,
@@ -60,6 +60,46 @@ const DEFAULT_EXPERIMENTS: PricingExperiment[] = [
   },
 ];
 
+export function normalizePricingExperiments(value: unknown): PricingExperiment[] {
+  if (!Array.isArray(value)) return DEFAULT_EXPERIMENTS;
+
+  const experiments = value.flatMap((experiment) => {
+    if (!experiment || typeof experiment !== "object") return [];
+    const raw = experiment as Partial<PricingExperiment>;
+    const variants = Array.isArray(raw.variants)
+      ? raw.variants.flatMap((variant) => {
+          if (!variant || typeof variant !== "object") return [];
+          const v = variant as Partial<PricingVariant>;
+          if (!v.id || !v.label || !v.pricingStrategy) return [];
+          return [{
+            id: String(v.id),
+            label: String(v.label),
+            traffic: Number(v.traffic) || 0,
+            priceMultiplier: Number(v.priceMultiplier) || 1,
+            pricingStrategy: String(v.pricingStrategy),
+            stripePriceIds: v.stripePriceIds,
+          }];
+        })
+      : [];
+
+    if (!raw.id || variants.length === 0) return [];
+
+    return [{
+      id: String(raw.id),
+      enabled: Boolean(raw.enabled),
+      traffic: Number(raw.traffic) || 0,
+      seed: String(raw.seed || raw.id),
+      productAreas: Array.isArray(raw.productAreas) ? raw.productAreas.map(String) : [],
+      locales: Array.isArray(raw.locales) ? raw.locales.map(String) : undefined,
+      countries: Array.isArray(raw.countries) ? raw.countries.map(String) : undefined,
+      plans: Array.isArray(raw.plans) ? raw.plans.map(String) : undefined,
+      variants,
+    }];
+  });
+
+  return experiments.length > 0 ? experiments : DEFAULT_EXPERIMENTS;
+}
+
 function parseExperimentsFromEnv(): PricingExperiment[] {
   const raw =
     process.env.PRICING_EXPERIMENTS_JSON ||
@@ -68,8 +108,7 @@ function parseExperimentsFromEnv(): PricingExperiment[] {
   if (!raw.trim()) return DEFAULT_EXPERIMENTS;
 
   try {
-    const parsed = JSON.parse(raw) as PricingExperiment[];
-    return Array.isArray(parsed) ? parsed : DEFAULT_EXPERIMENTS;
+    return normalizePricingExperiments(JSON.parse(raw));
   } catch {
     return DEFAULT_EXPERIMENTS;
   }

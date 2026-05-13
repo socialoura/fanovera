@@ -377,7 +377,7 @@ export function useCurrencyPricing(service: string) {
   }, [dbPacks, experiment.assignment, resolvePrice]);
 
   const hasDatabasePricing = pricingStatus === "ready" && dbPacks.length > 0;
-  const canDisplayPricing = hasDatabasePricing || pricingStatus === "error";
+  const canDisplayPricing = experiment.ready && (hasDatabasePricing || pricingStatus === "error");
 
   return {
     currency,

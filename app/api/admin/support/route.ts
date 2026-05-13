@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupportMessages, getSupportMessageById, replySupportMessage } from "@/app/lib/db";
+import { RESEND_FROM } from "@/app/lib/email";
 
 function checkAuth(req: NextRequest): boolean {
   const auth = req.headers.get("authorization") || "";
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Fanovera Support <support@fanovera.com>",
+        from: RESEND_FROM,
         to: msg.email,
         subject: "Réponse à votre demande — Fanovera",
         html: `

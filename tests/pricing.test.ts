@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateCheckoutPricing } from "../app/lib/checkoutPricing";
-import { applyPricingAssignment, assignPricingVariant, type PricingExperiment } from "../app/lib/pricingExperiments";
+import { applyPricingAssignment, assignPricingVariant, normalizePricingExperiments, type PricingExperiment } from "../app/lib/pricingExperiments";
 
 const enabledExperiment: PricingExperiment = {
   id: "pricing_test",
@@ -36,6 +36,28 @@ describe("pricing experiments", () => {
 
   it("applies price multipliers predictably", () => {
     expect(applyPricingAssignment(10, { experimentId: "x", variantId: "v", pricingStrategy: "test", priceMultiplier: 0.9, reason: "assigned" })).toBe(9);
+  });
+
+  it("normalizes admin-managed experiments", () => {
+    const normalized = normalizePricingExperiments([
+      {
+        id: "pricing_admin",
+        enabled: true,
+        traffic: "25",
+        seed: "",
+        productAreas: ["instagram"],
+        variants: [{ id: "control", label: "Control", traffic: "100", priceMultiplier: "1", pricingStrategy: "standard" }],
+      },
+    ]);
+
+    expect(normalized[0]).toMatchObject({
+      id: "pricing_admin",
+      enabled: true,
+      traffic: 25,
+      seed: "pricing_admin",
+      productAreas: ["instagram"],
+    });
+    expect(normalized[0].variants[0].priceMultiplier).toBe(1);
   });
 });
 

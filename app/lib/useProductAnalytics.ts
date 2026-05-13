@@ -74,6 +74,22 @@ export function useProductAnalytics(input: {
       price: input.price,
       currency: input.currency,
     });
+    void fetch("/api/pricing-experiments/exposure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        locale,
+        country,
+        productArea: input.productArea,
+        anonymousId: input.anonymousId,
+        experimentId: input.assignment.experimentId,
+        variantId: input.assignment.variantId,
+        pricingStrategy: input.assignment.pricingStrategy,
+        plan: input.plan,
+        price: input.price,
+        currency: input.currency,
+      }),
+    }).catch(() => {});
   }, [country, input.anonymousId, input.assignment, input.currency, input.enabled, input.plan, input.price, input.productArea, locale]);
 
   useEffect(() => {

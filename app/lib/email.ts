@@ -3,7 +3,7 @@
  *
  * Required env vars:
  *  - RESEND_API_KEY     — your Resend API key
- *  - EMAIL_FROM         — sender (e.g. "Fanovera <noreply@fanovera.com>")
+ *  - RESEND_FROM        — sender (e.g. "Fanovera <noreply@fanovera.com>")
  *  - NEXT_PUBLIC_APP_URL — base URL for tracking links (e.g. "https://fanovera.com")
  */
 
@@ -18,7 +18,7 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-const FROM = process.env.EMAIL_FROM || "Fanovera <noreply@fanovera.com>";
+export const RESEND_FROM = process.env.RESEND_FROM || process.env.EMAIL_FROM || "Fanovera <noreply@fanovera.com>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fanovera.com";
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -96,7 +96,7 @@ export async function sendOrderConfirmation(
     const text = renderOrderConfirmationText(params);
 
     const result = await resend.emails.send({
-      from: FROM,
+      from: RESEND_FROM,
       to: params.to,
       subject: `Confirmation de commande #${params.orderId} — Fanovera`,
       html,

@@ -652,6 +652,17 @@
   .admin-shell .marketing-mode-options {
     grid-template-columns: 1fr;
   }
+  .admin-shell .ab-grid,
+  .admin-shell .ab-variant-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-shell .ab-pricing-hero,
+  .admin-shell .ab-pricing-actions,
+  .admin-shell .ab-experiment-head,
+  .admin-shell .ab-variants-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 760px) {
@@ -918,6 +929,93 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.45;
+}
+.admin-shell .ab-pricing-view {
+  display: grid;
+  gap: 14px;
+}
+.admin-shell .ab-pricing-hero,
+.admin-shell .ab-pricing-actions,
+.admin-shell .ab-experiment-head,
+.admin-shell .ab-variants-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.admin-shell .ab-pricing-switch,
+.admin-shell .ab-experiment-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--a-ink-3);
+}
+.admin-shell .ab-experiment-card {
+  display: grid;
+  gap: 18px;
+}
+.admin-shell .ab-title-input {
+  max-width: 420px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.admin-shell .ab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.admin-shell .ab-check-section {
+  display: grid;
+  gap: 8px;
+}
+.admin-shell .ab-check-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-shell .ab-check-grid .chip {
+  cursor: pointer;
+  user-select: none;
+}
+.admin-shell .ab-variants {
+  display: grid;
+  gap: 10px;
+}
+.admin-shell .ab-results-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-shell .ab-results-actions .input {
+  width: 130px;
+}
+.admin-shell .ab-results-table-wrap {
+  margin-top: 14px;
+  overflow: auto;
+}
+.admin-shell .ab-results-table td,
+.admin-shell .ab-results-table th {
+  white-space: nowrap;
+}
+.admin-shell .ab-variant-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 92px 92px 1fr 38px;
+  gap: 8px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid var(--a-line);
+  border-radius: 10px;
+  background: var(--a-paper-2);
+}
+.admin-shell .ab-variant-row label {
+  display: grid;
+  gap: 4px;
+  color: var(--a-ink-3);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 .admin-shell .icon-btn:disabled,
 .admin-shell .btn:disabled {

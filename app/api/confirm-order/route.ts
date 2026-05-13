@@ -56,6 +56,11 @@ export async function POST(req: NextRequest) {
       totalCents: pi.amount,
       status: "paid",
       currency: pi.currency || "eur",
+      experimentId: persisted?.experiment_id || meta.experimentId || "",
+      variantId: persisted?.variant_id || meta.variantId || "",
+      pricingStrategy: persisted?.pricing_strategy || meta.pricing_strategy || "",
+      sourcePage: persisted?.source_page || meta.source_page || "",
+      plan: persisted?.plan || meta.plan || "",
     });
 
     void captureServerEvent("checkout_completed", meta.anonymousId || email || paymentIntentId, {

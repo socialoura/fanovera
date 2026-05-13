@@ -11,8 +11,9 @@ import SmmView from "./components/views/SmmView";
 import SupportView from "./components/views/SupportView";
 import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
+import PricingExperimentsView from "./components/views/PricingExperimentsView";
 
-type ViewId = "analytics" | "orders" | "pricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
+type ViewId = "analytics" | "orders" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -22,6 +23,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "analytics", label: "Analytics", icon: () => Ic.dashboard(), sub: "Vue d'ensemble" },
   { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients" },
   { id: "pricing", label: "Prix", icon: () => Ic.tag(), sub: "Packs multi-devises" },
+  { id: "abPricing", label: "A/B Prix", icon: () => Ic.filter(), sub: "Tests pricing" },
   { id: "combos", label: "Combos", icon: () => Ic.layers(), sub: "Packs combinés" },
   { id: "upsells", label: "Upsells", icon: () => Ic.zap(), sub: "Ventes additionnelles" },
   { id: "smm", label: "SMM", icon: () => Ic.cog(), sub: "BulkFollows" },
@@ -155,7 +157,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Catalogue</div>
-        {NAV.slice(2, 5).map((n) => (
+        {NAV.slice(2, 6).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -163,7 +165,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Système</div>
-        {NAV.slice(5, 8).map((n) => (
+        {NAV.slice(6, 9).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -171,7 +173,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Support</div>
-        {NAV.slice(8).map((n) => (
+        {NAV.slice(9).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -224,6 +226,7 @@ export default function AdminClient() {
           {view === "analytics" && <AnalyticsView />}
           {view === "orders" && <OrdersView />}
           {view === "pricing" && <PricingView />}
+          {view === "abPricing" && <PricingExperimentsView />}
           {view === "combos" && <CombosView />}
           {view === "upsells" && <UpsellsView />}
           {view === "smm" && <SmmView />}

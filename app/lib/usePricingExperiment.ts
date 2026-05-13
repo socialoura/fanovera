@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { assignPricingVariant, type PricingAssignment, type PricingSegment } from "./pricingExperiments";
+import {
+  assignPricingVariant,
+  type PricingAssignment,
+  type PricingExperiment,
+  type PricingSegment,
+} from "./pricingExperiments";
 
 const ANONYMOUS_ID_KEY = "fanovera_anonymous_id";
 
@@ -23,16 +28,38 @@ export function getOrCreateAnonymousId() {
 
 export function usePricingExperiment(productArea: string, segment: PricingSegment = {}) {
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
+  const [experiments, setExperiments] = useState<PricingExperiment[] | null>(null);
   const segmentKey = JSON.stringify(segment);
 
   useEffect(() => {
     setAnonymousId(getOrCreateAnonymousId());
   }, []);
 
-  const assignment = useMemo<PricingAssignment>(() => {
-    return assignPricingVariant({ anonymousId, productArea, segment });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anonymousId, productArea, segmentKey]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/pricing-experiments")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("pricing_experiments_unavailable");
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled && Array.isArray(data.experiments)) setExperiments(data.experiments);
+      })
+      .catch(() => {
+        if (!cancelled) setExperiments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  return { anonymousId, assignment };
+  const assignment = useMemo<PricingAssignment>(() => {
+    return assignPricingVariant({
+      anonymousId,
+      productArea,
+      segment,
+      experiments: experiments || undefined,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anonymousId, experiments, productArea, segmentKey]);
+
+  return { anonymousId, assignment, ready: experiments !== null };
 }

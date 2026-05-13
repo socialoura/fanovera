@@ -146,6 +146,11 @@ export async function initDb() {
       total_cents INTEGER NOT NULL,
       cost_cents INTEGER DEFAULT 0,
       currency VARCHAR(3) DEFAULT 'eur',
+      experiment_id VARCHAR(120) DEFAULT '',
+      variant_id VARCHAR(120) DEFAULT '',
+      pricing_strategy VARCHAR(120) DEFAULT '',
+      source_page VARCHAR(160) DEFAULT '',
+      plan VARCHAR(80) DEFAULT '',
       status VARCHAR(20) DEFAULT 'pending',
       followers_before INTEGER DEFAULT 0,
       country VARCHAR(2) DEFAULT NULL,
@@ -157,10 +162,16 @@ export async function initDb() {
   `;
 
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_pi_unique ON orders(stripe_payment_intent_id) WHERE stripe_payment_intent_id IS NOT NULL`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pricing_strategy VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
 
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_experiment_variant ON orders(experiment_id, variant_id)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS smm_config (
@@ -177,9 +188,10 @@ export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS smm_settings (
       key VARCHAR(50) PRIMARY KEY,
-      value VARCHAR(255) NOT NULL
+      value TEXT NOT NULL
     )
   `;
+  await sql`ALTER TABLE smm_settings ALTER COLUMN value TYPE TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS upsells (
@@ -250,9 +262,39 @@ export async function initDb() {
       cart JSONB NOT NULL DEFAULT '[]',
       amount_cents INTEGER NOT NULL DEFAULT 0,
       currency VARCHAR(3) DEFAULT 'eur',
+      experiment_id VARCHAR(120) DEFAULT '',
+      variant_id VARCHAR(120) DEFAULT '',
+      pricing_strategy VARCHAR(120) DEFAULT '',
+      source_page VARCHAR(160) DEFAULT '',
+      plan VARCHAR(80) DEFAULT '',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS pricing_strategy VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS pricing_experiment_exposures (
+      id SERIAL PRIMARY KEY,
+      anonymous_id VARCHAR(160) NOT NULL,
+      experiment_id VARCHAR(120) NOT NULL,
+      variant_id VARCHAR(120) NOT NULL,
+      pricing_strategy VARCHAR(120) DEFAULT '',
+      product_area VARCHAR(80) DEFAULT '',
+      plan VARCHAR(80) DEFAULT '',
+      locale VARCHAR(12) DEFAULT '',
+      country VARCHAR(12) DEFAULT '',
+      price NUMERIC(12, 2) DEFAULT 0,
+      currency VARCHAR(3) DEFAULT 'EUR',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(anonymous_id, experiment_id, variant_id, product_area)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_pricing_exposures_experiment_variant ON pricing_experiment_exposures(experiment_id, variant_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_pricing_exposures_created ON pricing_experiment_exposures(created_at DESC)`;
 
   // Seed global SMM toggle if missing
   const smmToggle = await sql`SELECT key FROM smm_settings WHERE key = 'auto_order_enabled'`;
@@ -309,10 +351,15 @@ export async function createOrder(params: {
   currency?: string;
   country?: string;
   lang?: string;
+  experimentId?: string | null;
+  variantId?: string | null;
+  pricingStrategy?: string | null;
+  sourcePage?: string | null;
+  plan?: string | null;
 }) {
   try {
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -325,7 +372,12 @@ export async function createOrder(params: {
         ${params.followersBefore || 0},
         ${params.currency || "eur"},
         ${params.country || null},
-        ${params.lang || "fr"}
+        ${params.lang || "fr"},
+        ${params.experimentId || ""},
+        ${params.variantId || ""},
+        ${params.pricingStrategy || ""},
+        ${params.sourcePage || ""},
+        ${params.plan || ""}
       )
       ON CONFLICT (stripe_payment_intent_id)
       DO UPDATE SET
@@ -339,7 +391,12 @@ export async function createOrder(params: {
         followers_before = EXCLUDED.followers_before,
         currency = EXCLUDED.currency,
         country = EXCLUDED.country,
-        lang = EXCLUDED.lang
+        lang = EXCLUDED.lang,
+        experiment_id = EXCLUDED.experiment_id,
+        variant_id = EXCLUDED.variant_id,
+        pricing_strategy = EXCLUDED.pricing_strategy,
+        source_page = EXCLUDED.source_page,
+        plan = EXCLUDED.plan
       RETURNING id
     `;
     return result[0].id;
@@ -350,7 +407,7 @@ export async function createOrder(params: {
     }
 
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -363,7 +420,12 @@ export async function createOrder(params: {
         ${params.followersBefore || 0},
         ${params.currency || "eur"},
         ${params.country || null},
-        ${params.lang || "fr"}
+        ${params.lang || "fr"},
+        ${params.experimentId || ""},
+        ${params.variantId || ""},
+        ${params.pricingStrategy || ""},
+        ${params.sourcePage || ""},
+        ${params.plan || ""}
       )
       RETURNING id
     `;
@@ -429,9 +491,19 @@ export async function upsertCheckoutPayload(params: {
   cart?: unknown;
   amountCents: number;
   currency?: string;
+  experimentId?: string | null;
+  variantId?: string | null;
+  pricingStrategy?: string | null;
+  sourcePage?: string | null;
+  plan?: string | null;
 }) {
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS pricing_strategy VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
   await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency)
+    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan)
     VALUES (
       ${params.paymentIntentId},
       ${params.email || ""},
@@ -439,7 +511,12 @@ export async function upsertCheckoutPayload(params: {
       ${params.platform || ""},
       ${JSON.stringify(params.cart || [])},
       ${params.amountCents},
-      ${params.currency || "eur"}
+      ${params.currency || "eur"},
+      ${params.experimentId || ""},
+      ${params.variantId || ""},
+      ${params.pricingStrategy || ""},
+      ${params.sourcePage || ""},
+      ${params.plan || ""}
     )
     ON CONFLICT (payment_intent_id)
     DO UPDATE SET
@@ -448,7 +525,12 @@ export async function upsertCheckoutPayload(params: {
       platform = EXCLUDED.platform,
       cart = EXCLUDED.cart,
       amount_cents = EXCLUDED.amount_cents,
-      currency = EXCLUDED.currency
+      currency = EXCLUDED.currency,
+      experiment_id = EXCLUDED.experiment_id,
+      variant_id = EXCLUDED.variant_id,
+      pricing_strategy = EXCLUDED.pricing_strategy,
+      source_page = EXCLUDED.source_page,
+      plan = EXCLUDED.plan
   `;
 }
 

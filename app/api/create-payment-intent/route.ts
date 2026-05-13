@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { sql, upsertCheckoutPayload } from "@/app/lib/db";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
+import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
 import { getProductConfig, normalizePlatform } from "@/app/lib/productCatalog";
 import { captureServerEvent } from "@/app/lib/analytics.server";
 
@@ -24,10 +25,12 @@ export async function POST(req: NextRequest) {
 
     const config = getProductConfig(normalizedPlatform);
     const firstQty = Array.isArray(cart) && cart[0] ? String(cart[0].qty || cart[0].quantity || "") : "";
+    const experiments = await getActivePricingExperiments();
     const assignment = assignPricingVariant({
       anonymousId,
       userId,
       productArea: config.productArea,
+      experiments,
       segment: {
         locale,
         page: sourcePage,
@@ -83,6 +86,11 @@ export async function POST(req: NextRequest) {
         cart: pricing.sanitizedCart,
         amountCents: pricing.amountCents,
         currency: pricing.currency.toLowerCase(),
+        experimentId: assignment.experimentId || "",
+        variantId: assignment.variantId,
+        pricingStrategy: assignment.pricingStrategy,
+        sourcePage: typeof sourcePage === "string" ? sourcePage.slice(0, 160) : "",
+        plan: pricing.plan,
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);
