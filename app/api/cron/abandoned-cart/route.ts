@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 /**
  * Abandoned-cart recovery cron.
  *
- * Runs every 30 min via vercel.json. For each `checkout_payloads` row that
+ * Runs once daily via vercel.json. For each `checkout_payloads` row that
  * looks like a real abandonment — i.e. the customer left an email + a
  * non-trivial cart, the row is at least 30 min old (give them time to
- * finish), at most 24 h old (no creepy week-late nags), no matching
+ * finish), at most 48 h old (daily cadence grace without week-late nags),
+ * no matching
  * successful `orders` row exists, and we have not already sent a reminder —
  * send one recovery email and mark `reminder_sent_at`.
  *
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
   try {
     await ensureSchema();
 
-    // Candidates: payloads aged 30 min – 24 h, with email & non-zero cart,
+    // Candidates: payloads aged 30 min - 48 h, with email & non-zero cart,
     // no matching order, no reminder yet.
     const rows = (await sql`
       SELECT
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
         AND cp.amount_cents > 0
         AND cp.reminder_sent_at IS NULL
         AND cp.created_at < NOW() - INTERVAL '30 minutes'
-        AND cp.created_at > NOW() - INTERVAL '24 hours'
+        AND cp.created_at > NOW() - INTERVAL '48 hours'
       ORDER BY cp.created_at ASC
       LIMIT 50
     `) as AbandonedRow[];
