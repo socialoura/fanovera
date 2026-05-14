@@ -8,7 +8,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { getDisplayCurrency } from "../lib/pricingCurrency";
 import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
 import { usePricingExperiment } from "../lib/usePricingExperiment";
-import { trackEvent } from "../lib/analytics";
+import { currentAttributionProperties, trackEvent } from "../lib/analytics";
 import { gtagBeginCheckout } from "../lib/gtag";
 import { getPublicCopy } from "./publicCopy";
 import { humanizeStripeError } from "../lib/stripeErrors";
@@ -97,7 +97,8 @@ export function usePaymentIntent(args: {
         cart: cartRef.current,
         promoCode,
         locale,
-        sourcePage: pathname,
+        sourcePage: pathname ? `${pathname}${window.location.search || ""}` : pathname,
+        attribution: currentAttributionProperties(),
         anonymousId: experiment.anonymousId,
         experimentId: experiment.assignment.experimentId,
         variantId: experiment.assignment.variantId,

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import CurrencySelector from "./CurrencySelector";
 // import LanguageSelector from "./LanguageSelector";
 import NetIcon from "./NetIcon";
@@ -9,6 +10,8 @@ import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
+import { trackEvent } from "../lib/analytics";
+import { hrefWithPromoAttribution } from "../lib/promoAttribution";
 
 export function Logo() {
   return (
@@ -28,7 +31,9 @@ export function Logo() {
 export default function Header() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const searchParams = useSearchParams();
   const copy = getPublicCopy(locale, mode, surfaceMode).header;
+  const isPromo = mode === "promo";
 
   return (
     <div style={{ padding: "24px 0" }}>
@@ -38,10 +43,22 @@ export default function Header() {
           {NETWORKS.map((n) => (
             <Link
               key={n.id}
-              href={`/${n.id}`}
+              href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams) : `/${n.id}`}
               aria-label={n.name}
               title={n.name}
               className="nav-pill-icon"
+              onClick={() => {
+                if (!isPromo) return;
+                trackEvent("cta_clicked", {
+                  page_type: "promo",
+                  entry_surface: "promo",
+                  product_area: n.id,
+                  destination_network: n.id,
+                  destination_path: `/${n.id}`,
+                  feature_name: "promo_network_selector",
+                  cta_location: "header_network_icon",
+                });
+              }}
             >
               <NetIcon kind={n.icon} color={n.color} size={18} />
             </Link>
@@ -65,6 +82,15 @@ export default function Header() {
           <a
             href="#start"
             className="btn-primary hide-md"
+            onClick={() => {
+              if (!isPromo) return;
+              trackEvent("cta_clicked", {
+                page_type: "promo",
+                entry_surface: "promo",
+                feature_name: "promo_start_anchor",
+                cta_location: "header_start",
+              });
+            }}
             style={{ padding: "10px 20px", fontSize: 14 }}
           >
             {copy.start}

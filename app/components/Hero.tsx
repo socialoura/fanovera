@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
@@ -10,6 +11,8 @@ import { NETWORKS, NET_META, type Network } from "../lib/networks";
 import { usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
+import { trackEvent } from "../lib/analytics";
+import { hrefWithPromoAttribution } from "../lib/promoAttribution";
 
 function StarsRow({ items }: { items: { q: string; a: string }[] }) {
   return (
@@ -248,14 +251,24 @@ function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"
   );
 }
 
-function NetCard({ n, copy }: { n: Network; copy: ReturnType<typeof getPublicCopy>["hero"] }) {
+function NetCard({
+  n,
+  copy,
+  href,
+  onSelect,
+}: {
+  n: Network;
+  copy: ReturnType<typeof getPublicCopy>["hero"];
+  href: string;
+  onSelect: () => void;
+}) {
   const meta = NET_META[n.id];
   const cardStyle = {
     "--brand": meta.brand,
     "--brand-2": meta.brand2,
   } as CSSProperties;
   return (
-    <Link href={`/${n.id}`} className="netcard" style={cardStyle}>
+    <Link href={href} className="netcard" style={cardStyle} onClick={onSelect}>
       {/* Background oversized glyph */}
       <div className="netcard-glyph">
         <NetIcon kind={n.icon} color="white" size={180} />
@@ -321,8 +334,24 @@ function NetCard({ n, copy }: { n: Network; copy: ReturnType<typeof getPublicCop
 export default function Hero() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const searchParams = useSearchParams();
   usePrefetchProductPricing();
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
+  const isPromo = mode === "promo";
+  const networkHref = (network: Network) =>
+    isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams) : `/${network.id}`;
+  const trackNetworkSelect = (network: Network) => {
+    if (!isPromo) return;
+    trackEvent("cta_clicked", {
+      page_type: "promo",
+      entry_surface: "promo",
+      product_area: network.id,
+      destination_network: network.id,
+      destination_path: `/${network.id}`,
+      feature_name: "promo_network_selector",
+      cta_location: "hero_network_card",
+    });
+  };
 
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
@@ -353,7 +382,7 @@ export default function Hero() {
           }}
         >
           {NETWORKS.map((n) => (
-            <NetCard key={n.id} n={n} copy={copy} />
+            <NetCard key={n.id} n={n} copy={copy} href={networkHref(n)} onSelect={() => trackNetworkSelect(n)} />
           ))}
         </div>
 

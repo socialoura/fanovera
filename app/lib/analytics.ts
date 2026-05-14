@@ -16,7 +16,7 @@ function deviceType() {
   return "desktop";
 }
 
-function utmParams() {
+export function currentAttributionProperties(): AnalyticsProperties {
   if (typeof window === "undefined") return {};
   const params = new URLSearchParams(window.location.search);
   return {
@@ -25,7 +25,17 @@ function utmParams() {
     utm_campaign: params.get("utm_campaign"),
     utm_content: params.get("utm_content"),
     utm_term: params.get("utm_term"),
+    gclid: params.get("gclid"),
+    gbraid: params.get("gbraid"),
+    wbraid: params.get("wbraid"),
+    msclkid: params.get("msclkid"),
+    fbclid: params.get("fbclid"),
+    entry_surface: params.get("entry_surface"),
   };
+}
+
+function utmParams() {
+  return currentAttributionProperties();
 }
 
 export function commonAnalyticsProperties(overrides: AnalyticsProperties = {}) {

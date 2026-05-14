@@ -1,15 +1,21 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
+import { trackEvent } from "../lib/analytics";
+import { hrefWithPromoAttribution } from "../lib/promoAttribution";
 
 export default function CTABlock() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const searchParams = useSearchParams();
   const copy = getPublicCopy(locale, mode, surfaceMode).cta;
+  const isPromo = mode === "promo";
+
   return (
     <section id="start" style={{ padding: "clamp(56px, 8vw, 100px) 0", position: "relative" }}>
       <div className="container">
@@ -58,7 +64,19 @@ export default function CTABlock() {
               {NETWORKS.map((n) => (
                 <a
                   key={n.id}
-                  href={`/${n.id}`}
+                  href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams) : `/${n.id}`}
+                  onClick={() => {
+                    if (!isPromo) return;
+                    trackEvent("cta_clicked", {
+                      page_type: "promo",
+                      entry_surface: "promo",
+                      product_area: n.id,
+                      destination_network: n.id,
+                      destination_path: `/${n.id}`,
+                      feature_name: "promo_network_selector",
+                      cta_location: "bottom_network_icon",
+                    });
+                  }}
                   style={{
                     width: 52,
                     height: 52,

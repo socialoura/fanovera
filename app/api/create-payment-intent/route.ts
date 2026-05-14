@@ -13,10 +13,34 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
 });
 
+const ATTRIBUTION_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gclid",
+  "gbraid",
+  "wbraid",
+  "msclkid",
+  "fbclid",
+  "entry_surface",
+] as const;
+
 function isTestPromoEnabled() {
   if (process.env.FANOVERA_TEST_PROMO_ENABLED === "1") return true;
   if (process.env.FANOVERA_TEST_PROMO_ENABLED === "0") return false;
   return process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview";
+}
+
+function sanitizeAttribution(value: unknown) {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const out: Record<string, string> = {};
+  for (const key of ATTRIBUTION_KEYS) {
+    const field = raw[key];
+    if (typeof field === "string" && field.trim()) out[key] = field.trim().slice(0, 180);
+  }
+  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -27,6 +51,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { currency, email, username, platform, cart, locale, sourcePage, anonymousId, userId, followersBefore } = body;
+    const attribution = sanitizeAttribution(body.attribution);
     const followersBeforeNum =
       typeof followersBefore === "number" && Number.isFinite(followersBefore) && followersBefore >= 0
         ? Math.min(Math.trunc(followersBefore), 2_000_000_000)
@@ -148,6 +173,7 @@ export async function POST(req: NextRequest) {
       promo_code: pricing.promo.code,
       promo_type: pricing.promo.type,
       test_promo: pricing.promo.isTestPromo,
+      ...attribution,
     });
 
     return NextResponse.json({

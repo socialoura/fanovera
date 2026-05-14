@@ -1,12 +1,12 @@
 # Fanovera Analytics Tracking Plan
 
-Common properties: `userId`, `anonymousId`, `locale`, `pathname`, `page_type`, `product_area`, `feature_name`, `referrer`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `device_type`, `plan`, `experimentId`, `variantId`, `pricing_strategy`, `country`, `environment`.
+Common properties: `userId`, `anonymousId`, `locale`, `pathname`, `page_type`, `product_area`, `feature_name`, `referrer`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `gclid`, `gbraid`, `wbraid`, `msclkid`, `fbclid`, `entry_surface`, `device_type`, `plan`, `experimentId`, `variantId`, `pricing_strategy`, `country`, `environment`.
 
 Global events: `page_view`, `locale_changed`, `nav_item_clicked`, `footer_link_clicked`, `cta_clicked`, `outbound_link_clicked`, `form_error`, `api_error`, `validation_error`, `404_viewed`, `consent_updated`.
 
 Auth/account events reserved for future account flows: `signup_viewed`, `signup_started`, `signup_step_completed`, `signup_completed`, `signup_failed`, `login_viewed`, `login_started`, `login_completed`, `login_failed`, `logout_clicked`, `password_reset_requested`, `account_created`, `account_settings_viewed`, `account_settings_updated`.
 
-Pricing and billing funnel: `pricing_viewed`, `pricing_plan_viewed`, `pricing_comparison_viewed`, `pricing_faq_opened`, `pricing_variant_exposed`, `pricing_toggle_changed`, `pricing_cta_clicked`, `checkout_started`, `checkout_completed`, `checkout_failed`, `checkout_abandoned`, `subscription_created`, `subscription_cancelled`, `subscription_reactivated`, `subscription_upgraded`, `subscription_downgraded`, `payment_method_added`, `payment_failed`, `invoice_paid`, `refund_created`.
+Pricing and billing funnel: `pricing_viewed`, `pricing_plan_viewed`, `pricing_comparison_viewed`, `pricing_faq_opened`, `pricing_variant_exposed`, `pricing_toggle_changed`, `pricing_cta_clicked`, `checkout_started`, `checkout_completed`, `checkout_failed`, `checkout_abandoned`, `username_validated`, `payment_initiated`, `payment_succeeded`, `order_delivered`, `subscription_created`, `subscription_cancelled`, `subscription_reactivated`, `subscription_upgraded`, `subscription_downgraded`, `payment_method_added`, `payment_failed`, `invoice_paid`, `refund_created`.
 
 Twitch funnel: `twitch_page_viewed`, `twitch_connect_started`, `twitch_connect_completed`, `twitch_connect_failed`, `twitch_channel_search_started`, `twitch_channel_selected`, `twitch_profile_viewed`, `twitch_data_loaded`, `twitch_data_load_failed`, `twitch_widget_interacted`.
 
@@ -32,4 +32,6 @@ Product funnels:
 
 Expected mini-funnel per product: page viewed -> pricing viewed -> plan viewed -> profile/content search started -> profile/content loaded or load failed -> pricing CTA clicked -> checkout started -> checkout completed or checkout failed.
 
-PostHog reading guide: use `pricing_variant_exposed` as the exposure event, then compare conversion to `checkout_started` and `checkout_completed` by `experimentId`, `variantId`, `pricing_strategy`, `product_area`, `locale` and `plan`.
+Promo landing funnel: users from Google Ads can land on `/promo`; network card/icon clicks emit `cta_clicked` with `feature_name=promo_network_selector`, `entry_surface=promo`, `destination_network` and `cta_location`. Promo links preserve UTM and click IDs into the selected network page.
+
+PostHog reading guide: use `pricing_variant_exposed` as the exposure event, then compare conversion to `checkout_started` and `checkout_completed` by `experimentId`, `variantId`, `pricing_strategy`, `product_area`, `locale`, `entry_surface` and `plan`.
