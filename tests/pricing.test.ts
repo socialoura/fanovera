@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateCheckoutPricing } from "../app/lib/checkoutPricing";
+import { DEFAULT_PROMO_CODE, TEST_PROMO_CODE, TestPromoDisabledError } from "../app/lib/promoCodes";
 import { applyPricingAssignment, assignPricingVariant, normalizePricingExperiments, type PricingExperiment } from "../app/lib/pricingExperiments";
 
 const enabledExperiment: PricingExperiment = {
@@ -68,6 +69,7 @@ describe("checkout pricing", () => {
       currency: "EUR",
       cart: [{ qty: 100, bonus: 25, country: "fr" }],
       pricingRows: [{ service: "ig_followers", qty: 100, price: "3.00", active: true }],
+      promoCode: DEFAULT_PROMO_CODE,
     });
     expect(result.amountCents).toBe(285);
     expect(result.sanitizedCart[0]).toMatchObject({ service: "ig_followers", platform: "instagram", qty: 100 });
@@ -80,8 +82,32 @@ describe("checkout pricing", () => {
       currency: "USD",
       cart: [{ qty: 100 }],
       assignment: { experimentId: "pricing_test", variantId: "discount", pricingStrategy: "discount", priceMultiplier: 0.9, reason: "assigned" },
+      promoCode: DEFAULT_PROMO_CODE,
     });
     expect(result.currency).toBe("USD");
     expect(result.amountCents).toBe(213);
+  });
+
+  it("supports the gated fixed-total test promo code", () => {
+    const result = calculateCheckoutPricing({
+      platform: "instagram",
+      currency: "EUR",
+      cart: [{ qty: 100 }],
+      pricingRows: [{ service: "ig_followers", qty: 100, price: "9.00", active: true }],
+      promoCode: TEST_PROMO_CODE,
+      allowTestPromo: true,
+    });
+    expect(result.amountCents).toBe(50);
+    expect(result.discountCents).toBe(850);
+    expect(result.promo.isTestPromo).toBe(true);
+
+    expect(() => calculateCheckoutPricing({
+      platform: "instagram",
+      currency: "EUR",
+      cart: [{ qty: 100 }],
+      pricingRows: [{ service: "ig_followers", qty: 100, price: "9.00", active: true }],
+      promoCode: TEST_PROMO_CODE,
+      allowTestPromo: false,
+    })).toThrow(TestPromoDisabledError);
   });
 });

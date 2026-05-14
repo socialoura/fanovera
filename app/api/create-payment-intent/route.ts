@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sql, upsertCheckoutPayload } from "@/app/lib/db";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
+import { DEFAULT_PROMO_CODE, TestPromoDisabledError } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
 import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
 import { getProductConfig, normalizePlatform } from "@/app/lib/productCatalog";
@@ -11,6 +12,12 @@ import { rateLimit, tooManyRequests } from "@/app/lib/rateLimit";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
 });
+
+function isTestPromoEnabled() {
+  if (process.env.FANOVERA_TEST_PROMO_ENABLED === "1") return true;
+  if (process.env.FANOVERA_TEST_PROMO_ENABLED === "0") return false;
+  return process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview";
+}
 
 export async function POST(req: NextRequest) {
   // Rate limit: 20 payment-intent creations / 5 min / IP. Caps Stripe API abuse.
@@ -56,13 +63,20 @@ export async function POST(req: NextRequest) {
       ORDER BY qty ASC
     `) as PricingRow[];
 
+    const hasPromoCode = Object.prototype.hasOwnProperty.call(body, "promoCode");
+    const promoCode = hasPromoCode ? body.promoCode : DEFAULT_PROMO_CODE;
     const pricing = calculateCheckoutPricing({
       platform: normalizedPlatform,
       currency,
       cart,
       pricingRows,
       assignment,
+      promoCode,
+      allowTestPromo: isTestPromoEnabled(),
     });
+    const effectivePricingStrategy = pricing.promo.isTestPromo
+      ? "test_promo_fixed_total"
+      : assignment.pricingStrategy;
 
     // Capture the visitor's country server-side. Vercel sets x-vercel-ip-country;
     // Cloudflare uses cf-ipcountry. We persist it on checkout_payloads so the
@@ -85,7 +99,10 @@ export async function POST(req: NextRequest) {
         source_page: typeof sourcePage === "string" ? sourcePage.slice(0, 120) : "",
         experimentId: assignment.experimentId || "",
         variantId: assignment.variantId,
-        pricing_strategy: assignment.pricingStrategy,
+        pricing_strategy: effectivePricingStrategy,
+        promo_code: pricing.promo.code,
+        promo_type: pricing.promo.type,
+        test_promo: pricing.promo.isTestPromo ? "true" : "",
         userId: typeof userId === "string" ? userId.slice(0, 120) : "",
         anonymousId: typeof anonymousId === "string" ? anonymousId.slice(0, 120) : "",
         e2e: checkoutE2E ? "true" : "",
@@ -107,7 +124,7 @@ export async function POST(req: NextRequest) {
         currency: pricing.currency.toLowerCase(),
         experimentId: assignment.experimentId || "",
         variantId: assignment.variantId,
-        pricingStrategy: assignment.pricingStrategy,
+        pricingStrategy: effectivePricingStrategy,
         sourcePage: typeof sourcePage === "string" ? sourcePage.slice(0, 160) : "",
         plan: pricing.plan,
         country: geoCountry,
@@ -127,7 +144,10 @@ export async function POST(req: NextRequest) {
       pathname: sourcePage,
       experimentId: assignment.experimentId,
       variantId: assignment.variantId,
-      pricing_strategy: assignment.pricingStrategy,
+      pricing_strategy: effectivePricingStrategy,
+      promo_code: pricing.promo.code,
+      promo_type: pricing.promo.type,
+      test_promo: pricing.promo.isTestPromo,
     });
 
     return NextResponse.json({
@@ -136,9 +156,17 @@ export async function POST(req: NextRequest) {
       currency: pricing.currency,
       experimentId: assignment.experimentId,
       variantId: assignment.variantId,
-      pricingStrategy: assignment.pricingStrategy,
+      pricingStrategy: effectivePricingStrategy,
+      promoCode: pricing.promo.code,
+      promoType: pricing.promo.type,
     });
   } catch (err) {
+    if (err instanceof TestPromoDisabledError) {
+      return NextResponse.json(
+        { error: "Test promo code is disabled" },
+        { status: 400 },
+      );
+    }
     console.error("[create-payment-intent]", err);
     return NextResponse.json(
       { error: "Failed to create payment intent" },

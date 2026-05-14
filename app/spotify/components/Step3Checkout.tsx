@@ -9,6 +9,7 @@ import Stepper from "./Stepper";
 import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { SpoPreview } from "./Step2Track";
 import { useSpotifyCopy } from "../i18n";
+import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
 
 type Props = {
   country: CountryId;
@@ -27,8 +28,15 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
   const [couponApplied, setCouponApplied] = useState(true);
 
   const subtotal = PACKS[pack].price;
-  const discount = couponApplied ? subtotal * 0.05 : 0;
-  const total = subtotal - discount;
+  const promo = calculatePromoPricing({
+    subtotalCents: Math.round(subtotal * 100),
+    promoCode: couponApplied ? coupon : "",
+    allowTestPromo: true,
+  });
+  const discount = promo.discountCents / 100;
+  const total = promo.amountCents / 100;
+  const promoCode = couponApplied ? coupon : "";
+  const canUsePrefetchedSecret = couponApplied && isDefaultPromoCode(coupon);
 
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
@@ -105,9 +113,9 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
                   {couponApplied ? t.applied : t.apply}
                 </button>
               </div>
-              {couponApplied && (
+              {couponApplied && promo.type !== "none" && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-                  {t.saving} {fmtEuro(discount)}
+                  {promo.isTestPromo ? `Code test - total ${fmtEuro(total)}` : `${t.saving} ${fmtEuro(discount)}`}
                 </div>
               )}
             </div>
@@ -125,13 +133,14 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.securePayment}</div>
               <StripeCheckout
-                amount={Math.round(total * 100)}
+                amount={promo.amountCents}
                 email={email}
                 username={trackInput.trim()}
                 platform="spotify"
                 brandColor="var(--spo-green-2)"
                 cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country, trackUrl: trackInput.trim(), trackId: profile?.id }]}
-                clientSecret={clientSecret}
+                promoCode={promoCode}
+                clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
               />
             </div>
 

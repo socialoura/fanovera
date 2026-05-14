@@ -9,6 +9,7 @@ import Stepper from "./Stepper";
 import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { TwProfile } from "./Step2Username";
 import { useTwitchCopy } from "../i18n";
+import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
 
 type Props = {
   country: CountryId;
@@ -27,8 +28,15 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const [couponApplied, setCouponApplied] = useState(true);
 
   const subtotal = PACKS[pack].price;
-  const discount = couponApplied ? subtotal * 0.05 : 0;
-  const total = subtotal - discount;
+  const promo = calculatePromoPricing({
+    subtotalCents: Math.round(subtotal * 100),
+    promoCode: couponApplied ? coupon : "",
+    allowTestPromo: true,
+  });
+  const discount = promo.discountCents / 100;
+  const total = promo.amountCents / 100;
+  const promoCode = couponApplied ? coupon : "";
+  const canUsePrefetchedSecret = couponApplied && isDefaultPromoCode(coupon);
 
   const clean = username.replace(/^@/, "").replace(/^twitch\.tv\//, "").trim();
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
@@ -102,9 +110,9 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   {couponApplied ? "✓ " + t.step3.applied : t.step3.apply}
                 </button>
               </div>
-              {couponApplied && (
+              {couponApplied && promo.type !== "none" && (
                 <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-                  ✓ {t.step3.saving} {fmtEuro(discount)}
+                  {promo.isTestPromo ? `Code test - total ${fmtEuro(total)}` : `✓ ${t.step3.saving} ${fmtEuro(discount)}`}
                 </div>
               )}
             </div>
@@ -122,13 +130,14 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.step3.securePayment}</div>
               <StripeCheckout
-                amount={Math.round(total * 100)}
+                amount={promo.amountCents}
                 email={email}
                 username={clean}
                 platform="twitch"
                 brandColor="var(--tw-purple)"
                 cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
-                clientSecret={clientSecret}
+                promoCode={promoCode}
+                clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
               />
             </div>
 

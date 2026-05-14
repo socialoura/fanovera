@@ -55,6 +55,8 @@ export async function ensureOrderForPaymentIntent(
 
     const meta = pi.metadata || {};
     const checkoutE2E = process.env.ALLOW_CHECKOUT_E2E === "1" && meta.e2e === "true";
+    const testPromo = meta.test_promo === "true";
+    const skipSideEffects = checkoutE2E || testPromo;
     const persisted = await getCheckoutPayload(paymentIntentId);
 
     const email = persisted?.email || meta.email || "";
@@ -142,7 +144,7 @@ export async function ensureOrderForPaymentIntent(
       ensure_source: options.source,
     });
 
-    if (email && !checkoutE2E) {
+    if (email && !skipSideEffects) {
       sendOrderConfirmation({
         to: email,
         orderId,
@@ -159,7 +161,7 @@ export async function ensureOrderForPaymentIntent(
       });
     }
 
-    const webhookUrl = checkoutE2E ? "" : process.env.DISCORD_WEBHOOK_URL;
+    const webhookUrl = skipSideEffects ? "" : process.env.DISCORD_WEBHOOK_URL;
     if (webhookUrl) {
       try {
         await fetch(webhookUrl, {
@@ -188,7 +190,7 @@ export async function ensureOrderForPaymentIntent(
     }
 
     let smmPlaced = false;
-    if (!checkoutE2E) {
+    if (!skipSideEffects) {
       try {
         const toggle = await sql`SELECT value FROM smm_settings WHERE key = 'auto_order_enabled' LIMIT 1`;
         const autoEnabled = toggle[0]?.value === "true";

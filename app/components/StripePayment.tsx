@@ -32,6 +32,7 @@ export type StripeCheckoutProps = {
   username: string;
   platform: string;
   cart?: unknown;
+  promoCode?: string;
   /**
    * Audience size at checkout time (followers / subscribers / monthly listeners,
    * depending on the platform). Captured from the live profile preview so we can
@@ -51,12 +52,13 @@ export function usePaymentIntent(args: {
   username: string;
   platform: string;
   cart?: unknown;
+  promoCode?: string;
   followersBefore?: number;
   enabled?: boolean;
   /** Bumping this nonce forces a fresh PaymentIntent fetch (e.g. user-clicked retry). */
   retryNonce?: number;
 }) {
-  const { amount, currency = "eur", email, username, platform, cart, followersBefore, enabled = true, retryNonce = 0 } = args;
+  const { amount, currency = "eur", email, username, platform, cart, promoCode, followersBefore, enabled = true, retryNonce = 0 } = args;
   const { locale, country } = useI18n();
   const pathname = usePathname();
   const normalizedPlatform = normalizePlatform(platform);
@@ -79,7 +81,7 @@ export function usePaymentIntent(args: {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !amount || amount < 100 || !experiment.anonymousId) return;
+    if (!enabled || !amount || amount < 50 || !experiment.anonymousId) return;
     let aborted = false;
     setClientSecret(null);
     setError(null);
@@ -93,6 +95,7 @@ export function usePaymentIntent(args: {
         username,
         platform,
         cart: cartRef.current,
+        promoCode,
         locale,
         sourcePage: pathname,
         anonymousId: experiment.anonymousId,
@@ -121,7 +124,7 @@ export function usePaymentIntent(args: {
     return () => {
       aborted = true;
     };
-  }, [enabled, amount, currency, email, username, platform, cartKey, locale, pathname, productArea, experiment.anonymousId, experiment.assignment, followersBefore, retryNonce]);
+  }, [enabled, amount, currency, email, username, platform, cartKey, promoCode, locale, pathname, productArea, experiment.anonymousId, experiment.assignment, followersBefore, retryNonce]);
 
   return { clientSecret, error };
 }
@@ -329,6 +332,7 @@ export default function StripeCheckout({
   username,
   platform,
   cart,
+  promoCode,
   followersBefore,
   onSuccess,
   brandColor,
@@ -348,6 +352,7 @@ export default function StripeCheckout({
     username,
     platform,
     cart,
+    promoCode,
     followersBefore,
     enabled: !usesPrefetchedSecret,
     retryNonce,

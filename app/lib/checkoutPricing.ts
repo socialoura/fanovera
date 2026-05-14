@@ -1,4 +1,5 @@
 import { SUPPORTED_CURRENCIES, currencyDbColumn, type SupportedCurrency } from "./pricingCurrency";
+import { calculatePromoPricing, type PromoPricing } from "./promoCodes";
 import { applyPricingAssignment, type PricingAssignment } from "./pricingExperiments";
 import { findFallbackPack, getProductConfig, normalizePlatform, type PlatformId } from "./productCatalog";
 
@@ -24,6 +25,8 @@ export type CheckoutPricingInput = {
   cart: unknown;
   pricingRows?: PricingRow[];
   assignment?: PricingAssignment;
+  promoCode?: unknown;
+  allowTestPromo?: boolean;
 };
 
 export type SanitizedCheckoutItem = {
@@ -49,9 +52,8 @@ export type CheckoutPricingResult = {
   sanitizedCart: SanitizedCheckoutItem[];
   subtotalCents: number;
   discountCents: number;
+  promo: PromoPricing;
 };
-
-const DEFAULT_DISCOUNT = 0.05;
 
 function toNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -131,17 +133,21 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
     });
   }
 
-  const discountCents = Math.round(subtotalCents * DEFAULT_DISCOUNT);
-  const amountCents = Math.max(100, subtotalCents - discountCents);
+  const promo = calculatePromoPricing({
+    subtotalCents,
+    promoCode: input.promoCode,
+    allowTestPromo: input.allowTestPromo,
+  });
 
   return {
-    amountCents,
+    amountCents: promo.amountCents,
     currency,
     platform,
     service: config.service,
     plan: sanitizedCart.map((item) => String(item.qty)).join("+"),
     sanitizedCart,
     subtotalCents,
-    discountCents,
+    discountCents: promo.discountCents,
+    promo,
   };
 }
