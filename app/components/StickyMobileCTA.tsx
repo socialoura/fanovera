@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const STICKY_MOBILE_CTA_ENABLED = false;
+
 type Props = {
   visible: boolean;
   label: string;          // e.g. "Continuer" / "Continue"
@@ -33,14 +35,14 @@ export default function StickyMobileCTA({
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!STICKY_MOBILE_CTA_ENABLED || !visible) return;
     const onScroll = () => setScrolled(window.scrollY > showAfterScroll);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [visible, showAfterScroll]);
 
-  if (!visible) return null;
+  if (!STICKY_MOBILE_CTA_ENABLED || !visible) return null;
 
   const shouldShow = scrolled;
 

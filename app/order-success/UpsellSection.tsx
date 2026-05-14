@@ -142,7 +142,7 @@ export default function UpsellSection({
           background: white;
           border: 1px solid var(--line);
           border-radius: 18px;
-          padding: 18px 18px 16px;
+          padding: 18px;
           text-decoration: none;
           color: var(--ink);
           display: flex;
@@ -151,6 +151,7 @@ export default function UpsellSection({
           transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
           position: relative;
           overflow: hidden;
+          box-shadow: 0 8px 20px -16px rgba(20, 22, 50, 0.18), 0 2px 6px -3px rgba(20, 22, 50, 0.04);
         }
         .upsell-card::before {
           content: "";
@@ -175,12 +176,12 @@ export default function UpsellSection({
           gap: 10px;
         }
         .upsell-emoji {
-          font-size: 24px;
+          font-size: 22px;
           line-height: 1;
         }
         .upsell-label {
           font-weight: 800;
-          font-size: 16px;
+          font-size: 15px;
           color: var(--ink);
         }
         .upsell-pack {
@@ -194,33 +195,63 @@ export default function UpsellSection({
           letter-spacing: -0.01em;
           color: var(--upsell-accent);
           display: flex;
-          align-items: baseline;
-          gap: 6px;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          line-height: 1.1;
         }
         .upsell-bonus {
           font-size: 11px;
-          color: var(--green);
+          color: var(--green, #16a34a);
           font-weight: 700;
-          padding: 2px 6px;
-          background: rgba(77, 191, 138, 0.12);
-          border-radius: 6px;
+          padding: 3px 8px;
+          background: rgba(34, 197, 94, 0.12);
+          border-radius: 999px;
+          letter-spacing: 0;
+          white-space: nowrap;
         }
         .upsell-cta {
           margin-top: auto;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
-          padding: 10px 14px;
-          border-radius: 12px;
+          gap: 8px;
+          padding: 12px 18px;
+          border-radius: 999px;
           background: var(--upsell-accent);
           color: white;
           font-weight: 700;
           font-size: 14px;
-          transition: filter 0.2s;
+          letter-spacing: 0.01em;
+          transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 8px 18px -10px var(--upsell-accent);
+        }
+        .upsell-cta svg {
+          transition: transform 0.2s;
         }
         .upsell-card:hover .upsell-cta {
-          filter: brightness(1.05);
+          filter: brightness(1.06);
+        }
+        .upsell-card:hover .upsell-cta svg {
+          transform: translateX(2px);
+        }
+
+        @media (max-width: 640px) {
+          .upsell-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .upsell-card {
+            padding: 16px;
+            gap: 12px;
+          }
+          .upsell-qty {
+            font-size: 20px;
+          }
+          .upsell-cta {
+            padding: 12px 16px;
+            font-size: 14px;
+          }
         }
       `}</style>
     </section>

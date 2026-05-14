@@ -227,8 +227,11 @@ function OrderSuccessContent() {
               </div>
 
               <Link href="/account" className="order-myorders-link">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 12V4l5-2 5 2v8l-5 2-5-2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /></svg>
-                {labels.myOrders}
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M2.5 4.5h11v8a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-8z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                  <path d="M5.5 4.5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                </svg>
+                <span>{labels.myOrders}</span>
               </Link>
             </div>
 
@@ -514,19 +517,26 @@ function OrderSuccessContent() {
         .order-myorders-link {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          margin-top: 18px;
-          padding: 8px 14px;
+          gap: 8px;
+          margin-top: 14px;
+          padding: 10px 18px;
           font-size: 13px;
           font-weight: 600;
-          color: var(--ink-3, #6b7280);
+          color: var(--ink-2, #374151);
           text-decoration: none;
+          background: var(--paper-2, #f7f7fb);
+          border: 1px solid var(--line);
           border-radius: 999px;
-          transition: color 0.18s ease, background 0.18s ease;
+          transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+        }
+        .order-myorders-link svg {
+          flex-shrink: 0;
         }
         .order-myorders-link:hover {
-          color: var(--ink, #111827);
-          background: rgba(20, 22, 50, 0.04);
+          color: var(--primary, #5260e6);
+          background: white;
+          border-color: rgba(82, 96, 230, 0.35);
+          transform: translateY(-1px);
         }
 
         .order-reassurance {
