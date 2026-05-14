@@ -57,6 +57,7 @@ export async function ensureOrderForPaymentIntent(
     const checkoutE2E = process.env.ALLOW_CHECKOUT_E2E === "1" && meta.e2e === "true";
     const testPromo = meta.test_promo === "true";
     const skipSideEffects = checkoutE2E || testPromo;
+    const skipEmail = checkoutE2E;
     const persisted = await getCheckoutPayload(paymentIntentId);
 
     const email = persisted?.email || meta.email || "";
@@ -144,7 +145,12 @@ export async function ensureOrderForPaymentIntent(
       ensure_source: options.source,
     });
 
-    if (email && !skipSideEffects) {
+    if (!email) {
+      console.warn(`[ensureOrder] Email not sent for order #${orderId}: no recipient (persisted=${persisted ? "yes" : "no"}, meta.email=${meta.email ? "yes" : "empty"})`);
+    } else if (skipEmail) {
+      console.warn(`[ensureOrder] Email not sent for order #${orderId}: skipEmail (e2e=${checkoutE2E})`);
+    } else {
+      console.log(`[ensureOrder] Sending confirmation email to ${email} for order #${orderId}`);
       sendOrderConfirmation({
         to: email,
         orderId,
@@ -156,6 +162,12 @@ export async function ensureOrderForPaymentIntent(
         totalCents: pi.amount,
         currency: pi.currency || "eur",
         locale: meta.locale || "",
+      }).then((result) => {
+        if (result.ok) {
+          console.log(`[ensureOrder] Email sent for order #${orderId} (resend id=${result.id})`);
+        } else {
+          console.error(`[ensureOrder] Email FAILED for order #${orderId}:`, result.error);
+        }
       }).catch((err) => {
         console.error("[ensureOrder] Email error:", err);
       });

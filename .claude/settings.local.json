@@ -27,7 +27,8 @@
       "PowerShell(Copy-Item *)",
       "Bash(curl -s \"http://localhost:3000/api/tiktok/profile?username=cristiano\")",
       "Bash(curl *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(grep -n \"^\\\\s*a\\\\s*{\\\\|^\\\\s*a\\\\s*,\\\\|display.*block\" app/globals.css)"
     ]
   }
 }
