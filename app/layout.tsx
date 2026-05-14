@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import PostHogProvider from "./PostHogProvider";
 import ChatWidget from "./components/ChatWidget";
+import GoogleAdsTag from "./components/GoogleAdsTag";
 import JsonLd from "./components/JsonLd";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { MarketingModeProvider } from "./marketing/MarketingModeProvider";
@@ -47,6 +48,7 @@ export default async function RootLayout({
             <JsonLd data={websiteJsonLd(initialLocale)} />
             <PostHogProvider>{children}</PostHogProvider>
             <ChatWidget />
+            <GoogleAdsTag />
             <Analytics />
             <SpeedInsights />
           </MarketingModeProvider>

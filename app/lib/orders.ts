@@ -16,7 +16,7 @@ function countryFlag(code: string): string {
 }
 
 export type EnsureOrderResult =
-  | { ok: true; orderId: number; duplicate?: boolean; smmPlaced: boolean; platform: string; service: string; plan: string }
+  | { ok: true; orderId: number; duplicate?: boolean; smmPlaced: boolean; platform: string; service: string; plan: string; totalCents?: number; currency?: string }
   | { ok: false; reason: "payment_not_succeeded" | "internal_error"; status?: string };
 
 /**
@@ -50,7 +50,7 @@ export async function ensureOrderForPaymentIntent(
 
     const existing = await getOrderByPaymentIntent(paymentIntentId);
     if (existing) {
-      return { ok: true, orderId: existing.id, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
+      return { ok: true, orderId: existing.id, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn, totalCents: pi.amount, currency: pi.currency || "eur" };
     }
 
     const meta = pi.metadata || {};
@@ -124,7 +124,7 @@ export async function ensureOrderForPaymentIntent(
     // already kicked off the side effects (email, Discord, SMM). Bail out
     // here so we never double-send / double-charge BulkFollows.
     if (!created.isNew) {
-      return { ok: true, orderId, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
+      return { ok: true, orderId, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn, totalCents: pi.amount, currency: pi.currency || "eur" };
     }
 
     void captureServerEvent("checkout_completed", meta.anonymousId || email || paymentIntentId, {
@@ -202,7 +202,7 @@ export async function ensureOrderForPaymentIntent(
       }
     }
 
-    return { ok: true, orderId, smmPlaced, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
+    return { ok: true, orderId, smmPlaced, platform: platformForReturn, service: serviceForReturn, plan: planForReturn, totalCents: pi.amount, currency: pi.currency || "eur" };
   } catch (err) {
     console.error("[ensureOrder] internal error:", err);
     return { ok: false, reason: "internal_error" };

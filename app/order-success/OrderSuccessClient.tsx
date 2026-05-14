@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
 import { getPublicCopy } from "../components/publicCopy";
+import { gtagPurchase } from "../lib/gtag";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import UpsellSection from "./UpsellSection";
@@ -83,6 +84,9 @@ function OrderSuccessContent() {
   const [retryKey, setRetryKey] = useState(0);
   const [purchasedService, setPurchasedService] = useState<string>("");
   const [purchasedPlatform, setPurchasedPlatform] = useState<string>(search.get("platform") || "");
+  const [totalCents, setTotalCents] = useState<number>(0);
+  const [orderCurrency, setOrderCurrency] = useState<string>("eur");
+  const purchaseTrackedRef = useRef(false);
 
   const paymentIntentId = useMemo(() => search.get("payment_intent") || "", [search]);
   const platform = purchasedPlatform || search.get("platform") || "";
@@ -107,6 +111,8 @@ function OrderSuccessContent() {
           setOrderId(String(data.orderId));
           if (typeof data.platform === "string" && data.platform) setPurchasedPlatform(data.platform);
           if (typeof data.service === "string" && data.service) setPurchasedService(data.service);
+          if (typeof data.totalCents === "number") setTotalCents(data.totalCents);
+          if (typeof data.currency === "string" && data.currency) setOrderCurrency(data.currency);
           setState("ok");
         }
       } catch (e) {
@@ -121,6 +127,16 @@ function OrderSuccessContent() {
       cancelled = true;
     };
   }, [copy.confirmError, copy.unexpected, orderId, paymentIntentId, retryKey]);
+
+  useEffect(() => {
+    if (!orderId || purchaseTrackedRef.current) return;
+    purchaseTrackedRef.current = true;
+    gtagPurchase({
+      orderId,
+      value: totalCents ? totalCents / 100 : 0,
+      currency: orderCurrency,
+    });
+  }, [orderId, totalCents, orderCurrency]);
 
   const done = !!orderId;
   const isLoading = !done && state !== "error";

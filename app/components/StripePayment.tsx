@@ -9,6 +9,7 @@ import { getDisplayCurrency } from "../lib/pricingCurrency";
 import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
 import { usePricingExperiment } from "../lib/usePricingExperiment";
 import { trackEvent } from "../lib/analytics";
+import { gtagBeginCheckout } from "../lib/gtag";
 import { getPublicCopy } from "./publicCopy";
 import { humanizeStripeError } from "../lib/stripeErrors";
 
@@ -367,6 +368,11 @@ export default function StripeCheckout({
       product_area: platform,
       amount,
       currency: effectiveCurrency,
+    });
+    gtagBeginCheckout({
+      value: amount / 100,
+      currency: effectiveCurrency,
+      platform,
     });
   }, [amount, clientSecret, effectiveCurrency, platform]);
 

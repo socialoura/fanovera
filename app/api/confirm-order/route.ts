@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       platform: result.platform,
       service: result.service,
       plan: result.plan,
+      totalCents: result.totalCents,
+      currency: result.currency,
     });
   } catch (err) {
     console.error("[confirm-order]", err);
