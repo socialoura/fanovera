@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
+import { notifyApiFailure } from "@/app/lib/apiAlerts";
 
 export type TtProfile = {
   username: string;
@@ -95,6 +96,12 @@ export async function GET(req: NextRequest) {
     );
 
     if (!res.ok) {
+      void notifyApiFailure({
+        platform: "tiktok",
+        endpoint: "/api/tiktok/profile",
+        provider: host,
+        status: res.status,
+      });
       if (res.status === 404) {
         return NextResponse.json({ error: "not_found" }, { status: 404 });
       }

@@ -3043,6 +3043,32 @@ input { font: inherit; color: inherit; }
   .x-preview-col {
     order: 1;
   }
+  /* IG/TT/Spotify/YT Step 2: preview is rendered inline inside the form card
+     (between the URL/username input and the email input), so the side-column
+     copy must be hidden to avoid showing the same preview twice. */
+  .ig-preview-step2-side,
+  .tt-preview-step2-side,
+  .spo-preview-step2-side,
+  .yt-preview-step2-side {
+    display: none !important;
+  }
+}
+
+/* IG/TT/Spotify/YT Step 2 inline preview is only visible on mobile — desktop
+   uses the side column instead. */
+.ig-preview-step2-inline,
+.tt-preview-step2-inline,
+.spo-preview-step2-inline,
+.yt-preview-step2-inline {
+  display: none;
+}
+@media (max-width: 980px) {
+  .ig-preview-step2-inline,
+  .tt-preview-step2-inline,
+  .spo-preview-step2-inline,
+  .yt-preview-step2-inline {
+    display: block;
+  }
 }
 
 /* Footer bottom row */

@@ -358,8 +358,22 @@ export function useCurrencyPricing(service: string) {
 
     const fallbackByQty = new Map(fallbackPacks.map((pack) => [pack.qty, pack]));
 
+    // Resolve which qty should carry the "popular" / "best" highlight.
+    // Only ONE pack gets each badge — picking by qty keeps the highlight
+    // consistent even when DB pricing reorders or replaces qtys.
+    const dbPopularQty = dbPacks.find((p) => p.popular)?.qty ?? null;
+    const fallbackPopularQty = fallbackPacks.find((p) => p.popular)?.qty ?? null;
+    const dbQtySet = new Set(dbPacks.map((p) => p.qty));
+    const popularQty =
+      dbPopularQty ??
+      (fallbackPopularQty !== null && dbQtySet.has(fallbackPopularQty) ? fallbackPopularQty : null);
+    const fallbackBestQty = fallbackPacks.find((p) => p.best)?.qty ?? null;
+    const bestQty =
+      fallbackBestQty !== null && dbQtySet.has(fallbackBestQty) ? fallbackBestQty : null;
+
     return dbPacks.map((dbPack, index) => {
-      const fallback = fallbackByQty.get(dbPack.qty) ?? fallbackPacks[index] ?? fallbackPacks[0];
+      const matchedFallback = fallbackByQty.get(dbPack.qty);
+      const fallback = matchedFallback ?? fallbackPacks[index] ?? fallbackPacks[0];
       const old = fallback
         ? Math.max(fallback.old, roundPrice(dbPack.price * 1.35))
         : roundPrice(dbPack.price * 2.5);
@@ -370,8 +384,8 @@ export function useCurrencyPricing(service: string) {
         price: applyPricingAssignment(dbPack.price, experiment.assignment),
         old,
         bonus: fallback?.bonus ?? derivedBonus(dbPack.qty, fallbackPacks),
-        popular: dbPack.popular || fallback?.popular || false,
-        best: fallback?.best || false,
+        popular: dbPack.qty === popularQty,
+        best: dbPack.qty === bestQty,
       } as T;
     });
   }, [dbPacks, experiment.assignment, resolvePrice]);

@@ -17,6 +17,8 @@ const ALLOWED_HOSTS = [
   "static-cdn.jtvnw.net",
   "licdn.com",
   "media.licdn.com",
+  "scdn.co",
+  "i.scdn.co",
 ];
 
 function isAllowed(url: string): boolean {

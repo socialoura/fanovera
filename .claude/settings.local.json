@@ -26,7 +26,8 @@
       "Bash(cp \"Capture d'écran 2026-05-11 020552.png\" /tmp/screen.png)",
       "PowerShell(Copy-Item *)",
       "Bash(curl -s \"http://localhost:3000/api/tiktok/profile?username=cristiano\")",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "WebSearch"
     ]
   }
 }

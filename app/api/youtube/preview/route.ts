@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notifyApiFailure } from "@/app/lib/apiAlerts";
 
 const YT_RE =
   /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]{11})/;
@@ -67,7 +68,15 @@ async function fetchChannelDetails(channelId: string, key: string) {
         signal: AbortSignal.timeout(8000),
       }
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      void notifyApiFailure({
+        platform: "youtube",
+        endpoint: "/api/youtube/preview (channel)",
+        provider: host,
+        status: r.status,
+      });
+      return null;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (await r.json()) as any;
   } catch {
@@ -85,7 +94,15 @@ async function fromRapidApi(id: string): Promise<YtPreview> {
     },
     signal: AbortSignal.timeout(8000),
   });
-  if (!r.ok) throw new Error(`upstream_${r.status}`);
+  if (!r.ok) {
+    void notifyApiFailure({
+      platform: "youtube",
+      endpoint: "/api/youtube/preview (video)",
+      provider: host,
+      status: r.status,
+    });
+    throw new Error(`upstream_${r.status}`);
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = (await r.json()) as any;
 

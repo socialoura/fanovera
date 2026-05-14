@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notifyApiFailure } from "@/app/lib/apiAlerts";
 
 type SpotifyResult = {
   id: string;
@@ -127,6 +128,12 @@ export async function GET(request: NextRequest) {
       const res = await fetchWithTimeout(providerUrl, headers, 8000);
 
       if (!res.ok) {
+        void notifyApiFailure({
+          platform: "spotify",
+          endpoint: "/api/spotify-search (track)",
+          provider: "spotify-scraper.p.rapidapi.com",
+          status: res.status,
+        });
         if (res.status === 404) {
           return NextResponse.json({ error: "not_found", message: "Track introuvable." }, { status: 404 });
         }
@@ -156,6 +163,12 @@ export async function GET(request: NextRequest) {
     const res = await fetchWithTimeout(providerUrl, headers, 8000);
 
     if (!res.ok) {
+      void notifyApiFailure({
+        platform: "spotify",
+        endpoint: "/api/spotify-search (search)",
+        provider: "spotify-scraper.p.rapidapi.com",
+        status: res.status,
+      });
       if (res.status === 404) {
         return NextResponse.json({ error: "not_found", message: "Track introuvable." }, { status: 404 });
       }

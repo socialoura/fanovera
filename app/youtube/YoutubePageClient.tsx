@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import YtHeader from "./components/YtHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Username from "./components/Step2Username";
+import Step2Channel from "./components/Step2Channel";
 import Step3Checkout from "./components/Step3Checkout";
 import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
@@ -34,8 +35,15 @@ export default function YoutubePageClient() {
   })();
   const [productType, setProductType] = useState<YouTubeProductType>(initialProductType);
   const [username, setUsername] = useState("");
+  const [channelInput, setChannelInput] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<YtPreview | null>(null);
+
+  useEffect(() => {
+    setUsername("");
+    setChannelInput("");
+    setProfile(null);
+  }, [productType]);
   const activePacks = getPacksForProduct(productType);
   const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
@@ -60,13 +68,15 @@ export default function YoutubePageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isSubscribers = productType === "subscribers";
+  const activeInput = isSubscribers ? channelInput.trim() : username.trim();
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
     email,
-    username: username.trim(),
+    username: activeInput,
     platform: "youtube",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: username.trim(), videoId: profile?.id }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: isSubscribers ? "" : username.trim(), videoId: profile?.id }],
     followersBefore: profile?.channel?.subscribers ?? 0,
     enabled: step >= 2 && !!profile && emailValid,
   });
@@ -97,7 +107,21 @@ export default function YoutubePageClient() {
       <div className="paper-frame with-yt-halo">
         <YtHeader />
         {step === 1 && (readyOnce ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} productType={productType} setProductType={setProductType} /> : <PricingPacksLoading accent="var(--yt-red)" />)}
-        {step === 2 && (
+        {step === 2 && isSubscribers && (
+          <Step2Channel
+            country={country}
+            pack={safePack}
+            channelInput={channelInput}
+            setChannelInput={setChannelInput}
+            email={email}
+            setEmail={setEmail}
+            profile={profile}
+            setProfile={setProfile}
+            onNext={next}
+            onBack={back}
+          />
+        )}
+        {step === 2 && !isSubscribers && (
           <Step2Username
             country={country}
             pack={safePack}

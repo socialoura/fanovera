@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
+import { notifyApiFailure } from "@/app/lib/apiAlerts";
 
 export type YtProfile = {
   username: string;
@@ -99,6 +100,12 @@ export async function GET(req: NextRequest) {
     const searchRes = await fetchWithTimeout(searchUrl, headers);
 
     if (!searchRes.ok) {
+      void notifyApiFailure({
+        platform: "youtube",
+        endpoint: "/api/youtube/profile (search)",
+        provider: host,
+        status: searchRes.status,
+      });
       return NextResponse.json(
         { error: `upstream_${searchRes.status}` },
         { status: 502 }
@@ -126,6 +133,12 @@ export async function GET(req: NextRequest) {
     const detailsRes = await fetchWithTimeout(detailsUrl, headers);
 
     if (!detailsRes.ok) {
+      void notifyApiFailure({
+        platform: "youtube",
+        endpoint: "/api/youtube/profile (details)",
+        provider: host,
+        status: detailsRes.status,
+      });
       // Fallback to search data
       const avatarRaw = channel.thumbnail || "";
       const data: YtProfile = {

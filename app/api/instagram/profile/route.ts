@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
+import { notifyApiFailure } from "@/app/lib/apiAlerts";
 
 export type IgProfile = {
   username: string;
@@ -129,6 +130,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (!res.ok) {
+      void notifyApiFailure({
+        platform: "instagram",
+        endpoint: "/api/instagram/profile",
+        provider: host,
+        status: res.status,
+      });
       if (res.status === 404) {
         const suggestion = await searchFallback(username);
         return NextResponse.json({ error: "not_found", suggestion }, { status: 404 });

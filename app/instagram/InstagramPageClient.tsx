@@ -31,6 +31,25 @@ export type IgProfile = {
   verified: boolean;
 };
 
+export type IgMedia = {
+  id: string;
+  code: string;
+  mediaType: number;
+  thumbnailUrl: string;
+  videoUrl: string;
+  likeCount: number;
+  playCount: number;
+  commentCount: number;
+  caption: string;
+  takenAt: number;
+  user: {
+    username: string;
+    fullName: string;
+    avatarUrl: string;
+    verified: boolean;
+  };
+};
+
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
 export default function InstagramPageClient() {
@@ -46,6 +65,17 @@ export default function InstagramPageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<IgProfile | null>(null);
+  const [postUrl, setPostUrl] = useState("");
+  const [media, setMedia] = useState<IgMedia | null>(null);
+
+  // Reset target input when switching product type — username/profile applies to
+  // followers, postUrl/media applies to likes/views.
+  useEffect(() => {
+    setUsername("");
+    setProfile(null);
+    setPostUrl("");
+    setMedia(null);
+  }, [productType]);
   const activePacks = getPacksForProduct(productType);
   const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
@@ -75,6 +105,8 @@ export default function InstagramPageClient() {
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const cleanUsername = username.replace(/^@/, "").trim();
   const usernameValid = /^[a-zA-Z0-9._]{2,30}$/.test(cleanUsername);
+  const isMediaProduct = productType === "likes" || productType === "views";
+  const targetReady = isMediaProduct ? Boolean(media) : usernameValid;
   const { clientSecret } = usePaymentIntent({
     amount: amountCents,
     currency: currency.toLowerCase(),
@@ -83,7 +115,7 @@ export default function InstagramPageClient() {
     platform: "instagram",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
     followersBefore: profile?.followersCount ?? 0,
-    enabled: step >= 2 && usernameValid && emailValid,
+    enabled: step >= 2 && targetReady && emailValid,
   });
 
   const next = () => {
@@ -131,12 +163,17 @@ export default function InstagramPageClient() {
           <Step2Username
             country={country}
             pack={safePack}
+            productType={productType}
             username={username}
             setUsername={setUsername}
+            postUrl={postUrl}
+            setPostUrl={setPostUrl}
             email={email}
             setEmail={setEmail}
             profile={profile}
             setProfile={setProfile}
+            media={media}
+            setMedia={setMedia}
             onNext={next}
             onBack={back}
           />
@@ -155,10 +192,10 @@ export default function InstagramPageClient() {
         visible={(step === 1 || step === 2) && canDisplayPricing}
         label={t.step1.continue}
         priceLabel={formatPrice(selectedPack, country)}
-        subLabel={step === 2 && profile
-          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${cleanUsername || profile.username}`
+        subLabel={step === 2 && (profile || media)
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${cleanUsername || profile?.username || media?.user.username || ""}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(profile && usernameValid && emailValid)}
+        disabled={step === 2 && !(targetReady && emailValid && (isMediaProduct ? media : profile))}
         accent="var(--ig-2)"
         onClick={next}
       />

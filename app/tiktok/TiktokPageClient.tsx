@@ -10,7 +10,7 @@ import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import TtFAQ from "./components/TtFAQ";
 import TtFooter from "./components/TtFooter";
-import type { TtProfile } from "./components/Step2Username";
+import type { TtProfile, TtMedia } from "./components/Step2Username";
 import { PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
@@ -36,6 +36,15 @@ export default function TiktokPageClient() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<TtProfile | null>(null);
+  const [postUrl, setPostUrl] = useState("");
+  const [media, setMedia] = useState<TtMedia | null>(null);
+
+  useEffect(() => {
+    setUsername("");
+    setProfile(null);
+    setPostUrl("");
+    setMedia(null);
+  }, [productType]);
   const activePacks = getPacksForProduct(productType);
   const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
@@ -60,6 +69,8 @@ export default function TiktokPageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isMediaProduct = productType === "likes" || productType === "views";
+  const targetReady = isMediaProduct ? Boolean(media) : Boolean(profile);
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
@@ -68,7 +79,7 @@ export default function TiktokPageClient() {
     platform: "tiktok",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
     followersBefore: profile?.followersCount ?? 0,
-    enabled: step >= 2 && !!profile && emailValid,
+    enabled: step >= 2 && targetReady && emailValid,
   });
 
   const next = () => {
@@ -101,12 +112,17 @@ export default function TiktokPageClient() {
           <Step2Username
             country={country}
             pack={safePack}
+            productType={productType}
             username={username}
             setUsername={setUsername}
+            postUrl={postUrl}
+            setPostUrl={setPostUrl}
             email={email}
             setEmail={setEmail}
             profile={profile}
             setProfile={setProfile}
+            media={media}
+            setMedia={setMedia}
             onNext={next}
             onBack={back}
           />
@@ -123,10 +139,10 @@ export default function TiktokPageClient() {
         visible={(step === 1 || step === 2) && canDisplayPricing}
         label={tCopy.step1.continue}
         priceLabel={formatPrice(selectedPack, country)}
-        subLabel={step === 2 && profile
-          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile.username}`
+        subLabel={step === 2 && (profile || media)
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile?.username || media?.user.username || ""}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(profile && emailValid)}
+        disabled={step === 2 && !(targetReady && emailValid)}
         accent="var(--tt-red)"
         onClick={next}
       />
