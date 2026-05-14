@@ -230,7 +230,7 @@ export default function MarketingModeView() {
           <div><span style={{ color: MODE_COLORS.whitehat }}>●</span> <strong>Whitehat</strong><span>Copy safe, conforme, indexable. Audit + stratégie. Aucune promesse de volume.</span></div>
           <div><span style={{ color: MODE_COLORS.greyhat }}>●</span> <strong>Greyhat</strong><span>Copy orientée conversion. Chiffres cliqués, vrais profils audités, disclaimers TOS. Indexable.</span></div>
           <div><span style={{ color: MODE_COLORS.blackhat }}>●</span> <strong>Blackhat</strong><span>Copy agressive. +10K garantis, abonnés réels actifs. Noindex automatique, exclu du sitemap.</span></div>
-          <div>🌐 <strong>Langues</strong><span>Seuls FR et EN sont affectés. ES, PT, DE, IT et TR restent en whitehat quoi qu'il arrive.</span></div>
+          <div>🌐 <strong>Langues</strong><span>Seuls FR et EN sont affectés. ES, PT, DE, IT et TR restent en whitehat quoi qu&apos;il arrive.</span></div>
         </div>
       </aside>
     </div>
