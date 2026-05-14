@@ -3,6 +3,7 @@ import CurrencySelector from "../../components/CurrencySelector";
 // import LanguageSelector from "../../components/LanguageSelector";
 import { Logo } from "../../components/Header";
 import { useLinkedinCopy } from "../i18n";
+import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 export default function LiHeader() {
   const t = useLinkedinCopy();
@@ -26,7 +27,7 @@ export default function LiHeader() {
               <path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z" />
             </svg>
             <span style={{ fontWeight: 700 }}>4,9</span>
-            <span>- {t.header.ratingText}</span>
+            <span>- {withDynamicReviewCount(t.header.ratingText)}</span>
           </div>
           <Link href="/" className="hide-md" style={{ width: 40, height: 40, borderRadius: 12, background: "white", border: "1px solid var(--line)", display: "grid", placeItems: "center", position: "relative" }} aria-label={t.header.home}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -1,14 +1,14 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
   fr: {
     header: { allNetworks: "Tous les réseaux", tracking: "Suivi", ratingText: "2 348 avis", home: "Accueil" },
     stepper: ["Choisir un pack", "Votre profil", "Paiement sécurisé"],
-    step1: { titleBefore: "Une visibilité LinkedIn", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Audience", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité LinkedIn", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement - Aucun mot de passe demandé" },
+    step1: { titleBefore: "Une visibilité LinkedIn", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Audience", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité LinkedIn", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement - Aucun mot de passe - Démarrage sous 1–6 h" },
     step2: { titleBefore: "Quel", titleFocus: "profil", titleAfter: "promouvoir ?", intro: "Collez le lien de votre profil LinkedIn ou votre identifiant. Aucun mot de passe, aucun accès demandé. Le profil doit être public.", usernameLabel: "Lien ou identifiant LinkedIn", usernamePlaceholder: "linkedin.com/in/votre-profil", invalidFormat: "Format invalide. Ex : linkedin.com/in/votre-profil ou votre-profil", notFound: "Profil LinkedIn introuvable.", emailLabel: "Votre e-mail (pour le reçu)", emailPlaceholder: "vous@exemple.com", emailHint: "On vous envoie uniquement votre facture. Pas de spam, jamais.", back: "Retour", pay: "Aller au paiement", errors: { username: "Collez le lien ou l'identifiant de votre profil LinkedIn.", invalid: "Format invalide. Ex : linkedin.com/in/votre-profil ou votre-profil", email: "Entrez votre e-mail pour recevoir le reçu." } },
     step3: { titleBefore: "Plus qu'une", titleFocus: "étape", titleAfter: ".", subtitle: "Paiement sécurisé - préparation de la campagne après confirmation.", summary: "Récapitulatif", recipient: "Profil destinataire", fallbackRecipient: "Votre profil", edit: "Modifier", visibilityPack: "Pack visibilité LinkedIn", includedCredit: "crédit inclus", included: "inclus", campaignCredit: "Crédit de campagne", free: "OFFERT", coupon: "Code promo", couponPlaceholder: "CODE PROMO", applied: "Appliqué", apply: "Appliquer", saving: "-5% appliqué - économie", total: "Total TTC", securePayment: "Paiement sécurisé", legalBefore: "En finalisant le paiement vous acceptez nos", legalAfter: "Aucun abonnement caché.", gdpr: "RGPD", backToPacks: "Retour au choix des packs" },
     why: { eyebrow: "Pourquoi Fanovera", title1: "Une présence LinkedIn", title2: "progressive", title3: "et soignée.", items: [["Audience B2B ciblée", "Notre IA aide à présenter votre profil à une audience professionnelle cohérente avec votre secteur."], ["Compte préservé", "Aucun accès au compte, aucune publication à votre place, aucune action directe sur votre profil."], ["Sans mot de passe", "Juste le lien public de votre profil pour préparer la campagne de visibilité."], ["Suivi inclus", "Si le volume prévu n'est pas atteint, notre support vérifie et peut prolonger la campagne."]] },
@@ -19,7 +19,7 @@ const copy = {
   en: {
     header: { allNetworks: "All networks", tracking: "Tracking", ratingText: "2,348 reviews", home: "Home" },
     stepper: ["Choose a pack", "Your profile", "Secure payment"],
-    step1: { titleBefore: "Targeted LinkedIn visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Audience", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "LinkedIn visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment - No password required" },
+    step1: { titleBefore: "Targeted LinkedIn visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Audience", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "LinkedIn visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment - No password - Starts in 1–6 h" },
     step2: { titleBefore: "Which", titleFocus: "profile", titleAfter: "would you like to promote?", intro: "Paste your LinkedIn profile link or handle. No password and no account access requested. The profile must be public.", usernameLabel: "LinkedIn link or handle", usernamePlaceholder: "linkedin.com/in/your-profile", invalidFormat: "Invalid format. Example: linkedin.com/in/your-profile or your-profile", notFound: "LinkedIn profile not found.", emailLabel: "Your email (for the receipt)", emailPlaceholder: "you@example.com", emailHint: "We only send your invoice. No spam, ever.", back: "Back", pay: "Go to payment", errors: { username: "Paste your LinkedIn profile link or handle.", invalid: "Invalid format. Example: linkedin.com/in/your-profile or your-profile", email: "Enter your email to receive the receipt." } },
     step3: { titleBefore: "One", titleFocus: "step", titleAfter: "left.", subtitle: "Secure payment - campaign preparation after confirmation.", summary: "Summary", recipient: "Recipient profile", fallbackRecipient: "Your profile", edit: "Edit", visibilityPack: "LinkedIn visibility pack", includedCredit: "included credit", included: "included", campaignCredit: "Campaign credit", free: "FREE", coupon: "Promo code", couponPlaceholder: "PROMO CODE", applied: "Applied", apply: "Apply", saving: "-5% applied - saving", total: "Total incl. tax", securePayment: "Secure payment", legalBefore: "By completing payment, you accept our", legalAfter: "No hidden subscription.", gdpr: "GDPR", backToPacks: "Back to pack selection" },
     why: { eyebrow: "Why Fanovera", title1: "A progressive,", title2: "well-managed", title3: "LinkedIn presence.", items: [["Focused B2B audience", "Our AI helps present your profile to a professional audience aligned with your field."], ["Account protected", "No account access, no posting on your behalf, and no direct action on your profile."], ["No password", "Only your public profile link is needed to prepare the visibility campaign."], ["Follow-up included", "If the planned volume is not reached, our support team reviews and can extend the campaign."]] },
@@ -43,11 +43,12 @@ const localized: Record<SupportedLocale, LinkedinCopy> = {
 
 export function useLinkedinCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+  const { mode, surfaceMode } = useMarketingMode();
+  const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "LinkedIn",
     audience: "Audience",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "LinkedIn", audience: "Connections" });
 }

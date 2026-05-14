@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
       orderId: result.orderId,
       duplicate: result.duplicate || false,
       smm: result.smmPlaced ? "placed" : "skipped",
+      platform: result.platform,
+      service: result.service,
+      plan: result.plan,
     });
   } catch (err) {
     console.error("[confirm-order]", err);

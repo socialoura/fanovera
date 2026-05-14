@@ -3,6 +3,7 @@
 import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
 import { useInstagramCopy } from "../i18n";
+import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 const names = ["Julien D.", "Marie L.", "Pierre F.", "Lucie B.", "Karim T.", "Lea M.", "Philippe C.", "Laurent M."];
 
@@ -34,7 +35,7 @@ export default function Reviews() {
             <NetIcon kind="instagram" color="var(--ig-2)" size={13} /> {t.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle ig">{t.rating}</span> · 4,9/5
+            <span className="squiggle ig">{withDynamicReviewCount(t.rating)}</span> · 4,9/5
           </h2>
         </div>
 
@@ -60,7 +61,7 @@ export default function Reviews() {
                 </svg>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4, fontWeight: 600 }}>{t.rating}</div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4, fontWeight: 600 }}>{withDynamicReviewCount(t.rating)}</div>
           </div>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
             {[

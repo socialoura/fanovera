@@ -4,6 +4,7 @@ import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
 import { useTwitchCopy } from "../i18n";
+import ValueFraming from "../../components/ValueFraming";
 
 type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void };
 
@@ -92,6 +93,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               </svg>
             </button>
             <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>{t.step1.reassurance}</div>
+            <ValueFraming priceEur={PACKS[pack].price} qty={PACKS[pack].qty + PACKS[pack].bonus} />
           </div>
         </div>
       </div>

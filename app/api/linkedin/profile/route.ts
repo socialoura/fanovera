@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
 
 export type LiProfile = {
   username: string;
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
     };
 
     setCache(username, data);
-    return NextResponse.json(data);
+    return jsonCachedAtEdge(data);
   } catch (err) {
     console.error("[LinkedIn profile]", err);
     return NextResponse.json(mockProfile(username));

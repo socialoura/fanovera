@@ -7,6 +7,7 @@
 
 import { sql } from "./db";
 import { bulkFollowsCostCents, estimateBulkFollowsCharge, resolveBulkFollowsCharge } from "./smmCost";
+import { captureServerEvent } from "./analytics.server";
 
 const BF_URL = "https://bulkfollows.com/api/v2";
 
@@ -18,17 +19,105 @@ function apiKey(): string {
 
 // ── Low-level request ──
 
+/**
+ * Mark transient errors raised by `bfPost` so the high-level retry loop can
+ * tell them apart from definitive ones. Transient = worth retrying with
+ * exponential backoff (network blip, 429, 5xx). Definitive = service
+ * inactive, invalid link, insufficient funds — retrying is pointless.
+ */
+class BfTransientError extends Error {
+  isTransient = true as const;
+}
+
+const TRANSIENT_BF_MESSAGES = [
+  "rate limit",
+  "too many requests",
+  "timeout",
+  "temporarily",
+  "try again",
+  "try later",
+  "internal server",
+  "bad gateway",
+  "service unavailable",
+  "gateway timeout",
+];
+
+function isTransientBfMessage(msg: string): boolean {
+  const lower = (msg || "").toLowerCase();
+  return TRANSIENT_BF_MESSAGES.some((needle) => lower.includes(needle));
+}
+
 async function bfPost<T = Record<string, unknown>>(
   params: Record<string, unknown>,
 ): Promise<T> {
-  const res = await fetch(BF_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key: apiKey(), ...params }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(`BulkFollows: ${data.error}`);
+  let res: Response;
+  try {
+    res = await fetch(BF_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: apiKey(), ...params }),
+    });
+  } catch (err) {
+    // Network-level error — fetch threw before we got any response. Always
+    // transient (DNS, TCP, TLS issues). The retry loop will back off.
+    throw new BfTransientError(
+      `BulkFollows network: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // 429 + 5xx are server-side hiccups — almost always recover within a few
+  // hundred ms. Mark as transient so callers retry.
+  if (res.status === 429 || res.status >= 500) {
+    let body = "";
+    try { body = await res.text(); } catch { /* ignore */ }
+    throw new BfTransientError(
+      `BulkFollows HTTP ${res.status}: ${body.slice(0, 200) || res.statusText}`,
+    );
+  }
+
+  let data: { error?: string } & Record<string, unknown>;
+  try {
+    data = await res.json();
+  } catch (err) {
+    // Non-JSON body on a 2xx is itself a transient anomaly worth retrying.
+    throw new BfTransientError(
+      `BulkFollows malformed response: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  if (data.error) {
+    const msg = String(data.error);
+    if (isTransientBfMessage(msg)) throw new BfTransientError(`BulkFollows: ${msg}`);
+    throw new Error(`BulkFollows: ${msg}`);
+  }
   return data as T;
+}
+
+/** Retry an async operation with exponential backoff on transient errors. */
+async function withBfRetry<T>(
+  op: () => Promise<T>,
+  opts: { maxAttempts?: number; baseDelayMs?: number; label?: string } = {},
+): Promise<T> {
+  const max = opts.maxAttempts ?? 3;
+  const base = opts.baseDelayMs ?? 600;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= max; attempt++) {
+    try {
+      return await op();
+    } catch (err) {
+      lastErr = err;
+      const transient = err instanceof BfTransientError;
+      if (!transient || attempt === max) break;
+      // Exponential backoff with full jitter: 0..base*2^(attempt-1).
+      const cap = base * Math.pow(2, attempt - 1);
+      const delay = Math.floor(Math.random() * cap);
+      if (opts.label) {
+        console.warn(`[smm] ${opts.label} transient (attempt ${attempt}/${max}, retry in ${delay}ms):`, err instanceof Error ? err.message : err);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
 }
 
 // ── Public helpers ──
@@ -265,17 +354,27 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     const link = buildLink(itemPlatform, username, item.postUrl);
 
     try {
-      const result = await placeOrder({
-        serviceId: config.bulkfollows_service_id,
-        link,
-        quantity: qty,
-      });
+      // Retry transient BulkFollows hiccups (429, 5xx, network blips) up to
+      // 3 times with jittered exponential backoff. Definitive errors
+      // (invalid link, no funds, inactive service) bail out immediately so
+      // we don't waste 3-6 seconds on lost causes.
+      const result = await withBfRetry(
+        () => placeOrder({
+          serviceId: config.bulkfollows_service_id,
+          link,
+          quantity: qty,
+        }),
+        { maxAttempts: 3, baseDelayMs: 600, label: `placeOrder ${itemPlatform}:${svc}` },
+      );
 
       // Immediately fetch status to get the charge
       const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, qty);
       let charge: number | null = estimatedCharge;
       try {
-        const st = await getOrderStatus(result.orderId);
+        const st = await withBfRetry(
+          () => getOrderStatus(result.orderId),
+          { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
+        );
         charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
       } catch {
         // non-critical — charge will be picked up on status refresh
@@ -369,16 +468,22 @@ export async function retrySmmSubOrder(
   const link = buildLink(sub.platform, username);
 
   try {
-    const result = await placeOrder({
-      serviceId: config.bulkfollows_service_id,
-      link,
-      quantity: sub.qty,
-    });
+    const result = await withBfRetry(
+      () => placeOrder({
+        serviceId: config.bulkfollows_service_id,
+        link,
+        quantity: sub.qty,
+      }),
+      { maxAttempts: 3, baseDelayMs: 600, label: `retry placeOrder ${sub.platform}:${sub.service}` },
+    );
 
     const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, sub.qty);
     let charge: number | null = estimatedCharge;
     try {
-      const st = await getOrderStatus(result.orderId);
+      const st = await withBfRetry(
+        () => getOrderStatus(result.orderId),
+        { maxAttempts: 2, baseDelayMs: 400, label: `retry getOrderStatus ${result.orderId}` },
+      );
       charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
     } catch { /* non-critical */ }
 
@@ -477,6 +582,7 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
   else if (allDone) newStatus = "partial";
 
   if (newStatus === "delivered") {
+    const wasNotDelivered = order.status !== "delivered";
     await sql`
       UPDATE orders
       SET smm_orders = ${JSON.stringify(subOrders)}::jsonb,
@@ -485,6 +591,19 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
           delivered_at = NOW()
       WHERE id = ${orderId}
     `;
+    // Fire `order_delivered` once, on the actual transition. Subsequent
+    // refreshSmmStatus calls on an already-delivered order won't re-emit.
+    if (wasNotDelivered) {
+      void captureServerEvent("order_delivered", String(order.email || orderId), {
+        orderId,
+        platform: order.platform,
+        product_area: order.platform,
+        currency: order.currency || "eur",
+        amount_cents: order.total_cents || 0,
+        cost_cents: costCents,
+        followers_before: order.followers_before || 0,
+      });
+    }
   } else {
     await sql`
       UPDATE orders

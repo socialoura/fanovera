@@ -22,6 +22,46 @@ export const PACKS: Pack[] = [
   { qty: 100000, price: 749.99, old: 1849.99, bonus: 25000 },
 ];
 
+export type TikTokProductType = "followers" | "likes" | "views";
+
+export const LIKES_PACKS: Pack[] = [
+  { qty: 100, price: 1.29, old: 4.49, bonus: 25 },
+  { qty: 250, price: 2.49, old: 7.99, bonus: 50 },
+  { qty: 500, price: 4.49, old: 13.99, bonus: 100 },
+  { qty: 1000, price: 6.99, old: 19.99, bonus: 200, popular: true },
+  { qty: 2500, price: 14.99, old: 39.99, bonus: 500 },
+  { qty: 5000, price: 26.99, old: 69.99, bonus: 1000 },
+  { qty: 10000, price: 49.99, old: 124.99, bonus: 2500 },
+  { qty: 25000, price: 109.99, old: 274.99, bonus: 6000 },
+  { qty: 50000, price: 199.99, old: 499.99, bonus: 12500, best: true },
+  { qty: 100000, price: 369.99, old: 924.99, bonus: 25000 },
+];
+
+export const VIEWS_PACKS: Pack[] = [
+  { qty: 1000, price: 1.49, old: 4.49, bonus: 250 },
+  { qty: 5000, price: 3.99, old: 11.99, bonus: 1000 },
+  { qty: 10000, price: 6.99, old: 19.99, bonus: 2000 },
+  { qty: 25000, price: 14.99, old: 39.99, bonus: 5000, popular: true },
+  { qty: 50000, price: 24.99, old: 69.99, bonus: 10000 },
+  { qty: 100000, price: 44.99, old: 119.99, bonus: 20000 },
+  { qty: 250000, price: 99.99, old: 259.99, bonus: 50000 },
+  { qty: 500000, price: 179.99, old: 459.99, bonus: 100000 },
+  { qty: 1000000, price: 319.99, old: 819.99, bonus: 200000, best: true },
+  { qty: 5000000, price: 1399.99, old: 3499.99, bonus: 1000000 },
+];
+
+export function getPacksForProduct(product: TikTokProductType): Pack[] {
+  if (product === "likes") return LIKES_PACKS;
+  if (product === "views") return VIEWS_PACKS;
+  return PACKS;
+}
+
+export function getServiceForProduct(product: TikTokProductType): string {
+  if (product === "likes") return "tt_likes";
+  if (product === "views") return "tt_views";
+  return "tt_followers";
+}
+
 export type CountryId = "fr" | "eu";
 
 export type Country = {

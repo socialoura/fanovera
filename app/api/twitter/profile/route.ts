@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
 
 export type XProfile = {
   username: string;
@@ -126,7 +127,7 @@ export async function GET(req: NextRequest) {
     };
 
     setCache(username, data);
-    return NextResponse.json(data);
+    return jsonCachedAtEdge(data);
   } catch (err) {
     console.error("[Twitter profile]", err);
     return NextResponse.json(mockProfile(username));

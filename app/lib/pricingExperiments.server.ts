@@ -74,6 +74,58 @@ export async function getActivePricingExperiments() {
   }));
 }
 
+export async function recordPricingExposure(input: {
+  anonymousId: string;
+  experimentId: string;
+  variantId: string;
+  pricingStrategy?: string;
+  productArea?: string;
+  plan?: string;
+  locale?: string;
+  country?: string;
+  price?: number;
+  currency?: string;
+}) {
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS pricing_experiment_exposures (
+        id SERIAL PRIMARY KEY,
+        anonymous_id VARCHAR(160) NOT NULL,
+        experiment_id VARCHAR(120) NOT NULL,
+        variant_id VARCHAR(120) NOT NULL,
+        pricing_strategy VARCHAR(120) DEFAULT '',
+        product_area VARCHAR(80) DEFAULT '',
+        plan VARCHAR(80) DEFAULT '',
+        locale VARCHAR(12) DEFAULT '',
+        country VARCHAR(12) DEFAULT '',
+        price NUMERIC(12, 2) DEFAULT 0,
+        currency VARCHAR(3) DEFAULT 'EUR',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(anonymous_id, experiment_id, variant_id, product_area)
+      )
+    `;
+    await sql`
+      INSERT INTO pricing_experiment_exposures
+        (anonymous_id, experiment_id, variant_id, pricing_strategy, product_area, plan, locale, country, price, currency)
+      VALUES (
+        ${input.anonymousId.slice(0, 160)},
+        ${input.experimentId.slice(0, 120)},
+        ${input.variantId.slice(0, 120)},
+        ${(input.pricingStrategy || "").slice(0, 120)},
+        ${(input.productArea || "").slice(0, 80)},
+        ${(input.plan || "").slice(0, 80)},
+        ${(input.locale || "").slice(0, 12)},
+        ${(input.country || "").slice(0, 12)},
+        ${Number.isFinite(input.price) ? Number(input.price) : 0},
+        ${(input.currency || "EUR").slice(0, 3).toUpperCase()}
+      )
+      ON CONFLICT (anonymous_id, experiment_id, variant_id, product_area) DO NOTHING
+    `;
+  } catch (error) {
+    console.error("[pricing-experiments] exposure insert failed:", error);
+  }
+}
+
 export async function savePricingExperimentSettings(input: {
   enabled: boolean;
   experiments: PricingExperiment[];

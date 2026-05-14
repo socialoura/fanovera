@@ -2,15 +2,19 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import YtSprinkle from "./YtSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, type CountryId, type YouTubeProductType, getPacksForProduct } from "../data";
 import { useYouTubeCopy } from "../i18n";
+import ValueFraming from "../../components/ValueFraming";
 
-type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void };
+type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void; productType: YouTubeProductType; setProductType: (t: YouTubeProductType) => void };
 
-export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
+export default function Step1Packs({ country, pack, setPack, onNext, productType, setProductType }: Props) {
   const t = useYouTubeCopy().step1;
-  const selectedPack = PACKS[pack];
+  const packs = getPacksForProduct(productType);
+  const safePack = Math.min(pack, packs.length - 1);
+  const selectedPack = packs[safePack];
   const savings = selectedPack.old - selectedPack.price;
+  const audienceLabel = productType === "subscribers" ? t.audienceSubscribers : t.audience;
   const orderCardRef = useRef<HTMLDivElement | null>(null);
 
   const handlePackClick = (index: number) => {
@@ -38,18 +42,29 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
           <h1 className="display" style={{ margin: 0, fontSize: "clamp(26px, 4.4vw, 48px)" }}>
             {t.titleBefore} <span className="squiggle yt">{t.titleFocus}</span> {t.titleAfter}
           </h1>
+
+          <div className="yt-mode-toggle" style={{ marginTop: 20, marginBottom: 0 }}>
+            <button className={productType === "views" ? "active" : ""} onClick={() => { setProductType("views"); setPack(3); }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              {t.productViews}
+            </button>
+            <button className={productType === "subscribers" ? "active" : ""} onClick={() => { setProductType("subscribers"); setPack(3); }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              {t.productSubscribers}
+            </button>
+          </div>
         </div>
 
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 12 }}>{t.volume}</div>
           <div className="pack-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 32 }}>
-            {PACKS.map((p, i) => (
-              <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile yt" + (pack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{t.audience}</div>
+            {packs.map((p, i) => (
+              <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile yt" + (safePack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{audienceLabel}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{formatQty(p.qty)}</div>
                 <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} {t.included}</div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: pack === i ? "var(--yt-red)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: safePack === i ? "var(--yt-red)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(p, country)}</div>
                 </div>
               </button>
@@ -92,6 +107,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               </svg>
             </button>
             <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>{t.reassurance}</div>
+            <ValueFraming priceEur={packs[safePack].price} qty={packs[safePack].qty + packs[safePack].bonus} />
           </div>
         </div>
       </div>

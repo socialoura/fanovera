@@ -3,6 +3,7 @@ import CurrencySelector from "../../components/CurrencySelector";
 // import LanguageSelector from "../../components/LanguageSelector";
 import { Logo } from "../../components/Header";
 import { useSpotifyCopy } from "../i18n";
+import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 export default function SpoHeader() {
   const t = useSpotifyCopy().header;
@@ -29,7 +30,7 @@ export default function SpoHeader() {
               <path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z" />
             </svg>
             <span style={{ fontWeight: 700 }}>4,9</span>
-            <span>· {t.ratingText}</span>
+            <span>· {withDynamicReviewCount(t.ratingText)}</span>
           </div>
           <Link
             href="/"

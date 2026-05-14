@@ -1,7 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
@@ -22,7 +22,53 @@ const copy = {
       total: "Total",
       discount: "Remise incluse",
       continue: "Continuer",
-      reassurance: "Sans engagement · Aucun mot de passe demandé",
+      reassurance: "Sans engagement · Aucun mot de passe · Démarrage sous 1–6 h",
+      productFollowers: "Followers", productLikes: "Likes", productViews: "Vues",
+      audienceLikes: "Likes", audienceViews: "Vues",
+    },
+    step2: {
+      titleBefore: "Quel",
+      titleFocus: "profil",
+      titleAfter: "souhaitez-vous promouvoir ?",
+      intro: "Entrez votre pseudo TikTok. Aucun mot de passe, aucun accès demandé. Le compte doit être public.",
+      usernameLabel: "Votre nom d'utilisateur TikTok",
+      usernamePlaceholder: "votrepseudo",
+      emailLabel: "Votre e-mail (pour le reçu)",
+      emailPlaceholder: "vous@exemple.com",
+      emailHint: "On vous envoie uniquement votre facture. Pas de spam, jamais.",
+      back: "Retour",
+      pay: "Aller au paiement",
+      notFound: "Compte introuvable sur TikTok.",
+      privateAccount: "Ce compte est privé. Passez-le en public pour continuer.",
+      found: "Compte trouvé · Public",
+      checking: "Vérification…",
+      waiting: "En attente du pseudo",
+      errors: {
+        username: "Entrez votre pseudo TikTok.",
+        email: "Entrez votre e-mail pour recevoir le reçu.",
+      },
+    },
+    step3: {
+      titleBefore: "Plus qu'une",
+      titleFocus: "étape",
+      titleAfter: ".",
+      subtitle: "Paiement sécurisé · préparation de la campagne après confirmation.",
+      summary: "Récapitulatif",
+      recipient: "Compte destinataire",
+      edit: "Modifier",
+      campaignCredit: "Crédit de campagne",
+      free: "OFFERT",
+      coupon: "Code promo",
+      couponPlaceholder: "CODE PROMO",
+      applied: "✓ Appliqué",
+      apply: "Appliquer",
+      saving: "✓ -5% appliqué · économie",
+      total: "Total TTC",
+      securePayment: "Paiement sécurisé",
+      legalBefore: "En finalisant le paiement vous acceptez nos",
+      legalAfter: "Aucun abonnement caché.",
+      gdpr: "RGPD",
+      backToPacks: "Retour au choix des packs",
     },
     why: {
       eyebrow: "Pourquoi Fanovera",
@@ -92,7 +138,53 @@ const copy = {
       total: "Total",
       discount: "Discount included",
       continue: "Continue",
-      reassurance: "No commitment · No password required",
+      reassurance: "No commitment · No password · Starts in 1–6 h",
+      productFollowers: "Followers", productLikes: "Likes", productViews: "Views",
+      audienceLikes: "Likes", audienceViews: "Views",
+    },
+    step2: {
+      titleBefore: "Which",
+      titleFocus: "profile",
+      titleAfter: "do you want to promote?",
+      intro: "Enter your TikTok username. No password, no account access. The account must be public.",
+      usernameLabel: "Your TikTok username",
+      usernamePlaceholder: "yourhandle",
+      emailLabel: "Your e-mail (for the receipt)",
+      emailPlaceholder: "you@example.com",
+      emailHint: "We only send your invoice. No spam, ever.",
+      back: "Back",
+      pay: "Go to payment",
+      notFound: "Account not found on TikTok.",
+      privateAccount: "This account is private. Set it to public to continue.",
+      found: "Account found · Public",
+      checking: "Checking…",
+      waiting: "Waiting for the handle",
+      errors: {
+        username: "Enter your TikTok username.",
+        email: "Enter your e-mail to receive the receipt.",
+      },
+    },
+    step3: {
+      titleBefore: "One",
+      titleFocus: "step",
+      titleAfter: "left.",
+      subtitle: "Secure payment · campaign starts after confirmation.",
+      summary: "Summary",
+      recipient: "Recipient account",
+      edit: "Edit",
+      campaignCredit: "Campaign credit",
+      free: "FREE",
+      coupon: "Promo code",
+      couponPlaceholder: "PROMO CODE",
+      applied: "✓ Applied",
+      apply: "Apply",
+      saving: "✓ -5% applied · savings",
+      total: "Total",
+      securePayment: "Secure payment",
+      legalBefore: "By completing payment you accept our",
+      legalAfter: "No hidden subscriptions.",
+      gdpr: "GDPR",
+      backToPacks: "Back to pack selection",
     },
     why: {
       eyebrow: "Why Fanovera",
@@ -161,11 +253,12 @@ const localized: Record<SupportedLocale, TikTokCopy> = {
 
 export function useTikTokCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+  const { mode, surfaceMode } = useMarketingMode();
+  const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "TikTok",
     audience: "Followers",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "TikTok", audience: "Followers" });
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import SpoHeader from "./components/SpoHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Track from "./components/Step2Track";
@@ -10,12 +11,15 @@ import Reviews from "./components/Reviews";
 import SpoFAQ from "./components/SpoFAQ";
 import SpoFooter from "./components/SpoFooter";
 import type { SpoPreview } from "./components/Step2Track";
-import { PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId, type SpotifyProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
-import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import StickyMobileCTA from "../components/StickyMobileCTA";
+import { useSpotifyCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -23,13 +27,25 @@ export default function SpotifyPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
   const [pack, setPack] = useState(3);
+  const search = useSearchParams();
+  const initialProductType: SpotifyProductType = (() => {
+    const raw = (search?.get("product") || "").toLowerCase();
+    return raw === "followers" ? "followers" : "streams";
+  })();
+  const [productType, setProductType] = useState<SpotifyProductType>(initialProductType);
   const [trackInput, setTrackInput] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<SpoPreview | null>(null);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("sp_streams", PACKS, STATIC_PACKS);
+  const activePacks = getPacksForProduct(productType);
+  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(productType === "followers" ? "sp_followers" : "sp_streams", PACKS, STATIC_PACKS);
 
-  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
-  const selectedPack = PACKS[safePack] ?? PACKS[0];
+  const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
+  const selectedPack = activePacks[safePack] ?? activePacks[0];
+  usePrefetchProductPricing();
+  const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
+  useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
+  const tCopy = useSpotifyCopy();
+  useFunnelPersistence("spotify", { pack: safePack, username: trackInput, email }, { setPack, setUsername: setTrackInput, setEmail });
   useProductAnalytics({
     productArea: "spotify",
     step,
@@ -59,6 +75,7 @@ export default function SpotifyPageClient() {
         trackId: profile?.id,
       },
     ],
+    followersBefore: profile?.monthlyListeners ?? 0,
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -87,7 +104,7 @@ export default function SpotifyPageClient() {
     <>
       <div className="paper-frame with-spo-halo">
         <SpoHeader />
-        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--spo-green-2)" />)}
+        {step === 1 && (readyOnce ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} productType={productType} setProductType={setProductType} /> : <PricingPacksLoading accent="var(--spo-green-2)" />)}
         {step === 2 && (
           <Step2Track
             country={country}
@@ -121,6 +138,17 @@ export default function SpotifyPageClient() {
         <SpoFAQ />
       </div>
       <SpoFooter />
+      <StickyMobileCTA
+        visible={(step === 1 || step === 2) && canDisplayPricing}
+        label={tCopy.step1.continue}
+        priceLabel={formatPrice(selectedPack, country)}
+        subLabel={step === 2 && profile
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → ${profile.trackName || ""}`
+          : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)} ${productType === "followers" ? "followers" : ""}`}
+        disabled={step === 2 && !(profile && emailValid)}
+        accent="var(--spo-green-2)"
+        onClick={next}
+      />
     </>
   );
 }

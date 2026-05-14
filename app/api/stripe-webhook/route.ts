@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { ensureOrderForPaymentIntent } from "@/app/lib/orders";
+import { notifyDispute } from "@/app/lib/disputeAlert";
 
 export const runtime = "nodejs"; // Stripe SDK needs Node, not Edge.
 export const dynamic = "force-dynamic";
@@ -68,6 +69,39 @@ export async function POST(req: NextRequest) {
         // Future: mark order as refunded in DB.
         break;
       }
+
+      // ── Disputes (chargebacks) ──
+      // Without this branch we'd discover chargebacks 30+ days after the fact
+      // when reading the Stripe dashboard. The handler fans out to Discord +
+      // admin email; failures of either channel never propagate so Stripe
+      // doesn't see a 5xx and start retry-storming the webhook.
+      case "charge.dispute.created": {
+        const dispute = event.data.object as Stripe.Dispute;
+        console.warn("[stripe-webhook] charge.dispute.created", dispute.id, dispute.reason);
+        await notifyDispute(dispute, "created");
+        break;
+      }
+      case "charge.dispute.updated": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await notifyDispute(dispute, "updated");
+        break;
+      }
+      case "charge.dispute.closed": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await notifyDispute(dispute, "closed");
+        break;
+      }
+      case "charge.dispute.funds_withdrawn": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await notifyDispute(dispute, "funds_withdrawn");
+        break;
+      }
+      case "charge.dispute.funds_reinstated": {
+        const dispute = event.data.object as Stripe.Dispute;
+        await notifyDispute(dispute, "funds_reinstated");
+        break;
+      }
+
       default:
         // Ignore other event types — silent OK.
         break;

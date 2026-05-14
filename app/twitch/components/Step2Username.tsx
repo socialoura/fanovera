@@ -6,6 +6,7 @@ import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
 import { type CountryId } from "../data";
 import { useTwitchCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type TwProfile = {
   username: string;
@@ -83,6 +84,11 @@ export default function Step2Username({
         } else {
           setProfile(json as TwProfile);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "twitch",
+            platform: "twitch",
+            followers_count: Number(json?.followersCount) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");

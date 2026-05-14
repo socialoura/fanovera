@@ -10,12 +10,15 @@ import Reviews from "./components/Reviews";
 import XFAQ from "./components/XFAQ";
 import XFooter from "./components/XFooter";
 import type { XProfile } from "./components/Step2Username";
-import { PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId, formatPrice, formatQty } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import StickyMobileCTA from "../components/StickyMobileCTA";
+import { useXCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -30,6 +33,8 @@ export default function TwitterPageClient() {
 
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
+  const tCopy = useXCopy();
+  useFunnelPersistence("twitter", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   useProductAnalytics({
     productArea: "twitter",
     step,
@@ -51,6 +56,7 @@ export default function TwitterPageClient() {
     username: username.replace(/^@/, "").trim(),
     platform: "twitter",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -113,6 +119,17 @@ export default function TwitterPageClient() {
         <XFAQ />
       </div>
       <XFooter />
+      <StickyMobileCTA
+        visible={(step === 1 || step === 2) && canDisplayPricing}
+        label={tCopy.step1.continue}
+        priceLabel={formatPrice(selectedPack, country)}
+        subLabel={step === 2 && profile
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile.username}`
+          : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
+        disabled={step === 2 && !(profile && emailValid)}
+        accent="var(--x-ink)"
+        onClick={next}
+      />
     </>
   );
 }

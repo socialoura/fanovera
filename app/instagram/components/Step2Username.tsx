@@ -7,6 +7,7 @@ import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useInstagramCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 type IgProfile = {
   username: string;
@@ -94,6 +95,11 @@ export default function Step2Username({
         } else {
           setProfile(json as IgProfile);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "instagram",
+            platform: "instagram",
+            followers_count: Number(json?.followersCount) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");

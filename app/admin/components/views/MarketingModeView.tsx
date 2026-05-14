@@ -1,33 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MarketingMode } from "@/app/lib/marketingModeTypes";
-import { Ic } from "../icons";
+import {
+  MARKETING_SURFACES,
+  SURFACE_LABELS,
+  SURFACE_MARKETING_MODES,
+  type MarketingSurface,
+  type SurfaceMarketingMode,
+} from "@/app/lib/marketingModeTypes";
 
-type ApiResponse = {
-  mode?: MarketingMode;
-  error?: string;
+type Modes = Record<MarketingSurface, SurfaceMarketingMode>;
+type SavingState = { surface: MarketingSurface; mode: SurfaceMarketingMode } | null;
+
+const MODE_COLORS: Record<SurfaceMarketingMode, string> = {
+  whitehat: "#22c55e",
+  greyhat: "#f59e0b",
+  blackhat: "#ef4444",
 };
 
-const OPTIONS: { mode: MarketingMode; title: string; body: string; badge: string }[] = [
-  {
-    mode: "clean",
-    title: "Clean",
-    body: "Copy actuelle, plus prudente pour SEO, Stripe et communication long terme. Active sur toutes les langues.",
-    badge: "Mode par défaut",
-  },
-  {
-    mode: "performance",
-    title: "Performance FR/EN",
-    body: "Adcopy plus directe et orientée conversion sur l'accueil, les pages produit et les metadata. Les autres langues restent en clean.",
-    badge: "FR + EN uniquement",
-  },
-];
+const MODE_LABELS: Record<SurfaceMarketingMode, string> = {
+  whitehat: "Whitehat",
+  greyhat: "Greyhat",
+  blackhat: "Blackhat",
+};
+
+const SURFACE_ICONS: Record<MarketingSurface, string> = {
+  home: "🏠",
+  promo: "🎯",
+  instagram: "📸",
+  tiktok: "🎵",
+  twitter: "🐦",
+  twitch: "🎮",
+  youtube: "▶️",
+  spotify: "🎧",
+  facebook: "👤",
+  linkedin: "💼",
+};
+
+const defaultModes = (): Modes =>
+  Object.fromEntries(MARKETING_SURFACES.map((s) => [s, "whitehat" as const])) as Modes;
 
 export default function MarketingModeView() {
-  const [mode, setMode] = useState<MarketingMode>("clean");
+  const [modes, setModes] = useState<Modes>(defaultModes());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<MarketingMode | null>(null);
+  const [saving, setSaving] = useState<SavingState>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -36,37 +52,31 @@ export default function MarketingModeView() {
   });
 
   useEffect(() => {
-    fetch("/api/admin/marketing-mode", { headers: authHeaders() })
+    fetch("/api/admin/marketing-modes", { headers: authHeaders() })
       .then(async (res) => {
-        const data = (await res.json()) as ApiResponse;
-        if (!res.ok || !data.mode) throw new Error(data.error || "Chargement impossible.");
-        setMode(data.mode);
+        const data = (await res.json()) as { modes?: Modes; error?: string };
+        if (!res.ok || !data.modes) throw new Error(data.error || "Chargement impossible.");
+        setModes({ ...defaultModes(), ...data.modes });
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Chargement impossible."))
       .finally(() => setLoading(false));
   }, []);
 
-  const updateMode = async (nextMode: MarketingMode) => {
-    setSaving(nextMode);
+  const updateMode = async (surface: MarketingSurface, mode: SurfaceMarketingMode) => {
+    if (modes[surface] === mode) return;
+    setSaving({ surface, mode });
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/admin/marketing-mode", {
-        method: "PUT",
-        headers: {
-          ...authHeaders(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mode: nextMode }),
+      const res = await fetch("/api/admin/marketing-modes", {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ surface, mode }),
       });
-      const data = (await res.json()) as ApiResponse;
-      if (!res.ok || !data.mode) throw new Error(data.error || "Sauvegarde impossible.");
-      setMode(data.mode);
-      setMessage(
-        data.mode === "performance"
-          ? "Mode performance activé. Les visiteurs FR/EN verront la nouvelle adcopy au prochain rendu."
-          : "Mode clean réactivé. Toutes les langues reviennent sur la copy standard.",
-      );
+      const data = (await res.json()) as { surface?: string; mode?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || "Sauvegarde impossible.");
+      setModes((prev) => ({ ...prev, [surface]: mode }));
+      setMessage(`${SURFACE_LABELS[surface]} passé en ${MODE_LABELS[mode]}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sauvegarde impossible.");
     } finally {
@@ -74,64 +84,155 @@ export default function MarketingModeView() {
     }
   };
 
+  const resetAll = async () => {
+    setSaving({ surface: "home", mode: "whitehat" });
+    setMessage("");
+    setError("");
+    try {
+      for (const surface of MARKETING_SURFACES) {
+        if (modes[surface] !== "whitehat") {
+          await fetch("/api/admin/marketing-modes", {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ surface, mode: "whitehat" }),
+          });
+        }
+      }
+      setModes(defaultModes());
+      setMessage("Toutes les surfaces repassées en Whitehat.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Réinitialisation impossible.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const hasBlackhat = Object.values(modes).some((m) => m === "blackhat");
+
   return (
     <div className="marketing-mode-view">
       {error ? <div className="admin-alert error">{error}</div> : null}
       {message ? <div className="admin-alert success">{message}</div> : null}
 
-      <div className="grid-2">
-        <section className="card marketing-mode-hero">
-          <div className="card-head">
-            <div>
-              <div className="card-title">Positionnement du site</div>
-              <div className="card-sub">Un clic pour changer la copy publique FR/EN sans toucher aux packs ni aux prix.</div>
-            </div>
-            <span className={"pill " + (mode === "performance" ? "violet" : "green")}>
-              <span className="dot" />
-              {mode === "performance" ? "Performance" : "Clean"}
-            </span>
-          </div>
+      {hasBlackhat && (
+        <div className="admin-alert error" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <span>
+            <strong>Attention :</strong> au moins une surface est en <strong>Blackhat</strong>. Ces pages ne sont <strong>pas indexées</strong> par Google (noindex, nofollow) et sont exclues du sitemap.
+          </span>
+        </div>
+      )}
 
-          <div className="marketing-mode-options">
-            {OPTIONS.map((option) => {
-              const active = option.mode === mode;
-              const pending = saving === option.mode;
+      <section className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--a-line)" }}>
+          <div className="card-title" style={{ marginBottom: 2 }}>Mode marketing par surface</div>
+          <div className="card-sub">Choisissez indépendamment le mode de chaque page. FR/EN uniquement — les autres langues restent en whitehat.</div>
+        </div>
+
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--a-line)", fontSize: 11, fontWeight: 700, color: "var(--a-ink-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <th style={{ textAlign: "left", padding: "10px 20px" }}>Surface</th>
+              {SURFACE_MARKETING_MODES.map((m) => (
+                <th key={m} style={{ textAlign: "center", padding: "10px 16px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: MODE_COLORS[m], display: "inline-block" }} />
+                    {MODE_LABELS[m]}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {MARKETING_SURFACES.map((surface) => {
+              const current = modes[surface];
+              const isSaving = saving?.surface === surface;
               return (
-                <button
-                  key={option.mode}
-                  type="button"
-                  className={"marketing-mode-card " + (active ? "active" : "")}
-                  onClick={() => updateMode(option.mode)}
-                  disabled={loading || Boolean(saving) || active}
-                >
-                  <span className="marketing-mode-card-top">
-                    <span>
-                      <strong>{option.title}</strong>
-                      <em>{option.badge}</em>
-                    </span>
-                    <span className={"toggle " + (active ? "on" : "")} aria-hidden="true" />
-                  </span>
-                  <span>{option.body}</span>
-                  <span className="marketing-mode-action">
-                    {pending ? "Activation..." : active ? "Actif" : "Activer"}
-                    {active ? Ic.check() : Ic.chevronRight()}
-                  </span>
-                </button>
+                <tr key={surface} style={{ borderBottom: "1px solid var(--a-line)" }}>
+                  <td style={{ padding: "10px 20px", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{SURFACE_ICONS[surface]}</span>
+                    {SURFACE_LABELS[surface]}
+                  </td>
+                  {SURFACE_MARKETING_MODES.map((m) => {
+                    const active = current === m;
+                    const pending = isSaving && saving?.mode === m;
+                    return (
+                      <td key={m} style={{ textAlign: "center", padding: "10px 16px" }}>
+                        <button
+                          type="button"
+                          disabled={loading || Boolean(saving) || active}
+                          onClick={() => updateMode(surface, m)}
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: "50%",
+                            border: active ? `3px solid ${MODE_COLORS[m]}` : "2px solid var(--a-line)",
+                            background: active ? MODE_COLORS[m] : "transparent",
+                            cursor: loading || Boolean(saving) || active ? "default" : "pointer",
+                            position: "relative",
+                            opacity: pending ? 0.5 : 1,
+                            transition: "all 0.15s ease",
+                          }}
+                          title={`${SURFACE_LABELS[surface]} → ${MODE_LABELS[m]}`}
+                          aria-label={`${SURFACE_LABELS[surface]} → ${MODE_LABELS[m]}`}
+                        >
+                          {active && (
+                            <span style={{
+                              position: "absolute",
+                              inset: 0,
+                              display: "grid",
+                              placeItems: "center",
+                            }}>
+                              <span style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                background: "white",
+                              }} />
+                            </span>
+                          )}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
-          </div>
-        </section>
+          </tbody>
+        </table>
 
-        <aside className="card">
-          <div className="card-title">Ce qui change</div>
-          <div className="marketing-mode-list">
-            <div><strong>Accueil</strong><span>Hero, CTA, FAQ, reassurance, footer.</span></div>
-            <div><strong>Pages produit</strong><span>Titres, wording packs, étapes, FAQ, blocs de confiance.</span></div>
-            <div><strong>SEO FR/EN</strong><span>Title, description, Open Graph, Twitter et JSON-LD produit.</span></div>
-            <div><strong>Limite langues</strong><span>ES, PT, DE, IT et TR restent automatiquement en clean.</span></div>
-          </div>
-        </aside>
-      </div>
+        <div style={{ padding: "12px 20px", borderTop: "1px solid var(--a-line)", display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            className="btn"
+            disabled={loading || Boolean(saving) || !Object.values(modes).some((m) => m !== "whitehat")}
+            onClick={resetAll}
+            style={{
+              fontSize: 12,
+              padding: "6px 14px",
+              background: "var(--a-red, #ef4444)",
+              color: "white",
+              border: "none",
+              borderRadius: 6,
+              fontWeight: 600,
+              cursor: "pointer",
+              opacity: Object.values(modes).some((m) => m !== "whitehat") ? 1 : 0.4,
+            }}
+          >
+            🛑 Tout passer en Whitehat
+          </button>
+        </div>
+      </section>
+
+      <aside className="card" style={{ marginTop: 16 }}>
+        <div className="card-title">Rappel des modes</div>
+        <div className="marketing-mode-list">
+          <div><span style={{ color: MODE_COLORS.whitehat }}>●</span> <strong>Whitehat</strong><span>Copy safe, conforme, indexable. Audit + stratégie. Aucune promesse de volume.</span></div>
+          <div><span style={{ color: MODE_COLORS.greyhat }}>●</span> <strong>Greyhat</strong><span>Copy orientée conversion. Chiffres cliqués, vrais profils audités, disclaimers TOS. Indexable.</span></div>
+          <div><span style={{ color: MODE_COLORS.blackhat }}>●</span> <strong>Blackhat</strong><span>Copy agressive. +10K garantis, abonnés réels actifs. Noindex automatique, exclu du sitemap.</span></div>
+          <div>🌐 <strong>Langues</strong><span>Seuls FR et EN sont affectés. ES, PT, DE, IT et TR restent en whitehat quoi qu'il arrive.</span></div>
+        </div>
+      </aside>
     </div>
   );
 }

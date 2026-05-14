@@ -8,8 +8,8 @@ import { getPublicCopy } from "./publicCopy";
 
 export default function Testimonials() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).testimonials;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).testimonials;
   const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
       q: copy.items[0].q,

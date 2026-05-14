@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Ic } from "./components/icons";
 import AnalyticsView from "./components/views/AnalyticsView";
+import CohortsView from "./components/views/CohortsView";
+import SourcesView from "./components/views/SourcesView";
 import OrdersView from "./components/views/OrdersView";
 import PricingView from "./components/views/PricingView";
 import CombosView from "./components/views/CombosView";
@@ -13,7 +15,7 @@ import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PricingExperimentsView from "./components/views/PricingExperimentsView";
 
-type ViewId = "analytics" | "orders" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "orders" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -21,6 +23,8 @@ type AdminAnalyticsSummary = {
 
 const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string }[] = [
   { id: "analytics", label: "Analytics", icon: () => Ic.dashboard(), sub: "Vue d'ensemble" },
+  { id: "cohorts", label: "Cohortes", icon: () => Ic.layers(), sub: "Rétention D7/D30/D90" },
+  { id: "sources", label: "Sources", icon: () => Ic.filter(), sub: "LTV par acquisition" },
   { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients" },
   { id: "pricing", label: "Prix", icon: () => Ic.tag(), sub: "Packs multi-devises" },
   { id: "abPricing", label: "A/B Prix", icon: () => Ic.filter(), sub: "Tests pricing" },
@@ -148,7 +152,7 @@ export default function AdminClient() {
         </div>
 
         <div className="nav-section-label">Pilotage</div>
-        {NAV.slice(0, 2).map((n) => (
+        {NAV.slice(0, 4).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -157,7 +161,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Catalogue</div>
-        {NAV.slice(2, 6).map((n) => (
+        {NAV.slice(4, 8).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -165,7 +169,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Système</div>
-        {NAV.slice(6, 9).map((n) => (
+        {NAV.slice(8, 11).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -173,7 +177,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Support</div>
-        {NAV.slice(9).map((n) => (
+        {NAV.slice(11).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -224,6 +228,8 @@ export default function AdminClient() {
 
         <div className="page">
           {view === "analytics" && <AnalyticsView />}
+          {view === "cohorts" && <CohortsView />}
+          {view === "sources" && <SourcesView />}
           {view === "orders" && <OrdersView />}
           {view === "pricing" && <PricingView />}
           {view === "abPricing" && <PricingExperimentsView />}

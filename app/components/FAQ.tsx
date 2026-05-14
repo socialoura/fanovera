@@ -7,8 +7,8 @@ import { getPublicCopy } from "./publicCopy";
 
 export default function FAQ() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).faq;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).faq;
   const [open, setOpen] = useState(0);
   const items = copy.items;
   return (

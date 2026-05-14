@@ -63,8 +63,8 @@ function StepIcon({ kind }: { kind: StepKind }) {
 
 export default function HowItWorks() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).how;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).how;
   const steps: { num: string; title: string; body: string; icon: StepKind; color: string }[] = [
     {
       num: "01",

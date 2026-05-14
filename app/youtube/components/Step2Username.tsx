@@ -7,6 +7,7 @@ import YtSprinkle from "./YtSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useYouTubeCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type YtPreview = {
   id: string;
@@ -101,6 +102,11 @@ export default function Step2Username({
         } else {
           setProfile(json as YtPreview);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "youtube",
+            platform: "youtube",
+            followers_count: Number(json?.channel?.subscribers) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");

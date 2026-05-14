@@ -5,6 +5,7 @@ import LiSprinkle from "./LiSprinkle";
 import Stepper from "./Stepper";
 import { type CountryId } from "../data";
 import { useLinkedinCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type LiProfile = {
   username: string;
@@ -71,6 +72,11 @@ export default function Step2Username({
 
   useEffect(() => {
     if (!handle) { setProfile(null); return; }
+    trackEvent("username_validated", {
+      product_area: "linkedin",
+      platform: "linkedin",
+      followers_count: 0,
+    });
     setProfile({
       username: handle,
       fullName: handle,
@@ -115,6 +121,7 @@ export default function Step2Username({
             </label>
 
             <div className="input-shell li">
+              <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 13 }}>linkedin.com/in/</span>
               <input
                 type="text"
                 placeholder={t.step2.usernamePlaceholder}

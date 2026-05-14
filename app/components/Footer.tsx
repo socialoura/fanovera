@@ -53,8 +53,8 @@ function FootCol({
 
 export default function Footer() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).footer;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).footer;
 
   return (
     <footer style={{ padding: "48px 0 24px" }}>

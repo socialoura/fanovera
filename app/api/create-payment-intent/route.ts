@@ -19,7 +19,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { currency, email, username, platform, cart, locale, sourcePage, anonymousId, userId } = body;
+    const { currency, email, username, platform, cart, locale, sourcePage, anonymousId, userId, followersBefore } = body;
+    const followersBeforeNum =
+      typeof followersBefore === "number" && Number.isFinite(followersBefore) && followersBefore >= 0
+        ? Math.min(Math.trunc(followersBefore), 2_000_000_000)
+        : 0;
     const checkoutE2E =
       process.env.ALLOW_CHECKOUT_E2E === "1" && req.headers.get("x-fanovera-e2e-checkout") === "1";
     const normalizedPlatform = normalizePlatform(platform);
@@ -86,6 +90,7 @@ export async function POST(req: NextRequest) {
         anonymousId: typeof anonymousId === "string" ? anonymousId.slice(0, 120) : "",
         e2e: checkoutE2E ? "true" : "",
         country: geoCountry.slice(0, 4),
+        followersBefore: String(followersBeforeNum),
         cart: JSON.stringify(pricing.sanitizedCart).slice(0, 490),
       },
       automatic_payment_methods: { enabled: true },
@@ -106,6 +111,7 @@ export async function POST(req: NextRequest) {
         sourcePage: typeof sourcePage === "string" ? sourcePage.slice(0, 160) : "",
         plan: pricing.plan,
         country: geoCountry,
+        followersBefore: followersBeforeNum,
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);

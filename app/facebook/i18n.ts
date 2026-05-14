@@ -1,7 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
@@ -22,7 +22,7 @@ const copy = {
       total: "Total",
       discount: "Remise incluse",
       continue: "Continuer",
-      reassurance: "Sans engagement - Aucun mot de passe demandé",
+      reassurance: "Sans engagement - Aucun mot de passe - Démarrage sous 1–6 h",
     },
     step2: {
       titleBefore: "Quelle",
@@ -153,7 +153,7 @@ const copy = {
       total: "Total",
       discount: "Discount included",
       continue: "Continue",
-      reassurance: "No commitment - No password required",
+      reassurance: "No commitment - No password - Starts in 1–6 h",
     },
     step2: {
       titleBefore: "Which",
@@ -347,11 +347,12 @@ const localized: Record<SupportedLocale, FacebookCopy> = {
 
 export function useFacebookCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+  const { mode, surfaceMode } = useMarketingMode();
+  const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "Facebook",
     audience: "Followers",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "Facebook", audience: "Followers" });
 }

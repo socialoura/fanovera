@@ -8,6 +8,7 @@ import TtSprinkle from "./TtSprinkle";
 import Stepper from "./Stepper";
 import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { TtProfile } from "./Step2Username";
+import { useTikTokCopy } from "../i18n";
 
 type Props = {
   country: CountryId;
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
+  const t = useTikTokCopy().step3;
   const [coupon, setCoupon] = useState("FANO5");
   const [couponApplied, setCouponApplied] = useState(true);
 
@@ -39,10 +41,10 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Plus qu&apos;une <span className="squiggle tt">etape</span>.
+            {t.titleBefore} <span className="squiggle tt">{t.titleFocus}</span>{t.titleAfter}
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Paiement sécurisé · préparation de la campagne après confirmation.
+            {t.subtitle}
           </p>
         </div>
 
@@ -50,7 +52,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
           <div style={{ background: "white", border: "2px solid var(--tt-red)", borderRadius: 22, padding: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
                 <NetIcon kind="tiktok" color="var(--tt-red)" size={20} />
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--tt-red)" }}>Recapitulatif</div>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--tt-red)" }}>{t.summary}</div>
               </div>
 
               <div style={{ padding: "14px", background: "linear-gradient(135deg, rgba(37,244,238,0.08), rgba(254,44,85,0.08))", borderRadius: 14, display: "flex", gap: 12, alignItems: "center", marginBottom: 18 }}>
@@ -62,13 +64,13 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>Compte destinataire</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.recipient}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {clean ? "@" + clean : "@votrepseudo"}
                   </div>
                 </div>
                 <button onClick={onBack} style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, background: "white", borderRadius: 999, border: "1px solid var(--line)", cursor: "pointer" }}>
-                  Modifier
+                  {t.edit}
                 </button>
               </div>
 
@@ -81,31 +83,31 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, color: "var(--green)", borderBottom: "1px dashed var(--line)" }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} inclus</div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>Crédit de campagne</div>
+                  <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)}</div>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>{t.campaignCredit}</div>
                 </div>
-                <div style={{ fontWeight: 700 }}>OFFERT</div>
+                <div style={{ fontWeight: 700 }}>{t.free}</div>
               </div>
 
               <div style={{ padding: "14px 0", borderBottom: "1px dashed var(--line)" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-3)", marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>Code promo</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-3)", marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.coupon}</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <div className="input-shell" style={{ flex: 1, padding: "4px 12px" }}>
-                    <input type="text" value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="CODE PROMO" style={{ textTransform: "uppercase", fontSize: 14 }} />
+                    <input type="text" value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder={t.couponPlaceholder} style={{ textTransform: "uppercase", fontSize: 14 }} />
                   </div>
                   <button onClick={() => setCouponApplied(!couponApplied)} style={{ padding: "10px 16px", background: couponApplied ? "var(--green)" : "var(--paper-2)", color: couponApplied ? "white" : "var(--ink)", borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    {couponApplied ? "Applique" : "Appliquer"}
+                    {couponApplied ? t.applied : t.apply}
                   </button>
                 </div>
                 {couponApplied && (
                   <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-                    -5% applique - economie {fmtEuro(discount)}
+                    {t.saving} {fmtEuro(discount)}
                   </div>
                 )}
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "16px 0 4px" }}>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Total TTC</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{t.total}</div>
                 <div style={{ fontSize: 32, fontWeight: 800, color: "var(--tt-red)", letterSpacing: "-0.02em", lineHeight: 1 }}>
                   {fmtEuro(total)}
                 </div>
@@ -115,7 +117,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               </div>
 
               <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>Paiement securise</div>
+                <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.securePayment}</div>
                 <StripeCheckout
                   amount={Math.round(total * 100)}
                   email={email}
@@ -128,18 +130,18 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               </div>
 
               <div style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}>
-                En finalisant le paiement vous acceptez nos <a href="/cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. Aucun abonnement caché.
+                {t.legalBefore} <a href="/cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. {t.legalAfter}
               </div>
 
               <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>
                 <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>SSL</span>
                 <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>3D Secure</span>
-                <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>RGPD</span>
+                <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>{t.gdpr}</span>
               </div>
 
               <div style={{ textAlign: "center", marginTop: 14 }}>
                 <button onClick={onBackToPacks} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--ink-3)", textDecoration: "underline", textUnderlineOffset: 3 }}>
-                  Retour au choix des packs
+                  {t.backToPacks}
                 </button>
               </div>
           </div>

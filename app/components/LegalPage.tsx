@@ -1,8 +1,18 @@
 import Header from "./Header";
 import Footer from "./Footer";
 import { getRequestLocale } from "../lib/metadata";
-import { getLegalPageCopy } from "../lib/legalContent";
+import { getLegalPageCopy, isLegalLocaleNative } from "../lib/legalContent";
 import { localizedPath, type LegalRouteId } from "../lib/siteMetadata";
+
+// Notice shown when the legal copy is not yet professionally translated for
+// the visitor's locale. We fall back to English in that case (see legalContent.ts).
+const FALLBACK_NOTICE: Record<string, string> = {
+  es: "Esta página legal solo está disponible en inglés por el momento. La traducción profesional al español estará pronto disponible.",
+  pt: "Esta página legal está disponível apenas em inglês de momento. A tradução profissional em português estará brevemente disponível.",
+  de: "Diese rechtliche Seite ist derzeit nur auf Englisch verfügbar. Die professionelle deutsche Übersetzung folgt in Kürze.",
+  it: "Questa pagina legale è attualmente disponibile solo in inglese. La traduzione italiana professionale arriverà presto.",
+  tr: "Bu yasal sayfa şu anda yalnızca İngilizce olarak mevcuttur. Profesyonel Türkçe çeviri yakında eklenecektir.",
+};
 
 const legalNav: Array<{ id: LegalRouteId; labelFr: string; labelEn: string }> = [
   { id: "legalNotice", labelFr: "Mentions légales", labelEn: "Legal notice" },
@@ -15,7 +25,16 @@ const legalNav: Array<{ id: LegalRouteId; labelFr: string; labelEn: string }> = 
 export default async function LegalPage({ pageId }: { pageId: LegalRouteId }) {
   const locale = await getRequestLocale();
   const copy = getLegalPageCopy(pageId, locale);
-  const navLabel = locale === "fr" ? "Pages légales" : "Legal pages";
+  const navLabel =
+    {
+      fr: "Pages légales",
+      en: "Legal pages",
+      es: "Páginas legales",
+      pt: "Páginas legais",
+      de: "Rechtsseiten",
+      it: "Pagine legali",
+      tr: "Yasal sayfalar",
+    }[locale] || "Legal pages";
 
   return (
     <div>
@@ -51,6 +70,24 @@ export default async function LegalPage({ pageId }: { pageId: LegalRouteId }) {
                 {copy.intro}
               </p>
               <p style={{ margin: "0 0 34px", color: "var(--ink-3)", fontSize: 13 }}>{copy.updatedAt}</p>
+
+              {!isLegalLocaleNative(locale) && FALLBACK_NOTICE[locale] && (
+                <p
+                  role="note"
+                  style={{
+                    margin: "0 0 28px",
+                    padding: "12px 14px",
+                    background: "rgba(82,96,230,0.06)",
+                    border: "1px solid rgba(82,96,230,0.18)",
+                    borderRadius: 12,
+                    fontSize: 13,
+                    color: "var(--ink-2)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {FALLBACK_NOTICE[locale]}
+                </p>
+              )}
 
               <div style={{ display: "grid", gap: 18 }}>
                 {copy.sections.map((section) => (

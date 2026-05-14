@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
 
 export type YtProfile = {
   username: string;
@@ -138,7 +139,7 @@ export async function GET(req: NextRequest) {
         verified: true,
       };
       setCache(rawHandle, data);
-      return NextResponse.json(data);
+      return jsonCachedAtEdge(data);
     }
 
     const d = await detailsRes.json();
@@ -162,7 +163,7 @@ export async function GET(req: NextRequest) {
     };
 
     setCache(rawHandle, data);
-    return NextResponse.json(data);
+    return jsonCachedAtEdge(data);
   } catch (err) {
     console.error("[YouTube profile]", err);
     return NextResponse.json(mockProfile(rawHandle));

@@ -9,6 +9,7 @@ import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, NET_META, type Network } from "../lib/networks";
 import { usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { getPublicCopy } from "./publicCopy";
+import { withDynamicReviewCount } from "../lib/reviewCount";
 
 function StarsRow({ items }: { items: { q: string; a: string }[] }) {
   return (
@@ -319,9 +320,9 @@ function NetCard({ n, copy }: { n: Network; copy: ReturnType<typeof getPublicCop
 
 export default function Hero() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
+  const { mode, surfaceMode } = useMarketingMode();
   usePrefetchProductPricing();
-  const copy = getPublicCopy(locale, mode).hero;
+  const copy = getPublicCopy(locale, mode, surfaceMode).hero;
 
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
@@ -379,7 +380,7 @@ export default function Hero() {
                 </svg>
               ))}
             </div>
-            <span style={{ color: "var(--ink-3)" }}>· {copy.reviews}</span>
+            <span style={{ color: "var(--ink-3)" }}>· {withDynamicReviewCount(copy.reviews)}</span>
           </div>
         </div>
 
@@ -466,7 +467,7 @@ export default function Hero() {
               </div>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>4,9/5</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.reviewsMeta}</div>
+                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{withDynamicReviewCount(copy.reviewsMeta)}</div>
               </div>
             </div>
           </div>

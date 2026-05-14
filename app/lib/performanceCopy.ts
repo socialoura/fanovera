@@ -1,5 +1,6 @@
 import type { SupportedLocale } from "../i18n/types";
 import { getEffectiveMarketingMode, type MarketingMode } from "./marketingModeTypes";
+import type { SurfaceMarketingMode } from "./marketingModeTypes";
 
 type ProductOverrides = {
   locale: SupportedLocale;
@@ -349,6 +350,253 @@ function applyPromoPublicCopy<T extends Record<string, unknown>>(
       description: isFr
         ? "Campagnes de visibilité pour créateurs, artistes et marques sur tous les réseaux sociaux."
         : "Visibility campaigns for creators, artists and brands across all social networks.",
+    },
+  } as T;
+}
+
+/* ─── Blackhat copy — aggressive "acheter des abonnés" theme ─── */
+
+type BlackhatProductOverrides = {
+  locale: SupportedLocale;
+  product: string;
+  audience: string;
+};
+
+const BH_AUDIENCES: Record<string, { fr: string; en: string }> = {
+  Instagram: { fr: "followers Instagram", en: "Instagram followers" },
+  TikTok: { fr: "followers TikTok", en: "TikTok followers" },
+  Facebook: { fr: "likes Facebook", en: "Facebook likes" },
+  X: { fr: "followers X", en: "X followers" },
+  YouTube: { fr: "vues YouTube", en: "YouTube views" },
+  Spotify: { fr: "streams & followers Spotify", en: "Spotify streams & followers" },
+  Twitch: { fr: "viewers Twitch", en: "Twitch viewers" },
+  LinkedIn: { fr: "connexions LinkedIn", en: "LinkedIn connections" },
+};
+
+export function applyBlackhatProductCopy<T>(
+  base: T,
+  surfaceMode: SurfaceMarketingMode,
+  { locale, product, audience }: BlackhatProductOverrides,
+): T {
+  if (surfaceMode !== "blackhat") return base;
+  if (locale !== "fr" && locale !== "en") return base;
+
+  const isFr = locale === "fr";
+  const source = objectSection(base);
+  const step1 = objectSection(source.step1);
+  const step2 = objectSection(source.step2);
+  const step3 = objectSection(source.step3);
+  const why = objectSection(source.why);
+  const faq = objectSection(source.faq);
+  const footer = objectSection(source.footer);
+  const reviews = objectSection(source.reviews);
+
+  const bhAudience = BH_AUDIENCES[product]?.[isFr ? "fr" : "en"] || audience.toLowerCase();
+
+  return {
+    ...source,
+    step1: {
+      ...step1,
+      titleBefore: isFr ? `Acheter des ${bhAudience} — ` : `Buy ${bhAudience} — `,
+      titleFocus: isFr ? "livraison express" : "express delivery",
+      titleAfter: isFr ? " garantie." : " guaranteed.",
+      volume: isFr ? "Combien voulez-vous acheter ?" : "How many do you want to buy?",
+      audience: audience,
+      selectedPack: isFr ? "Pack choisi" : "Chosen pack",
+      visibilityPack: isFr ? `${bhAudience}` : `${bhAudience}`,
+      continue: isFr ? "Commander maintenant" : "Order now",
+      reassurance: isFr
+        ? (product === "Spotify" ? "Livraison express · Streams & followers réels · Garantie relivraison 30j" : "Livraison express · Abonnés réels actifs · Garantie relivraison 30j")
+        : (product === "Spotify" ? "Express delivery · Real streams & followers · 30-day redelivery guarantee" : "Express delivery · Real active followers · 30-day redelivery guarantee"),
+    },
+    step2: {
+      ...step2,
+      titleBefore: isFr ? "Sur quel compte livrer les" : "Which account to deliver",
+      titleFocus: isFr ? bhAudience : bhAudience,
+      titleAfter: "?",
+      intro: isFr
+        ? `Entrez votre identifiant ${product}. Aucun mot de passe requis. Livraison en quelques heures.`
+        : `Enter your ${product} handle. No password required. Delivery in hours.`,
+      pay: isFr ? "Payer et recevoir" : "Pay and receive",
+    },
+    step3: {
+      ...step3,
+      subtitle: isFr
+        ? "Paiement sécurisé · livraison express après confirmation · résultats garantis."
+        : "Secure payment · express delivery after confirmation · guaranteed results.",
+      legalAfter: isFr
+        ? "Aucun abonnement caché. Résultats garantis ou relivraison offerte."
+        : "No hidden subscription. Guaranteed results or free redelivery.",
+    },
+    why: {
+      ...why,
+      eyebrow: isFr ? "Pourquoi nous choisir" : "Why choose us",
+      title1: isFr ? `Des ${bhAudience}` : `Real ${bhAudience}`,
+      title2: isFr ? "réels et actifs" : "active and engaged",
+      title3: isFr ? "livrés en quelques heures." : "delivered in hours.",
+      items: applyPairItems(
+        why.items,
+        isFr
+          ? [
+              [product === "Spotify" ? "Streams & followers réels" : "Abonnés 100% réels", product === "Spotify" ? "Chaque écoute et chaque follower provient d'un compte réel avec activité récente." : `Chaque ${product === "YouTube" ? "vue" : "abonné"} est un profil réel avec photo, bio et activité récente.`],
+              ["Livraison express", `Vos ${bhAudience} sont livrés en 1 à 6 heures après paiement, avec suivi en temps réel.`],
+              ["Garantie 30 jours", "Si le nombre baisse dans les 30 jours, on recharge automatiquement et gratuitement."],
+              ["Paiement sécurisé", "Stripe, Apple Pay, Google Pay. Transaction chiffrée. Aucune donnée stockée."],
+            ]
+          : [
+              [product === "Spotify" ? "Real streams & followers" : "100% real followers", product === "Spotify" ? "Every stream and follower comes from a real account with recent activity." : `Every ${product === "YouTube" ? "view" : "follower"} is a real profile with a photo, bio and recent activity.`],
+              ["Express delivery", `Your ${bhAudience} are delivered within 1 to 6 hours after payment, with real-time tracking.`],
+              ["30-day guarantee", "If the count drops within 30 days, we automatically top up for free."],
+              ["Secure payment", "Stripe, Apple Pay, Google Pay. Encrypted transaction. No data stored."],
+            ],
+      ),
+    },
+    reviews: {
+      ...reviews,
+      eyebrow: isFr ? "Résultats prouvés" : "Proven results",
+    },
+    faq: {
+      ...faq,
+      titleBefore: isFr ? "Questions sur l'achat de" : "Questions about buying",
+      titleFocus: bhAudience,
+      items: applyPairItems(
+        faq.items,
+        isFr
+          ? product === "Spotify"
+            ? [
+                ["Les streams et followers sont-ils réels ?", "Oui, 100% de comptes réels et actifs. Aucun bot. Vérifiable directement sur votre profil Spotify."],
+                ["En combien de temps je reçois ?", "La livraison démarre immédiatement et se termine en 1 à 6 heures selon le volume commandé."],
+                ["Mon compte risque-t-il quelque chose ?", "Non. Nous n'avons pas accès à votre compte. La livraison est externe et progressive."],
+                ["Que se passe-t-il si les streams ou followers baissent ?", "Garantie relivraison 30 jours. Si le compteur baisse, on recharge gratuitement."],
+              ]
+            : [
+                ["Les abonnés sont-ils réels ?", "Oui, 100% de profils réels et actifs. Aucun bot, aucun faux compte. Vérifiable directement sur votre profil."],
+                ["En combien de temps je reçois ?", "La livraison démarre immédiatement et se termine en 1 à 6 heures selon le volume commandé."],
+                ["Mon compte risque-t-il quelque chose ?", "Non. Nous n'avons pas accès à votre compte. La livraison est externe et progressive."],
+                ["Que se passe-t-il si les abonnés partent ?", "Garantie relivraison 30 jours. Si le compteur baisse, on recharge gratuitement."],
+              ]
+          : product === "Spotify"
+            ? [
+                ["Are the streams and followers real?", "Yes, 100% real and active accounts. No bots. Verifiable directly on your Spotify profile."],
+                ["How fast is the delivery?", "Delivery starts immediately and completes within 1 to 6 hours depending on the volume ordered."],
+                ["Is my account at risk?", "No. We don't have access to your account. Delivery is external and progressive."],
+                ["What if streams or followers drop?", "30-day redelivery guarantee. If the count drops, we top up for free."],
+              ]
+            : [
+                ["Are the followers real?", "Yes, 100% real and active profiles. No bots, no fake accounts. Verifiable directly on your profile."],
+                ["How fast is the delivery?", "Delivery starts immediately and completes within 1 to 6 hours depending on the volume ordered."],
+                ["Is my account at risk?", "No. We don't have access to your account. Delivery is external and progressive."],
+                ["What if followers drop?", "30-day redelivery guarantee. If the count drops, we top up for free."],
+              ],
+      ),
+    },
+    footer: {
+      ...footer,
+      desc: isFr
+        ? `Acheter des ${bhAudience} réels — livraison express, paiement sécurisé, résultats garantis.`
+        : `Buy real ${bhAudience} — express delivery, secure payment, guaranteed results.`,
+    },
+  } as T;
+}
+
+export function applyBlackhatPublicCopy<T extends Record<string, unknown>>(
+  locale: SupportedLocale,
+  surfaceMode: SurfaceMarketingMode,
+  base: T,
+): T {
+  if (surfaceMode !== "blackhat") return base;
+  if (locale !== "fr" && locale !== "en") return base;
+
+  const isFr = locale === "fr";
+  const hero = objectSection(base.hero);
+  const how = objectSection(base.how);
+  const testimonials = objectSection(base.testimonials);
+  const faq = objectSection(base.faq);
+  const cta = objectSection(base.cta);
+  const footer = objectSection(base.footer);
+
+  return {
+    ...base,
+    hero: {
+      ...hero,
+      newCampaign: isFr ? "🔥 Livraison express" : "🔥 Express delivery",
+      activeNetworks: isFr ? "TOUS LES RÉSEAUX" : "ALL NETWORKS",
+      campaign: isFr ? "Commande #042" : "Order #042",
+      campaignMeta: isFr ? "Livraison en cours - résultats garantis" : "Delivery in progress - guaranteed results",
+      cardLabel: isFr ? "Acheter maintenant" : "Buy now",
+      cardCta: isFr ? "Voir les packs" : "View packs",
+      titleBefore: isFr ? "Achetez des abonnés réels — " : "Buy real followers — ",
+      titleHighlight: isFr ? "+10K garantis" : "+10K guaranteed",
+      titleAfter: isFr ? " en quelques heures." : " in hours.",
+      rating: isFr ? "4,9/5 · 2 348 avis" : "4.9/5 · 2,348 reviews",
+      tiktokValue: isFr ? "+10K" : "+10K",
+      spotifyTitle: isFr ? "Streams Spotify" : "Spotify streams",
+      spotifyMeta: isFr ? "livraison express" : "express delivery",
+      youtubeTitle: isFr ? "Vues YouTube" : "YouTube views",
+      youtubeMeta: isFr ? "résultats garantis" : "guaranteed results",
+    },
+    how: {
+      ...how,
+      eyebrow: isFr ? "Comment ça marche" : "How it works",
+      titleBefore: isFr ? "Trois étapes pour recevoir vos " : "Three steps to receive your ",
+      titleHighlight: isFr ? "abonnés réels" : "real followers",
+      titleAfter: ".",
+      steps: isFr
+        ? [
+            { title: "Choisissez le réseau et le volume", body: "Instagram, TikTok, YouTube, Spotify et plus. Sélectionnez le pack adapté à votre objectif." },
+            { title: "Entrez votre identifiant", body: "Aucun mot de passe demandé. On livre directement sur votre profil public en quelques heures." },
+            { title: "Recevez vos abonnés", body: "Livraison express garantie. Profils 100% réels. Garantie relivraison 30 jours si perte." },
+          ]
+        : [
+            { title: "Choose the network and volume", body: "Instagram, TikTok, YouTube, Spotify and more. Select the pack that fits your goal." },
+            { title: "Enter your handle", body: "No password needed. We deliver directly to your public profile within hours." },
+            { title: "Receive your followers", body: "Guaranteed express delivery. 100% real profiles. 30-day redelivery guarantee if any drop." },
+          ],
+    },
+    testimonials: {
+      ...testimonials,
+      eyebrow: isFr ? "Résultats prouvés" : "Proven results",
+      titleBefore: isFr ? "Des milliers de clients " : "Thousands of clients ",
+      titleHighlight: isFr ? "satisfaits" : "satisfied",
+      titleAfter: ".",
+    },
+    faq: {
+      ...faq,
+      eyebrow: "FAQ",
+      titleBefore: isFr ? "Questions sur l'achat " : "Questions about buying ",
+      titleHighlight: isFr ? "d'abonnés" : "followers",
+      titleAfter: ".",
+      items: isFr
+        ? [
+            { q: "Les abonnés sont-ils réels ?", a: "Oui, 100% de profils réels et actifs avec photo, bio et activité. Aucun bot." },
+            { q: "En combien de temps je reçois ?", a: "Livraison en 1 à 6 heures selon le volume. Progression visible en temps réel sur votre profil." },
+            { q: "Mon compte risque-t-il quelque chose ?", a: "Non. Nous n'avons aucun accès à votre compte. La livraison est 100% externe." },
+            { q: "Que se passe-t-il si les abonnés partent ?", a: "Garantie relivraison 30 jours incluse. On recharge automatiquement et gratuitement." },
+          ]
+        : [
+            { q: "Are the followers real?", a: "Yes, 100% real and active profiles with photos, bios and activity. No bots." },
+            { q: "How fast is the delivery?", a: "Delivery within 1 to 6 hours depending on volume. Progress visible in real time on your profile." },
+            { q: "Is my account at risk?", a: "No. We have no access to your account. Delivery is 100% external." },
+            { q: "What if followers drop?", a: "30-day redelivery guarantee included. We automatically top up for free." },
+          ],
+    },
+    cta: {
+      ...cta,
+      titleBefore: isFr ? "Prêt à acheter des " : "Ready to buy ",
+      titleHighlight: isFr ? "abonnés réels" : "real followers",
+      titleAfter: isFr ? " maintenant ?" : " now?",
+      body: isFr
+        ? "Choisissez un réseau, passez commande et recevez vos abonnés en quelques heures. Paiement sécurisé, résultats garantis."
+        : "Choose a network, place your order and receive your followers within hours. Secure payment, guaranteed results.",
+      footer: isFr
+        ? "Livraison express · Profils réels · Garantie 30 jours · Paiement sécurisé"
+        : "Express delivery · Real profiles · 30-day guarantee · Secure payment",
+    },
+    footer: {
+      ...footer,
+      description: isFr
+        ? "Acheter des abonnés réels pour Instagram, TikTok, YouTube, Spotify et plus. Livraison express garantie."
+        : "Buy real followers for Instagram, TikTok, YouTube, Spotify and more. Guaranteed express delivery.",
     },
   } as T;
 }

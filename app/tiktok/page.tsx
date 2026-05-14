@@ -1,17 +1,24 @@
 import JsonLd from "../components/JsonLd";
-import { getMarketingMode } from "../lib/marketingMode.server";
-import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { getMarketingMode, getEffectiveMarketingModeForSurface } from "../lib/marketingMode.server";
+import { generateSurfaceMetadata, getRequestLocale } from "../lib/metadata";
 import { productJsonLd } from "../lib/siteMetadata";
+import { MarketingModeProvider } from "../marketing/MarketingModeProvider";
+import { surfaceModeToLegacy } from "../lib/marketingModeTypes";
 import TiktokPageClient from "./TiktokPageClient";
 
-export const generateMetadata = () => generateLocalizedMetadata("tiktok");
+export const generateMetadata = () => generateSurfaceMetadata("tiktok", "tiktok");
 
 export default async function TiktokPage() {
-  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  const locale = await getRequestLocale();
+  const [marketingMode, surfaceMode] = await Promise.all([
+    getMarketingMode(),
+    getEffectiveMarketingModeForSurface("tiktok", locale),
+  ]);
+  const legacyMode = surfaceModeToLegacy(surfaceMode);
   return (
-    <>
+    <MarketingModeProvider initialMode={legacyMode} initialSurfaceMode={surfaceMode}>
       <JsonLd data={productJsonLd("tiktok", locale, marketingMode)} />
       <TiktokPageClient />
-    </>
+    </MarketingModeProvider>
   );
 }

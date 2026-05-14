@@ -280,6 +280,28 @@ const en: Record<LegalRouteId, LegalPageCopy> = {
   },
 };
 
+/**
+ * Returns the legal page copy for the requested locale.
+ *
+ * Localization policy:
+ *  - `fr` is the authoritative legal version (the company is French, Paris-based).
+ *  - All other locales fall back to the `en` translation. This is intentional:
+ *    a professional legal translation per locale (es/pt/de/it/tr) is required
+ *    before serving it to users, otherwise we risk shipping inaccurate clauses
+ *    that could weaken our enforceability or compliance posture.
+ *  - When adding a new locale, replace the fallback below with the reviewed
+ *    `Record<LegalRouteId, LegalPageCopy>` for that locale.
+ *
+ * UI surfaces consuming this helper (e.g. `LegalPage.tsx`) should ideally show
+ * a small notice when the served locale is neither `fr` nor `en` — see
+ * `LegalPage.tsx` for the implementation.
+ */
 export function getLegalPageCopy(pageId: LegalRouteId, locale: SupportedLocale): LegalPageCopy {
-  return locale === "fr" ? fr[pageId] : en[pageId];
+  if (locale === "fr") return fr[pageId];
+  return en[pageId];
+}
+
+/** Whether the displayed legal copy is an official translation for the locale. */
+export function isLegalLocaleNative(locale: SupportedLocale): boolean {
+  return locale === "fr" || locale === "en";
 }

@@ -1,7 +1,7 @@
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformancePublicCopy } from "../lib/performanceCopy";
-import type { MarketingMode } from "../lib/marketingModeTypes";
+import { applyPerformancePublicCopy, applyBlackhatPublicCopy } from "../lib/performanceCopy";
+import type { MarketingMode, SurfaceMarketingMode } from "../lib/marketingModeTypes";
 
 export type PublicCopy = {
   header: {
@@ -127,6 +127,7 @@ export type PublicCopy = {
     loading: string;
     paymentError: string;
     orPayByCard: string;
+    networkError: string;
   };
 };
 
@@ -267,6 +268,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       loading: "Chargement du paiement sécurisé…",
       paymentError: "Erreur de paiement",
       orPayByCard: "ou payer par carte",
+      networkError: "Connexion impossible au service de paiement.",
     },
   },
   en: {
@@ -399,6 +401,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       loading: "Loading secure payment…",
       paymentError: "Payment error",
       orPayByCard: "or pay by card",
+      networkError: "Cannot reach the payment service.",
     },
   },
   es: {} as PublicCopy,
@@ -451,6 +454,7 @@ for (const locale of ["es", "pt", "de", "it", "tr"] as const) {
   };
 }
 
-export function getPublicCopy(locale: SupportedLocale, marketingMode: MarketingMode = "clean") {
-  return applyPerformancePublicCopy(locale, marketingMode, PUBLIC_COPY[locale] || PUBLIC_COPY.fr);
+export function getPublicCopy(locale: SupportedLocale, marketingMode: MarketingMode = "clean", surfaceMode: SurfaceMarketingMode = "whitehat") {
+  const base = applyPerformancePublicCopy(locale, marketingMode, PUBLIC_COPY[locale] || PUBLIC_COPY.fr);
+  return applyBlackhatPublicCopy(locale, surfaceMode, base);
 }

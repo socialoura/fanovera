@@ -35,6 +35,11 @@ export const ANALYTICS_EVENTS = [
   "checkout_completed",
   "checkout_failed",
   "checkout_abandoned",
+  // Funnel — fine-grained user journey events (Batch 3 funnel completion)
+  "username_validated",
+  "payment_initiated",
+  "payment_succeeded",
+  "order_delivered",
   "subscription_created",
   "subscription_cancelled",
   "subscription_reactivated",

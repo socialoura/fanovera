@@ -1,7 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 function translateLocalCopy<T>(source: T, locale: SupportedLocale): T {
@@ -41,7 +41,8 @@ const copy = {
     header: { allNetworks: "Tous les réseaux", tracking: "Suivi", ratingText: "2 348 avis", home: "Accueil" },
     stepper: ["Choisir un pack", "Votre morceau", "Paiement sécurisé"],
     step1: {
-      titleBefore: "Une visibilité Spotify", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Écoutes", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité Spotify", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement · Aucun mot de passe demandé",
+      titleBefore: "Une visibilité Spotify", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Écoutes", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité Spotify", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement · Aucun mot de passe · Démarrage sous 1–6 h",
+      productStreams: "Streams", productFollowers: "Followers", audienceFollowers: "Followers",
     },
     step2: {
       titleBefore: "Quel", titleFocus: "morceau", titleAfter: "promouvoir ?", intro: "Collez le lien Spotify de votre morceau, ou cherchez par titre + artiste. Aucun mot de passe demandé.", searchMode: "Titre + artiste", urlMode: "Lien Spotify", urlLabel: "Lien de votre morceau Spotify", invalidUrl: "Lien invalide. Exemple : https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Titre du morceau", artistLabel: "Artiste", notFound: "Morceau introuvable sur Spotify.", emailLabel: "Votre e-mail (pour le reçu)", emailPlaceholder: "vous@exemple.com", emailHint: "On vous envoie uniquement votre facture. Pas de spam, jamais.", back: "Retour", pay: "Aller au paiement", loading: "Chargement...", trackFallback: "Votre morceau", artistFallback: "Artiste", totalStreams: "Écoutes totales", monthlyListeners: "Auditeurs mensuels", popularity: "Popularité", newTotal: "Nouveau total",
@@ -56,7 +57,7 @@ const copy = {
   en: {
     header: { allNetworks: "All networks", tracking: "Tracking", ratingText: "2,348 reviews", home: "Home" },
     stepper: ["Choose a pack", "Your track", "Secure payment"],
-    step1: { titleBefore: "Targeted Spotify visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Streams", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "Spotify visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment · No password required" },
+    step1: { titleBefore: "Targeted Spotify visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Streams", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "Spotify visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment · No password · Starts in 1–6 h", productStreams: "Streams", productFollowers: "Followers", audienceFollowers: "Followers" },
     step2: { titleBefore: "Which", titleFocus: "track", titleAfter: "would you like to promote?", intro: "Paste your Spotify track link, or search by title + artist. No password required.", searchMode: "Title + artist", urlMode: "Spotify link", urlLabel: "Your Spotify track link", invalidUrl: "Invalid link. Example: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Track title", artistLabel: "Artist", notFound: "Track not found on Spotify.", emailLabel: "Your email (for the receipt)", emailPlaceholder: "you@example.com", emailHint: "We only send your invoice. No spam, ever.", back: "Back", pay: "Go to payment", loading: "Loading...", trackFallback: "Your track", artistFallback: "Artist", totalStreams: "Total streams", monthlyListeners: "Monthly listeners", popularity: "Popularity", newTotal: "New total", errors: { missingUrl: "Paste your Spotify track link.", invalidUrl: "Invalid Spotify link. Format: open.spotify.com/track/...", missingSearch: "Enter the title and artist.", verifying: "Track search in progress...", notFound: "Track not found on Spotify.", missingTrack: "Track not found.", email: "Enter your email to receive the receipt." } },
     step3: { titleBefore: "One", titleFocus: "step", titleAfter: "left.", subtitle: "Secure payment · campaign preparation after confirmation.", summary: "Summary", recipient: "Recipient track", edit: "Edit", trackFallback: "Your track", visibilityPack: "Spotify visibility pack", includedCredit: "included credit", included: "included", campaignCredit: "Campaign credit", free: "FREE", coupon: "Promo code", couponPlaceholder: "PROMO CODE", applied: "✓ Applied", apply: "Apply", saving: "✓ -5% applied · saving", total: "Total incl. tax", securePayment: "Secure payment", legalBefore: "By completing payment, you accept our", legalAfter: "No hidden subscription.", terms: "Terms", gdpr: "GDPR", backToPacks: "Back to pack selection" },
     why: { eyebrow: "Why Fanovera", title1: "Progressive", title2: "Spotify streams", title3: "with careful delivery.", items: [["Focused audience", "Our AI helps present your track to an audience aligned with your music genre."], ["Account protected", "No account access, no posting on your behalf, and no direct action on your profile."], ["No password", "Only your public track link is needed to prepare the visibility campaign."], ["Follow-up included", "If the planned volume is not reached, our support team reviews and extends the campaign."]] },
@@ -81,16 +82,17 @@ const localized: Record<SupportedLocale, SpotifyCopy> = {
 
 export function useSpotifyCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
+  const { mode, surfaceMode } = useMarketingMode();
   const manualLocale =
     typeof window !== "undefined" && window.localStorage.getItem("fanovera_locale_mode") === "manual"
       ? (window.localStorage.getItem("fanovera_locale") as SupportedLocale | null)
       : null;
   const activeLocale = manualLocale || locale;
-  return applyPerformanceProductCopy(localized[activeLocale] || copy.fr, {
+  const base = applyPerformanceProductCopy(localized[activeLocale] || copy.fr, {
     locale: activeLocale,
     mode,
     product: "Spotify",
     audience: "Streams",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale: activeLocale, product: "Spotify", audience: "Streams" });
 }

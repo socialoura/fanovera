@@ -360,6 +360,12 @@ export async function createOrder(params: {
   plan?: string | null;
 }) {
   try {
+    // ON CONFLICT DO NOTHING is critical for idempotency: when both the
+    // client-driven /api/confirm-order and the Stripe webhook race to
+    // materialize the same payment intent, only ONE caller will see a row
+    // returned. The other lookup path (`SELECT ... WHERE pi_id = ...`) is
+    // used to fetch the already-existing id without firing side effects
+    // (email, Discord, SMM) twice.
     const result = await sql`
       INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
@@ -381,33 +387,32 @@ export async function createOrder(params: {
         ${params.sourcePage || ""},
         ${params.plan || ""}
       )
-      ON CONFLICT (stripe_payment_intent_id)
-      DO UPDATE SET
-        email = EXCLUDED.email,
-        username = EXCLUDED.username,
-        platform = EXCLUDED.platform,
-        cart = EXCLUDED.cart,
-        post_assignments = EXCLUDED.post_assignments,
-        total_cents = EXCLUDED.total_cents,
-        status = EXCLUDED.status,
-        followers_before = EXCLUDED.followers_before,
-        currency = EXCLUDED.currency,
-        country = EXCLUDED.country,
-        lang = EXCLUDED.lang,
-        experiment_id = EXCLUDED.experiment_id,
-        variant_id = EXCLUDED.variant_id,
-        pricing_strategy = EXCLUDED.pricing_strategy,
-        source_page = EXCLUDED.source_page,
-        plan = EXCLUDED.plan
+      ON CONFLICT (stripe_payment_intent_id) DO NOTHING
       RETURNING id
     `;
-    return result[0].id;
+    if (result.length > 0) {
+      const id = (result[0] as { id: number }).id;
+      return { id, isNew: true };
+    }
+
+    // Concurrent insert won the race — fetch the existing row id.
+    const existing = await sql`
+      SELECT id FROM orders WHERE stripe_payment_intent_id = ${params.stripePaymentIntentId} LIMIT 1
+    `;
+    if (existing.length === 0) {
+      // Should never happen: ON CONFLICT triggered but the row is gone.
+      throw new Error(`createOrder: conflict but row not found for ${params.stripePaymentIntentId}`);
+    }
+    return { id: (existing[0] as { id: number }).id, isNew: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (!message.toLowerCase().includes("no unique or exclusion constraint")) {
       throw err;
     }
 
+    // Fallback path when the unique index is missing (very early deployments).
+    // We can't tell new vs. existing here — assume new to be safe (caller will
+    // de-dupe via getOrderByPaymentIntent on next request anyway).
     const result = await sql`
       INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
@@ -431,7 +436,7 @@ export async function createOrder(params: {
       )
       RETURNING id
     `;
-    return result[0].id;
+    return { id: (result[0] as { id: number }).id, isNew: true };
   }
 }
 
@@ -500,6 +505,12 @@ export async function upsertCheckoutPayload(params: {
   plan?: string | null;
   /** ISO-3166-1 alpha-2 country code captured server-side (Vercel/CF geo). */
   country?: string | null;
+  /**
+   * Audience size at checkout time (followers / subscribers / monthly listeners
+   * depending on the platform). Captured client-side from the profile preview
+   * so we know the baseline against which delivery is measured.
+   */
+  followersBefore?: number | null;
 }) {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
@@ -507,11 +518,16 @@ export async function upsertCheckoutPayload(params: {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT NULL`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS followers_before INTEGER DEFAULT 0`;
 
   const normalizedCountry = normalizeCountryCode(params.country);
+  const followersBefore =
+    typeof params.followersBefore === "number" && Number.isFinite(params.followersBefore) && params.followersBefore >= 0
+      ? Math.trunc(params.followersBefore)
+      : 0;
 
   await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country)
+    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country, followers_before)
     VALUES (
       ${params.paymentIntentId},
       ${params.email || ""},
@@ -525,7 +541,8 @@ export async function upsertCheckoutPayload(params: {
       ${params.pricingStrategy || ""},
       ${params.sourcePage || ""},
       ${params.plan || ""},
-      ${normalizedCountry}
+      ${normalizedCountry},
+      ${followersBefore}
     )
     ON CONFLICT (payment_intent_id)
     DO UPDATE SET
@@ -540,7 +557,8 @@ export async function upsertCheckoutPayload(params: {
       pricing_strategy = EXCLUDED.pricing_strategy,
       source_page = EXCLUDED.source_page,
       plan = EXCLUDED.plan,
-      country = COALESCE(EXCLUDED.country, checkout_payloads.country)
+      country = COALESCE(EXCLUDED.country, checkout_payloads.country),
+      followers_before = GREATEST(EXCLUDED.followers_before, checkout_payloads.followers_before)
   `;
 }
 

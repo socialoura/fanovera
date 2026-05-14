@@ -1,6 +1,7 @@
 import NetIcon from "../../components/NetIcon";
 import XSprinkle from "./XSprinkle";
 import { useXCopy } from "../i18n";
+import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 const names = ["Julien D.", "Marie L.", "Pierre F.", "Lucie B.", "Karim T.", "Lea M.", "Philippe C.", "Laurent M."];
 
@@ -15,7 +16,7 @@ export default function Reviews() {
             <NetIcon kind="twitter" color="var(--x-ink)" size={13} /> {t.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle x">{t.rating}</span> · 4,9/5
+            <span className="squiggle x">{withDynamicReviewCount(t.rating)}</span> · 4,9/5
           </h2>
         </div>
         <div className="reviews-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

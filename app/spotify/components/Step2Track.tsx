@@ -7,6 +7,7 @@ import SpoSprinkle from "./SpoSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useSpotifyCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type SpoPreview = {
   id: string | null;
@@ -167,6 +168,11 @@ export default function Step2Track({
               : "";
           const stats = deriveStats(normalized.id, normalized.playCount);
 
+          trackEvent("username_validated", {
+            product_area: "spotify",
+            platform: "spotify",
+            followers_count: stats.monthlyListeners,
+          });
           setProfile({
             id: normalized.id,
             trackName: normalized.name,

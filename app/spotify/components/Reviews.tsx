@@ -1,6 +1,7 @@
 import NetIcon from "../../components/NetIcon";
 import SpoSprinkle from "./SpoSprinkle";
 import { useSpotifyCopy } from "../i18n";
+import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 const names = ["Leo M.", "Sarah B.", "Thomas R.", "Ines D.", "Hugo K.", "Lea C.", "Karim S.", "Manon F."];
 
@@ -16,7 +17,7 @@ export default function Reviews() {
             <NetIcon kind="spotify" color="var(--spo-green-2)" size={13} /> {t.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(32px, 4.2vw, 56px)", margin: "0 0 12px" }}>
-            <span className="squiggle spo">{t.rating}</span> · 4,9/5
+            <span className="squiggle spo">{withDynamicReviewCount(t.rating)}</span> · 4,9/5
           </h2>
         </div>
         <div className="reviews-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>

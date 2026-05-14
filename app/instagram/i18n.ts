@@ -1,7 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
@@ -23,7 +23,9 @@ const copy = {
       total: "Total",
       discount: "Remise incluse",
       continue: "Continuer",
-      reassurance: "Sans engagement · Aucun mot de passe demandé",
+      reassurance: "Sans engagement · Aucun mot de passe · Démarrage sous 1–6 h",
+      productFollowers: "Followers", productLikes: "Likes", productViews: "Vues",
+      audienceLikes: "Likes", audienceViews: "Vues",
     },
     step2: {
       titleBefore: "Quel",
@@ -151,7 +153,9 @@ const copy = {
       total: "Total",
       discount: "Discount included",
       continue: "Continue",
-      reassurance: "No commitment · No password required",
+      reassurance: "No commitment · No password · Starts in 1–6 h",
+      productFollowers: "Followers", productLikes: "Likes", productViews: "Views",
+      audienceLikes: "Likes", audienceViews: "Views",
     },
     step2: {
       titleBefore: "Which",
@@ -277,11 +281,12 @@ const localized: Record<SupportedLocale, InstagramCopy> = {
 
 export function useInstagramCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  return applyPerformanceProductCopy(localized[locale] || copy.fr, {
+  const { mode, surfaceMode } = useMarketingMode();
+  const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "Instagram",
     audience: "Followers",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "Instagram", audience: "Followers" });
 }

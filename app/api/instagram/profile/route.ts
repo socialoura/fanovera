@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
 
 export type IgProfile = {
   username: string;
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
   }
 
   const cached = getCached(username);
-  if (cached) return NextResponse.json(cached);
+  if (cached) return jsonCachedAtEdge(cached);
 
   if (!process.env.RAPIDAPI_KEY) {
     return NextResponse.json(mockProfile(username));
@@ -183,7 +184,7 @@ export async function GET(req: NextRequest) {
     };
 
     setCache(username, data);
-    return NextResponse.json(data);
+    return jsonCachedAtEdge(data);
   } catch (err) {
     const isTimeout =
       err instanceof Error &&

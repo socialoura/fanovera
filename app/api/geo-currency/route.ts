@@ -7,11 +7,33 @@ import {
   type SupportedCurrency,
 } from "@/app/lib/pricingCurrency";
 
+/**
+ * Resolve the user's country from the most-trustworthy signal available.
+ * Priority order:
+ *
+ *   1. Vercel edge geo header (set on every Vercel-hosted request)
+ *   2. Cloudflare geo header (when fronted by CF)
+ *   3. `Accept-Language` region tag (e.g. `en-GB,en;q=0.9` → "GB")
+ *
+ * The Accept-Language fallback exists for local dev and self-hosted edge
+ * runtimes where neither Vercel nor CF inject a country. It is the weakest
+ * signal — users routinely have a locale that mismatches their physical
+ * location — so it never overrides the IP-based ones above.
+ */
 function pickCountry(req: NextRequest): string {
   const fromVercel = req.headers.get("x-vercel-ip-country");
-  if (fromVercel) return fromVercel;
+  if (fromVercel) return fromVercel.toUpperCase();
   const fromCf = req.headers.get("cf-ipcountry");
-  if (fromCf) return fromCf;
+  if (fromCf) return fromCf.toUpperCase();
+
+  const acceptLang = req.headers.get("accept-language") || "";
+  // Match the first `xx-YY` tag in the header. Example inputs:
+  //   "fr-FR,fr;q=0.9,en;q=0.8" → "FR"
+  //   "en-GB,en;q=0.9" → "GB"
+  //   "de" → "" (no region info)
+  const regionMatch = acceptLang.match(/[a-z]{2,3}-([a-z]{2})\b/i);
+  if (regionMatch && regionMatch[1]) return regionMatch[1].toUpperCase();
+
   return "";
 }
 

@@ -16,7 +16,7 @@ function countryFlag(code: string): string {
 }
 
 export type EnsureOrderResult =
-  | { ok: true; orderId: number; duplicate?: boolean; smmPlaced: boolean }
+  | { ok: true; orderId: number; duplicate?: boolean; smmPlaced: boolean; platform: string; service: string; plan: string }
   | { ok: false; reason: "payment_not_succeeded" | "internal_error"; status?: string };
 
 /**
@@ -43,9 +43,14 @@ export async function ensureOrderForPaymentIntent(
       return { ok: false, reason: "payment_not_succeeded", status: pi.status };
     }
 
+    const metaForReturn = pi.metadata || {};
+    const platformForReturn = String(metaForReturn.platform || "");
+    const serviceForReturn = String(metaForReturn.service || "");
+    const planForReturn = String(metaForReturn.plan || "");
+
     const existing = await getOrderByPaymentIntent(paymentIntentId);
     if (existing) {
-      return { ok: true, orderId: existing.id, duplicate: true, smmPlaced: false };
+      return { ok: true, orderId: existing.id, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
     }
 
     const meta = pi.metadata || {};
@@ -83,7 +88,18 @@ export async function ensureOrderForPaymentIntent(
       normalizeCountryCode(stripeCardCountry) ||
       null;
 
-    const orderId = await createOrder({
+    const persistedFollowers =
+      typeof (persisted as { followers_before?: number } | null)?.followers_before === "number"
+        ? (persisted as { followers_before: number }).followers_before
+        : 0;
+    const metaFollowers = Number.parseInt(meta.followersBefore || "", 10);
+    const followersBefore = Math.max(
+      0,
+      Number.isFinite(metaFollowers) ? metaFollowers : 0,
+      persistedFollowers || 0,
+    );
+
+    const created = await createOrder({
       stripePaymentIntentId: paymentIntentId,
       email,
       username,
@@ -92,6 +108,7 @@ export async function ensureOrderForPaymentIntent(
       postAssignments: null,
       totalCents: pi.amount,
       status: "paid",
+      followersBefore,
       currency: pi.currency || "eur",
       country: resolvedCountry || undefined,
       lang: (meta.locale || "fr").toLowerCase().split("-")[0].slice(0, 2),
@@ -101,6 +118,14 @@ export async function ensureOrderForPaymentIntent(
       sourcePage: persisted?.source_page || meta.source_page || "",
       plan: persisted?.plan || meta.plan || "",
     });
+    const orderId = created.id;
+
+    // Concurrent webhook + client-side confirm raced and a previous call
+    // already kicked off the side effects (email, Discord, SMM). Bail out
+    // here so we never double-send / double-charge BulkFollows.
+    if (!created.isNew) {
+      return { ok: true, orderId, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
+    }
 
     void captureServerEvent("checkout_completed", meta.anonymousId || email || paymentIntentId, {
       orderId,
@@ -177,7 +202,7 @@ export async function ensureOrderForPaymentIntent(
       }
     }
 
-    return { ok: true, orderId, smmPlaced };
+    return { ok: true, orderId, smmPlaced, platform: platformForReturn, service: serviceForReturn, plan: planForReturn };
   } catch (err) {
     console.error("[ensureOrder] internal error:", err);
     return { ok: false, reason: "internal_error" };

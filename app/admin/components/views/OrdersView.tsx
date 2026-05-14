@@ -147,6 +147,8 @@ function JsonDetails({ cart, smmOrders }: { cart: unknown; smmOrders: unknown })
   );
 }
 
+type BfEditState = { cartIndex: number; value: string; serviceValue: string } | null;
+
 function OrderDetail({
   order,
   editingStatus,
@@ -157,6 +159,18 @@ function OrderDetail({
   onStatusChange,
   onCostChange,
   onSaveStatus,
+  smmBusy,
+  smmMessage,
+  editingBf,
+  onRunSmm,
+  onRefreshSmm,
+  onRetrySub,
+  onStartEditBf,
+  onChangeBf,
+  onChangeBfService,
+  onSaveBf,
+  onCancelBf,
+  onClearBf,
 }: {
   order: Order;
   editingStatus: string;
@@ -167,6 +181,18 @@ function OrderDetail({
   onStatusChange: (status: string) => void;
   onCostChange: (cost: string) => void;
   onSaveStatus: (orderId: number) => void;
+  smmBusy: boolean;
+  smmMessage: { kind: "info" | "error"; text: string } | null;
+  editingBf: BfEditState;
+  onRunSmm: (orderId: number) => void;
+  onRefreshSmm: (orderId: number) => void;
+  onRetrySub: (orderId: number, cartIndex: number) => void;
+  onStartEditBf: (cartIndex: number, currentBf: string, currentService: string) => void;
+  onChangeBf: (value: string) => void;
+  onChangeBfService: (value: string) => void;
+  onSaveBf: (orderId: number) => void;
+  onCancelBf: () => void;
+  onClearBf: (orderId: number, cartIndex: number) => void;
 }) {
   const cart = asArray<CartItem>(order.cart);
   const smmOrders = asArray<SmmOrderItem>(order.smm_orders);
@@ -315,34 +341,179 @@ function OrderDetail({
       <section className="order-panel">
         <div className="order-panel-head">
           <div>
-            <h3>Commandes SMM</h3>
-            <p>Suivi des commandes envoyées au fournisseur</p>
+            <h3>Commandes SMM (BulkFollows)</h3>
+            <p>Suivi des sous-commandes envoyées au fournisseur</p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn primary"
+              onClick={(e) => { e.stopPropagation(); onRunSmm(order.id); }}
+              disabled={smmBusy || cart.length === 0}
+              title="Lance ou relance les sous-commandes manquantes via l'API BulkFollows"
+            >
+              {smmBusy ? "..." : Ic.zap()} Lancer BulkFollows
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); onRefreshSmm(order.id); }}
+              disabled={smmBusy || smmOrders.length === 0}
+              title="Rafraîchit les statuts BulkFollows et recalcule le coût"
+            >
+              {Ic.refresh()} Rafraîchir statuts
+            </button>
           </div>
         </div>
 
-        {smmOrders.length ? (
+        {smmMessage ? (
+          <div
+            style={{
+              padding: "10px 14px",
+              marginBottom: 12,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              background: smmMessage.kind === "error" ? "rgba(225,68,68,0.12)" : "rgba(82,96,230,0.10)",
+              color: smmMessage.kind === "error" ? "#E14444" : "var(--a-ink)",
+              border: "1px solid " + (smmMessage.kind === "error" ? "rgba(225,68,68,0.30)" : "rgba(82,96,230,0.25)"),
+            }}
+          >
+            {smmMessage.text}
+          </div>
+        ) : null}
+
+        {smmOrders.length || cart.length ? (
           <div className="smm-list">
-            {smmOrders.map((item, index) => {
+            {(smmOrders.length ? smmOrders : cart.map((c, i) => ({
+              cartIndex: i,
+              service: c.service,
+              platform: c.platform || order.platform,
+              qty: c.qty || c.quantity,
+              status: "pending" as const,
+              bfOrderId: null,
+              bfServiceId: 0,
+              charge: null,
+              error: null,
+              placedAt: null,
+            }))).map((item, index) => {
               const status = item.status || "pending";
               const st = SMM_STATUS_MAP[status] || { label: status, pill: "ink" };
+              const cartIdx = typeof item.cartIndex === "number" ? item.cartIndex : index;
+              const isEditing = editingBf?.cartIndex === cartIdx;
+              const canRetry = status === "failed" || status === "canceled";
               return (
-                <div className="smm-row" key={`${item.bfOrderId || "smm"}-${index}`}>
+                <div
+                  className="smm-row"
+                  key={`${item.bfOrderId || "smm"}-${cartIdx}`}
+                  style={{ flexWrap: "wrap", rowGap: 6 }}
+                >
                   <span className={"pill " + st.pill}>
                     <span className="dot" />
                     {st.label}
                   </span>
                   <strong>{getServiceLabel(item.service)}</strong>
                   <span>{formatQty(item.qty)} unités</span>
-                  <span>BF #{item.bfOrderId || "-"}</span>
-                  <span>Service #{item.bfServiceId || "-"}</span>
-                  {item.charge ? <span>{item.charge.toFixed(4)} USD</span> : <span>Coût à venir</span>}
-                  {item.error ? <em title={item.error}>{item.error}</em> : null}
+
+                  {isEditing ? (
+                    <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                      <input
+                        className="input"
+                        type="number"
+                        min="0"
+                        placeholder="BF order ID"
+                        value={editingBf.value}
+                        onChange={(e) => onChangeBf(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: 120, padding: "4px 8px", fontSize: 12 }}
+                      />
+                      <input
+                        className="input"
+                        type="number"
+                        min="0"
+                        placeholder="Service"
+                        value={editingBf.serviceValue}
+                        onChange={(e) => onChangeBfService(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: 90, padding: "4px 8px", fontSize: 12 }}
+                        title="BF service ID (optionnel)"
+                      />
+                      <button
+                        type="button"
+                        className="btn primary"
+                        onClick={(e) => { e.stopPropagation(); onSaveBf(order.id); }}
+                        disabled={smmBusy}
+                        style={{ padding: "4px 10px", fontSize: 11 }}
+                      >
+                        {Ic.check()}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={(e) => { e.stopPropagation(); onCancelBf(); }}
+                        style={{ padding: "4px 10px", fontSize: 11 }}
+                      >
+                        {Ic.x()}
+                      </button>
+                    </span>
+                  ) : (
+                    <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                      <span className="mono" style={{ fontSize: 12 }}>BF #{item.bfOrderId || "-"}</span>
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        onClick={(e) => { e.stopPropagation(); onStartEditBf(cartIdx, item.bfOrderId ? String(item.bfOrderId) : "", item.bfServiceId ? String(item.bfServiceId) : ""); }}
+                        title="Éditer le BulkFollows order ID"
+                        style={{ width: 24, height: 24, borderRadius: 6 }}
+                      >
+                        {Ic.edit()}
+                      </button>
+                      {item.bfOrderId ? (
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          onClick={(e) => { e.stopPropagation(); onClearBf(order.id, cartIdx); }}
+                          disabled={smmBusy}
+                          title="Détacher le BF order ID"
+                          style={{ width: 24, height: 24, borderRadius: 6 }}
+                        >
+                          {Ic.x()}
+                        </button>
+                      ) : null}
+                    </span>
+                  )}
+
+                  <span style={{ fontSize: 12, color: "var(--a-ink-3)" }}>Service #{item.bfServiceId || "-"}</span>
+                  {item.charge ? (
+                    <span style={{ fontSize: 12 }}>{item.charge.toFixed(4)} USD</span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--a-ink-3)" }}>Coût à venir</span>
+                  )}
+
+                  {canRetry ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx); }}
+                      disabled={smmBusy}
+                      style={{ padding: "4px 10px", fontSize: 11 }}
+                      title="Relance cette sous-commande via BulkFollows"
+                    >
+                      {Ic.refresh()} Retry
+                    </button>
+                  ) : null}
+
+                  {item.error ? (
+                    <em title={item.error} style={{ flexBasis: "100%", color: "#E14444", fontSize: 12 }}>
+                      {item.error}
+                    </em>
+                  ) : null}
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="order-empty">Aucune commande SMM enregistrée pour le moment.</div>
+          <div className="order-empty">Aucune ligne dans le panier de cette commande.</div>
         )}
       </section>
 
@@ -374,6 +545,9 @@ export default function OrdersView() {
   const [editingStatus, setEditingStatus] = useState<string>("");
   const [editingCost, setEditingCost] = useState<string>("0.00");
   const [saving, setSaving] = useState(false);
+  const [smmBusy, setSmmBusy] = useState(false);
+  const [smmMessage, setSmmMessage] = useState<{ kind: "info" | "error"; text: string } | null>(null);
+  const [editingBf, setEditingBf] = useState<BfEditState>(null);
 
   const limit = 20;
 
@@ -429,7 +603,134 @@ export default function OrdersView() {
       setExpandedId(order.id);
       setEditingStatus(order.status);
       setEditingCost((order.cost_cents / 100).toFixed(2));
+      setSmmMessage(null);
+      setEditingBf(null);
     }
+  };
+
+  const callSmmEndpoint = async (
+    path: string,
+    body: Record<string, unknown>,
+    successMsg: (data: Record<string, unknown>) => string,
+  ) => {
+    setSmmBusy(true);
+    setSmmMessage(null);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setSmmMessage({ kind: "info", text: successMsg(data) });
+      await fetchOrders();
+      return true;
+    } catch (err) {
+      setSmmMessage({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Erreur lors de l'appel BulkFollows",
+      });
+      return false;
+    } finally {
+      setSmmBusy(false);
+    }
+  };
+
+  const handleRunSmm = async (orderId: number) => {
+    await callSmmEndpoint(
+      "/api/admin/orders/run-smm",
+      { orderId },
+      (data) => {
+        const summary = (data?.summary || {}) as Record<string, number>;
+        const placed = summary.placed ?? 0;
+        const failed = summary.failed ?? 0;
+        const skipped = summary.skipped ?? 0;
+        return `BulkFollows lancé : ${placed} envoyée(s), ${skipped} déjà traitée(s), ${failed} en erreur.`;
+      },
+    );
+  };
+
+  const handleRefreshSmm = async (orderId: number) => {
+    await callSmmEndpoint(
+      "/api/admin/orders/refresh-smm",
+      { orderId },
+      (data) => {
+        const summary = (data?.summary || {}) as Record<string, number>;
+        const completed = summary.completed ?? 0;
+        const inProgress = summary.inProgress ?? 0;
+        const failed = summary.failed ?? 0;
+        return `Statuts rafraîchis : ${completed} terminée(s), ${inProgress} en cours, ${failed} en erreur.`;
+      },
+    );
+  };
+
+  const handleRetrySub = async (orderId: number, cartIndex: number) => {
+    await callSmmEndpoint(
+      "/api/admin/orders/retry-smm",
+      { orderId, cartIndex },
+      (data) => {
+        const retried = (data?.retried || {}) as Record<string, unknown>;
+        const status = String(retried?.status || "inconnu");
+        return `Sous-commande #${cartIndex} relancée (statut : ${status}).`;
+      },
+    );
+  };
+
+  const handleStartEditBf = (cartIndex: number, currentBf: string, currentService: string) => {
+    setEditingBf({ cartIndex, value: currentBf, serviceValue: currentService });
+    setSmmMessage(null);
+  };
+
+  const handleChangeBf = (value: string) => {
+    setEditingBf((prev) => (prev ? { ...prev, value } : prev));
+  };
+
+  const handleChangeBfService = (value: string) => {
+    setEditingBf((prev) => (prev ? { ...prev, serviceValue: value } : prev));
+  };
+
+  const handleCancelBf = () => setEditingBf(null);
+
+  const handleSaveBf = async (orderId: number) => {
+    if (!editingBf) return;
+    const raw = editingBf.value.trim();
+    if (!raw) {
+      setSmmMessage({ kind: "error", text: "Renseigne un BF order ID (ou utilise la croix pour le détacher)." });
+      return;
+    }
+    const bfOrderId = Number(raw);
+    if (!Number.isFinite(bfOrderId) || bfOrderId <= 0) {
+      setSmmMessage({ kind: "error", text: "BF order ID invalide." });
+      return;
+    }
+    const serviceRaw = editingBf.serviceValue.trim();
+    const bfServiceId = serviceRaw ? Number(serviceRaw) : undefined;
+    if (serviceRaw && (!Number.isFinite(bfServiceId) || (bfServiceId as number) < 0)) {
+      setSmmMessage({ kind: "error", text: "BF service ID invalide." });
+      return;
+    }
+    const ok = await callSmmEndpoint(
+      "/api/admin/orders/set-bf-id",
+      { orderId, cartIndex: editingBf.cartIndex, bfOrderId, ...(bfServiceId ? { bfServiceId } : {}) },
+      () => `BF #${bfOrderId} associé à la sous-commande #${editingBf.cartIndex}.`,
+    );
+    if (ok) setEditingBf(null);
+  };
+
+  const handleClearBf = async (orderId: number, cartIndex: number) => {
+    if (!confirm("Détacher le BulkFollows order ID de cette sous-commande ?")) return;
+    await callSmmEndpoint(
+      "/api/admin/orders/set-bf-id",
+      { orderId, cartIndex, bfOrderId: null },
+      () => `BF détaché de la sous-commande #${cartIndex}.`,
+    );
   };
 
   const handleSaveStatus = async (orderId: number) => {
@@ -614,6 +915,18 @@ export default function OrdersView() {
                             onStatusChange={setEditingStatus}
                             onCostChange={setEditingCost}
                             onSaveStatus={handleSaveStatus}
+                            smmBusy={smmBusy}
+                            smmMessage={smmMessage}
+                            editingBf={editingBf}
+                            onRunSmm={handleRunSmm}
+                            onRefreshSmm={handleRefreshSmm}
+                            onRetrySub={handleRetrySub}
+                            onStartEditBf={handleStartEditBf}
+                            onChangeBf={handleChangeBf}
+                            onChangeBfService={handleChangeBfService}
+                            onSaveBf={handleSaveBf}
+                            onCancelBf={handleCancelBf}
+                            onClearBf={handleClearBf}
                           />
                         </td>
                       </tr>

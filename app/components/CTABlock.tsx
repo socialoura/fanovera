@@ -8,8 +8,8 @@ import { getPublicCopy } from "./publicCopy";
 
 export default function CTABlock() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).cta;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).cta;
   return (
     <section id="start" style={{ padding: "clamp(56px, 8vw, 100px) 0", position: "relative" }}>
       <div className="container">

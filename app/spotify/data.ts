@@ -22,6 +22,25 @@ export const PACKS: Pack[] = [
   { qty: 5000000, price: 2999.99, old: 6499.99, bonus: 1000000 },
 ];
 
+export type SpotifyProductType = "streams" | "followers";
+
+export const FOLLOWERS_PACKS: Pack[] = [
+  { qty: 100, price: 2.49, old: 6.99, bonus: 25 },
+  { qty: 250, price: 4.99, old: 12.99, bonus: 50 },
+  { qty: 500, price: 8.99, old: 22.99, bonus: 100 },
+  { qty: 1000, price: 14.99, old: 39.99, bonus: 200, popular: true },
+  { qty: 2500, price: 32.99, old: 79.99, bonus: 500 },
+  { qty: 5000, price: 54.99, old: 139.99, bonus: 1000 },
+  { qty: 10000, price: 99.99, old: 249.99, bonus: 2500 },
+  { qty: 25000, price: 219.99, old: 549.99, bonus: 6000 },
+  { qty: 50000, price: 399.99, old: 999.99, bonus: 12500, best: true },
+  { qty: 100000, price: 699.99, old: 1799.99, bonus: 25000 },
+];
+
+export function getPacksForProduct(product: SpotifyProductType): Pack[] {
+  return product === "followers" ? FOLLOWERS_PACKS : PACKS;
+}
+
 export type CountryId = "fr" | "eu";
 
 export type Country = {

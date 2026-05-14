@@ -26,6 +26,31 @@ export function getOrCreateAnonymousId() {
   return next;
 }
 
+const EXPOSURE_SENT_KEY = "fanovera_pricing_exposures_v1";
+
+function hasSentExposure(key: string) {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.sessionStorage.getItem(EXPOSURE_SENT_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as Record<string, true>;
+    return Boolean(parsed[key]);
+  } catch {
+    return false;
+  }
+}
+
+function markExposureSent(key: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(EXPOSURE_SENT_KEY);
+    const parsed = raw ? JSON.parse(raw) as Record<string, true> : {};
+    parsed[key] = true;
+    window.sessionStorage.setItem(EXPOSURE_SENT_KEY, JSON.stringify(parsed));
+  } catch {
+  }
+}
+
 export function usePricingExperiment(productArea: string, segment: PricingSegment = {}) {
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
   const [experiments, setExperiments] = useState<PricingExperiment[] | null>(null);
@@ -60,6 +85,29 @@ export function usePricingExperiment(productArea: string, segment: PricingSegmen
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anonymousId, experiments, productArea, segmentKey]);
+
+  useEffect(() => {
+    if (!anonymousId) return;
+    if (!assignment.experimentId || assignment.reason !== "assigned") return;
+    const exposureKey = `${anonymousId}:${assignment.experimentId}:${assignment.variantId}:${productArea}`;
+    if (hasSentExposure(exposureKey)) return;
+    markExposureSent(exposureKey);
+    void fetch("/api/pricing-experiments/expose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        anonymousId,
+        experimentId: assignment.experimentId,
+        variantId: assignment.variantId,
+        pricingStrategy: assignment.pricingStrategy,
+        productArea,
+        plan: segment.plan,
+        locale: segment.locale,
+        country: segment.country,
+      }),
+    }).catch(() => {});
+  }, [anonymousId, assignment, productArea, segment.plan, segment.locale, segment.country]);
 
   return { anonymousId, assignment, ready: experiments !== null };
 }

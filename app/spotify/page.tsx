@@ -1,17 +1,24 @@
 import JsonLd from "../components/JsonLd";
-import { getMarketingMode } from "../lib/marketingMode.server";
-import { generateLocalizedMetadata, getRequestLocale } from "../lib/metadata";
+import { getMarketingMode, getEffectiveMarketingModeForSurface } from "../lib/marketingMode.server";
+import { generateSurfaceMetadata, getRequestLocale } from "../lib/metadata";
 import { productJsonLd } from "../lib/siteMetadata";
+import { MarketingModeProvider } from "../marketing/MarketingModeProvider";
+import { surfaceModeToLegacy } from "../lib/marketingModeTypes";
 import SpotifyPageClient from "./SpotifyPageClient";
 
-export const generateMetadata = () => generateLocalizedMetadata("spotify");
+export const generateMetadata = () => generateSurfaceMetadata("spotify", "spotify");
 
 export default async function SpotifyPage() {
-  const [locale, marketingMode] = await Promise.all([getRequestLocale(), getMarketingMode()]);
+  const locale = await getRequestLocale();
+  const [marketingMode, surfaceMode] = await Promise.all([
+    getMarketingMode(),
+    getEffectiveMarketingModeForSurface("spotify", locale),
+  ]);
+  const legacyMode = surfaceModeToLegacy(surfaceMode);
   return (
-    <>
+    <MarketingModeProvider initialMode={legacyMode} initialSurfaceMode={surfaceMode}>
       <JsonLd data={productJsonLd("spotify", locale, marketingMode)} />
       <SpotifyPageClient />
-    </>
+    </MarketingModeProvider>
   );
 }

@@ -10,6 +10,7 @@ import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
 import { usePricingExperiment } from "../lib/usePricingExperiment";
 import { trackEvent } from "../lib/analytics";
 import { getPublicCopy } from "./publicCopy";
+import { humanizeStripeError } from "../lib/stripeErrors";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe() {
@@ -30,6 +31,12 @@ export type StripeCheckoutProps = {
   username: string;
   platform: string;
   cart?: unknown;
+  /**
+   * Audience size at checkout time (followers / subscribers / monthly listeners,
+   * depending on the platform). Captured from the live profile preview so we can
+   * persist a baseline against which delivery progress is measured later.
+   */
+  followersBefore?: number;
   onSuccess?: () => void;
   brandColor?: string; // CSS color for the pay button (e.g. "var(--ig-2)")
   clientSecret?: string | null; // optional pre-fetched secret
@@ -43,9 +50,12 @@ export function usePaymentIntent(args: {
   username: string;
   platform: string;
   cart?: unknown;
+  followersBefore?: number;
   enabled?: boolean;
+  /** Bumping this nonce forces a fresh PaymentIntent fetch (e.g. user-clicked retry). */
+  retryNonce?: number;
 }) {
-  const { amount, currency = "eur", email, username, platform, cart, enabled = true } = args;
+  const { amount, currency = "eur", email, username, platform, cart, followersBefore, enabled = true, retryNonce = 0 } = args;
   const { locale, country } = useI18n();
   const pathname = usePathname();
   const normalizedPlatform = normalizePlatform(platform);
@@ -88,6 +98,7 @@ export function usePaymentIntent(args: {
         experimentId: experiment.assignment.experimentId,
         variantId: experiment.assignment.variantId,
         pricingStrategy: experiment.assignment.pricingStrategy,
+        followersBefore: typeof followersBefore === "number" && followersBefore > 0 ? followersBefore : 0,
       }),
     })
       .then((r) => r.json())
@@ -102,14 +113,14 @@ export function usePaymentIntent(args: {
       })
       .catch(() => {
         if (!aborted) {
-          setError("Connexion impossible au service de paiement");
+          setError(getPublicCopy(locale).payment.networkError);
           trackEvent("checkout_failed", { platform, product_area: productArea, reason: "payment_intent_network_error" });
         }
       });
     return () => {
       aborted = true;
     };
-  }, [enabled, amount, currency, email, username, platform, cartKey, locale, pathname, productArea, experiment.anonymousId, experiment.assignment]);
+  }, [enabled, amount, currency, email, username, platform, cartKey, locale, pathname, productArea, experiment.anonymousId, experiment.assignment, followersBefore, retryNonce]);
 
   return { clientSecret, error };
 }
@@ -148,8 +159,8 @@ function ExpressCheckout({
             redirect: "if_required",
           });
           if (error) {
-            setErr(error.message || paymentCopy.paymentError);
-            trackEvent("checkout_failed", { platform, reason: error.message || "express_checkout_error" });
+            setErr(humanizeStripeError(error, locale));
+            trackEvent("checkout_failed", { platform, reason: error.code || error.message || "express_checkout_error" });
           }
           else {
             const paymentIntentId = paymentIntentIdFromClientSecret(clientSecret);
@@ -162,6 +173,7 @@ function ExpressCheckout({
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data?.orderId) {
+                  trackEvent("payment_succeeded", { platform, product_area: platform, orderId: String(data.orderId), method: "express_checkout" });
                   trackEvent("checkout_completed", { platform, orderId: String(data.orderId), feature_name: "express_checkout" });
                   window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
                   return;
@@ -225,8 +237,8 @@ function CardPayment({
       redirect: "if_required",
     });
     if (error) {
-      setErr(error.message || paymentCopy.paymentError);
-      trackEvent("checkout_failed", { platform, amount, currency, reason: error.message || "card_checkout_error" });
+      setErr(humanizeStripeError(error, locale));
+      trackEvent("checkout_failed", { platform, amount, currency, reason: error.code || error.message || "card_checkout_error" });
     }
     else {
       const paymentIntentId = paymentIntentIdFromClientSecret(clientSecret);
@@ -239,6 +251,7 @@ function CardPayment({
           });
           const data = await res.json().catch(() => ({}));
           if (res.ok && data?.orderId) {
+            trackEvent("payment_succeeded", { platform, product_area: platform, amount, currency, orderId: String(data.orderId), method: "card_checkout" });
             trackEvent("checkout_completed", { platform, amount, currency, orderId: String(data.orderId), feature_name: "card_checkout" });
             window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
             return;
@@ -315,6 +328,7 @@ export default function StripeCheckout({
   username,
   platform,
   cart,
+  followersBefore,
   onSuccess,
   brandColor,
   clientSecret: prefetchedSecret,
@@ -323,6 +337,7 @@ export default function StripeCheckout({
   const paymentCopy = getPublicCopy(locale).payment;
   const effectiveCurrency = (currency || getDisplayCurrency() || "EUR").toLowerCase();
   const usesPrefetchedSecret = prefetchedSecret !== undefined;
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // If a pre-fetched secret is provided, use it directly; otherwise fetch locally.
   const { clientSecret: fetchedSecret, error: fetchError } = usePaymentIntent({
@@ -332,24 +347,86 @@ export default function StripeCheckout({
     username,
     platform,
     cart,
+    followersBefore,
     enabled: !usesPrefetchedSecret,
+    retryNonce,
   });
   const clientSecret = usesPrefetchedSecret ? prefetchedSecret : fetchedSecret;
   const error = usesPrefetchedSecret ? null : fetchError;
 
+  // Fire `payment_initiated` exactly once per checkout session — when the
+  // Stripe Elements wrapper is about to render with a usable clientSecret.
+  // This is the moment the user actually sees the payment form, distinct
+  // from `checkout_started` (intent created server-side).
+  const paymentInitiatedRef = useRef(false);
+  useEffect(() => {
+    if (!clientSecret || paymentInitiatedRef.current) return;
+    paymentInitiatedRef.current = true;
+    trackEvent("payment_initiated", {
+      platform,
+      product_area: platform,
+      amount,
+      currency: effectiveCurrency,
+    });
+  }, [amount, clientSecret, effectiveCurrency, platform]);
+
   if (error) {
+    // Localized retry label — kept inline to avoid threading a new key
+    // through the 7-locale publicCopy.ts. The error itself is already
+    // localized upstream by `usePaymentIntent`.
+    const retryLabel: Record<string, string> = {
+      fr: "Réessayer", en: "Retry", es: "Reintentar", pt: "Tentar de novo",
+      de: "Erneut versuchen", it: "Riprova", tr: "Tekrar dene",
+    };
+    const localeKey = (locale || "fr").toLowerCase().split("-")[0];
+    const retryText = retryLabel[localeKey] || retryLabel.fr;
+
     return (
       <div
+        role="alert"
         style={{
-          padding: 20,
+          padding: 24,
           background: "rgba(214,41,118,0.08)",
           color: "var(--ig-2)",
           fontSize: 14,
           borderRadius: 12,
           textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 14,
         }}
       >
-        {error}
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden style={{ color: "var(--ig-2)" }}>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        <div style={{ fontWeight: 600 }}>{error}</div>
+        <button
+          type="button"
+          onClick={() => setRetryNonce((n) => n + 1)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 20px",
+            background: "var(--ig-2)",
+            color: "white",
+            border: "none",
+            borderRadius: 10,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: "pointer",
+            transition: "transform 0.18s ease, box-shadow 0.18s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M21 12a9 9 0 1 1-3.5-7.1M21 4v5h-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {retryText}
+        </button>
       </div>
     );
   }

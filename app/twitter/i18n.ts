@@ -1,7 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 function translateLocalCopy<T>(source: T, locale: SupportedLocale): T {
@@ -31,7 +31,7 @@ const copy = {
     header: { allNetworks: "Tous les réseaux", tracking: "Suivi", ratingText: "2 348 avis", home: "Accueil" },
     stepper: ["Choisir un pack", "Votre profil", "Paiement sécurisé"],
     step1: {
-      titleBefore: "Une visibilité X", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Abonnés", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité X", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement · Aucun mot de passe demandé",
+      titleBefore: "Une visibilité X", titleFocus: "ciblée", titleAfter: "& progressive.", volume: "Quel volume ?", audience: "Abonnés", included: "inclus", campaign: "Votre campagne", selectedPack: "Pack sélectionné", visibilityPack: "Pack visibilité X", includedCredit: "crédit inclus", total: "Total", discount: "Remise incluse", continue: "Continuer", reassurance: "Sans engagement · Aucun mot de passe · Démarrage sous 1–6 h",
     },
     step2: {
       titleBefore: "Quel", titleFocus: "profil", titleAfter: "souhaitez-vous promouvoir ?", intro: "Entrez votre @ X (Twitter). Aucun mot de passe, aucun accès demandé. Le compte doit être public.", searchMode: "Recherche X", urlMode: "Profil X", urlLabel: "Votre @ X (Twitter)", invalidUrl: "Format invalide. 4-15 caractères : lettres, chiffres et underscore uniquement.", trackLabel: "Pseudo X", artistLabel: "Nom affiché", notFound: "Compte introuvable sur X.", emailLabel: "Votre e-mail (pour le reçu)", emailPlaceholder: "vous@exemple.com", emailHint: "On vous envoie uniquement votre facture. Pas de spam, jamais.", back: "Retour", pay: "Aller au paiement", loading: "Vérification...", trackFallback: "Votre profil", artistFallback: "Nom affiché", totalStreams: "Abonnés", monthlyListeners: "Abonnements", popularity: "Popularité", newTotal: "Nouveau total",
@@ -46,7 +46,7 @@ const copy = {
   en: {
     header: { allNetworks: "All networks", tracking: "Tracking", ratingText: "2,348 reviews", home: "Home" },
     stepper: ["Choose a pack", "Your profile", "Secure payment"],
-    step1: { titleBefore: "Targeted X visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Followers", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "X visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment · No password required" },
+    step1: { titleBefore: "Targeted X visibility", titleFocus: "focused", titleAfter: "and progressive.", volume: "Which volume?", audience: "Followers", included: "included", campaign: "Your campaign", selectedPack: "Selected pack", visibilityPack: "X visibility pack", includedCredit: "included credit", total: "Total", discount: "Discount included", continue: "Continue", reassurance: "No commitment · No password · Starts in 1–6 h" },
     step2: { titleBefore: "Which", titleFocus: "profile", titleAfter: "would you like to promote?", intro: "Enter your @ X (Twitter). No password and no account access requested. The account must be public.", searchMode: "X search", urlMode: "X profile", urlLabel: "Your @ X (Twitter)", invalidUrl: "Invalid format. 4-15 characters: letters, numbers and underscore only.", trackLabel: "X handle", artistLabel: "Display name", notFound: "Account not found on X.", emailLabel: "Your email (for the receipt)", emailPlaceholder: "you@example.com", emailHint: "We only send your invoice. No spam, ever.", back: "Back", pay: "Go to payment", loading: "Checking...", trackFallback: "Your profile", artistFallback: "Display name", totalStreams: "Followers", monthlyListeners: "Following", popularity: "Popularity", newTotal: "New total", errors: { missingUrl: "Enter your @ X (Twitter).", invalidUrl: "Enter a valid and public @ X.", missingSearch: "Enter your @ X (Twitter).", verifying: "Account verification in progress...", notFound: "This account cannot be found on X.", missingTrack: "Enter a valid and public @ X.", email: "Enter your email to receive the receipt." } },
     step3: { titleBefore: "One", titleFocus: "step", titleAfter: "left.", subtitle: "Secure payment · campaign preparation after confirmation.", summary: "Summary", recipient: "Recipient profile", edit: "Edit", trackFallback: "Your profile", visibilityPack: "X visibility pack", includedCredit: "included credit", included: "included", campaignCredit: "Campaign credit", free: "FREE", coupon: "Promo code", couponPlaceholder: "PROMO CODE", applied: "✓ Applied", apply: "Apply", saving: "✓ -5% applied · saving", total: "Total incl. tax", securePayment: "Secure payment", legalBefore: "By completing payment, you accept our", legalAfter: "No hidden subscription.", terms: "Terms", gdpr: "GDPR", backToPacks: "Back to pack selection" },
     why: { eyebrow: "Why Fanovera", title1: "Progressive", title2: "X followers", title3: "with careful delivery.", items: [["Focused audience", "Our AI helps present your profile to an audience aligned with your topic."], ["Account protected", "No account access, no posting on your behalf, and no direct action on your profile."], ["No password", "Only your public @ is needed to prepare the visibility campaign."], ["Follow-up included", "If the planned volume is not reached, our support team reviews and extends the campaign."]] },
@@ -71,16 +71,17 @@ const localized: Record<SupportedLocale, XCopy> = {
 
 export function useXCopy() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
+  const { mode, surfaceMode } = useMarketingMode();
   const manualLocale =
     typeof window !== "undefined" && window.localStorage.getItem("fanovera_locale_mode") === "manual"
       ? (window.localStorage.getItem("fanovera_locale") as SupportedLocale | null)
       : null;
   const activeLocale = manualLocale || locale;
-  return applyPerformanceProductCopy(localized[activeLocale] || copy.fr, {
+  const base = applyPerformanceProductCopy(localized[activeLocale] || copy.fr, {
     locale: activeLocale,
     mode,
     product: "X",
     audience: "Followers",
   });
+  return applyBlackhatProductCopy(base, surfaceMode, { locale: activeLocale, product: "X", audience: "Followers" });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsonCachedAtEdge } from "@/app/lib/cdnCache";
 
 export type TwProfile = {
   username: string;
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest) {
     };
 
     setCache(rawUsername, data);
-    return NextResponse.json(data);
+    return jsonCachedAtEdge(data);
   } catch (err) {
     console.error("[Twitch profile]", err);
     return NextResponse.json(mockProfile(rawUsername));

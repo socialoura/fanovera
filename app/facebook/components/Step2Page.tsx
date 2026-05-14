@@ -7,6 +7,7 @@ import FbSprinkle from "./FbSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useFacebookCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type FbProfile = {
   name: string;
@@ -96,6 +97,11 @@ export default function Step2Page({
         } else {
           setProfile(json as FbProfile);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "facebook",
+            platform: "facebook",
+            followers_count: Number(json?.followersCount) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");

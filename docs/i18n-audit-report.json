@@ -1,0 +1,412 @@
+{
+  "dictResults": {
+    "de": {
+      "file": "app/i18n/locales/de.ts",
+      "exactCount": 15,
+      "fragmentCount": 15,
+      "totalEntries": 30,
+      "bytes": 2231,
+      "extendsEn": true,
+      "hasFullStructure": true
+    },
+    "en": {
+      "file": "app/i18n/locales/en.ts",
+      "exactCount": 41,
+      "fragmentCount": 34,
+      "totalEntries": 75,
+      "bytes": 4359,
+      "extendsEn": false,
+      "hasFullStructure": true
+    },
+    "es": {
+      "file": "app/i18n/locales/es.ts",
+      "exactCount": 36,
+      "fragmentCount": 34,
+      "totalEntries": 70,
+      "bytes": 4328,
+      "extendsEn": true,
+      "hasFullStructure": true
+    },
+    "fr": {
+      "file": "app/i18n/locales/fr.ts",
+      "exactCount": 0,
+      "fragmentCount": 0,
+      "totalEntries": 0,
+      "bytes": 870,
+      "extendsEn": false,
+      "hasFullStructure": true
+    },
+    "it": {
+      "file": "app/i18n/locales/it.ts",
+      "exactCount": 15,
+      "fragmentCount": 15,
+      "totalEntries": 30,
+      "bytes": 2227,
+      "extendsEn": true,
+      "hasFullStructure": true
+    },
+    "pt": {
+      "file": "app/i18n/locales/pt.ts",
+      "exactCount": 15,
+      "fragmentCount": 15,
+      "totalEntries": 30,
+      "bytes": 2241,
+      "extendsEn": true,
+      "hasFullStructure": true
+    },
+    "tr": {
+      "file": "app/i18n/locales/tr.ts",
+      "exactCount": 15,
+      "fragmentCount": 15,
+      "totalEntries": 30,
+      "bytes": 2225,
+      "extendsEn": true,
+      "hasFullStructure": true
+    }
+  },
+  "fileResults": [
+    {
+      "file": "app/components/publicCopy.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 146,
+      "completeness": {
+        "en": 100,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "app/lib/email.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 20,
+      "completeness": {
+        "en": 100,
+        "es": 100,
+        "pt": 100,
+        "de": 100,
+        "it": 100,
+        "tr": 100
+      }
+    },
+    {
+      "file": "app/instagram/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\instagram\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/tiktok/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\tiktok\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/youtube/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\youtube\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/spotify/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\spotify\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/twitch/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\twitch\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/facebook/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\facebook\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/linkedin/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "app/linkedin/i18n.ts",
+      "present": [
+        "fr",
+        "en"
+      ],
+      "missingLocales": [
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 107,
+      "completeness": {
+        "en": 100,
+        "es": 0,
+        "pt": 0,
+        "de": 0,
+        "it": 0,
+        "tr": 0
+      }
+    },
+    {
+      "file": "app/twitter/i18n.ts",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 0,
+      "completeness": {
+        "en": -1,
+        "es": -1,
+        "pt": -1,
+        "de": -1,
+        "it": -1,
+        "tr": -1
+      }
+    },
+    {
+      "file": "C:\\Users\\ilyee\\Fanovera\\app\\twitter\\i18n.ts",
+      "error": "Variable not found"
+    },
+    {
+      "file": "app/contact/ContactClient.tsx",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 56,
+      "completeness": {
+        "en": 100,
+        "es": 100,
+        "pt": 100,
+        "de": 100,
+        "it": 100,
+        "tr": 100
+      }
+    },
+    {
+      "file": "app/track/TrackLookupClient.tsx",
+      "present": [
+        "fr",
+        "en",
+        "es",
+        "pt",
+        "de",
+        "it",
+        "tr"
+      ],
+      "missingLocales": [],
+      "sourceLocale": "fr",
+      "sourceKeyCount": 41,
+      "completeness": {
+        "en": 100,
+        "es": 100,
+        "pt": 100,
+        "de": 100,
+        "it": 100,
+        "tr": 100
+      }
+    }
+  ],
+  "hardcodedCount": 4,
+  "hardcodedTopFiles": [
+    {
+      "file": "app/tiktok/components/Step2Username.tsx",
+      "count": 2
+    },
+    {
+      "file": "app/facebook/components/Step3Checkout.tsx",
+      "count": 1
+    },
+    {
+      "file": "app/youtube/components/Step3Checkout.tsx",
+      "count": 1
+    }
+  ]
+}

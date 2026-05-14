@@ -7,6 +7,7 @@ import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useXCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type XProfile = {
   username: string;
@@ -80,6 +81,11 @@ export default function Step2Username({
         } else {
           setProfile(json as XProfile);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "twitter",
+            platform: "twitter",
+            followers_count: Number(json?.followersCount) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");

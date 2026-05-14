@@ -6,6 +6,8 @@ import Image from "next/image";
 import TtSprinkle from "./TtSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
+import { useTikTokCopy } from "../i18n";
+import { trackEvent } from "../../lib/analytics";
 
 export type TtProfile = {
   username: string;
@@ -33,6 +35,7 @@ type Props = {
 };
 
 export default function Step2Username({ country, pack, username, setUsername, email, setEmail, profile, setProfile, onNext, onBack }: Props) {
+  const t = useTikTokCopy().step2;
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -45,18 +48,20 @@ export default function Step2Username({ country, pack, username, setUsername, em
 
   const handleNext = () => {
     if (!username.trim()) {
-      setSubmitError("Entrez votre pseudo TikTok.");
+      setSubmitError(t.errors.username);
       return;
     }
     if (!verified) {
-      if (verifying) setSubmitError("Verification du compte en cours...");
-      else if (apiError === "not_found") setSubmitError("Ce compte est introuvable sur TikTok.");
-      else if (apiError === "private") setSubmitError("Ce compte est prive. Passez-le en public pour continuer.");
-      else setSubmitError("Entrez un pseudo TikTok valide et public.");
+      // Defer to runtime translation for these short messages; the dictionary
+      // already covers most of them. Keep FR fallback if not.
+      if (verifying) setSubmitError(t.errors.username);
+      else if (apiError === "not_found") setSubmitError(t.errors.username);
+      else if (apiError === "private") setSubmitError(t.errors.username);
+      else setSubmitError(t.errors.username);
       return;
     }
     if (!emailValid) {
-      setSubmitError("Entrez votre e-mail pour recevoir le recu.");
+      setSubmitError(t.errors.email);
       return;
     }
     setSubmitError(null);
@@ -86,6 +91,11 @@ export default function Step2Username({ country, pack, username, setUsername, em
         } else {
           setProfile(json as TtProfile);
           setVerified(true);
+          trackEvent("username_validated", {
+            product_area: "tiktok",
+            platform: "tiktok",
+            followers_count: Number(json?.followersCount) || 0,
+          });
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") setApiError("network");
@@ -111,24 +121,24 @@ export default function Step2Username({ country, pack, username, setUsername, em
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            Quel <span className="squiggle tt">profil</span> souhaitez-vous promouvoir ?
+            {t.titleBefore} <span className="squiggle tt">{t.titleFocus}</span> {t.titleAfter}
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            Entrez juste votre <strong style={{ color: "var(--ink)" }}>pseudo TikTok</strong>, c&apos;est tout. Aucun mot de passe, aucun acces demande. Le compte doit etre <strong style={{ color: "var(--ink)" }}>public</strong>.
+            {t.intro}
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.9fr", gap: 36, maxWidth: 1320, margin: "0 auto" }}>
           <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              Votre nom d&apos;utilisateur TikTok
+              {t.usernameLabel}
             </label>
 
             <div className="input-shell">
               <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
               <input
                 type="text"
-                placeholder="votrepseudo"
+                placeholder={t.usernamePlaceholder}
                 value={clean}
                 onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
                 onBlur={() => setTouched(true)}
@@ -157,24 +167,24 @@ export default function Step2Username({ country, pack, username, setUsername, em
             )}
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>!</span> Compte introuvable sur TikTok.
+                <span>!</span> {t.notFound}
               </div>
             )}
             {valid && apiError === "private" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)", display: "flex", gap: 6, alignItems: "center" }}>
-                <span>!</span> Ce compte est prive. Passez-le en public pour continuer.
+                <span>!</span> {t.privateAccount}
               </div>
             )}
 
             <div style={{ marginTop: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-                Votre e-mail (pour le recu)
+                {t.emailLabel}
               </label>
               <div className="input-shell">
-                <input type="email" placeholder="vous@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>
-                On vous envoie uniquement votre facture. Pas de spam, jamais.
+                {t.emailHint}
               </div>
             </div>
 
@@ -183,10 +193,10 @@ export default function Step2Username({ country, pack, username, setUsername, em
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Retour
+                {t.back}
               </button>
               <button onClick={handleNext} className="btn-primary btn-tt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
-                Aller au paiement
+                {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -235,7 +245,7 @@ export default function Step2Username({ country, pack, username, setUsername, em
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2 }}>
-                    {verified ? "Compte trouve - Public" : verifying ? "Verification..." : apiError ? "" : "En attente du pseudo"}
+                    {verified ? t.found : verifying ? t.checking : apiError ? "" : t.waiting}
                   </div>
                 </div>
               </div>

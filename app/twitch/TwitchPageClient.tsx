@@ -10,12 +10,15 @@ import Reviews from "./components/Reviews";
 import TwFAQ from "./components/TwFAQ";
 import TwFooter from "./components/TwFooter";
 import type { TwProfile } from "./components/Step2Username";
-import { PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId, formatPrice, formatQty } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import StickyMobileCTA from "../components/StickyMobileCTA";
+import { useTwitchCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -30,6 +33,8 @@ export default function TwitchPageClient() {
 
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
+  const tCopy = useTwitchCopy();
+  useFunnelPersistence("twitch", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   useProductAnalytics({
     productArea: "twitch",
     step,
@@ -51,6 +56,7 @@ export default function TwitchPageClient() {
     username: username.replace(/^@/, "").trim(),
     platform: "twitch",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -113,6 +119,17 @@ export default function TwitchPageClient() {
         <TwFAQ />
       </div>
       <TwFooter />
+      <StickyMobileCTA
+        visible={(step === 1 || step === 2) && canDisplayPricing}
+        label={tCopy.step1.continue}
+        priceLabel={formatPrice(selectedPack, country)}
+        subLabel={step === 2 && profile
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile.username}`
+          : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
+        disabled={step === 2 && !(profile && emailValid)}
+        accent="var(--tw-purple)"
+        onClick={next}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import TtHeader from "./components/TtHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Username from "./components/Step2Username";
@@ -10,12 +11,15 @@ import Reviews from "./components/Reviews";
 import TtFAQ from "./components/TtFAQ";
 import TtFooter from "./components/TtFooter";
 import type { TtProfile } from "./components/Step2Username";
-import { PACKS, type CountryId } from "./data";
+import { PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
-import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import StickyMobileCTA from "../components/StickyMobileCTA";
+import { useTikTokCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 
@@ -23,13 +27,25 @@ export default function TiktokPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
   const [pack, setPack] = useState(3);
+  const search = useSearchParams();
+  const initialProductType: TikTokProductType = (() => {
+    const raw = (search?.get("product") || "").toLowerCase();
+    return raw === "likes" || raw === "views" ? (raw as TikTokProductType) : "followers";
+  })();
+  const [productType, setProductType] = useState<TikTokProductType>(initialProductType);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<TtProfile | null>(null);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("tt_followers", PACKS, STATIC_PACKS);
+  const activePacks = getPacksForProduct(productType);
+  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
-  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
-  const selectedPack = PACKS[safePack] ?? PACKS[0];
+  const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
+  const selectedPack = activePacks[safePack] ?? activePacks[0];
+  usePrefetchProductPricing();
+  const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
+  useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
+  const tCopy = useTikTokCopy();
+  useFunnelPersistence("tiktok", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   useProductAnalytics({
     productArea: "tiktok",
     step,
@@ -51,6 +67,7 @@ export default function TiktokPageClient() {
     username: username.replace(/^@/, "").trim(),
     platform: "tiktok",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && !!profile && emailValid,
   });
 
@@ -79,7 +96,7 @@ export default function TiktokPageClient() {
     <div data-i18n-skip>
       <div className="paper-frame with-tt-halo">
         <TtHeader />
-        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--tt-red)" />)}
+        {step === 1 && (readyOnce ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} productType={productType} setProductType={setProductType} /> : <PricingPacksLoading accent="var(--tt-red)" />)}
         {step === 2 && (
           <Step2Username
             country={country}
@@ -102,6 +119,17 @@ export default function TiktokPageClient() {
         <TtFAQ />
       </div>
       <TtFooter />
+      <StickyMobileCTA
+        visible={(step === 1 || step === 2) && canDisplayPricing}
+        label={tCopy.step1.continue}
+        priceLabel={formatPrice(selectedPack, country)}
+        subLabel={step === 2 && profile
+          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile.username}`
+          : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
+        disabled={step === 2 && !(profile && emailValid)}
+        accent="var(--tt-red)"
+        onClick={next}
+      />
     </div>
   );
 }

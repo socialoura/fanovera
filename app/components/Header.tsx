@@ -27,8 +27,8 @@ export function Logo() {
 
 export default function Header() {
   const { locale } = useI18n();
-  const { mode } = useMarketingMode();
-  const copy = getPublicCopy(locale, mode).header;
+  const { mode, surfaceMode } = useMarketingMode();
+  const copy = getPublicCopy(locale, mode, surfaceMode).header;
 
   return (
     <div style={{ padding: "24px 0" }}>
