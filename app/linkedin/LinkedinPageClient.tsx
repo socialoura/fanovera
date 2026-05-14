@@ -17,6 +17,7 @@ import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useLinkedinCopy } from "./i18n";
 
@@ -70,20 +71,20 @@ export default function LinkedinPageClient() {
       currency,
     });
     setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
   const back = () => {
     setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
   const backToPacks = () => {
     setStep(1);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
 
   return (
     <div data-i18n-skip>
-      <div className="paper-frame with-li-halo">
+      <div className="paper-frame with-li-halo" data-step-main>
         <LiHeader />
         {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--li-blue)" />)}
         {step === 2 && (

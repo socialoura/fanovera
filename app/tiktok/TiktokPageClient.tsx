@@ -18,6 +18,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCu
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useTikTokCopy } from "./i18n";
 
@@ -92,20 +93,20 @@ export default function TiktokPageClient() {
       currency,
     });
     setStep((s) => (Math.min(3, s + 1) as 1 | 2 | 3));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
   const back = () => {
     setStep((s) => (Math.max(1, s - 1) as 1 | 2 | 3));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
   const backToPacks = () => {
     setStep(1);
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToStepMain();
   };
 
   return (
     <div data-i18n-skip>
-      <div className="paper-frame with-tt-halo">
+      <div className="paper-frame with-tt-halo" data-step-main>
         <TtHeader />
         {step === 1 && (readyOnce ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} productType={productType} setProductType={setProductType} /> : <PricingPacksLoading accent="var(--tt-red)" />)}
         {step === 2 && (
