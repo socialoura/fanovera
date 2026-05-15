@@ -16,6 +16,16 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
       defaults: "2025-05-24",
       capture_pageview: false,
       autocapture: true,
+      // Session replay — masque les inputs par défaut pour ne jamais capturer
+      // les emails, CB Stripe, mots de passe. Marque tout élément manuellement
+      // sensible avec class="ph-no-capture" (DOM masqué) ou data-attr.
+      disable_session_recording: false,
+      session_recording: {
+        maskAllInputs: true,
+        maskTextSelector: ".ph-mask",
+        blockSelector: ".ph-no-capture",
+        recordCrossOriginIframes: false,
+      },
       loaded: (client) => {
         client.register({
           environment: process.env.NODE_ENV || "development",

@@ -28,7 +28,13 @@
       "Bash(curl -s \"http://localhost:3000/api/tiktok/profile?username=cristiano\")",
       "Bash(curl *)",
       "WebSearch",
-      "Bash(grep -n \"^\\\\s*a\\\\s*{\\\\|^\\\\s*a\\\\s*,\\\\|display.*block\" app/globals.css)"
+      "Bash(grep -n \"^\\\\s*a\\\\s*{\\\\|^\\\\s*a\\\\s*,\\\\|display.*block\" app/globals.css)",
+      "Bash(grep -c \"fr:\\\\|en:\\\\|es:\\\\|pt:\\\\|de:\\\\|it:\\\\|tr:\" app/components/LegalPage.tsx)",
+      "Bash(head -30 app/components/LegalPage.tsx)",
+      "Bash(xargs grep -l \"posthog\\\\|PostHog\\\\|POSTHOG\")",
+      "Bash(grep -E \"NEXT_PUBLIC_POSTHOG|POSTHOG\" .env.local)",
+      "Bash(grep \"posthog\\\\|posthog-js\" package.json)",
+      "Bash(grep -n \"^  [a-z]*: {$\\\\|^  fr: {$\\\\|^  en: {$\\\\|^  es: {$\\\\|^  pt: {$\\\\|^  de: {$\\\\|^  it: {$\\\\|^  tr: {$\\\\|^const COPY\" app/contact/ContactClient.tsx)"
     ]
   }
 }

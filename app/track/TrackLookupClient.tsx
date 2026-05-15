@@ -371,11 +371,15 @@ function statusTone(status: string | null): { bg: string; fg: string } {
   return { bg: "var(--paper-2)", fg: "var(--ink-2)" };
 }
 
+const INTL_LOCALE: Record<string, string> = {
+  fr: "fr-FR", en: "en-US", es: "es-ES", pt: "pt-PT", de: "de-DE", it: "it-IT", tr: "tr-TR",
+};
+
 function formatAmount(cents: number | null, currency: string | null, locale: string) {
   if (typeof cents !== "number") return "—";
   const normalizedCurrency = (currency || "eur").toUpperCase();
   try {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", {
+    return new Intl.NumberFormat(INTL_LOCALE[locale] || "fr-FR", {
       style: "currency",
       currency: normalizedCurrency,
     }).format(cents / 100);
@@ -388,7 +392,7 @@ function formatDate(value: string | null, locale: string) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale] || "fr-FR", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -855,7 +859,7 @@ export default function TrackLookupClient() {
                               }}
                             >
                               <span>
-                                {copy.progressLabel} · {totalDelivered.toLocaleString(locale === "en" ? "en-US" : "fr-FR")} / {totalQty.toLocaleString(locale === "en" ? "en-US" : "fr-FR")}
+                                {copy.progressLabel} · {totalDelivered.toLocaleString(INTL_LOCALE[locale] || "fr-FR")} / {totalQty.toLocaleString(INTL_LOCALE[locale] || "fr-FR")}
                               </span>
                               <span style={{ color: tone.fg, fontWeight: 800 }}>{overallPct}%</span>
                             </div>

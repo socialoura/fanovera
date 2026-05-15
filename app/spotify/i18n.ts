@@ -1,40 +1,7 @@
 import { useI18n } from "../i18n/I18nProvider";
-import { deepTranslateCopy } from "../i18n/deepTranslate";
 import type { SupportedLocale } from "../i18n/types";
 import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-
-function translateLocalCopy<T>(source: T, locale: SupportedLocale): T {
-  const translated = locale === "en" ? deepTranslateCopy(source, locale) : source;
-  if (locale === "fr" || locale === "en") return translated;
-
-  const replacements: Record<Exclude<SupportedLocale, "fr" | "en">, Array<[string, string]>> = {
-    es: [["Tous les réseaux", "Todas las redes"], ["Paiement sécurisé", "Pago seguro"], ["Choisir un pack", "Elegir un pack"], ["Votre morceau", "Tu cancion"], ["Une visibilité Spotify", "Visibilidad de Spotify"], ["ciblée", "dirigida"], ["& progressive.", "y progresiva."], ["Quel volume ?", "Que volumen?"], ["Écoutes", "Reproducciones"], ["Votre campagne", "Tu campana"], ["Pack sélectionné", "Pack seleccionado"], ["Pack visibilité Spotify", "Pack de visibilidad Spotify"], ["crédit inclus", "credito incluido"], ["Remise incluse", "Descuento incluido"], ["Continuer", "Continuar"], ["Sans engagement", "Sin compromiso"], ["Aucun mot de passe demandé", "Sin contrasena"], ["Quel", "Que"], ["morceau", "cancion"], ["promouvoir ?", "quieres promocionar?"], ["Auditeurs mensuels", "Oyentes mensuales"], ["auditeurs mensuels", "oyentes mensuales"], ["Popularité", "Popularidad"], ["Nouveau total", "Nuevo total"], ["Récapitulatif", "Resumen"], ["Plus qu'une", "Solo queda una"], ["étape", "etapa"], ["préparation de la campagne après confirmation", "preparacion de la campana tras la confirmacion"], ["Pourquoi Fanovera", "Por que Fanovera"], ["Des écoutes Spotify", "Reproducciones de Spotify"], ["progressives", "progresivas"], ["et soignées.", "y cuidadas."], ["Avis clients", "Opiniones de clientes"], ["Vos questions,", "Tus preguntas,"], ["nos réponses", "nuestras respuestas"]],
-    pt: [["Tous les réseaux", "Todas as redes"], ["Paiement sécurisé", "Pagamento seguro"], ["Choisir un pack", "Escolher um pacote"], ["Votre morceau", "Sua faixa"], ["Une visibilité Spotify", "Visibilidade no Spotify"], ["ciblée", "segmentada"], ["& progressive.", "e progressiva."], ["Quel volume ?", "Qual volume?"], ["Écoutes", "Reproducoes"], ["Votre campagne", "Sua campanha"], ["Pack sélectionné", "Pacote selecionado"], ["Pack visibilité Spotify", "Pacote de visibilidade Spotify"], ["crédit inclus", "credito incluido"], ["Remise incluse", "Desconto incluido"], ["Continuer", "Continuar"], ["Sans engagement", "Sem compromisso"], ["Aucun mot de passe demandé", "Sem senha"], ["Quel", "Qual"], ["morceau", "faixa"], ["promouvoir ?", "quer promover?"], ["Auditeurs mensuels", "Ouvintes mensais"], ["Popularité", "Popularidade"], ["Nouveau total", "Novo total"], ["Récapitulatif", "Resumo"], ["Plus qu'une", "So falta uma"], ["étape", "etapa"], ["préparation de la campagne après confirmation", "preparacao da campanha apos confirmacao"], ["Pourquoi Fanovera", "Por que Fanovera"], ["Des écoutes Spotify", "Reproducoes no Spotify"], ["progressives", "progressivas"], ["et soignées.", "e cuidadas."], ["Avis clients", "Avaliacoes de clientes"], ["Vos questions,", "Suas perguntas,"], ["nos réponses", "nossas respostas"]],
-    de: [["Tous les réseaux", "Alle Netzwerke"], ["Paiement sécurisé", "Sichere Zahlung"], ["Choisir un pack", "Paket wahlen"], ["Votre morceau", "Dein Track"], ["Une visibilité Spotify", "Spotify-Sichtbarkeit"], ["ciblée", "gezielt"], ["& progressive.", "und progressiv."], ["Quel volume ?", "Welches Volumen?"], ["Écoutes", "Streams"], ["Votre campagne", "Deine Kampagne"], ["Pack sélectionné", "Ausgewahltes Paket"], ["Pack visibilité Spotify", "Spotify-Sichtbarkeitspaket"], ["crédit inclus", "inklusive Guthaben"], ["Remise incluse", "Rabatt enthalten"], ["Continuer", "Weiter"], ["Sans engagement", "Ohne Bindung"], ["Aucun mot de passe demandé", "Kein Passwort erforderlich"], ["Quel", "Welchen"], ["morceau", "Track"], ["promouvoir ?", "mochtest du bewerben?"], ["Auditeurs mensuels", "Monatliche Horer"], ["Popularité", "Beliebtheit"], ["Nouveau total", "Neue Summe"], ["Récapitulatif", "Zusammenfassung"], ["Plus qu'une", "Nur noch ein"], ["étape", "Schritt"], ["préparation de la campagne après confirmation", "Kampagnenvorbereitung nach Bestatigung"], ["Pourquoi Fanovera", "Warum Fanovera"], ["Des écoutes Spotify", "Spotify-Streams"], ["progressives", "progressiv"], ["et soignées.", "und sorgfaltig."], ["Avis clients", "Kundenbewertungen"], ["Vos questions,", "Deine Fragen,"], ["nos réponses", "unsere Antworten"]],
-    it: [["Tous les réseaux", "Tutte le reti"], ["Paiement sécurisé", "Pagamento sicuro"], ["Choisir un pack", "Scegli un pacchetto"], ["Votre morceau", "Il tuo brano"], ["Une visibilité Spotify", "Visibilita Spotify"], ["ciblée", "mirata"], ["& progressive.", "e progressiva."], ["Quel volume ?", "Quale volume?"], ["Écoutes", "Ascolti"], ["Votre campagne", "La tua campagna"], ["Pack sélectionné", "Pacchetto selezionato"], ["Pack visibilité Spotify", "Pacchetto visibilita Spotify"], ["crédit inclus", "credito incluso"], ["Remise incluse", "Sconto incluso"], ["Continuer", "Continua"], ["Sans engagement", "Senza impegno"], ["Aucun mot de passe demandé", "Nessuna password richiesta"], ["Quel", "Quale"], ["morceau", "brano"], ["promouvoir ?", "vuoi promuovere?"], ["Auditeurs mensuels", "Ascoltatori mensili"], ["Popularité", "Popolarita"], ["Nouveau total", "Nuovo totale"], ["Récapitulatif", "Riepilogo"], ["Plus qu'une", "Manca solo un"], ["étape", "passaggio"], ["préparation de la campagne après confirmation", "preparazione della campagna dopo conferma"], ["Pourquoi Fanovera", "Perche Fanovera"], ["Des écoutes Spotify", "Ascolti Spotify"], ["progressives", "progressivi"], ["et soignées.", "e curati."], ["Avis clients", "Recensioni clienti"], ["Vos questions,", "Le tue domande,"], ["nos réponses", "le nostre risposte"]],
-    tr: [["Tous les réseaux", "Tum aglar"], ["Paiement sécurisé", "Guvenli odeme"], ["Choisir un pack", "Paket sec"], ["Votre morceau", "Parcaniz"], ["Une visibilité Spotify", "Spotify gorunurlugu"], ["ciblée", "hedefli"], ["& progressive.", "ve kademeli."], ["Quel volume ?", "Hangi hacim?"], ["Écoutes", "Dinlenmeler"], ["Votre campagne", "Kampanyaniz"], ["Pack sélectionné", "Secilen paket"], ["Pack visibilité Spotify", "Spotify gorunurluk paketi"], ["crédit inclus", "dahil kredi"], ["Remise incluse", "Indirim dahil"], ["Continuer", "Devam et"], ["Sans engagement", "Taahhutsuz"], ["Aucun mot de passe demandé", "Sifre gerekmez"], ["Quel", "Hangi"], ["morceau", "parca"], ["promouvoir ?", "one cikarilsin?"], ["Auditeurs mensuels", "Aylik dinleyiciler"], ["Popularité", "Populerlik"], ["Nouveau total", "Yeni toplam"], ["Récapitulatif", "Ozet"], ["Plus qu'une", "Sadece bir"], ["étape", "adim kaldi"], ["préparation de la campagne après confirmation", "onaydan sonra kampanya hazirligi"], ["Pourquoi Fanovera", "Neden Fanovera"], ["Des écoutes Spotify", "Spotify dinlenmeleri"], ["progressives", "kademeli"], ["et soignées.", "ve ozenli."], ["Avis clients", "Musteri yorumlari"], ["Vos questions,", "Sorulariniz,"], ["nos réponses", "cevaplarimiz"]],
-  };
-
-  const walk = (value: unknown): unknown => {
-    if (typeof value === "string") {
-      let text = replacements[locale].reduce((current, [from, to]) => current.replaceAll(from, to), value);
-      text = text.replaceAll("auditeurs mensuels", {
-        es: "oyentes mensuales",
-        pt: "ouvintes mensais",
-        de: "monatliche Horer",
-        it: "ascoltatori mensili",
-        tr: "aylik dinleyiciler",
-      }[locale]);
-      return text;
-    }
-    if (Array.isArray(value)) return value.map(walk);
-    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, walk(val)]));
-    return value;
-  };
-
-  return walk(translated) as T;
-}
 
 const copy = {
   fr: {
@@ -100,6 +67,151 @@ const copy = {
     faq: { titleBefore: "Your questions,", titleFocus: "our answers", items: [["How does the visibility campaign work?", "We prepare a visibility campaign around your Spotify track and topic. The goal is to present your content to a more relevant audience, with a measured and progressive pace."], ["Do I need to give you my password?", "Never. We only need the public Spotify link for your track. No account access is requested."], ["Do you act on my account?", "No. We do not log into your account and we do not publish anything on your behalf. The service relies on external and progressive promotion."], ["When does the campaign start?", "Preparation starts after payment confirmation. Deployment is progressive and can span several days depending on the selected volume."], ["What happens if the volume is not reached?", "Our support team reviews the campaign and can extend the promotion at no extra cost when the planned volume is not reached."], ["Do stats appear immediately?", "Stats can vary depending on Spotify's own checks and delays. Deployment remains progressive and monitored."]] },
     footer: { desc: "AI-assisted online presence strategy. Focused campaigns, clear tracking and measured progress.", networks: "Networks", help: "Help", how: "How it works", support: "Campaign support", tracking: "Order tracking", legal: "Legal", legalNotice: "Legal notice", privacy: "Privacy", cookies: "Cookies", madeIn: "Made in Paris" },
   },
+  es: {
+    header: { allNetworks: "Todas las redes", tracking: "Seguimiento", ratingText: "2.348 reseñas", home: "Inicio" },
+    stepper: ["Elegir un pack", "Tu canción", "Pago seguro"],
+    step1: { titleBefore: "Visibilidad Spotify", titleFocus: "dirigida", titleAfter: "y progresiva.", volume: "¿Qué volumen?", audience: "Reproducciones", included: "incluido", campaign: "Tu campaña", selectedPack: "Pack seleccionado", visibilityPack: "Pack de visibilidad Spotify", includedCredit: "crédito incluido", total: "Total", discount: "Descuento incluido", continue: "Continuar", reassurance: "Sin compromiso · Sin contraseña · Inicio en 1–6 h", productStreams: "Reproducciones", productFollowers: "Seguidores", audienceFollowers: "Seguidores" },
+    step2: { titleBefore: "¿Qué", titleFocus: "canción", titleAfter: "quieres promocionar?", intro: "Pega el enlace Spotify de tu canción, o busca por título + artista. Sin contraseña.", searchMode: "Título + artista", urlMode: "Enlace Spotify", urlLabel: "Enlace de tu canción Spotify", invalidUrl: "Enlace inválido. Ejemplo: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Título de la canción", artistLabel: "Artista", notFound: "Canción no encontrada en Spotify.", emailLabel: "Tu email (para el recibo)", emailPlaceholder: "tu@ejemplo.com", emailHint: "Solo enviamos tu factura. Nunca spam.", back: "Atrás", pay: "Ir al pago", loading: "Cargando...", trackFallback: "Tu canción", artistFallback: "Artista", totalStreams: "Reproducciones totales", monthlyListeners: "Oyentes mensuales", popularity: "Popularidad", newTotal: "Nuevo total", errors: { missingUrl: "Pega el enlace Spotify de tu canción.", invalidUrl: "Enlace Spotify inválido. Formato: open.spotify.com/track/...", missingSearch: "Indica el título y el artista.", verifying: "Buscando la canción...", notFound: "Canción no encontrada en Spotify.", missingTrack: "Canción no encontrada.", email: "Introduce tu email para recibir el recibo." },
+      artist: {
+        titleBefore: "¿Qué", titleFocus: "artista", titleAfter: "quieres promocionar?",
+        intro: "Introduce el nombre de tu artista de Spotify. Sin contraseña.",
+        nameLabel: "Nombre del artista",
+        namePlaceholder: "Ed Sheeran",
+        invalidFormat: "Introduce un nombre de artista (mínimo 2 caracteres).",
+        notFound: "Artista no encontrado en Spotify.",
+        found: "Artista encontrado",
+        checking: "Buscando artista...",
+        waiting: "Esperando el nombre",
+        artistFallback: "Tu artista",
+        verifiedBadge: "Verificado",
+        plannedVolume: "Volumen previsto",
+        afterCampaign: "Tras la campaña",
+        followersUnit: "seguidores",
+        errors: { missingName: "Introduce el nombre de tu artista.", missingArtist: "Artista no encontrado." },
+      },
+    },
+    step3: { titleBefore: "Solo un", titleFocus: "paso", titleAfter: "más.", subtitle: "Pago seguro · preparación de la campaña tras la confirmación.", summary: "Resumen", recipient: "Canción destinataria", edit: "Editar", trackFallback: "Tu canción", visibilityPack: "Pack de visibilidad Spotify", includedCredit: "crédito incluido", included: "incluido", campaignCredit: "Crédito de campaña", free: "GRATIS", coupon: "Código promo", couponPlaceholder: "CÓDIGO PROMO", applied: "✓ Aplicado", apply: "Aplicar", saving: "✓ -5% aplicado · ahorro", total: "Total IVA incl.", securePayment: "Pago seguro", legalBefore: "Al finalizar el pago aceptas nuestros", legalAfter: "Sin suscripción oculta.", terms: "Términos", gdpr: "RGPD", backToPacks: "Volver a la selección de packs" },
+    why: { eyebrow: "Por qué Fanovera", title1: "Reproducciones Spotify", title2: "progresivas", title3: "y cuidadas.", items: [["Audiencia dirigida", "Nuestra IA ayuda a presentar tu canción a una audiencia coherente con tu género musical."], ["Cuenta protegida", "Sin acceso a la cuenta, sin publicaciones en tu nombre, sin acciones directas en tu perfil."], ["Sin contraseña", "Solo el enlace público de tu canción para preparar la campaña de visibilidad."], ["Seguimiento incluido", "Si no se alcanza el volumen previsto, nuestro soporte revisa y prolonga la campaña."]] },
+    reviews: { eyebrow: "Reseñas de clientes", rating: "2.348 reseñas", dates: ["hace 2 días", "hace 7 días", "hace 5 días", "hace 10 días", "hace 5 días", "hace 12 días", "hace 14 días", "hace 15 días"], texts: ["Progresión regular y campaña bien seguida. Lo recomiendo.", "Inicio rápido, seguimiento claro y ritmo progresivo.", "Las reproducciones aumentaron progresivamente en 10 días.", "Primera campaña Spotify, servicio serio y seguimiento claro.", "Buen progreso en mi EP durante varias semanas.", "Nada que añadir, el progreso corresponde a lo anunciado.", "Servicio al cliente reactivo y seguimiento al día.", "Mis oyentes mensuales han progresado de forma regular."] },
+    faq: { titleBefore: "Tus preguntas,", titleFocus: "nuestras respuestas", items: [["¿Cómo funciona la promoción?", "Preparamos una campaña de visibilidad alrededor de tu canción Spotify y de tu temática. El objetivo es presentar tu contenido a una audiencia más relevante, con un ritmo progresivo y medido."], ["¿Debo darte mi contraseña?", "Nunca. Solo necesitamos el enlace Spotify público de tu canción. No se solicita acceso a la cuenta."], ["¿Actúas sobre mi cuenta?", "No. No iniciamos sesión en tu cuenta ni publicamos nada en tu nombre. El servicio se basa en una promoción externa y progresiva."], ["¿Cuándo empieza la campaña?", "La preparación empieza tras la confirmación del pago. El despliegue es progresivo y puede durar varios días según el volumen elegido."], ["¿Qué pasa si no se alcanza el volumen?", "Nuestro soporte revisa la campaña y puede prolongar la promoción sin coste adicional cuando no se alcanza el volumen previsto."], ["¿Las estadísticas aparecen de inmediato?", "Las estadísticas pueden variar según los controles y plazos propios de Spotify. El despliegue sigue siendo progresivo y supervisado."]] },
+    footer: { desc: "Estrategia de presencia online asistida por IA. Campañas dirigidas, seguimiento claro y progreso medido.", networks: "Redes", help: "Ayuda", how: "Cómo funciona", support: "Soporte de campaña", tracking: "Seguimiento del pedido", legal: "Legal", legalNotice: "Aviso legal", privacy: "Privacidad", cookies: "Cookies", madeIn: "Made in Paris" },
+  },
+  pt: {
+    header: { allNetworks: "Todas as redes", tracking: "Acompanhamento", ratingText: "2.348 avaliações", home: "Início" },
+    stepper: ["Escolher um pack", "Sua faixa", "Pagamento seguro"],
+    step1: { titleBefore: "Visibilidade no Spotify", titleFocus: "direcionada", titleAfter: "e progressiva.", volume: "Qual volume?", audience: "Reproduções", included: "incluído", campaign: "Sua campanha", selectedPack: "Pack selecionado", visibilityPack: "Pack de visibilidade Spotify", includedCredit: "crédito incluído", total: "Total", discount: "Desconto incluído", continue: "Continuar", reassurance: "Sem compromisso · Sem senha · Início em 1–6 h", productStreams: "Streams", productFollowers: "Seguidores", audienceFollowers: "Seguidores" },
+    step2: { titleBefore: "Qual", titleFocus: "faixa", titleAfter: "deseja promover?", intro: "Cole o link Spotify da sua faixa, ou busque por título + artista. Sem senha.", searchMode: "Título + artista", urlMode: "Link Spotify", urlLabel: "Link da sua faixa Spotify", invalidUrl: "Link inválido. Exemplo: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Título da faixa", artistLabel: "Artista", notFound: "Faixa não encontrada no Spotify.", emailLabel: "Seu email (para o recibo)", emailPlaceholder: "voce@exemplo.com", emailHint: "Enviamos apenas sua nota. Nunca spam.", back: "Voltar", pay: "Ir ao pagamento", loading: "Carregando...", trackFallback: "Sua faixa", artistFallback: "Artista", totalStreams: "Streams totais", monthlyListeners: "Ouvintes mensais", popularity: "Popularidade", newTotal: "Novo total", errors: { missingUrl: "Cole o link Spotify da sua faixa.", invalidUrl: "Link Spotify inválido. Formato: open.spotify.com/track/...", missingSearch: "Informe o título e o artista.", verifying: "Buscando a faixa...", notFound: "Faixa não encontrada no Spotify.", missingTrack: "Faixa não encontrada.", email: "Digite seu email para receber o recibo." },
+      artist: {
+        titleBefore: "Qual", titleFocus: "artista", titleAfter: "deseja promover?",
+        intro: "Insira o nome do seu artista do Spotify. Sem senha.",
+        nameLabel: "Nome do artista",
+        namePlaceholder: "Ed Sheeran",
+        invalidFormat: "Insira um nome de artista (mínimo 2 caracteres).",
+        notFound: "Artista não encontrado no Spotify.",
+        found: "Artista encontrado",
+        checking: "Buscando artista...",
+        waiting: "Aguardando o nome",
+        artistFallback: "Seu artista",
+        verifiedBadge: "Verificado",
+        plannedVolume: "Volume previsto",
+        afterCampaign: "Após a campanha",
+        followersUnit: "seguidores",
+        errors: { missingName: "Insira o nome do seu artista.", missingArtist: "Artista não encontrado." },
+      },
+    },
+    step3: { titleBefore: "Falta apenas", titleFocus: "um passo", titleAfter: ".", subtitle: "Pagamento seguro · preparação da campanha após confirmação.", summary: "Resumo", recipient: "Faixa destinatária", edit: "Editar", trackFallback: "Sua faixa", visibilityPack: "Pack de visibilidade Spotify", includedCredit: "crédito incluído", included: "incluído", campaignCredit: "Crédito de campanha", free: "GRÁTIS", coupon: "Código promocional", couponPlaceholder: "CÓDIGO PROMO", applied: "✓ Aplicado", apply: "Aplicar", saving: "✓ -5% aplicado · economia", total: "Total com impostos", securePayment: "Pagamento seguro", legalBefore: "Ao finalizar o pagamento você aceita nossos", legalAfter: "Sem assinatura oculta.", terms: "Termos", gdpr: "LGPD", backToPacks: "Voltar à escolha dos packs" },
+    why: { eyebrow: "Por que Fanovera", title1: "Streams Spotify", title2: "progressivos", title3: "e cuidadosos.", items: [["Audiência direcionada", "Nossa IA ajuda a apresentar sua faixa a uma audiência coerente com seu gênero musical."], ["Conta preservada", "Sem acesso à conta, sem publicações em seu nome, sem ações diretas no seu perfil."], ["Sem senha", "Apenas o link público da sua faixa para preparar a campanha de visibilidade."], ["Acompanhamento incluído", "Se o volume previsto não for atingido, nosso suporte revisa e estende a campanha."]] },
+    reviews: { eyebrow: "Avaliações de clientes", rating: "2.348 avaliações", dates: ["há 2 dias", "há 7 dias", "há 5 dias", "há 10 dias", "há 5 dias", "há 12 dias", "há 14 dias", "há 15 dias"], texts: ["Progresso regular e campanha bem acompanhada. Recomendo.", "Início rápido, acompanhamento claro e ritmo progressivo.", "Os streams aumentaram progressivamente em 10 dias.", "Primeira campanha Spotify, serviço sério e acompanhamento claro.", "Bom progresso no meu EP durante várias semanas.", "Nada a dizer, o progresso corresponde ao anunciado.", "Suporte responsivo e acompanhamento pontual.", "Meus ouvintes mensais progrediram de forma regular."] },
+    faq: { titleBefore: "Suas perguntas,", titleFocus: "nossas respostas", items: [["Como funciona a promoção?", "Preparamos uma campanha de visibilidade em torno da sua faixa Spotify e da sua temática. O objetivo é apresentar seu conteúdo a uma audiência mais relevante, com um ritmo progressivo e medido."], ["Preciso fornecer minha senha?", "Nunca. Precisamos apenas do link Spotify público da sua faixa. Nenhum acesso à conta é solicitado."], ["Vocês agem na minha conta?", "Não. Não acessamos sua conta e não publicamos nada em seu nome. O serviço se baseia em uma promoção externa e progressiva."], ["Quando a campanha começa?", "A preparação começa após a confirmação do pagamento. A implantação é progressiva e pode durar vários dias conforme o volume escolhido."], ["O que acontece se o volume não for atingido?", "Nosso suporte revisa a campanha e pode estender a promoção sem custos adicionais quando o volume previsto não é atingido."], ["As estatísticas aparecem imediatamente?", "As estatísticas podem variar conforme os controles e prazos próprios do Spotify. A implantação continua progressiva e monitorada."]] },
+    footer: { desc: "Estratégia de presença online com IA. Campanhas direcionadas, acompanhamento claro e progresso medido.", networks: "Redes", help: "Ajuda", how: "Como funciona", support: "Suporte de campanha", tracking: "Acompanhamento do pedido", legal: "Legal", legalNotice: "Aviso legal", privacy: "Privacidade", cookies: "Cookies", madeIn: "Made in Paris" },
+  },
+  de: {
+    header: { allNetworks: "Alle Netzwerke", tracking: "Tracking", ratingText: "2.348 Bewertungen", home: "Startseite" },
+    stepper: ["Paket wählen", "Dein Track", "Sichere Zahlung"],
+    step1: { titleBefore: "Gezielte Spotify-Sichtbarkeit", titleFocus: "fokussiert", titleAfter: "und progressiv.", volume: "Welches Volumen?", audience: "Streams", included: "inklusive", campaign: "Deine Kampagne", selectedPack: "Ausgewähltes Paket", visibilityPack: "Spotify-Sichtbarkeitspaket", includedCredit: "Guthaben inklusive", total: "Gesamt", discount: "Rabatt enthalten", continue: "Weiter", reassurance: "Keine Verpflichtung · Kein Passwort · Start in 1–6 h", productStreams: "Streams", productFollowers: "Follower", audienceFollowers: "Follower" },
+    step2: { titleBefore: "Welchen", titleFocus: "Track", titleAfter: "möchtest du bewerben?", intro: "Füge den Spotify-Link deines Tracks ein oder suche per Titel + Künstler. Kein Passwort nötig.", searchMode: "Titel + Künstler", urlMode: "Spotify-Link", urlLabel: "Link zu deinem Spotify-Track", invalidUrl: "Ungültiger Link. Beispiel: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Track-Titel", artistLabel: "Künstler", notFound: "Track auf Spotify nicht gefunden.", emailLabel: "Deine E-Mail (für die Quittung)", emailPlaceholder: "du@beispiel.com", emailHint: "Wir senden nur deine Rechnung. Niemals Spam.", back: "Zurück", pay: "Zur Zahlung", loading: "Wird geladen...", trackFallback: "Dein Track", artistFallback: "Künstler", totalStreams: "Streams gesamt", monthlyListeners: "Monatliche Hörer", popularity: "Beliebtheit", newTotal: "Neue Summe", errors: { missingUrl: "Füge den Spotify-Link deines Tracks ein.", invalidUrl: "Ungültiger Spotify-Link. Format: open.spotify.com/track/...", missingSearch: "Gib Titel und Künstler an.", verifying: "Track-Suche läuft...", notFound: "Track auf Spotify nicht gefunden.", missingTrack: "Track nicht gefunden.", email: "Gib deine E-Mail ein, um die Quittung zu erhalten." },
+      artist: {
+        titleBefore: "Welchen", titleFocus: "Künstler", titleAfter: "möchtest du bewerben?",
+        intro: "Gib den Namen deines Spotify-Künstlers ein. Kein Passwort nötig.",
+        nameLabel: "Name des Künstlers",
+        namePlaceholder: "Ed Sheeran",
+        invalidFormat: "Gib einen Künstlernamen ein (mindestens 2 Zeichen).",
+        notFound: "Künstler auf Spotify nicht gefunden.",
+        found: "Künstler gefunden",
+        checking: "Künstler wird gesucht...",
+        waiting: "Warten auf den Namen",
+        artistFallback: "Dein Künstler",
+        verifiedBadge: "Verifiziert",
+        plannedVolume: "Geplantes Volumen",
+        afterCampaign: "Nach der Kampagne",
+        followersUnit: "Follower",
+        errors: { missingName: "Gib den Namen deines Künstlers ein.", missingArtist: "Künstler nicht gefunden." },
+      },
+    },
+    step3: { titleBefore: "Nur noch ein", titleFocus: "Schritt", titleAfter: ".", subtitle: "Sichere Zahlung · Kampagnenvorbereitung nach Bestätigung.", summary: "Zusammenfassung", recipient: "Empfänger-Track", edit: "Bearbeiten", trackFallback: "Dein Track", visibilityPack: "Spotify-Sichtbarkeitspaket", includedCredit: "Guthaben inklusive", included: "inklusive", campaignCredit: "Kampagnen-Guthaben", free: "GRATIS", coupon: "Promo-Code", couponPlaceholder: "PROMO-CODE", applied: "✓ Angewendet", apply: "Anwenden", saving: "✓ -5% angewendet · Ersparnis", total: "Gesamt inkl. MwSt.", securePayment: "Sichere Zahlung", legalBefore: "Mit Abschluss der Zahlung akzeptierst du unsere", legalAfter: "Kein verstecktes Abonnement.", terms: "AGB", gdpr: "DSGVO", backToPacks: "Zurück zur Paketauswahl" },
+    why: { eyebrow: "Warum Fanovera", title1: "Progressive", title2: "Spotify-Streams", title3: "mit sorgfältiger Lieferung.", items: [["Fokussierte Zielgruppe", "Unsere KI hilft, deinen Track einer Zielgruppe zu präsentieren, die zu deinem Musikgenre passt."], ["Konto geschützt", "Kein Kontozugriff, keine Beiträge in deinem Namen, keine direkten Aktionen auf deinem Profil."], ["Kein Passwort", "Nur der öffentliche Link deines Tracks wird benötigt, um die Sichtbarkeitskampagne vorzubereiten."], ["Nachverfolgung inklusive", "Wenn das geplante Volumen nicht erreicht wird, prüft und verlängert unser Support die Kampagne."]] },
+    reviews: { eyebrow: "Kundenbewertungen", rating: "2.348 Bewertungen", dates: ["vor 2 Tagen", "vor 7 Tagen", "vor 5 Tagen", "vor 10 Tagen", "vor 5 Tagen", "vor 12 Tagen", "vor 14 Tagen", "vor 15 Tagen"], texts: ["Stetiger Fortschritt und gut überwachte Kampagne. Ich empfehle es.", "Schneller Start, klare Nachverfolgung und progressives Tempo.", "Die Streams sind über 10 Tage schrittweise gestiegen.", "Erste Spotify-Kampagne, seriöser Service und klare Nachverfolgung.", "Guter Fortschritt bei meiner EP über mehrere Wochen.", "Nichts hinzuzufügen, der Fortschritt entsprach dem Angekündigten.", "Reaktionsschneller Support und zuverlässige Nachverfolgung.", "Meine monatlichen Hörer sind gleichmäßig gewachsen."] },
+    faq: { titleBefore: "Deine Fragen,", titleFocus: "unsere Antworten", items: [["Wie funktioniert die Sichtbarkeitskampagne?", "Wir bereiten eine Sichtbarkeitskampagne rund um deinen Spotify-Track und dein Thema vor. Ziel ist es, deinen Inhalt einer relevanteren Zielgruppe zu präsentieren, mit gemessenem und progressivem Tempo."], ["Muss ich mein Passwort geben?", "Niemals. Wir brauchen nur den öffentlichen Spotify-Link deines Tracks. Es wird kein Kontozugriff verlangt."], ["Greift ihr auf mein Konto zu?", "Nein. Wir loggen uns nicht in dein Konto ein und veröffentlichen nichts in deinem Namen. Der Service basiert auf einer externen und progressiven Bewerbung."], ["Wann startet die Kampagne?", "Die Vorbereitung beginnt nach Zahlungsbestätigung. Die Bereitstellung ist progressiv und kann je nach gewähltem Volumen mehrere Tage dauern."], ["Was passiert, wenn das Volumen nicht erreicht wird?", "Unser Support prüft die Kampagne und kann die Bewerbung kostenlos verlängern, wenn das geplante Volumen nicht erreicht wird."], ["Erscheinen die Statistiken sofort?", "Statistiken können je nach Spotifys eigenen Prüfungen und Verzögerungen variieren. Die Bereitstellung bleibt progressiv und überwacht."]] },
+    footer: { desc: "KI-gestützte Online-Präsenzstrategie. Fokussierte Kampagnen, klare Nachverfolgung und gemessener Fortschritt.", networks: "Netzwerke", help: "Hilfe", how: "So funktioniert es", support: "Kampagnensupport", tracking: "Bestellverfolgung", legal: "Rechtliches", legalNotice: "Impressum", privacy: "Datenschutz", cookies: "Cookies", madeIn: "Made in Paris" },
+  },
+  it: {
+    header: { allNetworks: "Tutte le reti", tracking: "Monitoraggio", ratingText: "2.348 recensioni", home: "Home" },
+    stepper: ["Scegli un pacchetto", "Il tuo brano", "Pagamento sicuro"],
+    step1: { titleBefore: "Visibilità Spotify", titleFocus: "mirata", titleAfter: "e progressiva.", volume: "Quale volume?", audience: "Ascolti", included: "incluso", campaign: "La tua campagna", selectedPack: "Pacchetto selezionato", visibilityPack: "Pacchetto visibilità Spotify", includedCredit: "credito incluso", total: "Totale", discount: "Sconto incluso", continue: "Continua", reassurance: "Senza impegno · Senza password · Avvio in 1–6 h", productStreams: "Stream", productFollowers: "Follower", audienceFollowers: "Follower" },
+    step2: { titleBefore: "Quale", titleFocus: "brano", titleAfter: "vuoi promuovere?", intro: "Incolla il link Spotify del tuo brano, o cerca per titolo + artista. Nessuna password.", searchMode: "Titolo + artista", urlMode: "Link Spotify", urlLabel: "Link del tuo brano Spotify", invalidUrl: "Link non valido. Esempio: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Titolo del brano", artistLabel: "Artista", notFound: "Brano non trovato su Spotify.", emailLabel: "La tua email (per la ricevuta)", emailPlaceholder: "tu@esempio.com", emailHint: "Inviamo solo la tua fattura. Mai spam.", back: "Indietro", pay: "Vai al pagamento", loading: "Caricamento...", trackFallback: "Il tuo brano", artistFallback: "Artista", totalStreams: "Stream totali", monthlyListeners: "Ascoltatori mensili", popularity: "Popolarità", newTotal: "Nuovo totale", errors: { missingUrl: "Incolla il link Spotify del tuo brano.", invalidUrl: "Link Spotify non valido. Formato: open.spotify.com/track/...", missingSearch: "Inserisci il titolo e l'artista.", verifying: "Ricerca del brano in corso...", notFound: "Brano non trovato su Spotify.", missingTrack: "Brano non trovato.", email: "Inserisci la tua email per ricevere la ricevuta." },
+      artist: {
+        titleBefore: "Quale", titleFocus: "artista", titleAfter: "vuoi promuovere?",
+        intro: "Inserisci il nome del tuo artista Spotify. Nessuna password.",
+        nameLabel: "Nome dell'artista",
+        namePlaceholder: "Ed Sheeran",
+        invalidFormat: "Inserisci un nome d'artista (minimo 2 caratteri).",
+        notFound: "Artista non trovato su Spotify.",
+        found: "Artista trovato",
+        checking: "Ricerca artista...",
+        waiting: "In attesa del nome",
+        artistFallback: "Il tuo artista",
+        verifiedBadge: "Verificato",
+        plannedVolume: "Volume previsto",
+        afterCampaign: "Dopo la campagna",
+        followersUnit: "follower",
+        errors: { missingName: "Inserisci il nome del tuo artista.", missingArtist: "Artista non trovato." },
+      },
+    },
+    step3: { titleBefore: "Manca solo", titleFocus: "un passaggio", titleAfter: ".", subtitle: "Pagamento sicuro · preparazione della campagna dopo conferma.", summary: "Riepilogo", recipient: "Brano destinatario", edit: "Modifica", trackFallback: "Il tuo brano", visibilityPack: "Pacchetto visibilità Spotify", includedCredit: "credito incluso", included: "incluso", campaignCredit: "Credito di campagna", free: "GRATIS", coupon: "Codice promo", couponPlaceholder: "CODICE PROMO", applied: "✓ Applicato", apply: "Applica", saving: "✓ -5% applicato · risparmio", total: "Totale IVA inclusa", securePayment: "Pagamento sicuro", legalBefore: "Completando il pagamento accetti i nostri", legalAfter: "Nessun abbonamento nascosto.", terms: "Termini", gdpr: "GDPR", backToPacks: "Torna alla scelta dei pacchetti" },
+    why: { eyebrow: "Perché Fanovera", title1: "Stream Spotify", title2: "progressivi", title3: "e curati.", items: [["Audience mirata", "La nostra IA aiuta a presentare il tuo brano a un pubblico coerente con il tuo genere musicale."], ["Account protetto", "Nessun accesso all'account, nessuna pubblicazione al tuo posto, nessuna azione diretta sul tuo profilo."], ["Senza password", "Solo il link pubblico del tuo brano per preparare la campagna di visibilità."], ["Monitoraggio incluso", "Se il volume previsto non viene raggiunto, il nostro supporto verifica e prolunga la campagna."]] },
+    reviews: { eyebrow: "Recensioni clienti", rating: "2.348 recensioni", dates: ["2 giorni fa", "7 giorni fa", "5 giorni fa", "10 giorni fa", "5 giorni fa", "12 giorni fa", "14 giorni fa", "15 giorni fa"], texts: ["Progresso costante e campagna ben seguita. La consiglio.", "Avvio rapido, monitoraggio chiaro e ritmo progressivo.", "Gli stream sono aumentati progressivamente in 10 giorni.", "Prima campagna Spotify, servizio serio e monitoraggio chiaro.", "Buon progresso sul mio EP in diverse settimane.", "Niente da dire, il progresso corrisponde a quanto annunciato.", "Supporto reattivo e monitoraggio puntuale.", "I miei ascoltatori mensili sono cresciuti in modo regolare."] },
+    faq: { titleBefore: "Le tue domande,", titleFocus: "le nostre risposte", items: [["Come funziona la promozione?", "Prepariamo una campagna di visibilità intorno al tuo brano Spotify e alla tua tematica. L'obiettivo è presentare il tuo contenuto a un'audience più rilevante, con un ritmo progressivo e misurato."], ["Devo darti la mia password?", "Mai. Abbiamo solo bisogno del link Spotify pubblico del tuo brano. Nessun accesso all'account viene richiesto."], ["Agite sul mio account?", "No. Non accediamo al tuo account e non pubblichiamo nulla al tuo posto. Il servizio si basa su una promozione esterna e progressiva."], ["Quando inizia la campagna?", "La preparazione inizia dopo la conferma del pagamento. La distribuzione è progressiva e può durare diversi giorni a seconda del volume scelto."], ["Cosa succede se il volume non viene raggiunto?", "Il nostro supporto verifica la campagna e può prolungare la promozione senza costi aggiuntivi quando il volume previsto non viene raggiunto."], ["Le statistiche appaiono subito?", "Le statistiche possono variare in base ai controlli e ritardi propri di Spotify. La distribuzione resta progressiva e monitorata."]] },
+    footer: { desc: "Strategia di presenza online assistita da IA. Campagne mirate, monitoraggio chiaro e progresso misurato.", networks: "Reti", help: "Aiuto", how: "Come funziona", support: "Supporto campagna", tracking: "Monitoraggio ordine", legal: "Legale", legalNotice: "Note legali", privacy: "Privacy", cookies: "Cookies", madeIn: "Made in Paris" },
+  },
+  tr: {
+    header: { allNetworks: "Tüm ağlar", tracking: "Takip", ratingText: "2.348 yorum", home: "Anasayfa" },
+    stepper: ["Paket seç", "Parçanız", "Güvenli ödeme"],
+    step1: { titleBefore: "Hedefli Spotify görünürlüğü", titleFocus: "odaklı", titleAfter: "ve aşamalı.", volume: "Hangi hacim?", audience: "Dinlenmeler", included: "dahil", campaign: "Kampanyanız", selectedPack: "Seçili paket", visibilityPack: "Spotify görünürlük paketi", includedCredit: "kredi dahil", total: "Toplam", discount: "İndirim dahil", continue: "Devam", reassurance: "Taahhütsüz · Şifresiz · 1–6 saatte başlar", productStreams: "Stream", productFollowers: "Takipçi", audienceFollowers: "Takipçi" },
+    step2: { titleBefore: "Hangi", titleFocus: "parçayı", titleAfter: "öne çıkarmak istersin?", intro: "Spotify parça bağlantınızı yapıştırın veya başlık + sanatçı ile arayın. Şifre gerekmez.", searchMode: "Başlık + sanatçı", urlMode: "Spotify bağlantısı", urlLabel: "Spotify parça bağlantınız", invalidUrl: "Geçersiz bağlantı. Örnek: https://open.spotify.com/track/xxxxxxxxxxxxxxxxxxxxxx", trackLabel: "Parça başlığı", artistLabel: "Sanatçı", notFound: "Parça Spotify'da bulunamadı.", emailLabel: "E-postanız (makbuz için)", emailPlaceholder: "siz@ornek.com", emailHint: "Sadece faturanızı gönderiyoruz. Asla spam yok.", back: "Geri", pay: "Ödemeye git", loading: "Yükleniyor...", trackFallback: "Parçanız", artistFallback: "Sanatçı", totalStreams: "Toplam stream", monthlyListeners: "Aylık dinleyiciler", popularity: "Popülerlik", newTotal: "Yeni toplam", errors: { missingUrl: "Spotify parça bağlantınızı yapıştırın.", invalidUrl: "Geçersiz Spotify bağlantısı. Format: open.spotify.com/track/...", missingSearch: "Başlık ve sanatçı bilgisini girin.", verifying: "Parça aranıyor...", notFound: "Parça Spotify'da bulunamadı.", missingTrack: "Parça bulunamadı.", email: "Makbuzu almak için e-postanızı girin." },
+      artist: {
+        titleBefore: "Hangi", titleFocus: "sanatçıyı", titleAfter: "öne çıkarmak istersin?",
+        intro: "Spotify sanatçınızın adını girin. Şifre gerekmez.",
+        nameLabel: "Sanatçı adı",
+        namePlaceholder: "Ed Sheeran",
+        invalidFormat: "Bir sanatçı adı girin (en az 2 karakter).",
+        notFound: "Sanatçı Spotify'da bulunamadı.",
+        found: "Sanatçı bulundu",
+        checking: "Sanatçı aranıyor...",
+        waiting: "İsim bekleniyor",
+        artistFallback: "Sanatçınız",
+        verifiedBadge: "Doğrulanmış",
+        plannedVolume: "Planlanan hacim",
+        afterCampaign: "Kampanya sonrası",
+        followersUnit: "takipçi",
+        errors: { missingName: "Sanatçınızın adını girin.", missingArtist: "Sanatçı bulunamadı." },
+      },
+    },
+    step3: { titleBefore: "Sadece bir", titleFocus: "adım", titleAfter: "kaldı.", subtitle: "Güvenli ödeme · onaydan sonra kampanya hazırlığı.", summary: "Özet", recipient: "Alıcı parça", edit: "Düzenle", trackFallback: "Parçanız", visibilityPack: "Spotify görünürlük paketi", includedCredit: "kredi dahil", included: "dahil", campaignCredit: "Kampanya kredisi", free: "ÜCRETSİZ", coupon: "Promosyon kodu", couponPlaceholder: "PROMO KODU", applied: "✓ Uygulandı", apply: "Uygula", saving: "✓ -5% uygulandı · tasarruf", total: "KDV dahil toplam", securePayment: "Güvenli ödeme", legalBefore: "Ödemeyi tamamlayarak kabul ediyorsunuz:", legalAfter: "Gizli abonelik yok.", terms: "Şartlar", gdpr: "KVKK", backToPacks: "Paket seçimine dön" },
+    why: { eyebrow: "Neden Fanovera", title1: "Aşamalı", title2: "Spotify stream'leri", title3: "özenli teslimatla.", items: [["Odaklı kitle", "AI'mız parçanızı müzik türünüze uygun bir kitleye sunmaya yardımcı olur."], ["Hesap korunur", "Hesap erişimi yok, sizin adınıza paylaşım yok, profilinizde doğrudan eylem yok."], ["Şifresiz", "Görünürlük kampanyasını hazırlamak için sadece parçanızın genel bağlantısı gerekli."], ["Takip dahil", "Planlanan hacme ulaşılmazsa, destek ekibimiz kampanyayı inceler ve uzatır."]] },
+    reviews: { eyebrow: "Müşteri yorumları", rating: "2.348 yorum", dates: ["2 gün önce", "7 gün önce", "5 gün önce", "10 gün önce", "5 gün önce", "12 gün önce", "14 gün önce", "15 gün önce"], texts: ["İstikrarlı ilerleme ve iyi takip edilen kampanya. Tavsiye ederim.", "Hızlı başlangıç, net takip ve aşamalı ritim.", "Stream'ler 10 günde kademeli olarak arttı.", "İlk Spotify kampanyam, ciddi hizmet ve net takip.", "Birkaç hafta boyunca EP'mde iyi ilerleme.", "Söylenecek bir şey yok, ilerleme duyurulduğu gibi.", "Duyarlı destek ve güvenilir takip.", "Aylık dinleyicilerim düzenli olarak arttı."] },
+    faq: { titleBefore: "Sorularınız,", titleFocus: "cevaplarımız", items: [["Görünürlük kampanyası nasıl çalışır?", "Spotify parçanız ve konunuz etrafında bir görünürlük kampanyası hazırlıyoruz. Amaç, içeriğinizi daha alakalı bir kitleye sunmak, ölçülü ve aşamalı bir ritimle."], ["Şifremi vermem gerekiyor mu?", "Asla. Sadece parçanızın herkese açık Spotify bağlantısına ihtiyacımız var. Hesap erişimi talep edilmez."], ["Hesabımda işlem yapıyor musunuz?", "Hayır. Hesabınıza giriş yapmıyoruz ve sizin adınıza hiçbir şey yayınlamıyoruz. Hizmet, harici ve aşamalı bir tanıtıma dayanır."], ["Kampanya ne zaman başlar?", "Hazırlık ödeme onayından sonra başlar. Dağıtım aşamalıdır ve seçilen hacme göre birkaç gün sürebilir."], ["Hacme ulaşılmazsa ne olur?", "Destek ekibimiz kampanyayı inceler ve planlanan hacme ulaşılmadığında tanıtımı ek ücret ödemeden uzatabilir."], ["İstatistikler hemen görünür mü?", "İstatistikler Spotify'ın kendi kontrol ve gecikmelerine göre değişebilir. Dağıtım aşamalı ve takip edilir kalır."]] },
+    footer: { desc: "AI destekli online varlık stratejisi. Odaklı kampanyalar, net takip ve ölçülü ilerleme.", networks: "Ağlar", help: "Yardım", how: "Nasıl çalışır", support: "Kampanya desteği", tracking: "Sipariş takibi", legal: "Yasal", legalNotice: "Yasal bilgiler", privacy: "Gizlilik", cookies: "Çerezler", madeIn: "Made in Paris" },
+  },
 } as const;
 
 type Widen<T> = T extends string ? string : T extends readonly (infer U)[] ? readonly Widen<U>[] : T extends object ? { readonly [K in keyof T]: Widen<T[K]> } : T;
@@ -108,11 +220,11 @@ type SpotifyCopy = Widen<(typeof copy)["en"]>;
 const localized: Record<SupportedLocale, SpotifyCopy> = {
   fr: copy.fr,
   en: copy.en,
-  es: translateLocalCopy(copy.fr, "es"),
-  pt: translateLocalCopy(copy.fr, "pt"),
-  de: translateLocalCopy(copy.fr, "de"),
-  it: translateLocalCopy(copy.fr, "it"),
-  tr: translateLocalCopy(copy.fr, "tr"),
+  es: copy.es,
+  pt: copy.pt,
+  de: copy.de,
+  it: copy.it,
+  tr: copy.tr,
 };
 
 export function useSpotifyCopy() {

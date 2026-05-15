@@ -74,6 +74,126 @@ const COPY: Record<string, {
       followers: "Starting audience",
     },
   },
+  es: {
+    signedOut: {
+      title: "Accede a tus pedidos",
+      intro: "Introduce tu email — te enviaremos un enlace seguro para consultar el historial y el seguimiento de todos tus pedidos Fanovera.",
+      placeholder: "tu@ejemplo.com",
+      cta: "Enviar el enlace",
+      sending: "Enviando…",
+      sent: "¡Email enviado!",
+      sentDetail: "Revisa tu bandeja (y spam). El enlace caduca en 15 minutos.",
+      expired: "Este enlace ha caducado o ya se usó. Solicita uno nuevo abajo.",
+      error: "Email inválido. Inténtalo de nuevo.",
+    },
+    signedIn: {
+      title: (email) => `Hola ${email}`,
+      logout: "Cerrar sesión",
+      empty: "Aún no tienes pedidos.",
+      emptyCta: "Explorar plataformas",
+      viewOrder: "Ver seguimiento →",
+      status: { paid: "Pagado", pending: "Pendiente", processing: "En curso", placed: "En curso", delivered: "Entregado", completed: "Entregado", partial: "Parcial", canceled: "Cancelado", cancelled: "Cancelado", refunded: "Reembolsado", failed: "Pagado" },
+      placedOn: "Realizado el",
+      total: "Total",
+      followers: "Audiencia inicial",
+    },
+  },
+  pt: {
+    signedOut: {
+      title: "Acede aos teus pedidos",
+      intro: "Introduz o teu email — enviamos-te um link seguro para ver o histórico e o acompanhamento de todos os teus pedidos Fanovera.",
+      placeholder: "tu@exemplo.com",
+      cta: "Enviar o link",
+      sending: "A enviar…",
+      sent: "Email enviado!",
+      sentDetail: "Verifica a tua caixa (e o spam). O link expira em 15 minutos.",
+      expired: "Este link expirou ou já foi usado. Pede um novo abaixo.",
+      error: "Email inválido. Tenta novamente.",
+    },
+    signedIn: {
+      title: (email) => `Olá ${email}`,
+      logout: "Terminar sessão",
+      empty: "Ainda não tens pedidos.",
+      emptyCta: "Explorar plataformas",
+      viewOrder: "Ver acompanhamento →",
+      status: { paid: "Pago", pending: "Pendente", processing: "Em curso", placed: "Em curso", delivered: "Entregue", completed: "Entregue", partial: "Parcial", canceled: "Cancelado", cancelled: "Cancelado", refunded: "Reembolsado", failed: "Pago" },
+      placedOn: "Efetuado em",
+      total: "Total",
+      followers: "Audiência inicial",
+    },
+  },
+  de: {
+    signedOut: {
+      title: "Zugriff auf deine Bestellungen",
+      intro: "Gib deine E-Mail ein — wir senden dir einen sicheren Link, mit dem du den Verlauf und den Live-Status all deiner Fanovera-Bestellungen einsehen kannst.",
+      placeholder: "du@beispiel.com",
+      cta: "Link senden",
+      sending: "Wird gesendet…",
+      sent: "E-Mail gesendet!",
+      sentDetail: "Prüfe dein Postfach (und Spam). Der Link läuft in 15 Minuten ab.",
+      expired: "Dieser Link ist abgelaufen oder wurde bereits verwendet. Fordere unten einen neuen an.",
+      error: "Ungültige E-Mail. Bitte erneut versuchen.",
+    },
+    signedIn: {
+      title: (email) => `Hallo ${email}`,
+      logout: "Abmelden",
+      empty: "Du hast noch keine Bestellungen.",
+      emptyCta: "Plattformen entdecken",
+      viewOrder: "Tracking ansehen →",
+      status: { paid: "Bezahlt", pending: "Ausstehend", processing: "In Bearbeitung", placed: "In Bearbeitung", delivered: "Geliefert", completed: "Geliefert", partial: "Teilweise", canceled: "Storniert", cancelled: "Storniert", refunded: "Erstattet", failed: "Bezahlt" },
+      placedOn: "Aufgegeben am",
+      total: "Gesamt",
+      followers: "Anfangs-Audience",
+    },
+  },
+  it: {
+    signedOut: {
+      title: "Accedi ai tuoi ordini",
+      intro: "Inserisci la tua email — ti inviamo un link sicuro per consultare la cronologia e il tracciamento di tutti i tuoi ordini Fanovera.",
+      placeholder: "tu@esempio.com",
+      cta: "Invia il link",
+      sending: "Invio in corso…",
+      sent: "Email inviata!",
+      sentDetail: "Controlla la tua casella (e lo spam). Il link scade tra 15 minuti.",
+      expired: "Questo link è scaduto o è già stato usato. Richiedine uno nuovo qui sotto.",
+      error: "Email non valida. Riprova.",
+    },
+    signedIn: {
+      title: (email) => `Ciao ${email}`,
+      logout: "Esci",
+      empty: "Non hai ancora ordini.",
+      emptyCta: "Esplora le piattaforme",
+      viewOrder: "Vedi tracciamento →",
+      status: { paid: "Pagato", pending: "In attesa", processing: "In corso", placed: "In corso", delivered: "Consegnato", completed: "Consegnato", partial: "Parziale", canceled: "Annullato", cancelled: "Annullato", refunded: "Rimborsato", failed: "Pagato" },
+      placedOn: "Effettuato il",
+      total: "Totale",
+      followers: "Audience iniziale",
+    },
+  },
+  tr: {
+    signedOut: {
+      title: "Siparişlerine eriş",
+      intro: "E-postanı gir — tüm Fanovera siparişlerinin geçmişini ve canlı takibini görmen için güvenli bir bağlantı göndereceğiz.",
+      placeholder: "sen@ornek.com",
+      cta: "Bağlantıyı gönder",
+      sending: "Gönderiliyor…",
+      sent: "E-posta gönderildi!",
+      sentDetail: "Gelen kutunu (ve spam) kontrol et. Bağlantı 15 dakika içinde sona erer.",
+      expired: "Bu bağlantının süresi doldu veya zaten kullanıldı. Aşağıdan yeni bir bağlantı iste.",
+      error: "Geçersiz e-posta. Tekrar deneyin.",
+    },
+    signedIn: {
+      title: (email) => `Merhaba ${email}`,
+      logout: "Çıkış yap",
+      empty: "Henüz siparişin yok.",
+      emptyCta: "Platformları keşfet",
+      viewOrder: "Takibi gör →",
+      status: { paid: "Ödendi", pending: "Beklemede", processing: "İşleniyor", placed: "İşleniyor", delivered: "Teslim edildi", completed: "Teslim edildi", partial: "Kısmi", canceled: "İptal edildi", cancelled: "İptal edildi", refunded: "İade edildi", failed: "Ödendi" },
+      placedOn: "Verildi",
+      total: "Toplam",
+      followers: "Başlangıç kitlesi",
+    },
+  },
 };
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -81,9 +201,13 @@ const PLATFORM_LABEL: Record<string, string> = {
   spotify: "Spotify", twitch: "Twitch", twitter: "X", x: "X", linkedin: "LinkedIn",
 };
 
+const INTL_LOCALE: Record<string, string> = {
+  fr: "fr-FR", en: "en-US", es: "es-ES", pt: "pt-PT", de: "de-DE", it: "it-IT", tr: "tr-TR",
+};
+
 function formatPrice(cents: number, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", {
+    return new Intl.NumberFormat(INTL_LOCALE[locale] || "fr-FR", {
       style: "currency",
       currency: currency.toUpperCase(),
       maximumFractionDigits: 2,
@@ -101,7 +225,7 @@ function formatQty(n: number): string {
 
 function formatDate(iso: string, locale: string): string {
   try {
-    return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
+    return new Intl.DateTimeFormat(INTL_LOCALE[locale] || "fr-FR", {
       year: "numeric", month: "short", day: "numeric",
     }).format(new Date(iso));
   } catch {
