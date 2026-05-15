@@ -44,13 +44,6 @@ export function middleware(req: NextRequest) {
   if (queryLocale) {
     response.cookies.set(LOCALE_KEY, queryLocale, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 180 });
     response.cookies.set(LOCALE_MODE_KEY, "manual", { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 180 });
-
-    // When lang=en is forced via URL (e.g. Google Ads EN landing page),
-    // also force USD as the display currency until the user picks otherwise.
-    if (queryLocale === "en") {
-      response.cookies.set("currency", "USD", { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 30 });
-      response.cookies.set("currency_mode", "manual", { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 30 });
-    }
   }
 
   return response;
