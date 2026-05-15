@@ -14,12 +14,44 @@ const FALLBACK_NOTICE: Record<string, string> = {
   tr: "Bu yasal sayfa şu anda yalnızca İngilizce olarak mevcuttur. Profesyonel Türkçe çeviri yakında eklenecektir.",
 };
 
-const legalNav: Array<{ id: LegalRouteId; labelFr: string; labelEn: string }> = [
-  { id: "legalNotice", labelFr: "Mentions légales", labelEn: "Legal notice" },
-  { id: "terms", labelFr: "CGV", labelEn: "Terms" },
-  { id: "privacy", labelFr: "Confidentialité", labelEn: "Privacy" },
-  { id: "cookies", labelFr: "Cookies", labelEn: "Cookies" },
-  { id: "refund", labelFr: "Remboursements", labelEn: "Refunds" },
+type LegalNavLabel = Record<"fr" | "en" | "es" | "pt" | "de" | "it" | "tr", string>;
+
+const legalNav: Array<{ id: LegalRouteId; label: LegalNavLabel }> = [
+  {
+    id: "legalNotice",
+    label: {
+      fr: "Mentions légales", en: "Legal notice", es: "Aviso legal",
+      pt: "Aviso legal", de: "Impressum", it: "Note legali", tr: "Yasal uyarı",
+    },
+  },
+  {
+    id: "terms",
+    label: {
+      fr: "CGV", en: "Terms", es: "Condiciones",
+      pt: "Termos", de: "AGB", it: "Condizioni", tr: "Şartlar",
+    },
+  },
+  {
+    id: "privacy",
+    label: {
+      fr: "Confidentialité", en: "Privacy", es: "Privacidad",
+      pt: "Privacidade", de: "Datenschutz", it: "Privacy", tr: "Gizlilik",
+    },
+  },
+  {
+    id: "cookies",
+    label: {
+      fr: "Cookies", en: "Cookies", es: "Cookies",
+      pt: "Cookies", de: "Cookies", it: "Cookie", tr: "Çerezler",
+    },
+  },
+  {
+    id: "refund",
+    label: {
+      fr: "Remboursements", en: "Refunds", es: "Reembolsos",
+      pt: "Reembolsos", de: "Erstattungen", it: "Rimborsi", tr: "İadeler",
+    },
+  },
 ];
 
 export default async function LegalPage({ pageId }: { pageId: LegalRouteId }) {
@@ -153,7 +185,7 @@ export default async function LegalPage({ pageId }: { pageId: LegalRouteId }) {
                         fontWeight: 700,
                       }}
                     >
-                      {locale === "fr" ? item.labelFr : item.labelEn}
+                      {item.label[locale] || item.label.en}
                     </a>
                   );
                 })}

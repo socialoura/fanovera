@@ -5,7 +5,7 @@ import { isValidAnalyticsEventName, type AnalyticsEventName, type AnalyticsPrope
 export { ANALYTICS_EVENTS, isValidAnalyticsEventName, type AnalyticsEventName, type AnalyticsProperties } from "./analyticsEvents";
 
 export function analyticsConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY);
+  return Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
 }
 
 function deviceType() {

@@ -5,7 +5,7 @@ export async function captureServerEvent(
   distinctId: string,
   properties: AnalyticsProperties = {},
 ) {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
   if (!key || !distinctId || !isValidAnalyticsEventName(event)) return;
 
   try {
