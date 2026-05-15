@@ -18,6 +18,7 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { isValidCheckoutEmail, isYoutubeChannelUrl, isYoutubeVideoUrl } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -68,9 +69,10 @@ export default function YoutubePageClient() {
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = isValidCheckoutEmail(email);
   const isSubscribers = productType === "subscribers";
   const activeInput = isSubscribers ? channelInput.trim() : username.trim();
+  const activeInputValid = isSubscribers ? isYoutubeChannelUrl(activeInput) : isYoutubeVideoUrl(activeInput);
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
@@ -79,7 +81,7 @@ export default function YoutubePageClient() {
     platform: "youtube",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: isSubscribers ? "" : username.trim(), videoId: profile?.id }],
     followersBefore: profile?.channel?.subscribers ?? 0,
-    enabled: step >= 2 && !!profile && emailValid,
+    enabled: step >= 2 && activeInputValid && emailValid,
   });
 
   const next = () => {
@@ -162,7 +164,7 @@ export default function YoutubePageClient() {
         subLabel={step === 2 && profile
           ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → ${profile.channel?.name || profile.title || ""}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(profile && emailValid)}
+        disabled={step === 2 && !(activeInputValid && emailValid)}
         accent="var(--yt-red)"
         onClick={next}
       />

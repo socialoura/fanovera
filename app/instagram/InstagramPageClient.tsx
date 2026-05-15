@@ -16,6 +16,7 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { isInstagramPostUrl, isInstagramUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -103,18 +104,19 @@ export default function InstagramPageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95; // default coupon FANO5 (−5%)
   const amountCents = Math.round(total * 100);
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = isValidCheckoutEmail(email);
   const cleanUsername = username.replace(/^@/, "").trim();
-  const usernameValid = /^[a-zA-Z0-9._]{2,30}$/.test(cleanUsername);
+  const usernameValid = isInstagramUsername(cleanUsername);
   const isMediaProduct = productType === "likes" || productType === "views";
-  const targetReady = isMediaProduct ? Boolean(media) : usernameValid;
+  const postValid = isInstagramPostUrl(postUrl);
+  const targetReady = isMediaProduct ? postValid : usernameValid;
   const { clientSecret } = usePaymentIntent({
     amount: amountCents,
     currency: currency.toLowerCase(),
     email,
-    username: cleanUsername,
+    username: isMediaProduct ? (media?.user.username || cleanUsername) : cleanUsername,
     platform: "instagram",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
     followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && targetReady && emailValid,
   });
@@ -174,7 +176,7 @@ export default function InstagramPageClient() {
           />
         )}
         {step === 3 && (
-          <Step3Checkout country={country} pack={safePack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />
+          <Step3Checkout country={country} pack={safePack} username={username} postUrl={postUrl} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />
         )}
       </div>
       <div className={step === 1 ? undefined : "hide-md-on-checkout"}>
@@ -190,7 +192,7 @@ export default function InstagramPageClient() {
         subLabel={step === 2 && (profile || media)
           ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${cleanUsername || profile?.username || media?.user.username || ""}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(targetReady && emailValid && (isMediaProduct ? media : profile))}
+        disabled={step === 2 && !(targetReady && emailValid)}
         accent="var(--ig-2)"
         onClick={next}
       />

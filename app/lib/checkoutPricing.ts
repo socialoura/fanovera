@@ -37,6 +37,7 @@ export type SanitizedCheckoutItem = {
   country?: string;
   pageUrl?: string;
   pageHandle?: string;
+  postUrl?: string;
   videoUrl?: string;
   videoId?: string;
   trackUrl?: string;
@@ -126,6 +127,7 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
       country: sanitizeText(item.country, 8),
       pageUrl: sanitizeText(item.pageUrl),
       pageHandle: sanitizeText(item.pageHandle, 80),
+      postUrl: sanitizeText(item.postUrl),
       videoUrl: sanitizeText(item.videoUrl),
       videoId: sanitizeText(item.videoId, 80),
       trackUrl: sanitizeText(item.trackUrl),

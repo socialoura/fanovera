@@ -465,7 +465,10 @@ export async function retrySmmSubOrder(
   }
 
   const username = order.username || "";
-  const link = buildLink(sub.platform, username);
+  const cart: Array<{ postUrl?: string }> = Array.isArray(order.cart)
+    ? order.cart
+    : JSON.parse(order.cart || "[]");
+  const link = buildLink(sub.platform, username, cart[sub.cartIndex]?.postUrl);
 
   try {
     const result = await withBfRetry(

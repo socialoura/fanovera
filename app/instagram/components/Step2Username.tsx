@@ -103,13 +103,10 @@ export default function Step2Username({
     if (isMediaMode) {
       if (!postUrl.trim()) return setSubmitError(t.errors.post);
       if (!postValid) return setSubmitError(t.errors.postInvalid);
-      if (verifying) return setSubmitError(t.errors.checking);
-      if (!media) return setSubmitError(t.errors.postNotFound);
       if (!emailValid) return setSubmitError(t.errors.email);
     } else {
       if (!username.trim()) return setSubmitError(t.errors.username);
       if (!usernameValid) return setSubmitError(t.errors.invalid);
-      if (verifying) return setSubmitError(t.errors.checking);
       if (!emailValid) return setSubmitError(t.errors.email);
     }
     setSubmitError(null);
@@ -227,7 +224,7 @@ export default function Step2Username({
       controller.abort();
       setVerifying(false);
     };
-  }, [postUrl, postValid, setMedia, setUsername, isMediaMode]);
+  }, [postUrl, postValid, setMedia, setUsername, setProfile, isMediaMode]);
 
   const previewBlock = showPreview ? (
     <>

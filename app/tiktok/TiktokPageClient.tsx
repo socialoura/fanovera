@@ -17,6 +17,7 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { isTikTokPostUrl, isTikTokUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -69,16 +70,17 @@ export default function TiktokPageClient() {
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = isValidCheckoutEmail(email);
   const isMediaProduct = productType === "likes" || productType === "views";
-  const targetReady = isMediaProduct ? Boolean(media) : Boolean(profile);
+  const cleanUsername = username.replace(/^@/, "").trim();
+  const targetReady = isMediaProduct ? isTikTokPostUrl(postUrl) : isTikTokUsername(username);
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
     email,
-    username: username.replace(/^@/, "").trim(),
+    username: isMediaProduct ? (media?.user.username || cleanUsername) : cleanUsername,
     platform: "tiktok",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
     followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && targetReady && emailValid,
   });
@@ -128,7 +130,7 @@ export default function TiktokPageClient() {
             onBack={back}
           />
         )}
-        {step === 3 && <Step3Checkout country={country} pack={safePack} username={username} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />}
+        {step === 3 && <Step3Checkout country={country} pack={safePack} username={username} postUrl={postUrl} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} />}
       </div>
       <div className={step === 1 ? undefined : "hide-md-on-checkout"}>
         <WhyUs />

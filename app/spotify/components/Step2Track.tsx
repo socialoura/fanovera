@@ -128,12 +128,6 @@ export default function Step2Track({
     if (mode === "url" && !url) { setSubmitError(t.errors.missingUrl); return; }
     if (mode === "url" && !validUrl) { setSubmitError(t.errors.invalidUrl); return; }
     if (mode === "search" && !validSearch) { setSubmitError(t.errors.missingSearch); return; }
-    if (!verified) {
-      if (verifying) setSubmitError(t.errors.verifying);
-      else if (apiError) setSubmitError(t.errors.notFound);
-      else setSubmitError(t.errors.missingTrack);
-      return;
-    }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();

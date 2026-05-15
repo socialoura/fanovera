@@ -67,12 +67,6 @@ export default function Step2Page({
   const handleNext = () => {
     if (!pageInput.trim()) { setSubmitError(t.errors.page); return; }
     if (!valid) { setSubmitError(t.errors.invalid); return; }
-    if (!verified) {
-      if (verifying) setSubmitError(t.errors.checking);
-      else if (apiError === "not_found") setSubmitError(t.errors.notFound);
-      else setSubmitError(t.errors.unavailable);
-      return;
-    }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();

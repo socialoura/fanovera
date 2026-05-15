@@ -72,8 +72,6 @@ export default function Step2Channel({
   const handleNext = () => {
     if (!clean) return setSubmitError(tc.errors.channel);
     if (!valid) return setSubmitError(tc.invalidFormat);
-    if (verifying) return setSubmitError(t.errors.checking);
-    if (!channel) return setSubmitError(tc.errors.missing);
     if (!emailValid) return setSubmitError(t.errors.email);
     setSubmitError(null);
     onNext();

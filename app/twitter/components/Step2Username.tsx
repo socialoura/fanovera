@@ -51,12 +51,7 @@ export default function Step2Username({
 
   const handleNext = () => {
     if (!username.trim()) { setSubmitError(t.errors.missingUrl); return; }
-    if (!verified) {
-      if (verifying) setSubmitError(t.errors.verifying);
-      else if (apiError === "not_found") setSubmitError(t.errors.notFound);
-      else setSubmitError(t.errors.invalidUrl);
-      return;
-    }
+    if (!valid) { setSubmitError(t.errors.invalidUrl); return; }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();

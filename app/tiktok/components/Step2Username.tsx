@@ -103,14 +103,10 @@ export default function Step2Username({
     if (isMediaMode) {
       if (!postUrl.trim()) return setSubmitError(t.errors.post);
       if (!postValid) return setSubmitError(t.errors.postInvalid);
-      if (verifying) return setSubmitError(t.checking);
-      if (!media) return setSubmitError(t.errors.postNotFound);
       if (!emailValid) return setSubmitError(t.errors.email);
     } else {
       if (!username.trim()) return setSubmitError(t.errors.username);
       if (!usernameValid) return setSubmitError(t.invalidFormat);
-      if (verifying) return setSubmitError(t.checking);
-      if (!profile) return setSubmitError(t.notFound);
       if (!emailValid) return setSubmitError(t.errors.email);
     }
     setSubmitError(null);

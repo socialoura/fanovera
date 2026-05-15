@@ -18,6 +18,7 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { isSpotifyArtistName, isSpotifyTrackTarget, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -68,9 +69,10 @@ export default function SpotifyPageClient() {
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = isValidCheckoutEmail(email);
   const isFollowers = productType === "followers";
   const activeInput = isFollowers ? artistInput.trim() : trackInput.trim();
+  const activeInputValid = isFollowers ? isSpotifyArtistName(activeInput) : isSpotifyTrackTarget(activeInput);
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
@@ -87,7 +89,7 @@ export default function SpotifyPageClient() {
       },
     ],
     followersBefore: profile?.monthlyListeners ?? 0,
-    enabled: step >= 2 && !!profile && emailValid,
+    enabled: step >= 2 && activeInputValid && emailValid,
   });
 
   const next = () => {
@@ -170,7 +172,7 @@ export default function SpotifyPageClient() {
         subLabel={step === 2 && profile
           ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → ${profile.trackName || ""}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)} ${productType === "followers" ? "followers" : ""}`}
-        disabled={step === 2 && !(profile && emailValid)}
+        disabled={step === 2 && !(activeInputValid && emailValid)}
         accent="var(--spo-green-2)"
         onClick={next}
       />

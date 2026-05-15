@@ -15,6 +15,7 @@ type Props = {
   country: CountryId;
   pack: number;
   username: string;
+  postUrl?: string;
   email: string;
   profile: TtProfile | null;
   clientSecret?: string | null;
@@ -22,7 +23,7 @@ type Props = {
   onBackToPacks: () => void;
 };
 
-export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
+export default function Step3Checkout({ country, pack, username, postUrl = "", email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useTikTokCopy().step3;
   const [coupon, setCoupon] = useState("FANO5");
   const [couponApplied, setCouponApplied] = useState(true);
@@ -39,6 +40,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const canUsePrefetchedSecret = couponApplied && isDefaultPromoCode(coupon);
 
   const clean = username.replace(/^@/, "").trim();
+  const recipientLabel = clean ? "@" + clean : (postUrl.trim() || "@votrepseudo");
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
   return (
@@ -74,7 +76,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.recipient}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {clean ? "@" + clean : "@votrepseudo"}
+                    {recipientLabel}
                   </div>
                 </div>
                 <button onClick={onBack} style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, background: "white", borderRadius: 999, border: "1px solid var(--line)", cursor: "pointer" }}>
@@ -132,7 +134,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                   username={username.replace(/^@/, "").trim()}
                   platform="tiktok"
                   brandColor="var(--tt-red)"
-                  cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
+                  cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country, postUrl: postUrl.trim() || undefined }]}
                   promoCode={promoCode}
                   clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
                 />

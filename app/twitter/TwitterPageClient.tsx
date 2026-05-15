@@ -16,6 +16,7 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
+import { isTwitterUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -49,7 +50,8 @@ export default function TwitterPageClient() {
 
   const subtotal = selectedPack.price;
   const total = subtotal * 0.95;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = isValidCheckoutEmail(email);
+  const targetReady = isTwitterUsername(username);
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
@@ -58,7 +60,7 @@ export default function TwitterPageClient() {
     platform: "twitter",
     cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
     followersBefore: profile?.followersCount ?? 0,
-    enabled: step >= 2 && !!profile && emailValid,
+    enabled: step >= 2 && targetReady && emailValid,
   });
 
   const next = () => {
@@ -127,7 +129,7 @@ export default function TwitterPageClient() {
         subLabel={step === 2 && profile
           ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${username.replace(/^@/, "").trim() || profile.username}`
           : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(profile && emailValid)}
+        disabled={step === 2 && !(targetReady && emailValid)}
         accent="var(--x-ink)"
         onClick={next}
       />
