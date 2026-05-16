@@ -18,7 +18,41 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-export const RESEND_FROM = process.env.RESEND_FROM || process.env.EMAIL_FROM || "Fanovera <noreply@fanovera.com>";
+// Strip accidental surrounding quotes / whitespace / newlines from env values.
+// Vercel UI usually cleans these up but .env files or shell exports can leak
+// them — and Resend rejects `from` for any of these with HTTP 422.
+function sanitizeFromAddress(raw: string | undefined): string {
+  return (raw || "")
+    .replace(/^\s+|\s+$/g, "")
+    .replace(/^["']|["']$/g, "")
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+const RESEND_FROM_FALLBACK = "Fanovera <noreply@fanovera.com>";
+
+const RESEND_FROM_RAW =
+  sanitizeFromAddress(process.env.RESEND_FROM) ||
+  sanitizeFromAddress(process.env.EMAIL_FROM) ||
+  RESEND_FROM_FALLBACK;
+
+// Validate against the two formats Resend accepts:
+//   "email@domain"            (1)
+//   "Name <email@domain>"     (2)
+// If the env value is broken, fall back to the hardcoded default rather than
+// shipping every email straight into a 422.
+const FROM_PLAIN = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
+const FROM_NAMED = /^[^<>]+<\s*[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+\s*>$/;
+
+export const RESEND_FROM = (() => {
+  if (FROM_PLAIN.test(RESEND_FROM_RAW) || FROM_NAMED.test(RESEND_FROM_RAW)) {
+    return RESEND_FROM_RAW;
+  }
+  console.warn(
+    `[email] RESEND_FROM env value is invalid (${JSON.stringify(RESEND_FROM_RAW)}). Falling back to ${RESEND_FROM_FALLBACK}.`,
+  );
+  return RESEND_FROM_FALLBACK;
+})();
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fanovera.com";
 
 const PLATFORM_LABEL: Record<string, string> = {

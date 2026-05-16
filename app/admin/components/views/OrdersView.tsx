@@ -112,6 +112,15 @@ function formatMoney(cents: number, currency = "EUR") {
   }).format((cents || 0) / 100);
 }
 
+// Show the actual paid amount in the customer's currency, with EUR conversion
+// in parentheses. Hides the parenthesis when the currency is already EUR.
+function formatMoneyDual(cents: number, currency: string, eurCents: number) {
+  const cur = (currency || "EUR").toUpperCase();
+  const primary = formatMoney(cents, cur);
+  if (cur === "EUR") return primary;
+  return `${primary} (${formatMoney(eurCents, "EUR")})`;
+}
+
 function formatQty(value: number | undefined) {
   return new Intl.NumberFormat("fr-FR").format(value || 0);
 }
@@ -233,11 +242,11 @@ function OrderDetail({
         <div className="order-finance-grid">
           <div>
             <span>Montant</span>
-            <strong>{formatMoney(order.total_cents_eur, "EUR")}</strong>
+            <strong>{formatMoneyDual(order.total_cents, order.currency, order.total_cents_eur)}</strong>
           </div>
           <div>
             <span>Coût</span>
-            <strong>{formatMoney(order.cost_cents_eur, "EUR")}</strong>
+            <strong>{formatMoneyDual(order.cost_cents, order.currency, order.cost_cents_eur)}</strong>
           </div>
           <div>
             <span>Marge</span>
@@ -958,10 +967,10 @@ export default function OrdersView() {
                         </span>
                       </td>
                       <td className="num" style={{ fontWeight: 700, color: "var(--a-ink)" }}>
-                        {formatMoney(o.total_cents_eur, "EUR")}
+                        {formatMoneyDual(o.total_cents, o.currency, o.total_cents_eur)}
                       </td>
                       <td className="num" style={{ color: "var(--a-ink-3)" }}>
-                        {formatMoney(o.cost_cents_eur, "EUR")}
+                        {formatMoneyDual(o.cost_cents, o.currency, o.cost_cents_eur)}
                       </td>
                       <td>
                         <span className={"pill " + st.pill}>

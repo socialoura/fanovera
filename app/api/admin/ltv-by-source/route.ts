@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+import { convertCentsToEur } from "@/app/lib/fxRates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,22 +9,13 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/admin/ltv-by-source
  *
- * Aggregates lifetime value per acquisition source. We group by the
- * normalized source_page captured at checkout (e.g. "/instagram",
- * "/comparer/peakerr", "/landing/black-friday") so the operator can rank
- * which entry pages convert best AND retain best.
+ * Aggregates lifetime value per acquisition source. Customers are attributed
+ * to the source_page of their *first* paid order so channel ROI reflects the
+ * lifetime, not just acquisition revenue.
  *
- * The metric tower per source:
- *   • customers       distinct emails first attributed to this source
- *   • orders          total orders ever placed by those customers
- *   • revenueCents    sum of total_cents across those orders
- *   • costCents       sum of cost_cents — useful to compute gross margin
- *   • avgLtvCents     revenueCents / customers
- *   • repeatRate      share of customers with > 1 order (0..1)
- *
- * Customers are attributed to a source by their *first* paid order's
- * source_page. Subsequent purchases keep the original attribution so
- * channel ROI reflects the lifetime, not just acquisition revenue.
+ * All money fields are returned in EUR cents. Order rows can be in any client
+ * currency (TRY, USD, BRL, …) so we fetch per-(source, email, currency)
+ * buckets and convert each to EUR before aggregating in JS.
  */
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
@@ -36,63 +28,87 @@ export async function GET(req: NextRequest) {
       WITH first_orders AS (
         SELECT DISTINCT ON (LOWER(email))
           LOWER(email) AS email,
-          COALESCE(NULLIF(source_page, ''), '(direct)') AS source_page,
-          created_at AS first_at
+          COALESCE(NULLIF(source_page, ''), '(direct)') AS source_page
         FROM orders
         WHERE
           email <> ''
           AND status IN ('paid', 'processing', 'delivered', 'partial')
           AND created_at >= NOW() - (${days}::int * INTERVAL '1 day')
         ORDER BY LOWER(email), created_at ASC
-      ),
-      lifetime AS (
-        SELECT
-          fo.source_page,
-          fo.email,
-          (
-            SELECT COUNT(*)::int FROM orders o
-            WHERE LOWER(o.email) = fo.email
-              AND o.status IN ('paid', 'processing', 'delivered', 'partial')
-          ) AS order_count,
-          (
-            SELECT COALESCE(SUM(o.total_cents), 0)::int FROM orders o
-            WHERE LOWER(o.email) = fo.email
-              AND o.status IN ('paid', 'processing', 'delivered', 'partial')
-          ) AS revenue_cents,
-          (
-            SELECT COALESCE(SUM(o.cost_cents), 0)::int FROM orders o
-            WHERE LOWER(o.email) = fo.email
-              AND o.status IN ('paid', 'processing', 'delivered', 'partial')
-          ) AS cost_cents
-        FROM first_orders fo
       )
       SELECT
-        source_page,
-        COUNT(*)::int AS customers,
-        SUM(order_count)::int AS orders,
-        COALESCE(SUM(revenue_cents), 0)::int AS revenue_cents,
-        COALESCE(SUM(cost_cents), 0)::int AS cost_cents,
-        SUM(CASE WHEN order_count > 1 THEN 1 ELSE 0 END)::int AS repeat_customers
-      FROM lifetime
-      GROUP BY source_page
-      ORDER BY revenue_cents DESC
-      LIMIT 100
+        fo.source_page,
+        fo.email,
+        o.currency,
+        COUNT(o.id)::int AS order_count,
+        COALESCE(SUM(o.total_cents), 0)::int AS revenue_cents,
+        COALESCE(SUM(o.cost_cents), 0)::int AS cost_cents
+      FROM first_orders fo
+      JOIN orders o ON LOWER(o.email) = fo.email
+      WHERE o.status IN ('paid', 'processing', 'delivered', 'partial')
+      GROUP BY fo.source_page, fo.email, o.currency
     `;
 
-    const sources = rows.map((r: Record<string, unknown>) => {
-      const customers = Number(r.customers) || 0;
-      const revenueCents = Number(r.revenue_cents) || 0;
-      const repeatCustomers = Number(r.repeat_customers) || 0;
-      return {
-        sourcePage: String(r.source_page),
-        customers,
-        orders: Number(r.orders) || 0,
-        revenueCents,
-        costCents: Number(r.cost_cents) || 0,
-        avgLtvCents: customers > 0 ? Math.round(revenueCents / customers) : 0,
-        repeatRate: customers > 0 ? repeatCustomers / customers : 0,
-      };
-    });
+    // Per (source_page, email): collapse currency dimension into EUR.
+    type PerCustomer = { orders: number; revenueEur: number; costEur: number };
+    const sourceMap = new Map<string, Map<string, PerCustomer>>();
+
+    for (const row of rows as Array<{
+      source_page: string;
+      email: string;
+      currency: string | null;
+      order_count: number;
+      revenue_cents: number;
+      cost_cents: number;
+    }>) {
+      const cur = row.currency || "EUR";
+      const eurRev = await convertCentsToEur(Number(row.revenue_cents) || 0, cur);
+      const eurCost = await convertCentsToEur(Number(row.cost_cents) || 0, cur);
+
+      let customers = sourceMap.get(row.source_page);
+      if (!customers) {
+        customers = new Map();
+        sourceMap.set(row.source_page, customers);
+      }
+      const existing = customers.get(row.email);
+      if (existing) {
+        existing.orders += Number(row.order_count) || 0;
+        existing.revenueEur += eurRev;
+        existing.costEur += eurCost;
+      } else {
+        customers.set(row.email, {
+          orders: Number(row.order_count) || 0,
+          revenueEur: eurRev,
+          costEur: eurCost,
+        });
+      }
+    }
+
+    const sources = Array.from(sourceMap.entries())
+      .map(([sourcePage, customers]) => {
+        let revenueCents = 0;
+        let costCents = 0;
+        let orders = 0;
+        let repeatCustomers = 0;
+        for (const c of customers.values()) {
+          revenueCents += c.revenueEur;
+          costCents += c.costEur;
+          orders += c.orders;
+          if (c.orders > 1) repeatCustomers += 1;
+        }
+        const customerCount = customers.size;
+        return {
+          sourcePage,
+          customers: customerCount,
+          orders,
+          revenueCents,
+          costCents,
+          avgLtvCents: customerCount > 0 ? Math.round(revenueCents / customerCount) : 0,
+          repeatRate: customerCount > 0 ? repeatCustomers / customerCount : 0,
+        };
+      })
+      .sort((a, b) => b.revenueCents - a.revenueCents)
+      .slice(0, 100);
 
     const totals = sources.reduce(
       (acc, s) => ({
