@@ -1,8 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
 import { convertCentsToEur } from "@/app/lib/fxRates";
+import { refreshSmmStatus } from "@/app/lib/smm";
 
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+
+// Pull BulkFollows status for every order still in flight, so the admin
+// listing reflects the latest delivery state without a manual click. We cap
+// the batch + run it before the SELECT so the response carries the new state.
+// Hobby Vercel plan doesn't allow a recurring cron, so this opportunistic
+// refresh on the admin GET is what keeps "delivered" auto-flipping.
+const AUTO_REFRESH_MAX_PER_REQUEST = 30;
+
+async function autoRefreshPendingOrders() {
+  try {
+    const pending = await sql`
+      SELECT id FROM orders
+      WHERE status IN ('paid', 'processing')
+        AND smm_orders IS NOT NULL
+        AND jsonb_typeof(smm_orders) = 'array'
+        AND jsonb_array_length(smm_orders) > 0
+      ORDER BY created_at ASC
+      LIMIT ${AUTO_REFRESH_MAX_PER_REQUEST}
+    `;
+    if (pending.length === 0) return;
+
+    // BF errors per-order shouldn't break the admin listing — Promise.allSettled
+    // so one flaky sub-order doesn't sink the whole batch.
+    await Promise.allSettled(
+      (pending as Array<Record<string, unknown>>).map((row) =>
+        refreshSmmStatus(Number(row.id)),
+      ),
+    );
+  } catch (err) {
+    console.error("[admin/orders] auto-refresh failed:", err);
+  }
+}
 
 // Admin shows everything in EUR for a unified view across customer currencies.
 // We compute EUR equivalents server-side so the React layer stays synchronous.
@@ -36,6 +69,11 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status") || "all";
     const search = searchParams.get("search") || "";
     const offset = (page - 1) * limit;
+
+    // Opt-out via ?refresh=0 (used by the refresh button to avoid double work).
+    if (searchParams.get("refresh") !== "0") {
+      await autoRefreshPendingOrders();
+    }
 
     let orders;
     let totalRes;
