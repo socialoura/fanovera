@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { getDictionary } from "../i18n/dictionaries";
 import { SUPPORTED_LOCALES, type LocaleOption, type SupportedLocale } from "../i18n/types";
 import { useI18n } from "../i18n/I18nProvider";
@@ -24,24 +24,36 @@ export default function LanguageSelector({ compact = false }: { compact?: boolea
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dict = getDictionary(locale);
   const value = mode === "manual" ? locale : "auto";
   const current = OPTIONS[locale];
+
+  // Build a URL with ?lang= reflecting the chosen locale (or remove it on
+  // "auto"), preserving every other query param. router.replace then re-runs
+  // SSR so server-rendered text inside data-i18n-skip subtrees picks up the
+  // new locale via middleware → x-fanovera-locale header.
+  const buildLocaleUrl = (nextLocale: string | null): string => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    if (nextLocale) params.set("lang", nextLocale);
+    else params.delete("lang");
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
 
   const handleChange = (next: string) => {
     if (next === "auto") {
       setAutoLocale();
       trackEvent("locale_changed", { locale, next_locale: "auto", mode: "auto" });
       setOpen(false);
-      // Re-run SSR with the new cookie so server-rendered text (inside
-      // data-i18n-skip subtrees) gets the correct locale.
-      router.refresh();
+      router.replace(buildLocaleUrl(null));
       return;
     }
     setManualLocale(next);
     trackEvent("locale_changed", { locale, next_locale: next, mode: "manual" });
     setOpen(false);
-    router.refresh();
+    router.replace(buildLocaleUrl(next));
   };
 
   useEffect(() => {
