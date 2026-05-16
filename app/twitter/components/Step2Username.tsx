@@ -51,7 +51,6 @@ export default function Step2Username({
 
   const handleNext = () => {
     if (!username.trim()) { setSubmitError(t.errors.missingUrl); return; }
-    if (!valid) { setSubmitError(t.errors.invalidUrl); return; }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();

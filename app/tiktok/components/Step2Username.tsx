@@ -102,11 +102,9 @@ export default function Step2Username({
   const handleNext = () => {
     if (isMediaMode) {
       if (!postUrl.trim()) return setSubmitError(t.errors.post);
-      if (!postValid) return setSubmitError(t.errors.postInvalid);
       if (!emailValid) return setSubmitError(t.errors.email);
     } else {
       if (!username.trim()) return setSubmitError(t.errors.username);
-      if (!usernameValid) return setSubmitError(t.invalidFormat);
       if (!emailValid) return setSubmitError(t.errors.email);
     }
     setSubmitError(null);

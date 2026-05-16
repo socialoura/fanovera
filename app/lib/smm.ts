@@ -254,6 +254,41 @@ export interface SmmSubOrder {
 }
 
 /**
+ * Best-effort check that a URL is reachable before we spend BulkFollows
+ * credit on it. Conservative: only returns false when we're SURE the URL is
+ * dead (malformed, DNS fail, 404/410). 403/429/timeouts/network blips assume
+ * OK — social sites often block our HEAD request even when the URL is real.
+ */
+async function isUrlReachable(rawUrl: string): Promise<boolean> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+    if (!/^https?:$/.test(url.protocol)) return false;
+  } catch {
+    return false;
+  }
+  try {
+    const res = await fetch(url.toString(), {
+      method: "HEAD",
+      redirect: "follow",
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; FanoveraBot/1.0; +https://fanovera.com)",
+      },
+    });
+    if (res.status === 404 || res.status === 410) return false;
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message.toLowerCase() : "";
+    // DNS failure → host doesn't exist → URL is dead.
+    if (msg.includes("enotfound") || msg.includes("getaddrinfo")) return false;
+    // Timeout / network blip / TLS issue → assume OK, don't block legit orders.
+    return true;
+  }
+}
+
+/**
  * Build the profile link for a given platform + username.
  */
 function buildLink(platform: string, username: string, postUrl?: string): string {
@@ -357,6 +392,24 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     }
 
     const link = buildLink(itemPlatform, username, item.postUrl);
+
+    // Pre-flight URL check: if the link is clearly dead, don't burn BF credit.
+    // Step 2 no longer blocks on regex, so this is the safety net.
+    if (!(await isUrlReachable(link))) {
+      subOrders.push({
+        cartIndex: i,
+        service: svc,
+        platform: itemPlatform,
+        qty,
+        bfServiceId: config.bulkfollows_service_id,
+        bfOrderId: null,
+        status: "failed",
+        charge: null,
+        error: `URL not reachable: ${link}`,
+        placedAt: null,
+      });
+      continue;
+    }
 
     try {
       // Retry transient BulkFollows hiccups (429, 5xx, network blips) up to
@@ -476,6 +529,13 @@ export async function retrySmmSubOrder(
     ? order.cart
     : JSON.parse(order.cart || "[]");
   const link = buildLink(sub.platform, username, cart[sub.cartIndex]?.postUrl);
+
+  if (!(await isUrlReachable(link))) {
+    sub.error = `URL not reachable: ${link}`;
+    sub.status = "failed";
+    await sql`UPDATE orders SET smm_orders = ${JSON.stringify(subOrders)}::jsonb WHERE id = ${orderId}`;
+    throw new Error(sub.error);
+  }
 
   try {
     const result = await withBfRetry(

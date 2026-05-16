@@ -126,7 +126,6 @@ export default function Step2Track({
 
   const handleNext = () => {
     if (mode === "url" && !url) { setSubmitError(t.errors.missingUrl); return; }
-    if (mode === "url" && !validUrl) { setSubmitError(t.errors.invalidUrl); return; }
     if (mode === "search" && !validSearch) { setSubmitError(t.errors.missingSearch); return; }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);

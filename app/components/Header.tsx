@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import CurrencySelector from "./CurrencySelector";
-// import LanguageSelector from "./LanguageSelector";
+import LanguageSelector from "./LanguageSelector";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
@@ -77,7 +77,7 @@ export default function Header() {
           <Link href="/contact">{copy.contact}</Link>
         </nav>
         <div className="header-cta-group" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* <LanguageSelector compact /> */}
+          <LanguageSelector compact />
           <CurrencySelector compact />
           <a
             href="#start"

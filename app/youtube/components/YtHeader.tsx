@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import CurrencySelector from "../../components/CurrencySelector";
-// import LanguageSelector from "../../components/LanguageSelector";
+import LanguageSelector from "../../components/LanguageSelector";
 import { Logo } from "../../components/Header";
 import { useYouTubeCopy } from "../i18n";
 import { withDynamicReviewCount } from "../../lib/reviewCount";
@@ -23,7 +23,7 @@ export default function YtHeader() {
           <Link href="/track">{t.tracking}</Link>
         </nav>
         <div className="pf-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* <LanguageSelector compact /> */}
+          <LanguageSelector compact />
           <CurrencySelector compact />
           <div
             className="hide-md"

@@ -63,10 +63,6 @@ export default function Step2Username({
       setSubmitError(t.errors.url);
       return;
     }
-    if (!validUrl) {
-      setSubmitError(t.errors.invalid);
-      return;
-    }
     if (!emailValid) {
       setSubmitError(t.errors.email);
       return;

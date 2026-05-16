@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import CurrencySelector from "../../components/CurrencySelector";
-// import LanguageSelector from "../../components/LanguageSelector";
+import LanguageSelector from "../../components/LanguageSelector";
 import { Logo } from "../../components/Header";
 import { useTikTokCopy } from "../i18n";
 import { withDynamicReviewCount } from "../../lib/reviewCount";
@@ -22,7 +22,7 @@ export default function TtHeader() {
           <Link href="/track">{t.tracking}</Link>
         </nav>
         <div className="pf-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* <LanguageSelector compact /> */}
+          <LanguageSelector compact />
           <CurrencySelector compact />
           <div className="hide-md" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--ink-2)" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)">

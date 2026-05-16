@@ -66,7 +66,6 @@ export default function Step2Page({
 
   const handleNext = () => {
     if (!pageInput.trim()) { setSubmitError(t.errors.page); return; }
-    if (!valid) { setSubmitError(t.errors.invalid); return; }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();

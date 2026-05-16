@@ -62,7 +62,6 @@ export default function Step2Artist({
 
   const handleNext = () => {
     if (!clean) return setSubmitError(ta.errors.missingName);
-    if (!valid) return setSubmitError(ta.invalidFormat);
     if (!emailValid) return setSubmitError(t.errors.email);
     setSubmitError(null);
     onNext();
