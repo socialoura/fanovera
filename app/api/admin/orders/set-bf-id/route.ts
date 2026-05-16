@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
 import { getOrderStatus, type SmmSubOrder } from "@/app/lib/smm";
 import { resolveBulkFollowsCharge, bulkFollowsCostCents } from "@/app/lib/smmCost";
+import { getUsdToCurrencyRate } from "@/app/lib/fxRates";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 
 /**
@@ -96,7 +97,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const costCents = bulkFollowsCostCents(subOrders.map((s) => s.charge));
+    const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
+    const costCents = bulkFollowsCostCents(subOrders.map((s) => s.charge), fxRate);
 
     await sql`
       UPDATE orders

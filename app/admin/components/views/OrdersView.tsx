@@ -14,6 +14,11 @@ interface Order {
   post_assignments: unknown;
   total_cents: number;
   cost_cents: number;
+  // EUR equivalents computed server-side from order.currency. Admin displays
+  // these to keep a unified view across customer currencies.
+  total_cents_eur: number;
+  cost_cents_eur: number;
+  margin_cents_eur: number;
   currency: string;
   status: string;
   followers_before: number;
@@ -200,8 +205,8 @@ function OrderDetail({
   const paidAt = formatDate(order.created_at);
   const totalQty = cart.reduce((sum, item) => sum + (item.qty || item.quantity || 0), 0);
   const totalBonus = cart.reduce((sum, item) => sum + (item.bonus || 0), 0);
-  const margin = order.total_cents - order.cost_cents;
-  const marginRate = order.total_cents > 0 ? Math.round((margin / order.total_cents) * 100) : 0;
+  const marginEur = order.margin_cents_eur;
+  const marginRate = order.total_cents_eur > 0 ? Math.round((marginEur / order.total_cents_eur) * 100) : 0;
   const activeSmm = smmOrders.filter((item) => item.status && item.status !== "failed").length;
 
   return (
@@ -220,16 +225,16 @@ function OrderDetail({
         <div className="order-finance-grid">
           <div>
             <span>Montant</span>
-            <strong>{formatMoney(order.total_cents, order.currency)}</strong>
+            <strong>{formatMoney(order.total_cents_eur, "EUR")}</strong>
           </div>
           <div>
             <span>Coût</span>
-            <strong>{formatMoney(order.cost_cents, order.currency)}</strong>
+            <strong>{formatMoney(order.cost_cents_eur, "EUR")}</strong>
           </div>
           <div>
             <span>Marge</span>
             <strong>
-              {formatMoney(margin, order.currency)} <em>{marginRate}%</em>
+              {formatMoney(marginEur, "EUR")} <em>{marginRate}%</em>
             </strong>
           </div>
         </div>
@@ -887,10 +892,10 @@ export default function OrdersView() {
                         </span>
                       </td>
                       <td className="num" style={{ fontWeight: 700, color: "var(--a-ink)" }}>
-                        {formatMoney(o.total_cents, o.currency)}
+                        {formatMoney(o.total_cents_eur, "EUR")}
                       </td>
                       <td className="num" style={{ color: "var(--a-ink-3)" }}>
-                        {formatMoney(o.cost_cents, o.currency)}
+                        {formatMoney(o.cost_cents_eur, "EUR")}
                       </td>
                       <td>
                         <span className={"pill " + st.pill}>

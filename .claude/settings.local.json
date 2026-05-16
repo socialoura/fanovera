@@ -40,7 +40,8 @@
       "PowerShell(Get-Content \"C:\\\\Users\\\\ilyee\\\\Fanovera\\\\Google\\\\Rapport sur les termes de recherche \\(15\\).csv\" -Encoding Unicode | Select-Object -Skip 3 | ForEach-Object { $a = $_ -split \"`t\"; if \\($a.Count -ge 17\\) { $conv = [double]\\(\\($a[15] -replace '[\",\"]',''\\) -replace ' ',''\\); $cost = [double]\\(\\($a[12] -replace '[\",\"]',''\\) -replace ' ',''\\); $clicks = [int]\\($a[8] -replace \" \",\"\"\\); if \\($conv -gt 0\\) { \"$conv|$cost|$clicks|$\\($a[3]\\)|$\\($a[0]\\)\" } } } 2>$null | Sort-Object { [double]\\(\\($_ -split '\\\\|'\\)[0]\\) } -Descending | Select-Object -First 80)",
       "PowerShell(Get-Content \"C:\\\\Users\\\\ilyee\\\\Fanovera\\\\Google\\\\Rapport sur les termes de recherche \\(15\\).csv\" -Encoding Unicode | Select-Object -Skip 3 -First 5 | ForEach-Object { $a = $_ -split \"`t\"; \"COLS=$\\($a.Count\\)`nTERM=$\\($a[0]\\)`nCAMP=$\\($a[3]\\)`nCLICKS=$\\($a[8]\\)`nCOST=$\\($a[12]\\)`nCONVRATE=$\\($a[14]\\)`nCONV=$\\($a[15]\\)`nCOSTCONV=$\\($a[16]\\)`n---\" })",
       "PowerShell($result = @\\(\\); Get-Content \"C:\\\\Users\\\\ilyee\\\\Fanovera\\\\Google\\\\Rapport sur les termes de recherche \\(15\\).csv\" -Encoding Unicode | Select-Object -Skip 3 | ForEach-Object { $a = $_ -split \"`t\"; if \\($a.Count -ge 17 -and $a[0] -notmatch \"^Total|^--$\"\\) { $convStr = $a[15].Trim\\('\"'\\) -replace \",\",\".\"; $costStr = $a[12].Trim\\('\"'\\) -replace \",\",\".\"; try { $conv = [double]$convStr; $cost = [double]$costStr; $clicks = [int]\\($a[8] -replace \" \",\"\"\\); if \\($conv -gt 0\\) { $result += [PSCustomObject]@{Conv=$conv;Cost=$cost;Clicks=$clicks;Camp=$a[3];Term=$a[0];CPA=if\\($conv -gt 0\\){[math]::Round\\($cost/$conv,2\\)}else{0}} } } catch {} } } 2>$null; $result | Sort-Object Conv -Descending | Select-Object -First 80 | Format-Table -AutoSize)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(npx vitest *)"
     ]
   }
 }

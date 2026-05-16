@@ -1,7 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
+import { convertCentsToEur } from "@/app/lib/fxRates";
 
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+
+// Admin shows everything in EUR for a unified view across customer currencies.
+// We compute EUR equivalents server-side so the React layer stays synchronous.
+async function enrichOrdersWithEur(orders: Array<Record<string, unknown>>) {
+  return Promise.all(
+    orders.map(async (o) => {
+      const currency = String(o.currency || "EUR");
+      const totalCents = Number(o.total_cents) || 0;
+      const costCents = Number(o.cost_cents) || 0;
+      const [totalEur, costEur] = await Promise.all([
+        convertCentsToEur(totalCents, currency),
+        convertCentsToEur(costCents, currency),
+      ]);
+      return {
+        ...o,
+        total_cents_eur: totalEur,
+        cost_cents_eur: costEur,
+        margin_cents_eur: totalEur - costEur,
+      };
+    }),
+  );
+}
+
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
@@ -33,7 +57,8 @@ export async function GET(req: NextRequest) {
     const total = totalRes[0].count;
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({ orders, total, page, totalPages });
+    const enriched = await enrichOrdersWithEur(orders as Array<Record<string, unknown>>);
+    return NextResponse.json({ orders: enriched, total, page, totalPages });
   } catch (error) {
     console.error("Orders GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -68,7 +93,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const updated = await sql`SELECT * FROM orders WHERE id = ${id} LIMIT 1`;
-    return NextResponse.json({ order: updated[0] });
+    const enriched = await enrichOrdersWithEur(updated as Array<Record<string, unknown>>);
+    return NextResponse.json({ order: enriched[0] });
   } catch (error) {
     console.error("Orders PUT error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

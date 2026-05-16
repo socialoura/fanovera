@@ -15,9 +15,12 @@ export function resolveBulkFollowsCharge(apiCharge: unknown, estimatedCharge: nu
   return estimatedCharge;
 }
 
-export function bulkFollowsCostCents(charges: Array<number | null | undefined>): number {
-  const total = charges.reduce<number>((sum, charge) => (
+export function bulkFollowsCostCents(
+  charges: Array<number | null | undefined>,
+  usdToTargetRate: number = 1,
+): number {
+  const totalUsd = charges.reduce<number>((sum, charge) => (
     sum + (Number.isFinite(Number(charge)) ? Number(charge) : 0)
   ), 0);
-  return Math.round(total * 100);
+  return Math.round(totalUsd * usdToTargetRate * 100);
 }

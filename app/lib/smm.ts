@@ -7,6 +7,7 @@
 
 import { sql } from "./db";
 import { bulkFollowsCostCents, estimateBulkFollowsCharge, resolveBulkFollowsCharge } from "./smmCost";
+import { getUsdToCurrencyRate } from "./fxRates";
 import { captureServerEvent } from "./analytics.server";
 
 const BF_URL = "https://bulkfollows.com/api/v2";
@@ -302,6 +303,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     service?: string;
     qty?: number;
     quantity?: number;
+    bonus?: number;
     platform?: string;
     postUrl?: string;
   }> = Array.isArray(order.cart) ? order.cart : JSON.parse(order.cart || "[]");
@@ -322,7 +324,10 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
   for (let i = 0; i < cart.length; i++) {
     const item = cart[i];
     const svc = item.service || "followers";
-    const qty = item.qty || item.quantity || 0;
+    const baseQty = Number(item.qty || item.quantity || 0);
+    const bonus = Number(item.bonus || 0);
+    // Send qty + bonus to BulkFollows so the customer gets the promised total.
+    const qty = baseQty + bonus;
     const itemPlatform = item.platform || platform;
 
     // Skip if already successfully placed
@@ -408,8 +413,10 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     }
   }
 
-  // Convert USD cost → cents (stored as integer)
-  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge));
+  // BF charges are in USD — convert to the client's currency so cost_cents
+  // and total_cents stay in the same currency (per-order margin calc works).
+  const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
+  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge), fxRate);
 
   // Determine overall status
   const allPlacedOrDone = subOrders.every(
@@ -501,8 +508,9 @@ export async function retrySmmSubOrder(
     // status stays "failed"
   }
 
-  // Recalculate total cost
-  const costCents = bulkFollowsCostCents(subOrders.map((subOrder) => subOrder.charge));
+  // Recalculate total cost (USD → client currency)
+  const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
+  const costCents = bulkFollowsCostCents(subOrders.map((subOrder) => subOrder.charge), fxRate);
 
   const allPlacedOrDone = subOrders.every(
     (s) => s.status === "placed" || s.status === "completed",
@@ -567,7 +575,8 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
     console.error(`[refreshSmmStatus] BF status check failed for order ${orderId}:`, err);
   }
 
-  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge));
+  const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
+  const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge), fxRate);
 
   const allDone = subOrders.every(
     (s) =>
