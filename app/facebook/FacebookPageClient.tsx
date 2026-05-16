@@ -49,7 +49,7 @@ export default function FacebookPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetHandle = extractFacebookHandle(pageInput);
   const targetReady = Boolean(targetHandle);

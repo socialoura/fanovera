@@ -68,7 +68,7 @@ export default function SpotifyPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const isFollowers = productType === "followers";
   const activeInput = isFollowers ? artistInput.trim() : trackInput.trim();

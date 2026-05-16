@@ -11,22 +11,17 @@ type I18nContextValue = ReturnType<typeof useLocalePreference> & {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const SKIP_SELECTOR =
+  "script,style,noscript,textarea,input,select,option,.currency-select,.language-select,[data-i18n-skip]";
+
 function shouldSkip(node: Node) {
   const parent = node.parentElement;
   if (!parent) return true;
-  return Boolean(
-    parent.closest(
-      "script,style,noscript,textarea,input,select,option,.currency-select,.language-select",
-    ),
-  );
+  return Boolean(parent.closest(SKIP_SELECTOR));
 }
 
 function translateAttributes(element: Element, locale: SupportedLocale) {
-  if (
-    element.closest(
-      "script,style,noscript,textarea,select,option,.currency-select,.language-select",
-    )
-  ) {
+  if (element.closest(SKIP_SELECTOR)) {
     return;
   }
 

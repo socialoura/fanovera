@@ -24,8 +24,8 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useYouTubeCopy().step3;
-  const [coupon, setCoupon] = useState("FANO5");
-  const [couponApplied, setCouponApplied] = useState(true);
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({
@@ -36,7 +36,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const discount = promo.discountCents / 100;
   const total = promo.amountCents / 100;
   const promoCode = couponApplied ? coupon : "";
-  const canUsePrefetchedSecret = couponApplied && isDefaultPromoCode(coupon);
+  const canUsePrefetchedSecret = promo.discountCents === 0;
 
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 

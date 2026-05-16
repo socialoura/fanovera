@@ -102,7 +102,7 @@ export default function InstagramPageClient() {
   // Pre-create the Stripe PaymentIntent as soon as we have the data, so Step 3
   // displays instantly without the "Chargement du paiement sécurisé…" spinner.
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95; // default coupon FANO5 (−5%)
+  const total = subtotal;
   const amountCents = Math.round(total * 100);
   const emailValid = isValidCheckoutEmail(email);
   const cleanUsername = username.replace(/^@/, "").trim();

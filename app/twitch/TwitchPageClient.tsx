@@ -49,7 +49,7 @@ export default function TwitchPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetReady = isTwitchUsername(username);
   const { clientSecret } = usePaymentIntent({

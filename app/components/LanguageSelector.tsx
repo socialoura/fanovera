@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getDictionary } from "../i18n/dictionaries";
 import { SUPPORTED_LOCALES, type LocaleOption, type SupportedLocale } from "../i18n/types";
-import { setAutoLocale, setManualLocale, useLocalePreference } from "../i18n/useLocale";
+import { useI18n } from "../i18n/I18nProvider";
 import { trackEvent } from "../lib/analytics";
 
 const OPTIONS: Record<SupportedLocale, LocaleOption> = {
@@ -17,7 +17,9 @@ const OPTIONS: Record<SupportedLocale, LocaleOption> = {
 };
 
 export default function LanguageSelector({ compact = false }: { compact?: boolean }) {
-  const { locale, mode, country } = useLocalePreference();
+  // Single source of truth — share locale state with the I18nProvider so the
+  // dropdown UI and consumers (Hero, Header, etc.) stay in sync.
+  const { locale, mode, country, setManualLocale, setAutoLocale } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const dict = getDictionary(locale);

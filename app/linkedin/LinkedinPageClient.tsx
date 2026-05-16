@@ -49,7 +49,7 @@ export default function LinkedinPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetHandle = extractLinkedinHandle(username);
   const targetReady = Boolean(targetHandle);

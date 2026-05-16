@@ -100,3 +100,26 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  if (!isAdmin(req)) return unauthorized();
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const idParam = searchParams.get("id");
+    const id = idParam ? Number(idParam) : NaN;
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    await sql`DELETE FROM scheduled_emails WHERE order_id = ${id}`;
+    const result = await sql`DELETE FROM orders WHERE id = ${id} RETURNING id`;
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    return NextResponse.json({ deleted: result[0].id });
+  } catch (error) {
+    console.error("Orders DELETE error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

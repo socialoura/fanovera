@@ -354,6 +354,24 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     configMap.set(`${c.platform}:${c.service}`, c);
   }
 
+  // Legacy alias: the DB historically stores Twitter under platform="x" while
+  // productCatalog now emits platform="twitter". Look both up so existing rows
+  // keep working without a manual SQL migration.
+  const platformAliases: Record<string, string[]> = {
+    twitter: ["x"],
+    x: ["twitter"],
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lookupConfig = (p: string, s: string): Record<string, any> | undefined => {
+    const exact = configMap.get(`${p}:${s}`);
+    if (exact) return exact;
+    for (const alias of platformAliases[p] || []) {
+      const hit = configMap.get(`${alias}:${s}`);
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+
   const subOrders: SmmSubOrder[] = [];
 
   for (let i = 0; i < cart.length; i++) {
@@ -374,7 +392,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
       continue;
     }
 
-    const config = configMap.get(`${itemPlatform}:${svc}`);
+    const config = lookupConfig(itemPlatform, svc);
     if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
       subOrders.push({
         cartIndex: i,
@@ -511,10 +529,12 @@ export async function retrySmmSubOrder(
     throw new Error(`Sub-order cartIndex=${cartIndex} is not in a retryable state (${sub.status})`);
   }
 
-  // Re-fetch config in case it was updated
+  // Re-fetch config in case it was updated. Includes legacy platform alias
+  // (twitter ↔ x) so existing seeded rows keep working.
+  const aliasPlatforms = [sub.platform, ...(sub.platform === "twitter" ? ["x"] : sub.platform === "x" ? ["twitter"] : [])];
   const configs = await sql`
     SELECT * FROM smm_config
-    WHERE platform = ${sub.platform} AND service = ${sub.service} AND enabled = true
+    WHERE platform = ANY(${aliasPlatforms}) AND service = ${sub.service} AND enabled = true
     LIMIT 1
   `;
   const config = configs[0];

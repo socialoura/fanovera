@@ -49,7 +49,7 @@ export default function TwitterPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetReady = isTwitterUsername(username);
   const { clientSecret } = usePaymentIntent({

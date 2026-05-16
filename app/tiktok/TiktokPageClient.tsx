@@ -69,7 +69,7 @@ export default function TiktokPageClient() {
   });
 
   const subtotal = selectedPack.price;
-  const total = subtotal * 0.95;
+  const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const isMediaProduct = productType === "likes" || productType === "views";
   const cleanUsername = username.replace(/^@/, "").trim();

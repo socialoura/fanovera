@@ -25,8 +25,8 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, postUrl = "", email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useTikTokCopy().step3;
-  const [coupon, setCoupon] = useState("FANO5");
-  const [couponApplied, setCouponApplied] = useState(true);
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({
@@ -37,7 +37,7 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
   const discount = promo.discountCents / 100;
   const total = promo.amountCents / 100;
   const promoCode = couponApplied ? coupon : "";
-  const canUsePrefetchedSecret = couponApplied && isDefaultPromoCode(coupon);
+  const canUsePrefetchedSecret = promo.discountCents === 0;
 
   const clean = username.replace(/^@/, "").trim();
   const recipientLabel = clean ? "@" + clean : (postUrl.trim() || "@votrepseudo");

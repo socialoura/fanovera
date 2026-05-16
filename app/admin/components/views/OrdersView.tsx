@@ -176,6 +176,7 @@ function OrderDetail({
   onSaveBf,
   onCancelBf,
   onClearBf,
+  onDeleteOrder,
 }: {
   order: Order;
   editingStatus: string;
@@ -198,6 +199,7 @@ function OrderDetail({
   onSaveBf: (orderId: number) => void;
   onCancelBf: () => void;
   onClearBf: (orderId: number, cartIndex: number) => void;
+  onDeleteOrder: (orderId: number) => void;
 }) {
   const cart = asArray<CartItem>(order.cart);
   const smmOrders = asArray<SmmOrderItem>(order.smm_orders);
@@ -530,6 +532,25 @@ function OrderDetail({
       ) : null}
 
       <JsonDetails cart={order.cart} smmOrders={order.smm_orders} />
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--a-line)" }}>
+        <button
+          type="button"
+          className="btn"
+          onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
+          style={{
+            background: "rgba(225,68,68,0.10)",
+            border: "1px solid rgba(225,68,68,0.35)",
+            color: "#E14444",
+            fontWeight: 700,
+            padding: "8px 14px",
+            fontSize: 12,
+          }}
+          title="Supprime définitivement la commande de la base"
+        >
+          Supprimer la commande
+        </button>
+      </div>
     </div>
   );
 }
@@ -738,6 +759,28 @@ export default function OrdersView() {
     );
   };
 
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!confirm(`Supprimer définitivement la commande #${orderId} ? Cette action est irréversible.`)) return;
+    setSaving(true);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch(`/api/admin/orders?id=${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setExpandedId(null);
+      await fetchOrders();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveStatus = async (orderId: number) => {
     const costValue = Number(editingCost);
     if (!Number.isFinite(costValue) || costValue < 0) {
@@ -932,6 +975,7 @@ export default function OrdersView() {
                             onSaveBf={handleSaveBf}
                             onCancelBf={handleCancelBf}
                             onClearBf={handleClearBf}
+                            onDeleteOrder={handleDeleteOrder}
                           />
                         </td>
                       </tr>
