@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getDictionary } from "../i18n/dictionaries";
 import { SUPPORTED_LOCALES, type LocaleOption, type SupportedLocale } from "../i18n/types";
 import { useI18n } from "../i18n/I18nProvider";
@@ -22,6 +23,7 @@ export default function LanguageSelector({ compact = false }: { compact?: boolea
   const { locale, mode, country, setManualLocale, setAutoLocale } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
   const dict = getDictionary(locale);
   const value = mode === "manual" ? locale : "auto";
   const current = OPTIONS[locale];
@@ -31,11 +33,15 @@ export default function LanguageSelector({ compact = false }: { compact?: boolea
       setAutoLocale();
       trackEvent("locale_changed", { locale, next_locale: "auto", mode: "auto" });
       setOpen(false);
+      // Re-run SSR with the new cookie so server-rendered text (inside
+      // data-i18n-skip subtrees) gets the correct locale.
+      router.refresh();
       return;
     }
     setManualLocale(next);
     trackEvent("locale_changed", { locale, next_locale: next, mode: "manual" });
     setOpen(false);
+    router.refresh();
   };
 
   useEffect(() => {

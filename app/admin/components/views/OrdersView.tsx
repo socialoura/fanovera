@@ -125,6 +125,12 @@ function getInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || "?";
 }
 
+function countryFlag(code: string | null | undefined): string {
+  const cc = (code || "").trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return "";
+  return String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+}
+
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="order-field">
@@ -337,7 +343,17 @@ function OrderDetail({
           </div>
 
           <div className="order-fields">
-            <Field label="Pays" value={(order.country || "Non renseigné").toUpperCase()} />
+            <Field
+              label="Pays"
+              value={
+                order.country
+                  ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>{countryFlag(order.country) || "🏳️"}</span>
+                      {order.country.toUpperCase()}
+                    </span>
+                  : "Non renseigné"
+              }
+            />
             <Field label="Langue" value={(order.lang || "Non renseignée").toUpperCase()} />
             <Field label="Followers avant" value={formatQty(order.followers_before)} />
             <Field label="Livraison" value={formatShortDate(order.delivered_at)} />
@@ -903,6 +919,7 @@ export default function OrdersView() {
                 <th>ID</th>
                 <th>Email</th>
                 <th>Plateforme</th>
+                <th>Pays</th>
                 <th className="num">Montant</th>
                 <th className="num">Coût</th>
                 <th>Statut</th>
@@ -934,6 +951,12 @@ export default function OrdersView() {
                           {o.platform}
                         </span>
                       </td>
+                      <td>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }} title={o.country || "Inconnu"}>
+                          <span style={{ fontSize: 18, lineHeight: 1 }}>{countryFlag(o.country) || "🏳️"}</span>
+                          <span style={{ color: "var(--a-ink-3)", fontWeight: 600 }}>{(o.country || "—").toUpperCase()}</span>
+                        </span>
+                      </td>
                       <td className="num" style={{ fontWeight: 700, color: "var(--a-ink)" }}>
                         {formatMoney(o.total_cents_eur, "EUR")}
                       </td>
@@ -952,7 +975,7 @@ export default function OrdersView() {
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={7} className="order-detail-cell">
+                        <td colSpan={8} className="order-detail-cell">
                           <OrderDetail
                             order={o}
                             editingStatus={editingStatus}
