@@ -328,6 +328,7 @@ export async function initDb() {
       { platform: "twitter", service: "x_retweets", id: 6070 },
       { platform: "twitch", service: "tw_followers", id: 5912 },
       { platform: "twitch", service: "tw_live_viewers", id: 5913 },
+      { platform: "twitch", service: "tw_ai_viewers", id: 5913 },
       { platform: "facebook", service: "fb_followers", id: 5660 },
       { platform: "facebook", service: "fb_likes", id: 5661 },
       { platform: "linkedin", service: "li_followers", id: 0 },

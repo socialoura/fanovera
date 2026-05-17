@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import TwHeader from "./components/TwHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Username from "./components/Step2Username";
@@ -10,7 +11,7 @@ import Reviews from "./components/Reviews";
 import TwFAQ from "./components/TwFAQ";
 import TwFooter from "./components/TwFooter";
 import type { TwProfile } from "./components/Step2Username";
-import { PACKS, type CountryId, formatPrice, formatQty } from "./data";
+import { PACKS, type CountryId, type TwitchProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
@@ -28,13 +29,28 @@ export default function TwitchPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
   const [pack, setPack] = useState(3);
+  const search = useSearchParams();
+  const initialProductType: TwitchProductType = (() => {
+    const raw = (search?.get("product") || "").toLowerCase();
+    return raw === "ai_viewers" || raw === "ai-viewers" ? "ai_viewers" : "followers";
+  })();
+  const [productType, setProductType] = useState<TwitchProductType>(initialProductType);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [scheduledStartAt, setScheduledStartAt] = useState("");
   const [profile, setProfile] = useState<TwProfile | null>(null);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("tw_followers", PACKS, STATIC_PACKS);
 
-  const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
-  const selectedPack = PACKS[safePack] ?? PACKS[0];
+  useEffect(() => {
+    setUsername("");
+    setProfile(null);
+    setScheduledStartAt("");
+  }, [productType]);
+
+  const activePacks = getPacksForProduct(productType);
+  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
+
+  const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
+  const selectedPack = activePacks[safePack] ?? activePacks[0];
   const tCopy = useTwitchCopy();
   useFunnelPersistence("twitch", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   useProductAnalytics({
@@ -51,14 +67,24 @@ export default function TwitchPageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
-  const targetReady = isTwitchUsername(username);
+  const usernameValid = isTwitchUsername(username);
+  const isLive = productType === "ai_viewers";
+  const scheduleDate = scheduledStartAt ? new Date(scheduledStartAt) : null;
+  const scheduleValid = !isLive || (Boolean(scheduleDate) && !isNaN((scheduleDate as Date).getTime()) && (scheduleDate as Date).getTime() - Date.now() >= 60 * 60 * 1000);
+  const targetReady = usernameValid && scheduleValid;
+
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),
     email,
     username: username.replace(/^@/, "").trim(),
     platform: "twitch",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country }],
+    cart: [{
+      qty: selectedPack.qty,
+      bonus: selectedPack.bonus,
+      country,
+      ...(isLive && scheduledStartAt ? { scheduledStartAt } : {}),
+    }],
     followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && targetReady && emailValid,
   });
@@ -88,7 +114,7 @@ export default function TwitchPageClient() {
     <div data-i18n-skip>
       <div className="paper-frame with-tw-halo" data-step-main>
         <TwHeader />
-        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} /> : <PricingPacksLoading accent="var(--tw-purple)" />)}
+        {step === 1 && (canDisplayPricing ? <Step1Packs country={country} pack={safePack} setPack={setPack} onNext={next} productType={productType} setProductType={setProductType} /> : <PricingPacksLoading accent="var(--tw-purple)" />)}
         {step === 2 && (
           <Step2Username
             country={country}
@@ -101,6 +127,9 @@ export default function TwitchPageClient() {
             setProfile={setProfile}
             onNext={next}
             onBack={back}
+            productType={productType}
+            scheduledStartAt={scheduledStartAt}
+            setScheduledStartAt={setScheduledStartAt}
           />
         )}
         {step === 3 && (
@@ -113,6 +142,8 @@ export default function TwitchPageClient() {
             clientSecret={clientSecret}
             onBack={back}
             onBackToPacks={backToPacks}
+            productType={productType}
+            scheduledStartAt={scheduledStartAt}
           />
         )}
       </div>

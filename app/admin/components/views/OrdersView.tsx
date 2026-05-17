@@ -49,6 +49,9 @@ const STATUSES = ["pending", "paid", "processing", "delivered", "failed"] as con
 const SERVICE_LABELS: Record<string, string> = {
   followers: "Followers",
   ig_followers: "Followers Instagram",
+  tw_followers: "Followers Twitch",
+  tw_ai_viewers: "AI Viewers Twitch (live)",
+  tw_live_viewers: "Viewers Twitch (live)",
   likes: "Likes",
   views: "Vues",
   subscribers: "Abonnés",
@@ -73,6 +76,7 @@ type CartItem = {
   platform?: string;
   postUrl?: string;
   link?: string;
+  scheduledStartAt?: string;
 };
 
 type SmmOrderItem = {
@@ -293,6 +297,23 @@ function OrderDetail({
                       <span>{(item.platform || order.platform).toString()}</span>
                       <span>{(item.country || order.country || "Pays inconnu").toString().toUpperCase()}</span>
                     </div>
+                    {item.scheduledStartAt && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          background: "rgba(145,70,255,0.08)",
+                          border: "1px solid rgba(145,70,255,0.25)",
+                          color: "#5b21b6",
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                        title="Le client a programmé son live à cette date — lance BulkFollows ~5-10 min avant pour synchroniser les viewers."
+                      >
+                        📅 Live programmé : {new Date(item.scheduledStartAt).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })}
+                      </div>
+                    )}
                     {(item.postUrl || item.link) && (
                       <a className="order-link" href={(item.postUrl || item.link) as string} target="_blank" rel="noreferrer">
                         Voir le lien {Ic.external()}

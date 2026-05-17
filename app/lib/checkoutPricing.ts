@@ -2,6 +2,7 @@ import { SUPPORTED_CURRENCIES, currencyDbColumn, type SupportedCurrency } from "
 import { calculatePromoPricing, type PromoPricing } from "./promoCodes";
 import { applyPricingAssignment, type PricingAssignment } from "./pricingExperiments";
 import { findFallbackPack, getProductConfig, normalizePlatform, type PlatformId } from "./productCatalog";
+import { AI_VIEWERS_PACKS as TWITCH_AI_VIEWERS_PACKS } from "@/app/twitch/data";
 
 export type PricingRow = {
   service: string;
@@ -42,6 +43,10 @@ export type SanitizedCheckoutItem = {
   videoId?: string;
   trackUrl?: string;
   trackId?: string;
+  // ISO timestamp (UTC) for products that require a scheduled start, e.g.
+  // Twitch AI live viewers — the back-end uses this to launch the BulkFollows
+  // order in time for the customer's live stream.
+  scheduledStartAt?: string;
 };
 
 export type CheckoutPricingResult = {
@@ -113,14 +118,35 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
     const qty = Math.trunc(toNumber(item.qty ?? item.quantity));
     if (!Number.isFinite(qty) || qty <= 0) throw new Error("Invalid cart quantity");
 
-    const basePrice = priceForQty(platform, config.service, qty, currency, rows);
+    // Validate the optional scheduledStartAt is a parseable ISO timestamp;
+    // anything else is silently dropped so we never persist garbage.
+    const rawSchedule = typeof item.scheduledStartAt === "string" ? item.scheduledStartAt.trim() : "";
+    const parsedSchedule = rawSchedule ? new Date(rawSchedule) : null;
+    const scheduledStartAt =
+      parsedSchedule && !isNaN(parsedSchedule.getTime()) ? parsedSchedule.toISOString() : undefined;
+
+    // Twitch with a scheduled live → swap to the AI live viewers product
+    // (different service, different price tiers).
+    const isLiveViewers = platform === "twitch" && Boolean(scheduledStartAt);
+    const serviceForItem = isLiveViewers ? "tw_ai_viewers" : config.service;
+
+    let basePrice: number | null;
+    if (isLiveViewers) {
+      const dbRow = rows.find((r) => r.service === "tw_ai_viewers" && Number(r.qty) === qty && r.active !== false);
+      basePrice = dbRow ? pickRowPrice(dbRow, currency) : null;
+      if (basePrice === null) {
+        basePrice = TWITCH_AI_VIEWERS_PACKS.find((p) => p.qty === qty)?.price ?? null;
+      }
+    } else {
+      basePrice = priceForQty(platform, config.service, qty, currency, rows);
+    }
     if (basePrice === null) throw new Error("Unknown pricing pack");
 
     const adjustedPrice = input.assignment ? applyPricingAssignment(basePrice, input.assignment) : basePrice;
     subtotalCents += Math.round(adjustedPrice * 100);
 
     sanitizedCart.push({
-      service: config.service,
+      service: serviceForItem,
       platform,
       qty,
       bonus: Math.max(0, Math.trunc(toNumber(item.bonus) || 0)),
@@ -132,6 +158,7 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
       videoId: sanitizeText(item.videoId, 80),
       trackUrl: sanitizeText(item.trackUrl),
       trackId: sanitizeText(item.trackId, 80),
+      scheduledStartAt,
     });
   }
 

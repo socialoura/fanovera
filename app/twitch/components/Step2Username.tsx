@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
-import { type CountryId } from "../data";
+import { type CountryId, type TwitchProductType } from "../data";
 import { useTwitchCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
+
+const MIN_LEAD_MS = 60 * 60 * 1000; // require live to start at least 1h ahead
 
 export type TwProfile = {
   username: string;
@@ -34,10 +36,14 @@ type Props = {
   setProfile: (p: TwProfile | null) => void;
   onNext: () => void;
   onBack: () => void;
+  productType: TwitchProductType;
+  scheduledStartAt: string;
+  setScheduledStartAt: (v: string) => void;
 };
 
 export default function Step2Username({
   country, pack, username, setUsername, email, setEmail, profile, setProfile, onNext, onBack,
+  productType, scheduledStartAt, setScheduledStartAt,
 }: Props) {
   const t = useTwitchCopy();
   const [touched, setTouched] = useState(false);
@@ -51,12 +57,38 @@ export default function Step2Username({
   const valid = /^[a-zA-Z0-9_]{4,25}$/.test(clean);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  const isLive = productType === "ai_viewers";
+  // scheduledStartAt is stored as ISO (UTC) so the back-end gets a stable
+  // value regardless of the user's browser timezone. The <input> below shows
+  // a local-time view to the user.
+  const scheduleDate = scheduledStartAt ? new Date(scheduledStartAt) : null;
+  const scheduleValid = Boolean(scheduleDate && !isNaN(scheduleDate.getTime()) && scheduleDate.getTime() - Date.now() >= MIN_LEAD_MS);
+
   const handleNext = () => {
     if (!username.trim()) { setSubmitError(t.step2.errors.username); return; }
     if (!emailValid) { setSubmitError(t.step2.errors.email); return; }
+    if (isLive) {
+      if (!scheduleDate || isNaN(scheduleDate.getTime())) { setSubmitError(t.aiViewers.error); return; }
+      if (scheduleDate.getTime() - Date.now() < MIN_LEAD_MS) { setSubmitError(t.aiViewers.errorTooSoon); return; }
+    }
     setSubmitError(null);
     onNext();
   };
+
+  // Build datetime-local input value from the ISO stored string. The input
+  // expects "YYYY-MM-DDTHH:MM" in local time, not UTC.
+  const datetimeLocalValue = (() => {
+    if (!scheduleDate || isNaN(scheduleDate.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${scheduleDate.getFullYear()}-${pad(scheduleDate.getMonth() + 1)}-${pad(scheduleDate.getDate())}T${pad(scheduleDate.getHours())}:${pad(scheduleDate.getMinutes())}`;
+  })();
+
+  // Min attribute value = now + 1h, in local datetime-local format.
+  const minDatetimeLocal = (() => {
+    const min = new Date(Date.now() + MIN_LEAD_MS);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${min.getFullYear()}-${pad(min.getMonth() + 1)}-${pad(min.getDate())}T${pad(min.getHours())}:${pad(min.getMinutes())}`;
+  })();
 
   useEffect(() => {
     setVerified(false);
@@ -103,9 +135,13 @@ export default function Step2Username({
         <Stepper step={2} />
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
-          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>{t.step2.titleBefore} <span className="squiggle tw">{t.step2.titleFocus}</span> {t.step2.titleAfter}</h1>
+          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
+            {isLive
+              ? <>{t.aiViewers.titleBefore} <span className="squiggle tw">{t.aiViewers.titleFocus}</span> {t.aiViewers.titleAfter}</>
+              : <>{t.step2.titleBefore} <span className="squiggle tw">{t.step2.titleFocus}</span> {t.step2.titleAfter}</>}
+          </h1>
           <p style={{ maxWidth: 580, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            {t.step2.intro}
+            {isLive ? t.aiViewers.intro : t.step2.intro}
           </p>
         </div>
 
@@ -147,6 +183,33 @@ export default function Step2Username({
             {valid && apiError === "not_found" && (
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--tw-purple)", display: "flex", gap: 6, alignItems: "center" }}>
                 <span>!</span> {t.step2.notFound}
+              </div>
+            )}
+
+            {isLive && (
+              <div style={{ marginTop: 24 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
+                  {t.aiViewers.dateLabel} · {t.aiViewers.timeLabel}
+                </label>
+                <div className="input-shell tw">
+                  <input
+                    type="datetime-local"
+                    value={datetimeLocalValue}
+                    min={minDatetimeLocal}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) { setScheduledStartAt(""); return; }
+                      // Parse the local datetime-local string into an ISO/UTC
+                      // string so server + DB are timezone-agnostic.
+                      const d = new Date(v);
+                      setScheduledStartAt(isNaN(d.getTime()) ? "" : d.toISOString());
+                    }}
+                    style={{ width: "100%", fontSize: 14 }}
+                  />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: scheduleValid || !scheduledStartAt ? "var(--ink-3)" : "var(--tw-purple)" }}>
+                  {t.aiViewers.hint}
+                </div>
               </div>
             )}
 

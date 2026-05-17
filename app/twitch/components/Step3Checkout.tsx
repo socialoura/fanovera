@@ -6,10 +6,10 @@ import NetIcon from "../../components/NetIcon";
 import StripeCheckout from "../../components/StripePayment";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
+import { COUNTRIES, formatQty, fmtEuro, getPacksForProduct, type CountryId, type TwitchProductType } from "../data";
 import type { TwProfile } from "./Step2Username";
 import { useTwitchCopy } from "../i18n";
-import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
+import { calculatePromoPricing } from "../../lib/promoCodes";
 
 type Props = {
   country: CountryId;
@@ -20,14 +20,20 @@ type Props = {
   clientSecret?: string | null;
   onBack: () => void;
   onBackToPacks: () => void;
+  productType: TwitchProductType;
+  scheduledStartAt: string;
 };
 
-export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
+export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks, productType, scheduledStartAt }: Props) {
   const t = useTwitchCopy();
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
 
-  const subtotal = PACKS[pack].price;
+  const packs = getPacksForProduct(productType);
+  const safePack = Math.min(pack, Math.max(0, packs.length - 1));
+  const selectedPack = packs[safePack];
+  const isLive = productType === "ai_viewers";
+  const subtotal = selectedPack.price;
   const promo = calculatePromoPricing({
     subtotalCents: Math.round(subtotal * 100),
     promoCode: couponApplied ? coupon : "",
@@ -87,14 +93,14 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14 }}>
               <div>
-                <div style={{ fontWeight: 600 }}>{formatQty(PACKS[pack].qty)}</div>
+                <div style={{ fontWeight: 600 }}>{formatQty(selectedPack.qty)}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{selectedCountry.flag} {selectedCountry.name}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{fmtEuro(subtotal)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, color: "var(--green)", borderBottom: "1px dashed var(--line)" }}>
               <div>
-                <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} {t.step3.included}</div>
+                <div style={{ fontWeight: 600 }}>+{formatQty(selectedPack.bonus)} {t.step3.included}</div>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{t.step3.campaignCredit}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{t.step3.free}</div>
@@ -124,7 +130,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               </div>
             </div>
             <div style={{ textAlign: "right", fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through", marginBottom: 16 }}>
-              {fmtEuro(PACKS[pack].old)}
+              {fmtEuro(selectedPack.old)}
             </div>
 
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
@@ -135,7 +141,12 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                 username={clean}
                 platform="twitch"
                 brandColor="var(--tw-purple)"
-                cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
+                cart={[{
+                  qty: selectedPack.qty,
+                  bonus: selectedPack.bonus,
+                  country,
+                  ...(isLive && scheduledStartAt ? { scheduledStartAt } : {}),
+                }]}
                 promoCode={promoCode}
                 clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
               />

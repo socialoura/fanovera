@@ -9,6 +9,9 @@ export type Pack = {
   best?: boolean;
 };
 
+export type TwitchProductType = "followers" | "ai_viewers";
+
+// Followers pack: standard SMM follower-style pricing.
 export const PACKS: Pack[] = [
   { qty: 100, price: 4.99, old: 12.99, bonus: 15 },
   { qty: 250, price: 9.99, old: 24.99, bonus: 35 },
@@ -21,6 +24,27 @@ export const PACKS: Pack[] = [
   { qty: 50000, price: 899.99, old: 1899.99, bonus: 10000, best: true },
   { qty: 100000, price: 1599.99, old: 3399.99, bonus: 20000 },
 ];
+
+// AI live viewers pack: smaller concurrent-viewer counts at a higher per-unit
+// price because each viewer is an active session for the duration of the
+// stream, not a one-shot follow.
+export const AI_VIEWERS_PACKS: Pack[] = [
+  { qty: 10, price: 4.99, old: 9.99, bonus: 2 },
+  { qty: 25, price: 9.99, old: 19.99, bonus: 5 },
+  { qty: 50, price: 17.99, old: 34.99, bonus: 10 },
+  { qty: 100, price: 29.99, old: 59.99, bonus: 20, popular: true },
+  { qty: 250, price: 64.99, old: 129.99, bonus: 50 },
+  { qty: 500, price: 119.99, old: 239.99, bonus: 100, best: true },
+  { qty: 1000, price: 199.99, old: 399.99, bonus: 200 },
+];
+
+export function getPacksForProduct(productType: TwitchProductType): Pack[] {
+  return productType === "ai_viewers" ? AI_VIEWERS_PACKS : PACKS;
+}
+
+export function getServiceForProduct(productType: TwitchProductType): string {
+  return productType === "ai_viewers" ? "tw_ai_viewers" : "tw_followers";
+}
 
 export type CountryId = "fr" | "eu";
 
