@@ -4,7 +4,7 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import TtSprinkle from "./TtSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, type CountryId, type TikTokProductType, getPacksForProduct } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type TikTokProductType, getPacksForProduct } from "../data";
 import { useTikTokCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -95,7 +95,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 13, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(selectedPack, country)}</div>
-                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.discount} {savings.toFixed(2).replace(".", ",")} EUR</div>
+                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.discount} {fmtEuro(savings)}</div>
               </div>
             </div>
             <button className="btn-primary btn-tt" onClick={onNext} style={{ width: "100%", padding: "16px 26px", fontSize: 16, marginTop: 8 }}>

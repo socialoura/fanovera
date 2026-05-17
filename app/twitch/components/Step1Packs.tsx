@@ -2,7 +2,7 @@
 import NetIcon from "../../components/NetIcon";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, type CountryId } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId } from "../data";
 import { useTwitchCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -82,7 +82,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 13, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(selectedPack, country)}</div>
-                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.step1.discount} {savings.toFixed(2).replace(".", ",")} EUR</div>
+                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.step1.discount} {fmtEuro(savings)}</div>
               </div>
             </div>
 

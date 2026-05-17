@@ -2,7 +2,7 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import YtSprinkle from "./YtSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, type CountryId, type YouTubeProductType, getPacksForProduct } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type YouTubeProductType, getPacksForProduct } from "../data";
 import { useYouTubeCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -96,7 +96,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 13, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(selectedPack, country)}</div>
-                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.discount} {savings.toFixed(2).replace(".", ",")} EUR</div>
+                <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginTop: 4 }}>{t.discount} {fmtEuro(savings)}</div>
               </div>
             </div>
 
