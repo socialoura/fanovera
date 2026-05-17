@@ -11,7 +11,7 @@ import Reviews from "./components/Reviews";
 import TtFAQ from "./components/TtFAQ";
 import TtFooter from "./components/TtFooter";
 import type { TtProfile, TtMedia } from "./components/Step2Username";
-import { PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -24,6 +24,8 @@ import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useTikTokCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+const STATIC_LIKES_PACKS = LIKES_PACKS.map((pack) => ({ ...pack }));
+const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
 
 export default function TiktokPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -48,7 +50,13 @@ export default function TiktokPageClient() {
     setMedia(null);
   }, [productType]);
   const activePacks = getPacksForProduct(productType);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
+  // Apply DB pricing to all 3 product arrays so toggling between
+  // Followers / Likes / Views all pick up admin-configured prices.
+  const followersPricing = useApplyCurrencyPricing("tt_followers", PACKS, STATIC_PACKS);
+  const likesPricing = useApplyCurrencyPricing("tt_likes", LIKES_PACKS, STATIC_LIKES_PACKS);
+  const viewsPricing = useApplyCurrencyPricing("tt_views", VIEWS_PACKS, STATIC_VIEWS_PACKS);
+  const pricing = productType === "likes" ? likesPricing : productType === "views" ? viewsPricing : followersPricing;
+  const { canDisplayPricing, currency, experiment } = pricing;
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];

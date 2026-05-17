@@ -11,7 +11,7 @@ import Reviews from "./components/Reviews";
 import TwFAQ from "./components/TwFAQ";
 import TwFooter from "./components/TwFooter";
 import type { TwProfile } from "./components/Step2Username";
-import { PACKS, type CountryId, type TwitchProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, AI_VIEWERS_PACKS, type CountryId, type TwitchProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
@@ -24,6 +24,7 @@ import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useTwitchCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+const STATIC_AI_VIEWERS_PACKS = AI_VIEWERS_PACKS.map((pack) => ({ ...pack }));
 
 export default function TwitchPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -46,8 +47,15 @@ export default function TwitchPageClient() {
     setScheduledStartAt("");
   }, [productType]);
 
+  // Apply DB pricing to BOTH product arrays so toggling between Followers and
+  // AI Viewers picks up admin-configured prices in either case. Each hook
+  // mutates a distinct array (PACKS / AI_VIEWERS_PACKS), and Step1Packs reads
+  // the right one via getPacksForProduct.
+  const followersPricing = useApplyCurrencyPricing("tw_followers", PACKS, STATIC_PACKS);
+  const aiViewersPricing = useApplyCurrencyPricing("tw_live_viewers", AI_VIEWERS_PACKS, STATIC_AI_VIEWERS_PACKS);
+  const pricing = productType === "ai_viewers" ? aiViewersPricing : followersPricing;
+  const { canDisplayPricing, currency, experiment } = pricing;
   const activePacks = getPacksForProduct(productType);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];

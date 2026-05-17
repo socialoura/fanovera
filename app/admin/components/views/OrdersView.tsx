@@ -34,6 +34,7 @@ interface ApiResponse {
   total: number;
   page: number;
   totalPages: number;
+  actionRequired?: number;
 }
 
 const STATUS_MAP: Record<string, { label: string; pill: string }> = {
@@ -41,17 +42,18 @@ const STATUS_MAP: Record<string, { label: string; pill: string }> = {
   processing: { label: "En cours", pill: "blue" },
   paid: { label: "Payée", pill: "violet" },
   pending: { label: "En attente", pill: "amber" },
+  partial: { label: "Partielle", pill: "amber" },
+  canceled: { label: "Annulée", pill: "red" },
   failed: { label: "Échouée", pill: "red" },
 };
 
-const STATUSES = ["pending", "paid", "processing", "delivered", "failed"] as const;
+const STATUSES = ["pending", "paid", "processing", "delivered", "partial", "canceled", "failed"] as const;
 
 const SERVICE_LABELS: Record<string, string> = {
   followers: "Followers",
   ig_followers: "Followers Instagram",
   tw_followers: "Followers Twitch",
-  tw_ai_viewers: "AI Viewers Twitch (live)",
-  tw_live_viewers: "Viewers Twitch (live)",
+  tw_live_viewers: "AI Viewers Twitch (live)",
   likes: "Likes",
   views: "Vues",
   subscribers: "Abonnés",
@@ -189,6 +191,7 @@ function OrderDetail({
   onRunSmm,
   onRefreshSmm,
   onRetrySub,
+  onTopUpSub,
   onStartEditBf,
   onChangeBf,
   onChangeBfService,
@@ -211,7 +214,8 @@ function OrderDetail({
   editingBf: BfEditState;
   onRunSmm: (orderId: number) => void;
   onRefreshSmm: (orderId: number) => void;
-  onRetrySub: (orderId: number, cartIndex: number) => void;
+  onRetrySub: (orderId: number, cartIndex: number, currentServiceId: number) => void;
+  onTopUpSub: (orderId: number, cartIndex: number, originalQty: number, bfServiceId: number) => void;
   onStartEditBf: (cartIndex: number, currentBf: string, currentService: string) => void;
   onChangeBf: (value: string) => void;
   onChangeBfService: (value: string) => void;
@@ -455,6 +459,7 @@ function OrderDetail({
               const cartIdx = typeof item.cartIndex === "number" ? item.cartIndex : index;
               const isEditing = editingBf?.cartIndex === cartIdx;
               const canRetry = status === "failed" || status === "canceled";
+              const canTopUp = status === "partial" || status === "canceled";
               return (
                 <div
                   className="smm-row"
@@ -547,12 +552,25 @@ function OrderDetail({
                     <button
                       type="button"
                       className="btn"
-                      onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx); }}
+                      onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx, item.bfServiceId || 0); }}
                       disabled={smmBusy}
                       style={{ padding: "4px 10px", fontSize: 11 }}
-                      title="Relance cette sous-commande via BulkFollows"
+                      title="Relance cette sous-commande via BulkFollows — choisis un service ID one-off ou laisse vide pour celui du config global"
                     >
                       {Ic.refresh()} Retry
+                    </button>
+                  ) : null}
+
+                  {canTopUp ? (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={(e) => { e.stopPropagation(); onTopUpSub(order.id, cartIdx, item.qty || 0, item.bfServiceId || 0); }}
+                      disabled={smmBusy}
+                      style={{ padding: "4px 10px", fontSize: 11 }}
+                      title="Place une nouvelle commande BulkFollows pour combler le reliquat (en plus de l'originale, audit trail conservé)"
+                    >
+                      {Ic.zap()} Compléter la livraison
                     </button>
                   ) : null}
 
@@ -609,6 +627,7 @@ export default function OrdersView() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [actionRequired, setActionRequired] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -645,6 +664,7 @@ export default function OrdersView() {
       setOrders(data.orders);
       setTotal(data.total);
       setTotalPages(data.totalPages);
+      setActionRequired(Number(data.actionRequired) || 0);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -743,14 +763,79 @@ export default function OrdersView() {
     );
   };
 
-  const handleRetrySub = async (orderId: number, cartIndex: number) => {
+  const handleRetrySub = async (orderId: number, cartIndex: number, currentServiceId: number) => {
+    const suggestion = currentServiceId > 0 ? String(currentServiceId) : "";
+    const raw = window.prompt(
+      `Retry de la sous-commande #${cartIndex}.\n\n` +
+      `BulkFollows service ID à utiliser ?\n` +
+      `(Laisse vide pour utiliser celui du smm_config global. ` +
+      `Entre une valeur pour faire un retry one-off avec un service précis.)`,
+      suggestion,
+    );
+    if (raw === null) return; // user canceled
+    const trimmed = raw.trim();
+    const body: Record<string, unknown> = { orderId, cartIndex };
+    if (trimmed) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n) || n <= 0) {
+        setSmmMessage({ kind: "error", text: "Service ID invalide." });
+        return;
+      }
+      body.serviceId = n;
+    }
     await callSmmEndpoint(
       "/api/admin/orders/retry-smm",
-      { orderId, cartIndex },
+      body,
       (data) => {
         const retried = (data?.retried || {}) as Record<string, unknown>;
         const status = String(retried?.status || "inconnu");
-        return `Sous-commande #${cartIndex} relancée (statut : ${status}).`;
+        const sid = retried?.bfServiceId ? ` · service #${retried.bfServiceId}` : "";
+        return `Sous-commande #${cartIndex} relancée (statut : ${status})${sid}.`;
+      },
+    );
+  };
+
+  const handleTopUpSub = async (orderId: number, cartIndex: number, originalQty: number, bfServiceId: number) => {
+    const qtySuggestion = originalQty > 0 ? String(originalQty) : "";
+    const rawQty = window.prompt(
+      `Compléter la livraison de la sous-commande #${cartIndex}.\n\n` +
+      `1/2 — Quelle quantité re-livrer via BulkFollows ?`,
+      qtySuggestion,
+    );
+    if (rawQty === null) return;
+    const quantity = Number(rawQty);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setSmmMessage({ kind: "error", text: "Quantité invalide." });
+      return;
+    }
+
+    const svcSuggestion = bfServiceId > 0 ? String(bfServiceId) : "";
+    const rawSvc = window.prompt(
+      `Compléter la livraison de la sous-commande #${cartIndex}.\n\n` +
+      `2/2 — BulkFollows service ID à utiliser ?\n` +
+      `(Laisse vide pour réutiliser le service de l'originale. ` +
+      `Entre une valeur pour faire un top-up one-off avec un service précis.)`,
+      svcSuggestion,
+    );
+    if (rawSvc === null) return;
+    const body: Record<string, unknown> = { orderId, cartIndex, quantity };
+    const trimmed = rawSvc.trim();
+    if (trimmed) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n) || n <= 0) {
+        setSmmMessage({ kind: "error", text: "Service ID invalide." });
+        return;
+      }
+      body.serviceId = n;
+    }
+
+    await callSmmEndpoint(
+      "/api/admin/orders/top-up-smm",
+      body,
+      (data) => {
+        const sub = (data?.newSub || {}) as Record<string, unknown>;
+        const sid = sub?.bfServiceId ? ` · service #${sub.bfServiceId}` : "";
+        return `Top-up envoyé : ${quantity} unités via BF #${String(sub?.bfOrderId || "?")}${sid}. Commande repassée en processing.`;
       },
     );
   };
@@ -882,6 +967,49 @@ export default function OrdersView() {
 
   return (
     <div>
+      {actionRequired > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "14px 18px",
+            marginBottom: 14,
+            background: "linear-gradient(90deg, rgba(225,68,68,0.06), rgba(198,138,25,0.06))",
+            border: "1px solid rgba(225,68,68,0.30)",
+            borderRadius: 12,
+            color: "var(--a-ink)",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: "var(--a-red)", color: "white", display: "grid", placeItems: "center", fontSize: 16, fontWeight: 800, flexShrink: 0 }}>!</div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 14, fontWeight: 800 }}>
+              {actionRequired} commande{actionRequired > 1 ? "s" : ""} en attente d&apos;action
+            </div>
+            <div style={{ fontSize: 12, color: "var(--a-ink-3)", marginTop: 2 }}>
+              Livraison BulkFollows partielle ou annulée — décide si tu complètes via &quot;Compléter la livraison&quot; ou si tu rembourses via Stripe.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              className="btn"
+              style={{ padding: "6px 12px", fontSize: 12 }}
+              onClick={() => setStatusFilter("partial")}
+            >
+              Voir partielles
+            </button>
+            <button
+              className="btn"
+              style={{ padding: "6px 12px", fontSize: 12 }}
+              onClick={() => setStatusFilter("canceled")}
+            >
+              Voir annulées
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <div className="search-box" style={{ width: 320 }}>
           {Ic.search()}
@@ -901,6 +1029,8 @@ export default function OrdersView() {
               ["paid", "Paid"],
               ["processing", "En cours"],
               ["delivered", "Livrées"],
+              ["partial", "Partielles"],
+              ["canceled", "Annulées"],
               ["failed", "Échouées"],
             ] as const
           ).map(([k, l]) => (
@@ -1022,6 +1152,7 @@ export default function OrdersView() {
                             onRunSmm={handleRunSmm}
                             onRefreshSmm={handleRefreshSmm}
                             onRetrySub={handleRetrySub}
+                            onTopUpSub={handleTopUpSub}
                             onStartEditBf={handleStartEditBf}
                             onChangeBf={handleChangeBf}
                             onChangeBfService={handleChangeBfService}

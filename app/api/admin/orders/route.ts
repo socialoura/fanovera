@@ -95,8 +95,16 @@ export async function GET(req: NextRequest) {
     const total = totalRes[0].count;
     const totalPages = Math.ceil(total / limit);
 
+    // Banner counter — partial + canceled orders need a manual decision
+    // (top up the delivery, refund, or just accept). The list view surfaces
+    // this so the admin doesn't miss them.
+    const actionRequiredRes = await sql`
+      SELECT COUNT(*)::int AS count FROM orders WHERE status IN ('partial', 'canceled')
+    `;
+    const actionRequired = Number(actionRequiredRes[0]?.count) || 0;
+
     const enriched = await enrichOrdersWithEur(orders as Array<Record<string, unknown>>);
-    return NextResponse.json({ orders: enriched, total, page, totalPages });
+    return NextResponse.json({ orders: enriched, total, page, totalPages, actionRequired });
   } catch (error) {
     console.error("Orders GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

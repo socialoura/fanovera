@@ -12,7 +12,7 @@ import Reviews from "./components/Reviews";
 import SpoFAQ from "./components/SpoFAQ";
 import SpoFooter from "./components/SpoFooter";
 import type { SpoPreview } from "./components/Step2Track";
-import { PACKS, type CountryId, type SpotifyProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
+import { PACKS, FOLLOWERS_PACKS, type CountryId, type SpotifyProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -25,6 +25,7 @@ import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useSpotifyCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+const STATIC_FOLLOWERS_PACKS = FOLLOWERS_PACKS.map((pack) => ({ ...pack }));
 
 export default function SpotifyPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -47,7 +48,11 @@ export default function SpotifyPageClient() {
     setProfile(null);
   }, [productType]);
   const activePacks = getPacksForProduct(productType);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(productType === "followers" ? "sp_followers" : "sp_streams", PACKS, STATIC_PACKS);
+  // Apply DB pricing to both Streams + Followers arrays separately.
+  const streamsPricing = useApplyCurrencyPricing("sp_streams", PACKS, STATIC_PACKS);
+  const followersPricing = useApplyCurrencyPricing("sp_followers", FOLLOWERS_PACKS, STATIC_FOLLOWERS_PACKS);
+  const pricing = productType === "followers" ? followersPricing : streamsPricing;
+  const { canDisplayPricing, currency, experiment } = pricing;
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];

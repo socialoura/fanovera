@@ -25,17 +25,19 @@ export const PACKS: Pack[] = [
   { qty: 100000, price: 1599.99, old: 3399.99, bonus: 20000 },
 ];
 
-// AI live viewers pack: smaller concurrent-viewer counts at a higher per-unit
-// price because each viewer is an active session for the duration of the
-// stream, not a one-shot follow.
+// AI live viewers pack — quantities aligned with the admin pricing rows for
+// service `tw_live_viewers` so DB prices override these fallbacks.
 export const AI_VIEWERS_PACKS: Pack[] = [
-  { qty: 10, price: 4.99, old: 9.99, bonus: 2 },
-  { qty: 25, price: 9.99, old: 19.99, bonus: 5 },
-  { qty: 50, price: 17.99, old: 34.99, bonus: 10 },
-  { qty: 100, price: 29.99, old: 59.99, bonus: 20, popular: true },
-  { qty: 250, price: 64.99, old: 129.99, bonus: 50 },
-  { qty: 500, price: 119.99, old: 239.99, bonus: 100, best: true },
-  { qty: 1000, price: 199.99, old: 399.99, bonus: 200 },
+  { qty: 50, price: 3.99, old: 9.99, bonus: 10 },
+  { qty: 100, price: 7.99, old: 19.99, bonus: 20 },
+  { qty: 250, price: 14.99, old: 34.99, bonus: 50 },
+  { qty: 500, price: 24.99, old: 59.99, bonus: 100 },
+  { qty: 1000, price: 49.99, old: 119.99, bonus: 200, popular: true },
+  { qty: 2500, price: 109.99, old: 249.99, bonus: 500 },
+  { qty: 5000, price: 199.99, old: 449.99, bonus: 1000 },
+  { qty: 10000, price: 379.99, old: 849.99, bonus: 2000 },
+  { qty: 20000, price: 699.99, old: 1499.99, bonus: 4000, best: true },
+  { qty: 50000, price: 1599.99, old: 3299.99, bonus: 10000 },
 ];
 
 export function getPacksForProduct(productType: TwitchProductType): Pack[] {
@@ -43,7 +45,10 @@ export function getPacksForProduct(productType: TwitchProductType): Pack[] {
 }
 
 export function getServiceForProduct(productType: TwitchProductType): string {
-  return productType === "ai_viewers" ? "tw_ai_viewers" : "tw_followers";
+  // tw_live_viewers is the canonical service name in the DB (smm_config seed
+  // and admin pricing UI). Earlier drafts used "tw_ai_viewers" — that was a
+  // mismatch with the data the operator entered.
+  return productType === "ai_viewers" ? "tw_live_viewers" : "tw_followers";
 }
 
 export type CountryId = "fr" | "eu";

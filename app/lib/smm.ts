@@ -508,10 +508,16 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
 
 /**
  * Retry a specific failed sub-order within an order.
+ *
+ * `opts.serviceId` overrides the BulkFollows service ID for this retry only —
+ * useful when the smm_config row is wrong, when the operator wants to try a
+ * different BF service (better rate, working service, etc.), or when a
+ * specific commande needs a one-off service ID without touching global config.
  */
 export async function retrySmmSubOrder(
   orderId: number,
   cartIndex: number,
+  opts: { serviceId?: number } = {},
 ): Promise<SmmSubOrder[]> {
   const rows = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
   const order = rows[0];
@@ -529,8 +535,10 @@ export async function retrySmmSubOrder(
     throw new Error(`Sub-order cartIndex=${cartIndex} is not in a retryable state (${sub.status})`);
   }
 
-  // Re-fetch config in case it was updated. Includes legacy platform alias
-  // (twitter ↔ x) so existing seeded rows keep working.
+  // Resolve which BF service ID + rate to use. Priority:
+  //   1. Explicit override via opts.serviceId — the operator picks per-retry
+  //      (no rate available, use the existing sub charge as proxy).
+  //   2. The smm_config row for this platform:service.
   const aliasPlatforms = [sub.platform, ...(sub.platform === "twitter" ? ["x"] : sub.platform === "x" ? ["twitter"] : [])];
   const configs = await sql`
     SELECT * FROM smm_config
@@ -538,10 +546,20 @@ export async function retrySmmSubOrder(
     LIMIT 1
   `;
   const config = configs[0];
-  if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
-    sub.error = `No BulkFollows service ID configured for ${sub.platform}:${sub.service}`;
-    await sql`UPDATE orders SET smm_orders = ${JSON.stringify(subOrders)}::jsonb WHERE id = ${orderId}`;
-    throw new Error(sub.error);
+
+  let serviceId: number;
+  let ratePer1k: number;
+  if (opts.serviceId && Number.isFinite(opts.serviceId) && opts.serviceId > 0) {
+    serviceId = opts.serviceId;
+    ratePer1k = config?.rate_per_1k ? Number(config.rate_per_1k) : 0;
+  } else {
+    if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
+      sub.error = `No BulkFollows service ID configured for ${sub.platform}:${sub.service}`;
+      await sql`UPDATE orders SET smm_orders = ${JSON.stringify(subOrders)}::jsonb WHERE id = ${orderId}`;
+      throw new Error(sub.error);
+    }
+    serviceId = Number(config.bulkfollows_service_id);
+    ratePer1k = Number(config.rate_per_1k) || 0;
   }
 
   const username = order.username || "";
@@ -560,14 +578,14 @@ export async function retrySmmSubOrder(
   try {
     const result = await withBfRetry(
       () => placeOrder({
-        serviceId: config.bulkfollows_service_id,
+        serviceId,
         link,
         quantity: sub.qty,
       }),
       { maxAttempts: 3, baseDelayMs: 600, label: `retry placeOrder ${sub.platform}:${sub.service}` },
     );
 
-    const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, sub.qty);
+    const estimatedCharge = estimateBulkFollowsCharge(ratePer1k, sub.qty);
     let charge: number | null = estimatedCharge;
     try {
       const st = await withBfRetry(
@@ -577,7 +595,7 @@ export async function retrySmmSubOrder(
       charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
     } catch { /* non-critical */ }
 
-    sub.bfServiceId = config.bulkfollows_service_id;
+    sub.bfServiceId = serviceId;
     sub.bfOrderId = result.orderId;
     sub.status = "placed";
     sub.charge = charge;
@@ -658,20 +676,26 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
   const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
   const costCents = bulkFollowsCostCents(subOrders.map((sub) => sub.charge), fxRate);
 
-  const allDone = subOrders.every(
+  // Order-level rollup. We deliberately do NOT mark the order as "delivered"
+  // when any sub-order is partial/canceled/failed — the admin needs to see
+  // those statuses to decide whether to top up (Compléter la livraison) or
+  // refund. Only an all-completed set rolls up to delivered.
+  const allTerminal = subOrders.every(
     (s) =>
       s.status === "completed" ||
       s.status === "partial" ||
       s.status === "canceled" ||
       s.status === "failed",
   );
-  const allSuccess = subOrders.every(
-    (s) => s.status === "completed" || s.status === "partial",
-  );
+  const allCompleted = subOrders.every((s) => s.status === "completed");
+  const allCanceled = subOrders.every((s) => s.status === "canceled");
 
   let newStatus = order.status;
-  if (allDone && allSuccess) newStatus = "delivered";
-  else if (allDone) newStatus = "partial";
+  if (allTerminal) {
+    if (allCompleted) newStatus = "delivered";
+    else if (allCanceled) newStatus = "canceled";
+    else newStatus = "partial";
+  }
 
   if (newStatus === "delivered") {
     const wasNotDelivered = order.status !== "delivered";

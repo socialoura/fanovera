@@ -83,7 +83,9 @@ export async function GET(req: NextRequest) {
     await ensureSchema();
 
     // Candidates: payloads aged 30 min - 48 h, with email & non-zero cart,
-    // no matching order, no reminder yet.
+    // no matching order, no reminder yet. We pull MORE than 50 because we
+    // dedupe per-email below — a customer who refreshed Step 2 five times
+    // generates five rows but we only want to email them once.
     const rows = (await sql`
       SELECT
         cp.payment_intent_id,
@@ -92,7 +94,8 @@ export async function GET(req: NextRequest) {
         cp.platform,
         cp.amount_cents,
         cp.currency,
-        cp.source_page
+        cp.source_page,
+        cp.created_at
       FROM checkout_payloads cp
       LEFT JOIN orders o ON o.stripe_payment_intent_id = cp.payment_intent_id
       WHERE
@@ -102,9 +105,38 @@ export async function GET(req: NextRequest) {
         AND cp.reminder_sent_at IS NULL
         AND cp.created_at < NOW() - INTERVAL '30 minutes'
         AND cp.created_at > NOW() - INTERVAL '48 hours'
-      ORDER BY cp.created_at ASC
-      LIMIT 50
-    `) as AbandonedRow[];
+      ORDER BY cp.created_at DESC
+      LIMIT 500
+    `) as Array<AbandonedRow & { created_at: string }>;
+
+    // Per-email cooldown: if we already sent any reminder to this address in
+    // the last 7 days (across ANY payload row), skip. Prevents repeat nags
+    // for customers who chronically abandon multiple carts.
+    const cooldownRows = (await sql`
+      SELECT DISTINCT LOWER(email) AS email
+      FROM checkout_payloads
+      WHERE reminder_sent_at IS NOT NULL
+        AND reminder_sent_at > NOW() - INTERVAL '7 days'
+        AND email <> ''
+    `) as Array<{ email: string }>;
+    const recentlyReminded = new Set(cooldownRows.map((r) => r.email));
+
+    // Per-email dedupe within this run. Keep the MOST RECENT payload for
+    // each email (rows are ordered DESC, so first occurrence wins). The
+    // other payloads for the same email get their reminder_sent_at set so
+    // we never re-process them, but we only fire one actual email.
+    const canonicalByEmail = new Map<string, AbandonedRow & { created_at: string }>();
+    const extraIntentsByEmail = new Map<string, string[]>();
+    for (const row of rows) {
+      const key = row.email.toLowerCase();
+      if (!canonicalByEmail.has(key)) {
+        canonicalByEmail.set(key, row);
+      } else {
+        const arr = extraIntentsByEmail.get(key) ?? [];
+        arr.push(row.payment_intent_id);
+        extraIntentsByEmail.set(key, arr);
+      }
+    }
 
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
@@ -112,14 +144,30 @@ export async function GET(req: NextRequest) {
 
     let sent = 0;
     let skipped = 0;
+    let dedupedSiblings = 0;
     let errors = 0;
+    let cooldown = 0;
 
-    for (const row of rows) {
+    for (const [emailKey, row] of canonicalByEmail) {
       // Defensive validation — payloads are user-submitted JSON.
       if (!EMAIL_RX.test(row.email)) {
         skipped++;
-        // Mark anyway so we never retry a bad email forever.
         await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${row.payment_intent_id}`;
+        continue;
+      }
+
+      const extras = extraIntentsByEmail.get(emailKey) ?? [];
+
+      // Cooldown : the customer already received an abandoned-cart email in
+      // the last 7 days. Mark all their pending payloads as "sent" without
+      // actually emailing, so they fall out of future runs.
+      if (recentlyReminded.has(emailKey)) {
+        cooldown++;
+        await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${row.payment_intent_id}`;
+        for (const pi of extras) {
+          await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${pi}`;
+        }
+        dedupedSiblings += extras.length;
         continue;
       }
 
@@ -137,16 +185,33 @@ export async function GET(req: NextRequest) {
       });
 
       if (result.ok) {
-        await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${row.payment_intent_id}`;
         sent++;
+        // Mark the canonical row AND every duplicate payload for this email
+        // — otherwise the next run could pick up an older one and re-spam.
+        await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${row.payment_intent_id}`;
+        for (const pi of extras) {
+          await sql`UPDATE checkout_payloads SET reminder_sent_at = NOW() WHERE payment_intent_id = ${pi}`;
+        }
+        dedupedSiblings += extras.length;
+        // Add to in-memory cooldown set so a same-batch repeat (shouldn't
+        // happen but defensive) wouldn't fire a second send.
+        recentlyReminded.add(emailKey);
       } else {
-        // Don't mark as sent — the next cron run will retry.
         errors++;
         console.error("[cron/abandoned-cart] send failed:", row.payment_intent_id, result.error);
       }
     }
 
-    return NextResponse.json({ ok: true, candidates: rows.length, sent, skipped, errors });
+    return NextResponse.json({
+      ok: true,
+      candidates: rows.length,
+      uniqueEmails: canonicalByEmail.size,
+      sent,
+      skipped,
+      cooldown,
+      dedupedSiblings,
+      errors,
+    });
   } catch (err) {
     console.error("[cron/abandoned-cart] error:", err);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });

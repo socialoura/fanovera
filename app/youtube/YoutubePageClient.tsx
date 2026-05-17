@@ -12,7 +12,7 @@ import Reviews from "./components/Reviews";
 import YtFAQ from "./components/YtFAQ";
 import YtFooter from "./components/YtFooter";
 import type { YtPreview } from "./components/Step2Username";
-import { PACKS, type CountryId, type YouTubeProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, SUBSCRIBERS_PACKS, type CountryId, type YouTubeProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -25,6 +25,7 @@ import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useYouTubeCopy } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+const STATIC_SUBSCRIBERS_PACKS = SUBSCRIBERS_PACKS.map((pack) => ({ ...pack }));
 
 export default function YoutubePageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -46,8 +47,13 @@ export default function YoutubePageClient() {
     setChannelInput("");
     setProfile(null);
   }, [productType]);
+  // Apply DB pricing to BOTH product arrays so toggling between Views and
+  // Subscribers picks up admin-configured prices in either case.
+  const viewsPricing = useApplyCurrencyPricing("yt_views", PACKS, STATIC_PACKS);
+  const subscribersPricing = useApplyCurrencyPricing("yt_subscribers", SUBSCRIBERS_PACKS, STATIC_SUBSCRIBERS_PACKS);
+  const pricing = productType === "subscribers" ? subscribersPricing : viewsPricing;
+  const { canDisplayPricing, currency, experiment } = pricing;
   const activePacks = getPacksForProduct(productType);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];

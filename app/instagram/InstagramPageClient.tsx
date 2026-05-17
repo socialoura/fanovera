@@ -10,7 +10,7 @@ import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import IgFAQ from "./components/IgFAQ";
 import IgFooter from "./components/IgFooter";
-import { PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -53,6 +53,8 @@ export type IgMedia = {
 };
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
+const STATIC_LIKES_PACKS = LIKES_PACKS.map((pack) => ({ ...pack }));
+const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
 
 export default function InstagramPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -78,8 +80,14 @@ export default function InstagramPageClient() {
     setPostUrl("");
     setMedia(null);
   }, [productType]);
+  // Apply DB pricing to all 3 product arrays so toggling between
+  // Followers / Likes / Views all pick up admin-configured prices.
+  const followersPricing = useApplyCurrencyPricing("ig_followers", PACKS, STATIC_PACKS);
+  const likesPricing = useApplyCurrencyPricing("ig_likes", LIKES_PACKS, STATIC_LIKES_PACKS);
+  const viewsPricing = useApplyCurrencyPricing("ig_views", VIEWS_PACKS, STATIC_VIEWS_PACKS);
+  const pricing = productType === "likes" ? likesPricing : productType === "views" ? viewsPricing : followersPricing;
+  const { canDisplayPricing, currency, experiment } = pricing;
   const activePacks = getPacksForProduct(productType);
-  const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing(getServiceForProduct(productType), PACKS, STATIC_PACKS);
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];

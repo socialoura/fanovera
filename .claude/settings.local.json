@@ -43,7 +43,10 @@
       "Bash(git checkout *)",
       "Bash(npx vitest *)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(gunzip -c 'C:\\\\Users\\\\ilyee\\\\.claude\\\\projects\\\\C--Users-ilyee-Fanovera\\\\c0db5326-e6d9-4aa8-a797-9cc092aab089\\\\tool-results\\\\webfetch-1778978348966-yoip5l.bin')",
+      "Bash(tar -tf /tmp/design.tar)",
+      "Bash(tar -xf design.tar)"
     ]
   }
 }

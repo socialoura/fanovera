@@ -126,13 +126,14 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
       parsedSchedule && !isNaN(parsedSchedule.getTime()) ? parsedSchedule.toISOString() : undefined;
 
     // Twitch with a scheduled live → swap to the AI live viewers product
-    // (different service, different price tiers).
+    // (different service, different price tiers). Canonical service name is
+    // `tw_live_viewers` (matches the smm_config seed + admin pricing UI).
     const isLiveViewers = platform === "twitch" && Boolean(scheduledStartAt);
-    const serviceForItem = isLiveViewers ? "tw_ai_viewers" : config.service;
+    const serviceForItem = isLiveViewers ? "tw_live_viewers" : config.service;
 
     let basePrice: number | null;
     if (isLiveViewers) {
-      const dbRow = rows.find((r) => r.service === "tw_ai_viewers" && Number(r.qty) === qty && r.active !== false);
+      const dbRow = rows.find((r) => r.service === "tw_live_viewers" && Number(r.qty) === qty && r.active !== false);
       basePrice = dbRow ? pickRowPrice(dbRow, currency) : null;
       if (basePrice === null) {
         basePrice = TWITCH_AI_VIEWERS_PACKS.find((p) => p.qty === qty)?.price ?? null;
