@@ -45,7 +45,6 @@ export async function GET(req: NextRequest) {
       peakHoursRes,
       servicePerfRaw,
       ordersPrevPeriodRes,
-      visitorsByPlatformRaw,
     ] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM orders`,
       sql`
@@ -165,14 +164,24 @@ export async function GET(req: NextRequest) {
           AND created_at >= NOW() - INTERVAL '60 days'
           AND created_at <  NOW() - INTERVAL '30 days'
       `,
-      sql`
+    ]);
+
+    // Visitor counts depend on the product_page_visits table which is created
+    // by initDb(). Fail soft so analytics keeps working before that migration
+    // has been run — empty visitor data is preferable to a 500 that locks the
+    // admin out of every screen (auth is validated via this endpoint).
+    let visitorsByPlatformRaw: Array<{ platform: string; visitors: number }> = [];
+    try {
+      visitorsByPlatformRaw = (await sql`
         SELECT platform,
                COUNT(DISTINCT anonymous_id)::int AS visitors
         FROM product_page_visits
         WHERE created_at >= NOW() - INTERVAL '30 days'
         GROUP BY platform
-      `,
-    ]);
+      `) as Array<{ platform: string; visitors: number }>;
+    } catch (visitErr) {
+      console.warn("[analytics] product_page_visits unavailable:", visitErr);
+    }
 
     const totalRevenue = await sumInEur(revenueByCurrencyAll as CurrencyRevenueRow[], "revenue");
     const totalCost = await sumInEur(revenueByCurrencyAll as CurrencyRevenueRow[], "cost");
