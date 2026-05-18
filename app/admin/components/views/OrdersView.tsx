@@ -3,6 +3,7 @@
 import { Fragment, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { Ic } from "../icons";
+import type { PricingExperiment } from "@/app/lib/pricingExperiments";
 
 interface Order {
   id: number;
@@ -27,6 +28,22 @@ interface Order {
   smm_orders: unknown[];
   delivered_at: string | null;
   created_at: string;
+  experiment_id?: string | null;
+  variant_id?: string | null;
+  pricing_strategy?: string | null;
+}
+
+type AbInfo = { experimentLabel: string; variantLabel: string; pricingStrategy: string } | null;
+
+function resolveAbInfo(order: Order, experiments: PricingExperiment[]): AbInfo {
+  if (!order.variant_id || !order.experiment_id) return null;
+  const experiment = experiments.find((e) => e.id === order.experiment_id);
+  const variant = experiment?.variants.find((v) => v.id === order.variant_id);
+  return {
+    experimentLabel: experiment?.id || order.experiment_id,
+    variantLabel: variant?.label || order.variant_id,
+    pricingStrategy: order.pricing_strategy || variant?.pricingStrategy || "",
+  };
 }
 
 interface ApiResponse {
@@ -177,6 +194,7 @@ type BfEditState = { cartIndex: number; value: string; serviceValue: string } | 
 
 function OrderDetail({
   order,
+  ab,
   editingStatus,
   editingCost,
   saving,
@@ -201,6 +219,7 @@ function OrderDetail({
   onDeleteOrder,
 }: {
   order: Order;
+  ab: AbInfo;
   editingStatus: string;
   editingCost: string;
   saving: boolean;
@@ -245,6 +264,27 @@ function OrderDetail({
             <div className="order-detail-sub">
               {order.username ? `@${order.username.replace(/^@/, "")}` : "Client sans username"} · {paidAt}
             </div>
+            {ab && (
+              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                <span style={{ color: "var(--a-ink-3)", fontWeight: 600 }}>Test A/B :</span>
+                <span
+                  className="pill"
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: "rgba(82, 96, 230, 0.08)",
+                    color: "#5260e6",
+                    border: "1px solid rgba(82, 96, 230, 0.25)",
+                  }}
+                >
+                  {ab.variantLabel}
+                </span>
+                <span style={{ color: "var(--a-ink-3)", fontSize: 11 }}>
+                  · {ab.experimentLabel}
+                  {ab.pricingStrategy ? ` · ${ab.pricingStrategy}` : ""}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <div className="order-finance-grid">
@@ -621,6 +661,7 @@ function OrderDetail({
 
 export default function OrdersView() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [experiments, setExperiments] = useState<PricingExperiment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -675,6 +716,15 @@ export default function OrdersView() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    fetch("/api/pricing-experiments")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.experiments)) setExperiments(data.experiments as PricingExperiment[]);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -1083,6 +1133,7 @@ export default function OrdersView() {
                 <th className="num">Montant</th>
                 <th className="num">Coût</th>
                 <th>Statut</th>
+                <th>Test A/B</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -1090,6 +1141,7 @@ export default function OrdersView() {
               {orders.map((o) => {
                 const st = STATUS_MAP[o.status] || { label: o.status, pill: "" };
                 const isExpanded = expandedId === o.id;
+                const ab = resolveAbInfo(o, experiments);
                 return (
                   <Fragment key={o.id}>
                     <tr
@@ -1130,14 +1182,34 @@ export default function OrdersView() {
                         </span>
                       </td>
                       <td>
+                        {ab ? (
+                          <span
+                            className="pill"
+                            title={`Expérience : ${ab.experimentLabel}${ab.pricingStrategy ? ` · ${ab.pricingStrategy}` : ""}`}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: "rgba(82, 96, 230, 0.08)",
+                              color: "#5260e6",
+                              border: "1px solid rgba(82, 96, 230, 0.25)",
+                            }}
+                          >
+                            {ab.variantLabel}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, color: "var(--a-ink-3)" }}>—</span>
+                        )}
+                      </td>
+                      <td>
                         <span style={{ fontSize: 12, color: "var(--a-ink-3)" }}>{formatDate(o.created_at)}</span>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={8} className="order-detail-cell">
+                        <td colSpan={9} className="order-detail-cell">
                           <OrderDetail
                             order={o}
+                            ab={ab}
                             editingStatus={editingStatus}
                             editingCost={editingCost}
                             saving={saving}

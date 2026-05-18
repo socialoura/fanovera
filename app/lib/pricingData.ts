@@ -1,6 +1,6 @@
 import { sql } from "@/app/lib/db";
 import { currencyDbColumn, SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/app/lib/pricingCurrency";
-import { PRODUCT_CATALOG } from "@/app/lib/productCatalog";
+import { ALL_PRICING_SERVICES } from "@/app/lib/productCatalog";
 
 export type PricingPackRow = {
   id: number;
@@ -99,7 +99,7 @@ export async function loadPricingPacksForService(service: string, currency: Supp
 
 export async function loadAllProductPricing(currency: SupportedCurrency) {
   const entries = await Promise.all(
-    Object.values(PRODUCT_CATALOG).map(async ({ service }) => [
+    ALL_PRICING_SERVICES.map(async (service) => [
       service,
       await loadPricingPacksForService(service, currency),
     ] as const),

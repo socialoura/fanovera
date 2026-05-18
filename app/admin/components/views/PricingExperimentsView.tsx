@@ -48,6 +48,7 @@ function newVariant(): PricingVariant {
     traffic: 50,
     priceMultiplier: 1,
     pricingStrategy: "custom",
+    paused: false,
   };
 }
 
@@ -345,12 +346,23 @@ export default function PricingExperimentsView() {
                 </button>
               </div>
               {experiment.variants.map((variant, variantIndex) => (
-                <div className="ab-variant-row" key={`${variant.id}-${variantIndex}`}>
+                <div
+                  className="ab-variant-row"
+                  key={`${variant.id}-${variantIndex}`}
+                  style={variant.paused ? { opacity: 0.55 } : undefined}
+                >
                   <input className="input" value={variant.id} onChange={(event) => updateVariant(experimentIndex, variantIndex, { id: event.target.value })} placeholder="id" />
                   <input className="input" value={variant.label} onChange={(event) => updateVariant(experimentIndex, variantIndex, { label: event.target.value })} placeholder="Label" />
                   <label>Trafic <input className="input" type="number" min={0} max={100} value={variant.traffic} onChange={(event) => updateVariant(experimentIndex, variantIndex, { traffic: Number(event.target.value) })} /></label>
                   <label>Prix x <input className="input" type="number" step="0.01" value={variant.priceMultiplier} onChange={(event) => updateVariant(experimentIndex, variantIndex, { priceMultiplier: Number(event.target.value) })} /></label>
                   <input className="input" value={variant.pricingStrategy} onChange={(event) => updateVariant(experimentIndex, variantIndex, { pricingStrategy: event.target.value })} placeholder="strategy" />
+                  <button
+                    type="button"
+                    className={"toggle " + (variant.paused ? "" : "on")}
+                    onClick={() => updateVariant(experimentIndex, variantIndex, { paused: !variant.paused })}
+                    aria-label={variant.paused ? "Reprendre la variante" : "Mettre en pause la variante"}
+                    title={variant.paused ? "Reprendre — les utilisateurs de ce bucket reverront cette variante" : "Mettre en pause — les utilisateurs de ce bucket retombent sur le contrôle"}
+                  />
                   <button
                     className="icon-btn"
                     type="button"

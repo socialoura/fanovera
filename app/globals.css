@@ -3165,6 +3165,7 @@ input { font: inherit; color: inherit; }
   align-items: center;
   justify-content: space-between;
 }
+.header-lang-mobile { display: none; }
 @media (max-width: 980px) {
   .header-row {
     justify-content: center;
@@ -3175,6 +3176,37 @@ input { font: inherit; color: inherit; }
     right: 0;
     top: 50%;
     transform: translateY(-50%);
+  }
+  .header-row .header-lang-mobile {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+  .header-row .header-lang-desktop-only { display: none; }
+}
+@media (max-width: 768px) {
+  .pf-header .header-lang-mobile {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+  .pf-header .header-lang-desktop-only { display: none; }
+}
+
+/* When the language selector lives at the left edge on mobile, its dropdown
+   must open rightwards (left: 0) instead of the default right: 0 used by the
+   currency selector — otherwise the menu extends past the viewport edge. */
+@media (max-width: 980px) {
+  .header-lang-mobile .currency-menu {
+    right: auto;
+    left: 0;
+    width: min(286px, calc(100vw - 32px));
   }
 }
 

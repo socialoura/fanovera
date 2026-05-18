@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
+import { buildCurrencyFormatter, SUPPORTED_CURRENCIES, type SupportedCurrency } from "../lib/pricingCurrency";
 
 type CartItem = { service?: string; qty?: number; quantity?: number };
 
@@ -206,14 +207,14 @@ const INTL_LOCALE: Record<string, string> = {
 };
 
 function formatPrice(cents: number, currency: string, locale: string): string {
+  const upper = currency.toUpperCase();
+  const safe: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(upper)
+    ? (upper as SupportedCurrency)
+    : "EUR";
   try {
-    return new Intl.NumberFormat(INTL_LOCALE[locale] || "fr-FR", {
-      style: "currency",
-      currency: currency.toUpperCase(),
-      maximumFractionDigits: 2,
-    }).format(cents / 100);
+    return buildCurrencyFormatter(safe, INTL_LOCALE[locale] || "fr-FR").format(cents / 100);
   } catch {
-    return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    return `${(cents / 100).toFixed(2)} ${upper}`;
   }
 }
 

@@ -14,6 +14,7 @@ export type PricingVariant = {
   traffic: number;
   priceMultiplier: number;
   pricingStrategy: string;
+  paused?: boolean;
   stripePriceIds?: Record<string, string>;
 };
 
@@ -77,6 +78,7 @@ export function normalizePricingExperiments(value: unknown): PricingExperiment[]
             traffic: Number(v.traffic) || 0,
             priceMultiplier: Number(v.priceMultiplier) || 1,
             pricingStrategy: String(v.pricingStrategy),
+            paused: Boolean(v.paused),
             stripePriceIds: v.stripePriceIds,
           }];
         })
@@ -181,6 +183,12 @@ export function assignPricingVariant(input: {
     for (const variant of experiment.variants) {
       cumulative += normalizeTraffic(variant.traffic);
       if (variantBucket < cumulative) {
+        // Paused variants keep their bucket but serve control pricing so the
+        // overall bucket layout (and other variants' assignments) stays stable
+        // while the variant is temporarily disabled.
+        if (variant.paused) {
+          return { ...CONTROL_ASSIGNMENT, experimentId: experiment.id, reason: "not_eligible" };
+        }
         return {
           experimentId: experiment.id,
           variantId: variant.id,
@@ -191,8 +199,11 @@ export function assignPricingVariant(input: {
       }
     }
 
-    const fallbackVariant = experiment.variants.find((variant) => variant.id === "control") || experiment.variants[0];
-    if (fallbackVariant) {
+    const fallbackVariant =
+      experiment.variants.find((variant) => variant.id === "control" && !variant.paused) ||
+      experiment.variants.find((variant) => !variant.paused) ||
+      experiment.variants[0];
+    if (fallbackVariant && !fallbackVariant.paused) {
       return {
         experimentId: experiment.id,
         variantId: fallbackVariant.id,

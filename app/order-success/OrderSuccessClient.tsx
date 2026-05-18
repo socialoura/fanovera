@@ -8,6 +8,7 @@ import { getPublicCopy } from "../components/publicCopy";
 import { gtagPurchase } from "../lib/gtag";
 import NetIcon from "../components/NetIcon";
 import type { NetworkId } from "../lib/networks";
+import { buildCurrencyFormatter, SUPPORTED_CURRENCIES, type SupportedCurrency } from "../lib/pricingCurrency";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import UpsellSection from "./UpsellSection";
@@ -132,14 +133,14 @@ function serviceLabel(service: string, locale: string): string {
 
 function formatTotal(cents: number, currency: string, locale: string): string {
   if (!cents) return "—";
+  const upper = currency.toUpperCase();
+  const safe: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(upper)
+    ? (upper as SupportedCurrency)
+    : "EUR";
   try {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currency.toUpperCase(),
-      minimumFractionDigits: 2,
-    }).format(cents / 100);
+    return buildCurrencyFormatter(safe, locale).format(cents / 100);
   } catch {
-    return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    return `${(cents / 100).toFixed(2)} ${upper}`;
   }
 }
 

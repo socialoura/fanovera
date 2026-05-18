@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useI18n } from "../i18n/I18nProvider";
-import { getDisplayCurrency } from "../lib/pricingCurrency";
+import { buildCurrencyFormatter, getDisplayCurrency, SUPPORTED_CURRENCIES, type SupportedCurrency } from "../lib/pricingCurrency";
 import { getProductConfig, normalizePlatform } from "../lib/productCatalog";
 import { usePricingExperiment } from "../lib/usePricingExperiment";
 import { currentAttributionProperties, trackEvent } from "../lib/analytics";
@@ -221,10 +221,13 @@ function CardPayment({
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const formattedAmount = new Intl.NumberFormat(locale === "en" ? "en-US" : locale, {
-    style: "currency",
-    currency: (currency || "eur").toUpperCase(),
-  }).format((amount || 0) / 100);
+  const upperCurrency = (currency || "eur").toUpperCase();
+  const safeCurrency: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(upperCurrency)
+    ? (upperCurrency as SupportedCurrency)
+    : "EUR";
+  const formattedAmount = buildCurrencyFormatter(safeCurrency, locale === "en" ? "en-US" : locale).format(
+    (amount || 0) / 100,
+  );
 
   const submit = async () => {
     if (!stripe || !elements) return;

@@ -54,14 +54,28 @@ export function getDisplayLocale(): string {
   return state.locale;
 }
 
+// Currencies whose default symbol is just "$" or otherwise reads as USD/EUR
+// to non-local users. Forcing currencyDisplay="code" shows the ISO code
+// (e.g. "19,00 CAD") so customers cannot mistake CAD for USD.
+const AMBIGUOUS_CURRENCIES = new Set(["CAD", "AUD", "MXN"]);
+
+function currencyFormatOptions(currency: SupportedCurrency): Intl.NumberFormatOptions {
+  return {
+    style: "currency",
+    currency,
+    currencyDisplay: AMBIGUOUS_CURRENCIES.has(currency) ? "code" : "symbol",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  };
+}
+
+export function buildCurrencyFormatter(currency: SupportedCurrency, locale: string) {
+  return new Intl.NumberFormat(locale || "fr-FR", currencyFormatOptions(currency));
+}
+
 export function formatMoney(amount: number): string {
   try {
-    return new Intl.NumberFormat(state.locale || "fr-FR", {
-      style: "currency",
-      currency: state.currency,
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 2,
-    }).format(amount);
+    return buildCurrencyFormatter(state.currency, state.locale).format(amount);
   } catch {
     return `${amount.toFixed(2)} ${state.currency}`;
   }

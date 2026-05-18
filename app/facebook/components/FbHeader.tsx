@@ -4,26 +4,42 @@ import Link from "next/link";
 import CurrencySelector from "../../components/CurrencySelector";
 import LanguageSelector from "../../components/LanguageSelector";
 import { Logo } from "../../components/Header";
+import NetIcon from "../../components/NetIcon";
+import { getPublicCopy } from "../../components/publicCopy";
+import { useI18n } from "../../i18n/I18nProvider";
+import { NETWORKS } from "../../lib/networks";
 import { useFacebookCopy } from "../i18n";
 import { withDynamicReviewCount } from "../../lib/reviewCount";
 
 export default function FbHeader() {
   const t = useFacebookCopy().header;
+  const { locale } = useI18n();
+  const publicHeader = getPublicCopy(locale).header;
 
   return (
     <div data-i18n-skip className="fb-header" style={{ padding: "24px 0" }}>
       <div className="container pf-header">
+        <span className="header-lang-mobile"><LanguageSelector compact /></span>
         <Logo />
         <nav className="nav-pill">
-          <Link href="/instagram">Instagram</Link>
-          <Link href="/tiktok">TikTok</Link>
-          <Link href="/youtube">YouTube</Link>
-          <Link href="/facebook" className="active">Facebook</Link>
-          <Link href="/#networks">{t.allNetworks}</Link>
-          <Link href="/track">{t.tracking}</Link>
+          {NETWORKS.map((n) => (
+            <Link
+              key={n.id}
+              href={`/${n.id}`}
+              aria-label={n.name}
+              title={n.name}
+              className="nav-pill-icon"
+            >
+              <NetIcon kind={n.icon} color={n.color} size={18} />
+            </Link>
+          ))}
+          <span aria-hidden style={{ width: 1, height: 18, background: "var(--line)", margin: "0 4px" }} />
+          <Link href="/track">{publicHeader.track}</Link>
+          <Link href="/#faq">{publicHeader.faq}</Link>
+          <Link href="/contact">{publicHeader.contact}</Link>
         </nav>
         <div className="pf-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <LanguageSelector compact />
+          <span className="header-lang-desktop-only"><LanguageSelector compact /></span>
           <CurrencySelector compact />
           <div className="hide-md" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--ink-2)" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)">

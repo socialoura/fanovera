@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import NetIcon from "../components/NetIcon";
 import { NETWORKS, type NetworkId } from "../lib/networks";
+import { buildCurrencyFormatter, SUPPORTED_CURRENCIES, type SupportedCurrency } from "../lib/pricingCurrency";
 import type { SupportedLocale } from "../i18n/types";
 
 type LiveService = {
@@ -378,11 +379,11 @@ const INTL_LOCALE: Record<string, string> = {
 function formatAmount(cents: number | null, currency: string | null, locale: string) {
   if (typeof cents !== "number") return "—";
   const normalizedCurrency = (currency || "eur").toUpperCase();
+  const safeCurrency: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(normalizedCurrency)
+    ? (normalizedCurrency as SupportedCurrency)
+    : "EUR";
   try {
-    return new Intl.NumberFormat(INTL_LOCALE[locale] || "fr-FR", {
-      style: "currency",
-      currency: normalizedCurrency,
-    }).format(cents / 100);
+    return buildCurrencyFormatter(safeCurrency, INTL_LOCALE[locale] || "fr-FR").format(cents / 100);
   } catch {
     return `${(cents / 100).toFixed(2)} ${normalizedCurrency}`;
   }

@@ -44,6 +44,27 @@ export const PRODUCT_CATALOG: Record<PlatformId, ProductConfig> = {
   twitter: { platform: "twitter", service: "x_followers", productArea: "twitter", fallbackPacks: TWITTER_PACKS },
 };
 
+// Every pricing service consumed by a product page (Instagram/TikTok/YouTube/Spotify/Twitch
+// each expose multiple sub-products like likes/views/subscribers). Used by the /promo
+// prefetch + /api/pricing/all so the cache is fully warm before the user clicks a network.
+export const ALL_PRICING_SERVICES = [
+  "ig_followers",
+  "ig_likes",
+  "ig_views",
+  "tt_followers",
+  "tt_likes",
+  "tt_views",
+  "yt_views",
+  "yt_subscribers",
+  "sp_streams",
+  "sp_followers",
+  "tw_followers",
+  "tw_live_viewers",
+  "fb_likes",
+  "li_followers",
+  "x_followers",
+] as const;
+
 export function normalizePlatform(value: unknown): PlatformId | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();

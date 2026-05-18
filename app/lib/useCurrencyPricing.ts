@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   SUPPORTED_CURRENCIES,
+  buildCurrencyFormatter,
   setDisplayCurrency,
   type SupportedCurrency,
 } from "./pricingCurrency";
 import { applyPricingAssignment } from "./pricingExperiments";
-import { PRODUCT_CATALOG, getProductAreaForService } from "./productCatalog";
+import { ALL_PRICING_SERVICES, getProductAreaForService } from "./productCatalog";
 import { usePricingExperiment } from "./usePricingExperiment";
 
 type PricingPack = { qty: number; price: number; popular?: boolean };
@@ -139,7 +140,7 @@ export async function fetchPricingPacks(service: string, currency: string) {
 
 export function prefetchProductPricing(currency: string) {
   const upperCurrency = currency.toUpperCase();
-  const services = Object.values(PRODUCT_CATALOG).map((config) => config.service);
+  const services = [...ALL_PRICING_SERVICES];
   const missingServices = services.filter((service) => !getCachedPricingPacks(service, upperCurrency));
   if (missingServices.length === 0) return Promise.resolve();
 
@@ -331,14 +332,7 @@ export function useCurrencyPricing(service: string) {
     };
   }, [currency, service]);
 
-  const formatter = useMemo(() => {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }, [currency, locale]);
+  const formatter = useMemo(() => buildCurrencyFormatter(currency, locale), [currency, locale]);
 
   const resolvePrice = useCallback((qty: number, fallback: number) => {
     const fromDb = priceByQty[qty];
