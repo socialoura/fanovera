@@ -16,6 +16,7 @@ import { PACKS, SUBSCRIBERS_PACKS, type CountryId, type YouTubeProductType, form
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
+import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isValidCheckoutEmail, isYoutubeChannelUrl, isYoutubeVideoUrl } from "../lib/checkoutTargetValidation";
@@ -58,6 +59,7 @@ export default function YoutubePageClient() {
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];
   usePrefetchProductPricing();
+  useTrackPageVisit("youtube");
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const tCopy = useYouTubeCopy();

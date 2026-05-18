@@ -15,6 +15,7 @@ import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
+import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isTikTokPostUrl, isTikTokUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
@@ -61,6 +62,7 @@ export default function TiktokPageClient() {
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];
   usePrefetchProductPricing();
+  useTrackPageVisit("tiktok");
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const tCopy = useTikTokCopy();

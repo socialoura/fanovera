@@ -10,7 +10,14 @@ type Currency = { currency: string; orders: number; revenue: number };
 type StatusBucket = { status: string; count: number };
 type Country = { country: string; orders: number; revenue: number };
 type Client = { email: string; orders: number; revenue: number; country: string };
-type ServicePerf = { service: string; orders: number; revenue: number };
+type ServicePerf = {
+  service: string;
+  orders: number;
+  revenue: number;
+  platform?: string;
+  visitors?: number;
+  revenuePerVisitorCents?: number;
+};
 type AdsDay = { date: string; cost: number };
 
 interface AnalyticsData {
@@ -552,7 +559,9 @@ export default function AnalyticsView() {
         <div className="card-head">
           <div>
             <div className="card-title">Performance par service</div>
-            <div className="card-sub">Revenu / commande · 30 jours</div>
+            <div className="card-sub">
+              Revenu / cmd & revenu / visite plateforme · 30 jours · trié par rentabilité par visite
+            </div>
           </div>
         </div>
         {data.servicePerf.length === 0 ? (
@@ -562,20 +571,32 @@ export default function AnalyticsView() {
             <thead>
               <tr>
                 <th>Service</th>
+                <th>Plateforme</th>
                 <th className="num">Commandes</th>
                 <th className="num">Revenu total</th>
                 <th className="num">Revenu / cmd</th>
+                <th className="num">Visites 30j</th>
+                <th className="num">Revenu / visite</th>
               </tr>
             </thead>
             <tbody>
-              {data.servicePerf.map((s, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 700 }}>{s.service}</td>
-                  <td className="num">{s.orders}</td>
-                  <td className="num" style={{ fontWeight: 700 }}>{fmtMoneyCents(s.revenue)} €</td>
-                  <td className="num">{s.orders > 0 ? fmtMoneyCents2(Math.round(s.revenue / s.orders)) : "0,00"} €</td>
-                </tr>
-              ))}
+              {data.servicePerf.map((s, i) => {
+                const visits = s.visitors || 0;
+                const rpv = s.revenuePerVisitorCents || 0;
+                return (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 700 }}>{s.service}</td>
+                    <td style={{ textTransform: "capitalize", color: "var(--a-ink-3)" }}>{s.platform || "—"}</td>
+                    <td className="num">{s.orders}</td>
+                    <td className="num" style={{ fontWeight: 700 }}>{fmtMoneyCents(s.revenue)} €</td>
+                    <td className="num">{s.orders > 0 ? fmtMoneyCents2(Math.round(s.revenue / s.orders)) : "0,00"} €</td>
+                    <td className="num" style={{ color: "var(--a-ink-3)" }}>{visits > 0 ? fmt(visits) : "—"}</td>
+                    <td className="num" style={{ fontWeight: 700, color: rpv > 0 ? "var(--a-ink)" : "var(--a-ink-3)" }}>
+                      {visits > 0 ? `${fmtMoneyCents2(rpv)} €` : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -15,6 +15,7 @@ import { PACKS, AI_VIEWERS_PACKS, type CountryId, type TwitchProductType, format
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isTwitchUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
@@ -59,6 +60,7 @@ export default function TwitchPageClient() {
 
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];
+  useTrackPageVisit("twitch");
   const tCopy = useTwitchCopy();
   useFunnelPersistence("twitch", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   useProductAnalytics({

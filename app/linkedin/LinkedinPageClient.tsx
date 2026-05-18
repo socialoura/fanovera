@@ -14,6 +14,7 @@ import { PACKS, type CountryId, formatPrice, formatQty } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { extractLinkedinHandle, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
@@ -32,6 +33,7 @@ export default function LinkedinPageClient() {
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<LiProfile | null>(null);
   const { canDisplayPricing, currency, experiment } = useApplyCurrencyPricing("li_followers", PACKS, STATIC_PACKS);
+  useTrackPageVisit("linkedin");
 
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];

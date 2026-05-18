@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       peakHoursRes,
       servicePerfRaw,
       ordersPrevPeriodRes,
+      visitorsByPlatformRaw,
     ] = await Promise.all([
       sql`SELECT COUNT(*)::int AS count FROM orders`,
       sql`
@@ -163,6 +164,13 @@ export async function GET(req: NextRequest) {
         WHERE status IN ('paid','processing','delivered')
           AND created_at >= NOW() - INTERVAL '60 days'
           AND created_at <  NOW() - INTERVAL '30 days'
+      `,
+      sql`
+        SELECT platform,
+               COUNT(DISTINCT anonymous_id)::int AS visitors
+        FROM product_page_visits
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY platform
       `,
     ]);
 
@@ -291,7 +299,38 @@ export async function GET(req: NextRequest) {
         serviceMap.set(row.service, { service: row.service, orders: Number(row.orders) || 0, revenue: eurCents });
       }
     }
-    const servicePerf = Array.from(serviceMap.values()).sort((a, b) => b.revenue - a.revenue);
+
+    // Unique visitors per platform over the last 30d, used to compute
+    // revenue/visit per service (services on the same platform share the
+    // denominator since visits are tracked at the platform level).
+    const visitorsByPlatform = new Map<string, number>();
+    for (const row of visitorsByPlatformRaw as Array<{ platform: string; visitors: number }>) {
+      visitorsByPlatform.set(String(row.platform), Number(row.visitors) || 0);
+    }
+
+    const SERVICE_PREFIX_TO_PLATFORM: Record<string, string> = {
+      ig: "instagram",
+      tt: "tiktok",
+      yt: "youtube",
+      sp: "spotify",
+      tw: "twitch",
+      fb: "facebook",
+      li: "linkedin",
+      x: "twitter",
+    };
+    const platformForService = (service: string): string => {
+      const prefix = service.split("_")[0];
+      return SERVICE_PREFIX_TO_PLATFORM[prefix] || service;
+    };
+
+    const servicePerf = Array.from(serviceMap.values())
+      .map((entry) => {
+        const platform = platformForService(entry.service);
+        const visitors = visitorsByPlatform.get(platform) || 0;
+        const revenuePerVisitorCents = visitors > 0 ? Math.round(entry.revenue / visitors) : 0;
+        return { ...entry, platform, visitors, revenuePerVisitorCents };
+      })
+      .sort((a, b) => b.revenuePerVisitorCents - a.revenuePerVisitorCents);
 
     // Customer KPIs.
     const uniqueCustomers = Number(uniqueCustomersRes[0]?.count) || 0;

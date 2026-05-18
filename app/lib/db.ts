@@ -298,6 +298,21 @@ export async function initDb() {
   await sql`CREATE INDEX IF NOT EXISTS idx_pricing_exposures_experiment_variant ON pricing_experiment_exposures(experiment_id, variant_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_pricing_exposures_created ON pricing_experiment_exposures(created_at DESC)`;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS product_page_visits (
+      id SERIAL PRIMARY KEY,
+      anonymous_id VARCHAR(160) NOT NULL,
+      platform VARCHAR(40) NOT NULL,
+      country VARCHAR(12) DEFAULT '',
+      locale VARCHAR(12) DEFAULT '',
+      date DATE NOT NULL DEFAULT CURRENT_DATE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(anonymous_id, platform, date)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_product_visits_platform_date ON product_page_visits(platform, date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_product_visits_created ON product_page_visits(created_at DESC)`;
+
   // Seed global SMM toggle if missing
   const smmToggle = await sql`SELECT key FROM smm_settings WHERE key = 'auto_order_enabled'`;
   if (smmToggle.length === 0) {

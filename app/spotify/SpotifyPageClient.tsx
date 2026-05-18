@@ -16,6 +16,7 @@ import { PACKS, FOLLOWERS_PACKS, type CountryId, type SpotifyProductType, format
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
+import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isSpotifyArtistName, isSpotifyTrackTarget, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
@@ -57,6 +58,7 @@ export default function SpotifyPageClient() {
   const safePack = Math.min(pack, Math.max(0, activePacks.length - 1));
   const selectedPack = activePacks[safePack] ?? activePacks[0];
   usePrefetchProductPricing();
+  useTrackPageVisit("spotify");
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const tCopy = useSpotifyCopy();
