@@ -17,7 +17,7 @@ import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isTwitterUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -53,7 +53,8 @@ export default function TwitterPageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
-  const targetReady = isTwitterUsername(username);
+  // Loose gate: any non-empty handle proceeds; preview-side strict checks stay.
+  const targetReady = username.replace(/^@/, "").trim().length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

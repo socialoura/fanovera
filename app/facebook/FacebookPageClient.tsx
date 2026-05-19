@@ -54,7 +54,9 @@ export default function FacebookPageClient() {
   const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetHandle = extractFacebookHandle(pageInput);
-  const targetReady = Boolean(targetHandle);
+  // Loose gate: any non-empty page input proceeds; we forward whatever the
+  // user typed downstream even if no clean handle could be extracted.
+  const targetReady = pageInput.trim().length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

@@ -169,19 +169,25 @@ export default function Step2Artist({
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: showPreview ? "1fr 0.9fr" : "1fr", gap: 36, maxWidth: showPreview ? 1320 : 720, margin: "0 auto" }}>
-          <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleNext(); }}
+            style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}
+          >
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
               {ta.nameLabel}
             </label>
             <div className="input-shell spo">
               <input
                 type="text"
+                name="artist_name"
+                enterKeyHint="next"
                 placeholder={ta.namePlaceholder}
                 value={artistInput}
                 onChange={(e) => { setArtistInput(e.target.value); setTouched(true); }}
                 onBlur={() => setTouched(true)}
                 autoFocus
                 spellCheck={false}
+                autoComplete="off"
               />
               <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
                 {verifying && <div className="spinner" style={{ borderColor: "rgba(30,215,96,0.25)", borderTopColor: "var(--spo-green-2)" }} />}
@@ -195,12 +201,7 @@ export default function Step2Artist({
               </div>
             </div>
 
-            {touched && !valid && clean.length > 0 && (
-              <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)" }}>! {ta.invalidFormat}</div>
-            )}
-            {valid && apiError === "not_found" && (
-              <div style={{ marginTop: 10, fontSize: 13, color: "var(--spo-green-2)" }}>! {ta.notFound}</div>
-            )}
+            {/* Format / API errors intentionally silent. */}
 
             {previewBlock && (
               <div className="spo-preview-step2-inline" style={{ position: "relative", marginTop: 24 }}>
@@ -209,23 +210,42 @@ export default function Step2Artist({
             )}
 
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
+              <label htmlFor="spoart-checkout-email" style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
                 {t.emailLabel}
               </label>
               <div className="input-shell spo">
-                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input
+                  id="spoart-checkout-email"
+                  type="email"
+                  name="email"
+                  inputMode="email"
+                  enterKeyHint="go"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder={t.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-3)" }}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <rect x="3" y="6.5" width="8" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                <span>{t.emailHint}</span>
+              </div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
-              <button onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
+              <button type="button" onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 {t.back}
               </button>
-              <button onClick={handleNext} className="btn-primary btn-spo" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
+              <button type="submit" className="btn-primary btn-spo" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
                 {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -237,7 +257,7 @@ export default function Step2Artist({
                 <span>!</span> {submitError}
               </div>
             )}
-          </div>
+          </form>
 
           {previewBlock && (
             <div className="spo-preview-col spo-preview-step2-side" style={{ position: "relative" }}>

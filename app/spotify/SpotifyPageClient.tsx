@@ -19,7 +19,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCu
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isSpotifyArtistName, isSpotifyTrackTarget, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -79,7 +79,9 @@ export default function SpotifyPageClient() {
   const emailValid = isValidCheckoutEmail(email);
   const isFollowers = productType === "followers";
   const activeInput = isFollowers ? artistInput.trim() : trackInput.trim();
-  const activeInputValid = isFollowers ? isSpotifyArtistName(activeInput) : isSpotifyTrackTarget(activeInput);
+  // Checkout gate is intentionally loose: any non-empty target proceeds.
+  // Strict validators stay inside Step2 to drive the preview, never the gate.
+  const activeInputValid = activeInput.length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

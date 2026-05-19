@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import TtSprinkle from "./TtSprinkle";
 import Stepper from "./Stepper";
-import { getPacksForProduct, formatQty, type CountryId, type TikTokProductType } from "../data";
+import { getPacksForProduct, formatQty, formatPrice, type CountryId, type TikTokProductType } from "../data";
 import { useTikTokCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
 
@@ -280,17 +280,44 @@ export default function Step2Username({
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={2} />
 
-        <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
-          <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
+        <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 24px" }}>
+          <h1 className="display" style={{ fontSize: "clamp(22px, 3vw, 34px)", margin: "0 0 8px" }}>
             {titleBefore} <span className="squiggle tt">{titleFocus}</span> {titleAfter}
           </h1>
-          <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
+          <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 14, color: "var(--ink-2)", lineHeight: 1.5 }}>
             {intro}
           </p>
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: showPreview ? "1fr 0.9fr" : "1fr", gap: 36, maxWidth: showPreview ? 1320 : 720, margin: "0 auto" }}>
-          <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleNext(); }}
+            style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}
+          >
+            {/* Order summary: keeps "what am I paying for + how much" anchored
+                during the form fill, so the user never has to scroll back to
+                step 1 to remember. */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "12px 14px",
+                background: "var(--paper-2)",
+                borderRadius: 12,
+                marginBottom: 20,
+                border: "1px solid var(--line)",
+              }}
+            >
+              <div style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.35 }}>
+                <strong style={{ color: "var(--ink)" }}>{formatQty(packData.qty)}</strong>
+                <span style={{ color: "var(--ink-3)" }}> + {formatQty(packData.bonus)} bonus</span>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--tt-red)", letterSpacing: "-0.01em" }}>
+                {formatPrice(packData)}
+              </div>
+            </div>
             {isMediaMode ? (
               <>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
@@ -299,6 +326,9 @@ export default function Step2Username({
                 <div className="input-shell">
                   <input
                     type="url"
+                    name="post_url"
+                    inputMode="url"
+                    enterKeyHint="next"
                     placeholder={tm.postPlaceholder}
                     value={postUrl}
                     onChange={(e) => { setPostUrl(e.target.value); setTouched(true); }}
@@ -306,6 +336,7 @@ export default function Step2Username({
                     autoFocus
                     spellCheck={false}
                     autoCapitalize="none"
+                    autoComplete="off"
                   />
                   <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
                     {verifying && <div className="spinner" style={{ borderColor: "rgba(254,44,85,0.25)", borderTopColor: "var(--tt-red)" }} />}
@@ -319,14 +350,11 @@ export default function Step2Username({
                   </div>
                 </div>
 
-                {touched && !postValid && postUrl.trim().length > 0 && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)" }}>! {t.errors.postInvalid}</div>
-                )}
-                {postValid && apiError === "not_found" && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(254,44,85,0.08)", border: "1px solid rgba(254,44,85,0.25)", borderRadius: 12, fontSize: 13, color: "var(--tt-red)" }}>
-                    {t.errors.postNotFound}
-                  </div>
-                )}
+                {/* API errors (404/private/network) and format hints are
+                    intentionally silent: the live preview is a reassurance
+                    feature, not a gate. If it fails or can't find the post,
+                    we just hide the preview — the user can still pay and we
+                    deliver against the URL they provided. */}
                 {previewBlock && (
                   <div className="tt-preview-step2-inline" style={{ position: "relative", marginTop: 24 }}>
                     {previewBlock}
@@ -342,13 +370,21 @@ export default function Step2Username({
                   <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
                   <input
                     type="text"
+                    name="handle"
+                    enterKeyHint="next"
                     placeholder={t.usernamePlaceholder}
-                    value={clean}
+                    /* Display the raw value (minus a leading @) instead of
+                       the lowercased `clean` so the user's typed casing is
+                       preserved. We still validate / API-check against the
+                       lowercased version downstream. */
+                    value={username.replace(/^@/, "")}
                     onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
                     onBlur={() => setTouched(true)}
                     autoFocus
                     spellCheck={false}
                     autoCapitalize="none"
+                    autoComplete="off"
+                    autoCorrect="off"
                   />
                   <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
                     {verifying && <div className="spinner" style={{ borderColor: "rgba(254,44,85,0.25)", borderTopColor: "var(--tt-red)" }} />}
@@ -362,15 +398,7 @@ export default function Step2Username({
                   </div>
                 </div>
 
-                {touched && !usernameValid && clean.length > 0 && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)" }}>! {t.invalidFormat}</div>
-                )}
-                {usernameValid && apiError === "not_found" && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)" }}>! {t.notFound}</div>
-                )}
-                {usernameValid && apiError === "private" && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--tt-red)" }}>! {t.privateAccount}</div>
-                )}
+                {/* Same as above: no error UI on format/API failures. */}
                 {previewBlock && (
                   <div className="tt-preview-step2-inline" style={{ position: "relative", marginTop: 24 }}>
                     {previewBlock}
@@ -380,23 +408,49 @@ export default function Step2Username({
             )}
 
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
+              <label
+                htmlFor="checkout-email"
+                style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}
+              >
                 {t.emailLabel}
               </label>
               <div className="input-shell">
-                <input type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input
+                  id="checkout-email"
+                  type="email"
+                  name="email"
+                  inputMode="email"
+                  enterKeyHint="go"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder={t.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
+              {/* The reassurance copy lives in i18n already (e.g. "Pas de
+                  spam, jamais") but we present it with a small lock icon so
+                  the visitor's eye actually catches it before judging the
+                  email field as a privacy ask. */}
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-3)" }}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <rect x="3" y="6.5" width="8" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                <span>{t.emailHint}</span>
+              </div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
-              <button onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
+              <button type="button" onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 {t.back}
               </button>
-              <button onClick={handleNext} className="btn-primary btn-tt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
+              <button type="submit" className="btn-primary btn-tt" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
                 {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -408,7 +462,7 @@ export default function Step2Username({
                 <span>!</span> {submitError}
               </div>
             )}
-          </div>
+          </form>
 
           {previewBlock && (
             <div className="tt-preview-col tt-preview-step2-side" style={{ position: "relative" }}>

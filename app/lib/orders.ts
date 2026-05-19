@@ -33,8 +33,19 @@ export type EnsureOrderResult =
  */
 export async function ensureOrderForPaymentIntent(
   paymentIntentId: string,
-  options: { source: "client" | "webhook" | "cron" } = { source: "client" },
+  options: {
+    source: "client" | "webhook" | "cron";
+    /**
+     * Optional values forwarded by /api/confirm-order from the client.
+     * They take precedence over the PaymentIntent metadata because the PI
+     * is created early (with whatever email/username the user had typed at
+     * that moment) and not recreated on subsequent keystrokes, so the
+     * metadata can be stale by the time payment confirms.
+     */
+    overrides?: { email?: string; username?: string; followersBefore?: number };
+  } = { source: "client" },
 ): Promise<EnsureOrderResult> {
+  const overrides = options.overrides;
   try {
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
       expand: ["latest_charge.payment_method_details", "latest_charge.billing_details"],
@@ -60,8 +71,25 @@ export async function ensureOrderForPaymentIntent(
     const skipEmail = checkoutE2E;
     const persisted = await getCheckoutPayload(paymentIntentId);
 
-    const email = persisted?.email || meta.email || "";
-    const username = persisted?.username || meta.username || "";
+    const latestCharge =
+      pi.latest_charge && typeof pi.latest_charge === "object"
+        ? (pi.latest_charge as Stripe.Charge)
+        : null;
+
+    // Precedence: client-supplied overrides (freshest) → persisted DB row →
+    // PaymentIntent metadata → Stripe billing_details.email (last-resort
+    // for email only; the user typed it inside Stripe Elements).
+    const stripeBillingEmail =
+      typeof latestCharge?.billing_details?.email === "string"
+        ? latestCharge.billing_details.email
+        : "";
+    const email =
+      overrides?.email ||
+      persisted?.email ||
+      meta.email ||
+      stripeBillingEmail ||
+      "";
+    const username = overrides?.username || persisted?.username || meta.username || "";
     const platform = persisted?.platform || meta.platform || "";
 
     let cart: unknown = persisted?.cart || [];
@@ -76,10 +104,6 @@ export async function ensureOrderForPaymentIntent(
     //  3. Stripe charge billing address (customer-typed at payment)
     //  4. Stripe card issuance country (network-verified, but indicates the
     //     card's origin, not necessarily the user — last-resort fallback)
-    const latestCharge =
-      pi.latest_charge && typeof pi.latest_charge === "object"
-        ? (pi.latest_charge as Stripe.Charge)
-        : null;
     const stripeBillingCountry = latestCharge?.billing_details?.address?.country ?? null;
     const stripeCardCountry =
       latestCharge?.payment_method_details?.card?.country ?? null;
@@ -98,6 +122,7 @@ export async function ensureOrderForPaymentIntent(
     const metaFollowers = Number.parseInt(meta.followersBefore || "", 10);
     const followersBefore = Math.max(
       0,
+      overrides?.followersBefore || 0,
       Number.isFinite(metaFollowers) ? metaFollowers : 0,
       persistedFollowers || 0,
     );

@@ -4,6 +4,7 @@ export const ANALYTICS_EVENTS = [
   "nav_item_clicked",
   "footer_link_clicked",
   "cta_clicked",
+  "promo_hero_targeted_exposed",
   "outbound_link_clicked",
   "form_error",
   "api_error",

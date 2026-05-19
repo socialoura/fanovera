@@ -1,18 +1,20 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-import { NETWORKS, NET_META, type Network } from "../lib/networks";
+import { NETWORKS, NET_META, type Network, type NetworkId } from "../lib/networks";
 import { usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
 import { trackEvent } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
+import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
+import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
 
 function StarsRow({ items }: { items: { q: string; a: string }[] }) {
   return (
@@ -256,19 +258,33 @@ function NetCard({
   copy,
   href,
   onSelect,
+  highlighted = false,
+  targetedLabel,
+  locale,
 }: {
   n: Network;
   copy: ReturnType<typeof getPublicCopy>["hero"];
   href: string;
   onSelect: () => void;
+  highlighted?: boolean;
+  targetedLabel?: string;
+  locale: string;
 }) {
   const meta = NET_META[n.id];
   const cardStyle = {
     "--brand": meta.brand,
     "--brand-2": meta.brand2,
   } as CSSProperties;
-  return (
-    <Link href={href} className="netcard" style={cardStyle} onClick={onSelect}>
+  // When highlighted, wrap so the pin can escape the card's overflow:hidden.
+  // Otherwise return the bare Link to avoid an extra DOM node.
+  const card = (
+    <Link
+      href={href}
+      className={highlighted ? "netcard netcard-highlighted" : "netcard"}
+      style={cardStyle}
+      onClick={onSelect}
+      data-network={n.id}
+    >
       {/* Background oversized glyph */}
       <div className="netcard-glyph">
         <NetIcon kind={n.icon} color="white" size={180} />
@@ -297,7 +313,7 @@ function NetCard({
         >
           <NetIcon kind={n.icon} color={n.color} size={22} />
         </div>
-        {meta.badge && <span className="netcard-chip solid">★ {meta.badge}</span>}
+        {meta.badge && !highlighted && <span className="netcard-chip solid">★ {meta.badge}</span>}
       </div>
 
       {/* Name */}
@@ -307,12 +323,15 @@ function NetCard({
 
       <div className="netcard-divider"></div>
 
-      {/* Foot: CTA + arrow */}
+      {/* Foot: CTA + arrow. The CTA line shows the network's lowest pack
+          price ("À partir de 1,29 €") so the visitor sees a concrete entry
+          point on every card. Currency is fixed to EUR; the actual checkout
+          converts to the visitor's currency later. */}
       <div className="netcard-foot">
         <div>
           <div className="netcard-cta-label">{copy.cardLabel}</div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2, color: "white" }}>
-            {copy.cardCta}
+          <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2, color: "white", letterSpacing: "-0.01em" }}>
+            {meta.minPriceEur.toLocaleString((locale || "fr").toLowerCase().startsWith("en") ? "en-US" : "fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 })}
           </div>
         </div>
         <div className="netcard-arrow">
@@ -329,15 +348,64 @@ function NetCard({
       </div>
     </Link>
   );
+
+  // The featured card uses a relative wrapper so the pulse/ring isn't clipped
+  // by neighbors' stacking context. No "Pour vous" / "For you" pin: the H1
+  // already names the network and the card itself is visually unmistakable.
+  void targetedLabel;
+  if (!highlighted) return card;
+  return (
+    <div className="netcard-wrap" style={cardStyle}>
+      {card}
+    </div>
+  );
 }
 
 export default function Hero() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
   const searchParams = useSearchParams();
+  const router = useRouter();
   usePrefetchProductPricing();
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
   const isPromo = mode === "promo";
+
+  // When a Google Ads visitor lands on /promo with a network-specific
+  // utm_term/content/campaign, surface that intent in the H1 and highlight
+  // the matching network card. The rest of the grid stays in place so any
+  // off-intent visitor can still pick a different network — and the URL
+  // remains /promo, which keeps the LP whitehat for Google Ads policy.
+  const targetedNetwork: NetworkId | null = isPromo
+    ? detectTargetNetworkFromParams(searchParams)
+    : null;
+  const targetedTitle = getTargetedHeroTitle(locale, targetedNetwork);
+  const heroTitle = targetedTitle || {
+    titleBefore: copy.titleBefore,
+    titleHighlight: copy.titleHighlight,
+    titleAfter: copy.titleAfter,
+  };
+
+  useEffect(() => {
+    if (!isPromo || !targetedNetwork) return;
+    trackEvent("promo_hero_targeted_exposed", {
+      page_type: "promo",
+      entry_surface: "promo",
+      destination_network: targetedNetwork,
+      product_area: targetedNetwork,
+      feature_name: "promo_hero_targeted",
+      locale,
+    });
+    // Pre-warm the targeted product page so the click → render is instant.
+    // Next prefetches viewport-visible Links automatically, but we want the
+    // route the visitor is statistically about to click, regardless of
+    // whether that card is below the fold on mobile.
+    try {
+      router.prefetch(`/${targetedNetwork}`);
+    } catch {
+      /* prefetch is best-effort; ignore stale-router edge cases */
+    }
+  }, [isPromo, targetedNetwork, locale, router]);
+
   const networkHref = (network: Network) =>
     isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams) : `/${network.id}`;
   const trackNetworkSelect = (network: Network) => {
@@ -350,14 +418,80 @@ export default function Hero() {
       destination_path: `/${network.id}`,
       feature_name: "promo_network_selector",
       cta_location: "hero_network_card",
+      targeted_match: targetedNetwork === network.id,
+      targeted_network: targetedNetwork || undefined,
     });
   };
 
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
       <div className="container">
+        {/* Trustpilot-style rating — first thing the visitor sees */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                fontWeight: 500,
+                fontSize: 20,
+                marginRight: 8,
+              }}
+            >
+              4.9 <span style={{ opacity: 0.7 }}>|</span>
+            </span>
+            <svg
+              viewBox="0 0 128 24"
+              style={{ height: 24, display: "block" }}
+              xmlns="http://www.w3.org/2000/svg"
+              role="img"
+              aria-label="4.9 / 5"
+            >
+              {/* 4 full green squares with 2px gap between each */}
+              {[0, 1, 2, 3].map((i) => (
+                <g key={i} transform={`translate(${i * 26}, 0)`}>
+                  <rect width="24" height="24" fill="#00B67A" />
+                  <path
+                    d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
+                    fill="white"
+                  />
+                </g>
+              ))}
+              {/* 5th star: 90% filled (4.9/5) */}
+              <g transform="translate(104, 0)">
+                <rect width="21.6" height="24" fill="#00B67A" />
+                <rect x="21.6" width="2.4" height="24" fill="#dcdce6" />
+                <path
+                  d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
+                  fill="white"
+                />
+              </g>
+            </svg>
+          </div>
+        </div>
         <StatusBadge />
         <StarsRow items={copy.stars} />
+        {targetedTitle && (
+          <div
+            style={{
+              textAlign: "center",
+              margin: "0 auto 10px",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--ink-3)",
+            }}
+          >
+            {targetedTitle.eyebrow}
+          </div>
+        )}
         <h1
           className="display"
           style={{
@@ -367,53 +501,98 @@ export default function Hero() {
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
+          {heroTitle.titleBefore}<span className="squiggle">{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
         </h1>
 
-        {/* 8 BIG network cards - primary hero CTA, above the fold */}
-        <div
-          className="net-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 14,
-            maxWidth: 1100,
-            margin: "0 auto 24px",
-          }}
-        >
-          {NETWORKS.map((n) => (
-            <NetCard key={n.id} n={n} copy={copy} href={networkHref(n)} onSelect={() => trackNetworkSelect(n)} />
-          ))}
-        </div>
+        {/* When a network is targeted via UTM, surface it alone on its own
+            row right under the title so the visitor's first CTA is the card
+            that matches their search intent. The remaining 7 networks render
+            below as alternatives. Without a target, fall back to the
+            regular 8-card grid. */}
+        {(() => {
+          const targetedLabel = (locale || "fr").toLowerCase().startsWith("en") ? "★ For you" : "★ Pour vous";
+          const featured = targetedNetwork ? NETWORKS.find((n) => n.id === targetedNetwork) : null;
+          const rest = featured ? NETWORKS.filter((n) => n.id !== featured.id) : NETWORKS;
+          return (
+            <>
+              {featured && (
+                <div
+                  className="net-featured-row"
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    // Top/bottom margin so the highlight ring + glow have
+                    // room around the H1 and the rest of the network grid
+                    // below without overlapping. Horizontal padding gives
+                    // the white halo (~18px at peak) room to render without
+                    // bleeding against the viewport edge on small screens.
+                    margin: "32px auto",
+                    padding: "0 24px",
+                    maxWidth: 1100,
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <div className="net-featured-slot" style={{ width: "100%", maxWidth: 480 }}>
+                    <NetCard
+                      n={featured}
+                      copy={copy}
+                      href={networkHref(featured)}
+                      onSelect={() => trackNetworkSelect(featured)}
+                      highlighted
+                      targetedLabel={targetedLabel}
+                      locale={locale}
+                    />
+                  </div>
+                </div>
+              )}
+              <div
+                className={featured ? "net-grid net-grid--rest" : "net-grid"}
+                style={
+                  featured
+                    ? {
+                        // 7 cards don't tile cleanly into a 4- or 2-col grid
+                        // (4+3 desktop, 3+3+1 mobile leaves an orphan).
+                        // Flex + center makes the last incomplete row center
+                        // itself instead of stranding a lonely card.
+                        display: "flex",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                        gap: 14,
+                        maxWidth: 1100,
+                        margin: "0 auto 24px",
+                      }
+                    : {
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, 1fr)",
+                        gap: 14,
+                        maxWidth: 1100,
+                        margin: "0 auto 24px",
+                      }
+                }
+              >
+                {rest.map((n) => (
+                  <NetCard
+                    key={n.id}
+                    n={n}
+                    copy={copy}
+                    href={networkHref(n)}
+                    onSelect={() => trackNetworkSelect(n)}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            </>
+          );
+        })()}
 
-        {/* Sub-CTA strip */}
-        <div
-          className="sub-cta-strip"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 24,
-            flexWrap: "wrap",
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}
-          >
-            <span style={{ color: "var(--ink-2)" }}>{copy.rating}</span>
-            <div style={{ display: "flex", gap: 2 }}>
-              {[...Array(5)].map((_, j) => (
-                <svg key={j} width="14" height="14" viewBox="0 0 14 14" fill="var(--yellow)">
-                  <path d="M7 1l1.8 4 4.2.6-3 3 .7 4.2L7 10.8 3.3 12.8 4 8.6 1 5.6l4.2-.6z" />
-                </svg>
-              ))}
-            </div>
-            <span style={{ color: "var(--ink-3)" }}>· {withDynamicReviewCount(copy.reviews)}</span>
-          </div>
-        </div>
 
-        {/* Mock with floating cards */}
+        {/* Mock with floating cards.
+            Hidden for targeted-intent visitors (utm names a specific network)
+            because their goal is "find my network → click → buy". Showing the
+            generic Fanovera dashboard mockup below the fold pushes the click
+            target off-screen on mobile and adds visual noise without value.
+            Cold/discovery visitors still see the full hero. */}
+        {!targetedNetwork && (
         <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <MockDashboard copy={copy} />
@@ -524,6 +703,7 @@ export default function Hero() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </section>
   );

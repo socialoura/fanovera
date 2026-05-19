@@ -18,7 +18,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCu
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isTikTokPostUrl, isTikTokUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -83,7 +83,12 @@ export default function TiktokPageClient() {
   const emailValid = isValidCheckoutEmail(email);
   const isMediaProduct = productType === "likes" || productType === "views";
   const cleanUsername = username.replace(/^@/, "").trim();
-  const targetReady = isMediaProduct ? isTikTokPostUrl(postUrl) : isTikTokUsername(username);
+  // The live profile/media preview uses strict-format checks to decide whether
+  // to call the upstream API. The checkout gate is intentionally looser: as
+  // long as the visitor has typed *something* non-empty, we let them proceed
+  // — the API is a reassurance, never a gate. Refund risk on typos is
+  // accepted in exchange for higher conversion.
+  const targetReady = isMediaProduct ? postUrl.trim().length > 0 : cleanUsername.length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

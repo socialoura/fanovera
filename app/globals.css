@@ -756,6 +756,85 @@ input { font: inherit; color: inherit; }
 .netcard:hover .netcard-glyph { transform: translate(-8px, -8px) rotate(-6deg) scale(1.08); opacity: 0.22; }
 .netcard:hover .netcard-arrow { transform: translate(4px, -4px) rotate(-45deg); background: white; color: var(--brand); }
 
+/* Targeted-intent card: highlighted when the visitor arrived from an ad
+ * naming this specific network. Effects kept tight so the ring + glow do
+ * NOT extend beyond the wrapper width — we already feature the card alone
+ * on its own row, so subtle highlighting is enough. */
+.netcard-highlighted {
+  transform: translateY(-3px);
+  box-shadow:
+    0 22px 40px -14px rgba(0,0,0,0.32),
+    0 0 0 3px var(--brand),
+    0 0 24px 4px color-mix(in srgb, var(--brand) 55%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  animation: netcard-pulse 2.2s ease-in-out infinite;
+}
+.netcard-highlighted::before { opacity: 0.9; }
+.netcard-highlighted .netcard-arrow { background: white; color: var(--brand); transform: translate(2px, -2px) rotate(-45deg); }
+.netcard-highlighted .netcard-glyph { transform: translate(-6px, -6px) rotate(-4deg) scale(1.06); opacity: 0.2; }
+.netcard-highlighted:hover { transform: translateY(-6px); }
+@keyframes netcard-pulse {
+  0%, 100% {
+    box-shadow:
+      0 22px 40px -14px rgba(0,0,0,0.32),
+      0 0 0 3px var(--brand),
+      0 0 24px 4px color-mix(in srgb, var(--brand) 55%, transparent),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  50% {
+    box-shadow:
+      0 26px 48px -14px rgba(0,0,0,0.38),
+      0 0 0 4px var(--brand),
+      0 0 32px 8px color-mix(in srgb, var(--brand) 75%, transparent),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .netcard-highlighted { animation: none; }
+}
+
+/* Targeted-intent "rest" grid: 7 cards with the featured one extracted to its
+ * own row above. Flex so the last incomplete row centers automatically. The
+ * basis values match what `repeat(4|3|2, 1fr)` would give in grid mode. */
+.net-grid--rest > .netcard,
+.net-grid--rest > .netcard-wrap {
+  flex: 0 0 calc(25% - 11px); /* 4 per row, gap=14 → (gap*(n-1))/n = 10.5 ≈ 11 */
+}
+@media (max-width: 900px) and (min-width: 601px) {
+  .net-grid--rest > .netcard,
+  .net-grid--rest > .netcard-wrap {
+    flex: 0 0 calc(33.333% - 10px); /* 3 per row on tablet */
+  }
+}
+@media (max-width: 600px) {
+  .net-grid--rest > .netcard,
+  .net-grid--rest > .netcard-wrap {
+    flex: 0 0 calc(50% - 5px); /* 2 per row mobile */
+  }
+}
+
+/* Wrapper so the targeted-intent pin can sit OUTSIDE the card without being
+ * clipped by .netcard's overflow:hidden (which we keep for the glyph clip). */
+.netcard-wrap { position: relative; display: block; }
+.netcard-pin {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  background: white;
+  color: var(--brand);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22), 0 0 0 2px var(--brand);
+  z-index: 3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .netcard > .netcard-row { position: relative; z-index: 1; }
 
 .netcard-chip {

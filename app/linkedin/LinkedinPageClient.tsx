@@ -54,7 +54,10 @@ export default function LinkedinPageClient() {
   const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
   const targetHandle = extractLinkedinHandle(username);
-  const targetReady = Boolean(targetHandle);
+  // Loose gate: any non-empty input is enough to proceed. If we couldn't
+  // extract a clean handle, we still forward the raw user input so the SMM
+  // provider can attempt delivery.
+  const targetReady = username.trim().length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

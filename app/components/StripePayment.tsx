@@ -77,6 +77,28 @@ export function usePaymentIntent(args: {
     cartRef.current = cart;
     lastCartKeyRef.current = cartKey;
   }
+
+  // Metadata-only values: must be readable at fetch time but MUST NOT trigger
+  // a new PaymentIntent on every keystroke / async profile load. Previously
+  // they were in the effect deps and caused dozens of PaymentIntents per
+  // checkout (one per character typed in email/username, plus one when the
+  // profile preview loaded `followersBefore`). We read them via ref at the
+  // moment fetch fires; the actual customer-facing email is captured at
+  // confirm-time via `billing_details` and forwarded to /api/confirm-order.
+  const metadataRef = useRef({ email, username, followersBefore });
+  metadataRef.current = { email, username, followersBefore };
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  // Depend on the assignment primitives (not the object reference) so the
+  // effect doesn't refetch when `usePricingExperiment` returns a new object
+  // identity for unchanged values (e.g. after experiments load).
+  const experimentId = experiment.assignment.experimentId;
+  const variantId = experiment.assignment.variantId;
+  const pricingStrategy = experiment.assignment.pricingStrategy;
+
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,25 +107,28 @@ export function usePaymentIntent(args: {
     let aborted = false;
     setClientSecret(null);
     setError(null);
+    const { email: emailNow, username: usernameNow, followersBefore: followersNow } = metadataRef.current;
+    const localeNow = localeRef.current;
+    const pathnameNow = pathnameRef.current;
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         clientAmount: amount,
         currency,
-        email,
-        username,
+        email: emailNow,
+        username: usernameNow,
         platform,
         cart: cartRef.current,
         promoCode,
-        locale,
-        sourcePage: pathname ? `${pathname}${window.location.search || ""}` : pathname,
+        locale: localeNow,
+        sourcePage: pathnameNow ? `${pathnameNow}${window.location.search || ""}` : pathnameNow,
         attribution: currentAttributionProperties(),
         anonymousId: experiment.anonymousId,
-        experimentId: experiment.assignment.experimentId,
-        variantId: experiment.assignment.variantId,
-        pricingStrategy: experiment.assignment.pricingStrategy,
-        followersBefore: typeof followersBefore === "number" && followersBefore > 0 ? followersBefore : 0,
+        experimentId,
+        variantId,
+        pricingStrategy,
+        followersBefore: typeof followersNow === "number" && followersNow > 0 ? followersNow : 0,
       }),
     })
       .then((r) => r.json())
@@ -111,21 +136,21 @@ export function usePaymentIntent(args: {
         if (aborted) return;
         if (data.clientSecret) setClientSecret(data.clientSecret);
         else {
-          const fallback = getPublicCopy(locale).payment.paymentError;
+          const fallback = getPublicCopy(localeRef.current).payment.paymentError;
           setError(data.error || fallback);
           trackEvent("checkout_failed", { platform, product_area: productArea, reason: data.error || "payment_intent_error" });
         }
       })
       .catch(() => {
         if (!aborted) {
-          setError(getPublicCopy(locale).payment.networkError);
+          setError(getPublicCopy(localeRef.current).payment.networkError);
           trackEvent("checkout_failed", { platform, product_area: productArea, reason: "payment_intent_network_error" });
         }
       });
     return () => {
       aborted = true;
     };
-  }, [enabled, amount, currency, email, username, platform, cartKey, promoCode, locale, pathname, productArea, experiment.anonymousId, experiment.assignment, followersBefore, retryNonce]);
+  }, [enabled, amount, currency, platform, cartKey, promoCode, productArea, experiment.anonymousId, experimentId, variantId, pricingStrategy, retryNonce]);
 
   return { clientSecret, error };
 }
@@ -134,10 +159,12 @@ function ExpressCheckout({
   platform,
   clientSecret,
   onSuccess,
+  checkoutContext,
 }: {
   platform: string;
   clientSecret: string;
   onSuccess?: () => void;
+  checkoutContext: { email: string; username: string; followersBefore?: number };
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -174,7 +201,7 @@ function ExpressCheckout({
                 const res = await fetch("/api/confirm-order", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ paymentIntentId }),
+                  body: JSON.stringify({ paymentIntentId, ...checkoutContext }),
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data?.orderId) {
@@ -205,6 +232,7 @@ function CardPayment({
   clientSecret,
   brandColor,
   onSuccess,
+  checkoutContext,
 }: {
   email: string;
   platform: string;
@@ -213,6 +241,7 @@ function CardPayment({
   clientSecret: string;
   brandColor?: string;
   onSuccess?: () => void;
+  checkoutContext: { email: string; username: string; followersBefore?: number };
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -255,7 +284,7 @@ function CardPayment({
           const res = await fetch("/api/confirm-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentIntentId }),
+            body: JSON.stringify({ paymentIntentId, ...checkoutContext }),
           });
           const data = await res.json().catch(() => ({}));
           if (res.ok && data?.orderId) {
@@ -481,7 +510,12 @@ export default function StripeCheckout({
         },
       }}
     >
-      <ExpressCheckout platform={platform} clientSecret={clientSecret} onSuccess={onSuccess} />
+      <ExpressCheckout
+        platform={platform}
+        clientSecret={clientSecret}
+        onSuccess={onSuccess}
+        checkoutContext={{ email, username, followersBefore }}
+      />
       <div style={{ textAlign: "center", margin: "16px 0" }}>
         <span style={{ color: "var(--ink-3)", fontSize: 12 }}>{paymentCopy.orPayByCard}</span>
       </div>
@@ -493,6 +527,7 @@ export default function StripeCheckout({
         clientSecret={clientSecret}
         brandColor={brandColor}
         onSuccess={onSuccess}
+        checkoutContext={{ email, username, followersBefore }}
       />
     </Elements>
   );

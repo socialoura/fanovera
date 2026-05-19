@@ -302,7 +302,10 @@ export default function Step2Username({
         </div>
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: showPreview ? "1fr 0.9fr" : "1fr", gap: 36, maxWidth: showPreview ? 1320 : 720, margin: "0 auto" }}>
-          <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleNext(); }}
+            style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}
+          >
             {isMediaMode ? (
               <>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
@@ -312,6 +315,9 @@ export default function Step2Username({
                   <input
                     data-testid="checkout-post-url"
                     type="url"
+                    name="post_url"
+                    inputMode="url"
+                    enterKeyHint="next"
                     placeholder={tm.postPlaceholder}
                     value={postUrl}
                     onChange={(e) => {
@@ -322,6 +328,7 @@ export default function Step2Username({
                     autoFocus
                     spellCheck={false}
                     autoCapitalize="none"
+                    autoComplete="off"
                   />
                   <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
                     {verifying && <div className="spinner" style={{ borderColor: "rgba(214,41,118,0.25)", borderTopColor: "var(--ig-2)" }} />}
@@ -335,14 +342,8 @@ export default function Step2Username({
                   </div>
                 </div>
 
-                {touched && !postValid && postUrl.trim().length > 0 && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "var(--ig-2)" }}>! {t.errors.postInvalid}</div>
-                )}
-                {postValid && apiError === "not_found" && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(225,64,126,0.08)", border: "1px solid rgba(225,64,126,0.25)", borderRadius: 12, fontSize: 13, color: "var(--ig-2)" }}>
-                    {t.errors.postNotFound}
-                  </div>
-                )}
+                {/* Format and API errors intentionally silent: preview is a
+                    reassurance feature, never a payment gate. */}
                 {productType === "views" && media && media.mediaType === 1 && (
                   <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(255,165,0,0.08)", border: "1px solid rgba(255,165,0,0.3)", borderRadius: 12, fontSize: 13, color: "var(--ink-2)", display: "flex", alignItems: "center", gap: 8 }}>
                     <span>⚠️</span>
@@ -365,8 +366,10 @@ export default function Step2Username({
                   <input
                     data-testid="checkout-username"
                     type="text"
+                    name="handle"
+                    enterKeyHint="next"
                     placeholder={t.usernamePlaceholder}
-                    value={clean}
+                    value={username.replace(/^@/, "")}
                     onChange={(e) => {
                       setUsername(e.target.value);
                       setTouched(true);
@@ -375,6 +378,8 @@ export default function Step2Username({
                     autoFocus
                     spellCheck={false}
                     autoCapitalize="none"
+                    autoComplete="off"
+                    autoCorrect="off"
                   />
                   <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
                     {verifying && <div className="spinner" style={{ borderColor: "rgba(214,41,118,0.25)", borderTopColor: "var(--ig-2)" }} />}
@@ -388,18 +393,14 @@ export default function Step2Username({
                   </div>
                 </div>
 
-                {touched && !usernameValid && clean.length > 0 && <div style={{ marginTop: 10, fontSize: 13, color: "var(--ig-2)" }}>! {t.invalidFormat}</div>}
+                {/* Format error / "not found" / "private" intentionally silent.
+                    The fuzzy-match suggestion is still surfaced because it
+                    is a *help* affordance, not an error. */}
                 {usernameValid && apiError === "not_found" && suggestion && (
                   <div style={{ marginTop: 10, fontSize: 13, color: "var(--ink-3)" }}>
                     <button type="button" onClick={() => setUsername(suggestion)} style={{ color: "var(--ig-2)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontWeight: 700, padding: 0 }}>
                       {t.trySuggestion} @{suggestion}?
                     </button>
-                  </div>
-                )}
-                {usernameValid && apiError === "private" && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(225,64,126,0.08)", border: "1px solid rgba(225,64,126,0.25)", borderRadius: 12, fontSize: 13, color: "var(--ig-2)", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>🔒</span>
-                    <span>{t.privateAccount}</span>
                   </div>
                 )}
                 {previewBlock && (
@@ -411,23 +412,43 @@ export default function Step2Username({
             )}
 
             <div style={{ marginTop: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
+              <label htmlFor="ig-checkout-email" style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
                 {t.emailLabel}
               </label>
               <div className="input-shell">
-                <input data-testid="checkout-email" type="email" placeholder={t.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input
+                  id="ig-checkout-email"
+                  data-testid="checkout-email"
+                  type="email"
+                  name="email"
+                  inputMode="email"
+                  enterKeyHint="go"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder={t.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>{t.emailHint}</div>
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-3)" }}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <rect x="3" y="6.5" width="8" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                <span>{t.emailHint}</span>
+              </div>
             </div>
 
             <div style={{ marginTop: 28, display: "flex", gap: 10 }}>
-              <button onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
+              <button type="button" onClick={onBack} className="btn-soft" style={{ padding: "14px 22px" }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 {t.back}
               </button>
-              <button data-testid="checkout-profile-next" onClick={handleNext} className="btn-primary btn-ig" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
+              <button type="submit" data-testid="checkout-profile-next" className="btn-primary btn-ig" style={{ flex: 1, padding: "14px 26px", fontSize: 16 }}>
                 {t.pay}
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -435,7 +456,7 @@ export default function Step2Username({
               </button>
             </div>
             {submitError && <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(225,64,126,0.08)", border: "1px solid rgba(225,64,126,0.25)", borderRadius: 12, fontSize: 13, color: "var(--ig-2)" }}>! {submitError}</div>}
-          </div>
+          </form>
 
           {previewBlock && (
             <div className="ig-preview-col ig-preview-step2-side" style={{ position: "relative" }}>

@@ -26,14 +26,22 @@ function storageKey(platform: string) {
   return `fanovera:funnel:v${VERSION}:${platform}`;
 }
 
+// We store in localStorage (not sessionStorage) so that a visitor who closes
+// the tab and comes back within 24h — typical pattern after a card decline
+// or "let me check my username on the app first" — finds their inputs intact
+// instead of having to retype everything. TTL is enforced manually since
+// localStorage doesn't expire on its own.
 function readState(platform: string): FunnelState | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(storageKey(platform));
+    const raw = window.localStorage.getItem(storageKey(platform));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { ts?: number; data?: FunnelState };
     if (!parsed?.ts || !parsed.data) return null;
-    if (Date.now() - parsed.ts > TTL_MS) return null;
+    if (Date.now() - parsed.ts > TTL_MS) {
+      window.localStorage.removeItem(storageKey(platform));
+      return null;
+    }
     return parsed.data;
   } catch {
     return null;
@@ -43,12 +51,12 @@ function readState(platform: string): FunnelState | null {
 function writeState(platform: string, data: FunnelState) {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       storageKey(platform),
       JSON.stringify({ ts: Date.now(), data }),
     );
   } catch {
-    /* sessionStorage may be unavailable (private mode, quota) */
+    /* localStorage may be unavailable (private mode, quota) */
   }
 }
 
@@ -86,7 +94,7 @@ export function useFunnelPersistence(
 export function clearFunnelPersistence(platform: string) {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.removeItem(storageKey(platform));
+    window.localStorage.removeItem(storageKey(platform));
   } catch {
     /* ignore */
   }

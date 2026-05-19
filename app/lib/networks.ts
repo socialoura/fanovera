@@ -31,15 +31,19 @@ export type NetMeta = {
   badge: string | null;
   brand: string;
   brand2: string;
+  /** Lowest pack price (EUR) across all product types of this network.
+   * Surfaced on /promo cards as the "À partir de X €" anchor. Update when
+   * the cheapest pack in app/<network>/data.ts changes. */
+  minPriceEur: number;
 };
 
 export const NET_META: Record<NetworkId, NetMeta> = {
-  instagram: { stat: "Audit & contenu", badge: "POPULAIRE", brand: "#e1407e", brand2: "#fa7e1e" },
-  tiktok: { stat: "Calendrier video", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
-  youtube: { stat: "SEO video", badge: null, brand: "#ff3a3a", brand2: "#ff7a5a" },
-  spotify: { stat: "Lancement artiste", badge: null, brand: "#1ed760", brand2: "#16a34a" },
-  twitter: { stat: "Ligne editoriale", badge: null, brand: "#1d1d2c", brand2: "#3d3d52" },
-  facebook: { stat: "Page & contenus", badge: null, brand: "#3a6ad4", brand2: "#5a8af0" },
-  linkedin: { stat: "Presence B2B", badge: null, brand: "#1d6dc1", brand2: "#3a8de0" },
-  twitch: { stat: "Planning stream", badge: "NOUVEAU", brand: "#9146ff", brand2: "#b56cff" },
+  instagram: { stat: "Audit & contenu", badge: "POPULAIRE", brand: "#e1407e", brand2: "#fa7e1e", minPriceEur: 1.49 },
+  tiktok: { stat: "Calendrier video", badge: null, brand: "#1d1d2c", brand2: "#3d3d52", minPriceEur: 1.29 },
+  youtube: { stat: "SEO video", badge: null, brand: "#ff3a3a", brand2: "#ff7a5a", minPriceEur: 4.99 },
+  spotify: { stat: "Lancement artiste", badge: null, brand: "#1ed760", brand2: "#16a34a", minPriceEur: 1.99 },
+  twitter: { stat: "Ligne editoriale", badge: null, brand: "#1d1d2c", brand2: "#3d3d52", minPriceEur: 5.99 },
+  facebook: { stat: "Page & contenus", badge: null, brand: "#3a6ad4", brand2: "#5a8af0", minPriceEur: 4.99 },
+  linkedin: { stat: "Presence B2B", badge: null, brand: "#1d6dc1", brand2: "#3a8de0", minPriceEur: 9.99 },
+  twitch: { stat: "Planning stream", badge: "NOUVEAU", brand: "#9146ff", brand2: "#b56cff", minPriceEur: 4.99 },
 };

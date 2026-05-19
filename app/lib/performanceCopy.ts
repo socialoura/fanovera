@@ -390,8 +390,11 @@ function applyPromoPublicCopy<T extends Record<string, unknown>>(
       activeNetworks: loc(locale, { fr: "TOUS LES SERVICES", en: "ALL SERVICES", es: "TODOS LOS SERVICIOS", pt: "TODOS OS SERVIÇOS", de: "ALLE DIENSTE", it: "TUTTI I SERVIZI", tr: "TÜM HİZMETLER" }),
       campaign: loc(locale, { fr: "Campagne active", en: "Active campaign", es: "Campaña activa", pt: "Campanha ativa", de: "Aktive Kampagne", it: "Campagna attiva", tr: "Aktif kampanya" }),
       campaignMeta: loc(locale, { fr: "Livraison progressive - suivi live", en: "Progressive delivery - live tracking", es: "Entrega progresiva - seguimiento en vivo", pt: "Entrega progressiva - acompanhamento ao vivo", de: "Progressive Lieferung - Live-Tracking", it: "Consegna progressiva - monitoraggio live", tr: "Aşamalı teslimat - canlı takip" }),
-      cardLabel: loc(locale, { fr: "Tous les réseaux", en: "All networks", es: "Todas las redes", pt: "Todas as redes", de: "Alle Netzwerke", it: "Tutte le reti", tr: "Tüm ağlar" }),
-      cardCta: loc(locale, { fr: "Voir les services", en: "View services", es: "Ver servicios", pt: "Ver serviços", de: "Dienste ansehen", it: "Vedi i servizi", tr: "Hizmetleri gör" }),
+      cardLabel: loc(locale, { fr: "À partir de", en: "Starting at", es: "Desde", pt: "A partir de", de: "Ab", it: "Da", tr: "Şu fiyattan" }),
+      // cardCta is overridden at render time in Hero.tsx with the network's
+      // lowest pack price. Keep a localized fallback so the type stays valid
+      // and any non-promo surface still gets a sensible label.
+      cardCta: loc(locale, { fr: "Voir les packs", en: "View packs", es: "Ver packs", pt: "Ver packs", de: "Pakete ansehen", it: "Vedi pacchetti", tr: "Paketler" }),
       titleBefore: loc(locale, { fr: "Optimisez votre ", en: "Optimize your ", es: "Optimiza tu ", pt: "Otimize sua ", de: "Optimiere deine ", it: "Ottimizza la tua ", tr: "Sosyal medyadaki " }),
       titleHighlight: loc(locale, { fr: "visibilité", en: "visibility", es: "visibilidad", pt: "visibilidade", de: "Sichtbarkeit", it: "visibilità", tr: "görünürlüğünü" }),
       titleAfter: loc(locale, { fr: " sur les réseaux sociaux", en: " on social media", es: " en las redes sociales", pt: " nas redes sociais", de: " in sozialen Netzwerken", it: " sui social media", tr: " optimize et" }),

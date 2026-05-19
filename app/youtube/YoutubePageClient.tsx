@@ -19,7 +19,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCu
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isValidCheckoutEmail, isYoutubeChannelUrl, isYoutubeVideoUrl } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -80,7 +80,9 @@ export default function YoutubePageClient() {
   const emailValid = isValidCheckoutEmail(email);
   const isSubscribers = productType === "subscribers";
   const activeInput = isSubscribers ? channelInput.trim() : username.trim();
-  const activeInputValid = isSubscribers ? isYoutubeChannelUrl(activeInput) : isYoutubeVideoUrl(activeInput);
+  // Checkout gate is intentionally loose: any non-empty target proceeds.
+  // The strict validators still drive the live preview, never the payment.
+  const activeInputValid = activeInput.length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
     currency: currency.toLowerCase(),

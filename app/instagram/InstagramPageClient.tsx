@@ -17,7 +17,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCu
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isInstagramPostUrl, isInstagramUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -116,10 +116,11 @@ export default function InstagramPageClient() {
   const amountCents = Math.round(total * 100);
   const emailValid = isValidCheckoutEmail(email);
   const cleanUsername = username.replace(/^@/, "").trim();
-  const usernameValid = isInstagramUsername(cleanUsername);
   const isMediaProduct = productType === "likes" || productType === "views";
-  const postValid = isInstagramPostUrl(postUrl);
-  const targetReady = isMediaProduct ? postValid : usernameValid;
+  // Checkout gate is intentionally loose: any non-empty target lets the user
+  // proceed. Strict-format checks still drive the live preview inside Step2
+  // but never block payment.
+  const targetReady = isMediaProduct ? postUrl.trim().length > 0 : cleanUsername.length > 0;
   const { clientSecret } = usePaymentIntent({
     amount: amountCents,
     currency: currency.toLowerCase(),

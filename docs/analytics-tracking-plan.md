@@ -32,6 +32,6 @@ Product funnels:
 
 Expected mini-funnel per product: page viewed -> pricing viewed -> plan viewed -> profile/content search started -> profile/content loaded or load failed -> pricing CTA clicked -> checkout started -> checkout completed or checkout failed.
 
-Promo landing funnel: users from Google Ads can land on `/promo`; network card/icon clicks emit `cta_clicked` with `feature_name=promo_network_selector`, `entry_surface=promo`, `destination_network` and `cta_location`. Promo links preserve UTM and click IDs into the selected network page.
+Promo landing funnel: users from Google Ads can land on `/promo`; network card/icon clicks emit `cta_clicked` with `feature_name=promo_network_selector`, `entry_surface=promo`, `destination_network` and `cta_location`. Promo links preserve UTM and click IDs into the selected network page. When the URL carries a network-naming UTM (e.g. `utm_term=buy+tiktok+followers`), the hero H1 and the matching network card adapt to that intent; this exposure is logged via `promo_hero_targeted_exposed` with `destination_network`. The downstream `cta_clicked` event also carries `targeted_match` (boolean) and `targeted_network` so the funnel can be sliced by whether the visitor clicked the network we surfaced.
 
 PostHog reading guide: use `pricing_variant_exposed` as the exposure event, then compare conversion to `checkout_started` and `checkout_completed` by `experimentId`, `variantId`, `pricing_strategy`, `product_area`, `locale`, `entry_surface` and `plan`.

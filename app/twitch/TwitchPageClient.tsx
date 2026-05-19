@@ -18,7 +18,7 @@ import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
-import { isTwitchUsername, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
+import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
@@ -77,11 +77,14 @@ export default function TwitchPageClient() {
   const subtotal = selectedPack.price;
   const total = subtotal;
   const emailValid = isValidCheckoutEmail(email);
-  const usernameValid = isTwitchUsername(username);
+  // Loose handle gate (any non-empty); strict username check stays in Step2
+  // for the live preview only. Schedule remains strict because we literally
+  // can't deliver live viewers without a future timestamp.
+  const handleNonEmpty = username.replace(/^@/, "").trim().length > 0;
   const isLive = productType === "ai_viewers";
   const scheduleDate = scheduledStartAt ? new Date(scheduledStartAt) : null;
   const scheduleValid = !isLive || (Boolean(scheduleDate) && !isNaN((scheduleDate as Date).getTime()) && (scheduleDate as Date).getTime() - Date.now() >= 60 * 60 * 1000);
-  const targetReady = usernameValid && scheduleValid;
+  const targetReady = handleNonEmpty && scheduleValid;
 
   const { clientSecret } = usePaymentIntent({
     amount: Math.round(total * 100),
