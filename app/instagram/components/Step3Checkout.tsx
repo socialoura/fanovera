@@ -10,6 +10,7 @@ import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { IgProfile } from "../InstagramPageClient";
 import { useInstagramCopy } from "../i18n";
 import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
+import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
 
 type Props = {
   country: CountryId;
@@ -25,8 +26,9 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, postUrl = "", email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useInstagramCopy().step3;
-  const [coupon, setCoupon] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
+  const initialPromo = usePromoFromUrl();
+  const [coupon, setCoupon] = useState(initialPromo.code);
+  const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({

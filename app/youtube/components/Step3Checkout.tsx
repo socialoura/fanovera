@@ -10,6 +10,7 @@ import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { YtPreview } from "./Step2Username";
 import { useYouTubeCopy } from "../i18n";
 import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
+import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
 
 type Props = {
   country: CountryId;
@@ -24,8 +25,9 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useYouTubeCopy().step3;
-  const [coupon, setCoupon] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
+  const initialPromo = usePromoFromUrl();
+  const [coupon, setCoupon] = useState(initialPromo.code);
+  const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({

@@ -10,6 +10,7 @@ import { COUNTRIES, formatQty, fmtEuro, getPacksForProduct, type CountryId, type
 import type { TwProfile } from "./Step2Username";
 import { useTwitchCopy } from "../i18n";
 import { calculatePromoPricing } from "../../lib/promoCodes";
+import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
 
 type Props = {
   country: CountryId;
@@ -26,8 +27,9 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks, productType, scheduledStartAt }: Props) {
   const t = useTwitchCopy();
-  const [coupon, setCoupon] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
+  const initialPromo = usePromoFromUrl();
+  const [coupon, setCoupon] = useState(initialPromo.code);
+  const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
 
   const packs = getPacksForProduct(productType);
   const safePack = Math.min(pack, Math.max(0, packs.length - 1));
