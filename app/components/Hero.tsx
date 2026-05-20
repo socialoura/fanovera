@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
@@ -8,13 +8,68 @@ import StatusBadge from "./StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, NET_META, type Network, type NetworkId } from "../lib/networks";
-import { usePrefetchProductPricing } from "../lib/useCurrencyPricing";
+import { getCachedPricingPacks, prefetchProductPricing, useCurrencyPreference } from "../lib/useCurrencyPricing";
+import { buildCurrencyFormatter } from "../lib/pricingCurrency";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
 import { trackEvent } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
 import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
 import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
+
+const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
+  instagram: ["ig_followers", "ig_likes", "ig_views"],
+  tiktok: ["tt_followers", "tt_likes", "tt_views"],
+  youtube: ["yt_views", "yt_subscribers"],
+  spotify: ["sp_streams", "sp_followers"],
+  twitter: ["x_followers"],
+  facebook: ["fb_likes"],
+  linkedin: ["li_followers"],
+  twitch: ["tw_followers", "tw_live_viewers"],
+};
+
+function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
+  const prices = PROMO_NETWORK_SERVICES[networkId].flatMap((service) =>
+    (getCachedPricingPacks(service, currency) || [])
+      .map((pack) => pack.price)
+      .filter((price) => Number.isFinite(price) && price >= 0),
+  );
+
+  return prices.length > 0 ? Math.min(...prices) : null;
+}
+
+function usePromoNetworkPriceLabels() {
+  const { currency, locale } = useCurrencyPreference();
+  const [pricingVersion, setPricingVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    prefetchProductPricing(currency)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPricingVersion((version) => version + 1);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currency]);
+
+  const formatter = useMemo(() => buildCurrencyFormatter(currency, locale), [currency, locale]);
+
+  return useMemo(() => {
+    void pricingVersion;
+
+    return Object.fromEntries(
+      NETWORKS.map((network) => {
+        const cachedMinPrice = getCachedNetworkMinPrice(network.id, currency);
+        const fallbackPrice = NET_META[network.id].minPriceEur;
+        return [network.id, formatter.format(cachedMinPrice ?? fallbackPrice)];
+      }),
+    ) as Record<NetworkId, string>;
+  }, [currency, formatter, pricingVersion]);
+}
 
 function StarsRow({ items }: { items: { q: string; a: string }[] }) {
   return (
@@ -260,7 +315,7 @@ function NetCard({
   onSelect,
   highlighted = false,
   targetedLabel,
-  locale,
+  priceLabel,
 }: {
   n: Network;
   copy: ReturnType<typeof getPublicCopy>["hero"];
@@ -268,7 +323,7 @@ function NetCard({
   onSelect: () => void;
   highlighted?: boolean;
   targetedLabel?: string;
-  locale: string;
+  priceLabel: string;
 }) {
   const meta = NET_META[n.id];
   const cardStyle = {
@@ -324,14 +379,12 @@ function NetCard({
       <div className="netcard-divider"></div>
 
       {/* Foot: CTA + arrow. The CTA line shows the network's lowest pack
-          price ("À partir de 1,29 €") so the visitor sees a concrete entry
-          point on every card. Currency is fixed to EUR; the actual checkout
-          converts to the visitor's currency later. */}
+          price in the visitor's active currency so promo matches checkout. */}
       <div className="netcard-foot">
         <div>
           <div className="netcard-cta-label">{copy.cardLabel}</div>
           <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2, color: "white", letterSpacing: "-0.01em" }}>
-            {meta.minPriceEur.toLocaleString((locale || "fr").toLowerCase().startsWith("en") ? "en-US" : "fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 })}
+            {priceLabel}
           </div>
         </div>
         <div className="netcard-arrow">
@@ -366,7 +419,7 @@ export default function Hero() {
   const { mode, surfaceMode } = useMarketingMode();
   const searchParams = useSearchParams();
   const router = useRouter();
-  usePrefetchProductPricing();
+  const promoNetworkPriceLabels = usePromoNetworkPriceLabels();
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
   const isPromo = mode === "promo";
 
@@ -540,7 +593,7 @@ export default function Hero() {
                       onSelect={() => trackNetworkSelect(featured)}
                       highlighted
                       targetedLabel={targetedLabel}
-                      locale={locale}
+                      priceLabel={promoNetworkPriceLabels[featured.id]}
                     />
                   </div>
                 </div>
@@ -577,7 +630,7 @@ export default function Hero() {
                     copy={copy}
                     href={networkHref(n)}
                     onSelect={() => trackNetworkSelect(n)}
-                    locale={locale}
+                    priceLabel={promoNetworkPriceLabels[n.id]}
                   />
                 ))}
               </div>

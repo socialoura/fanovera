@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sql, upsertCheckoutPayload } from "@/app/lib/db";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
-import { DEFAULT_PROMO_CODE, TestPromoDisabledError } from "@/app/lib/promoCodes";
+import { TestPromoDisabledError } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
 import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
 import { getProductConfig, normalizePlatform } from "@/app/lib/productCatalog";
@@ -88,8 +88,11 @@ export async function POST(req: NextRequest) {
       ORDER BY qty ASC
     `) as PricingRow[];
 
-    const hasPromoCode = Object.prototype.hasOwnProperty.call(body, "promoCode");
-    const promoCode = hasPromoCode ? body.promoCode : DEFAULT_PROMO_CODE;
+    // Use whatever the client sends (including "" for no promo). Falling back
+    // to DEFAULT_PROMO_CODE here silently applies -5% on prefetched payment
+    // intents (where the prefetch call doesn't include promoCode), which
+    // makes Apple Pay charge less than what Step3Checkout displays.
+    const promoCode = typeof body.promoCode === "string" ? body.promoCode : "";
     const pricing = calculateCheckoutPricing({
       platform: normalizedPlatform,
       currency,

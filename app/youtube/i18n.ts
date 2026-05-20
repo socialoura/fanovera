@@ -244,7 +244,7 @@ const copy = {
     step3: {
       titleBefore: "One",
       titleFocus: "step",
-      titleAfter: "left.",
+      titleAfter: " left.",
       subtitle: "Secure payment - campaign preparation after confirmation.",
       summary: "Summary",
       recipient: "Recipient video",
