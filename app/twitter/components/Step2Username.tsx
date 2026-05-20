@@ -8,6 +8,7 @@ import Stepper from "./Stepper";
 import { PACKS, formatQty, type CountryId } from "../data";
 import { useXCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
+import { extractHandleFromUrl } from "../../lib/extractHandle";
 
 export type XProfile = {
   username: string;
@@ -125,7 +126,12 @@ export default function Step2Username({
                 enterKeyHint="next"
                 placeholder="votrepseudo"
                 value={username.replace(/^@/, "")}
-                onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const extracted = extractHandleFromUrl("x", raw);
+                  setUsername(extracted ?? raw);
+                  setTouched(true);
+                }}
                 onBlur={() => setTouched(true)}
                 autoFocus
                 spellCheck={false}

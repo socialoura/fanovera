@@ -7,6 +7,7 @@ import Stepper from "./Stepper";
 import { type CountryId, type TwitchProductType } from "../data";
 import { useTwitchCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
+import { extractHandleFromUrl } from "../../lib/extractHandle";
 
 const MIN_LEAD_MS = 60 * 60 * 1000; // require live to start at least 1h ahead
 
@@ -162,7 +163,12 @@ export default function Step2Username({
                 enterKeyHint="next"
                 placeholder={t.step2.usernamePlaceholder}
                 value={username.replace(/^@/, "")}
-                onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const extracted = extractHandleFromUrl("twitch", raw);
+                  setUsername(extracted ?? raw);
+                  setTouched(true);
+                }}
                 onBlur={() => setTouched(true)}
                 autoFocus
                 spellCheck={false}

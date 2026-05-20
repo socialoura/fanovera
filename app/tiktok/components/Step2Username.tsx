@@ -8,6 +8,7 @@ import Stepper from "./Stepper";
 import { getPacksForProduct, formatQty, formatPrice, type CountryId, type TikTokProductType } from "../data";
 import { useTikTokCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
+import { extractHandleFromUrl } from "../../lib/extractHandle";
 
 export type TtProfile = {
   username: string;
@@ -378,7 +379,12 @@ export default function Step2Username({
                        preserved. We still validate / API-check against the
                        lowercased version downstream. */
                     value={username.replace(/^@/, "")}
-                    onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const extracted = extractHandleFromUrl("tiktok", raw);
+                      setUsername(extracted ?? raw);
+                      setTouched(true);
+                    }}
                     onBlur={() => setTouched(true)}
                     autoFocus
                     spellCheck={false}

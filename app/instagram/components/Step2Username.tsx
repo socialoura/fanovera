@@ -8,6 +8,7 @@ import Stepper from "./Stepper";
 import { getPacksForProduct, formatQty, type CountryId, type InstagramProductType } from "../data";
 import { useInstagramCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
+import { extractHandleFromUrl } from "../../lib/extractHandle";
 
 type IgProfile = {
   username: string;
@@ -371,7 +372,9 @@ export default function Step2Username({
                     placeholder={t.usernamePlaceholder}
                     value={username.replace(/^@/, "")}
                     onChange={(e) => {
-                      setUsername(e.target.value);
+                      const raw = e.target.value;
+                      const extracted = extractHandleFromUrl("instagram", raw);
+                      setUsername(extracted ?? raw);
                       setTouched(true);
                     }}
                     onBlur={() => setTouched(true)}
