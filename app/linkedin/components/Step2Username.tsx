@@ -133,7 +133,6 @@ export default function Step2Username({
                 type="text"
                 name="li_handle"
                 enterKeyHint="next"
-                placeholder={t.step2.usernamePlaceholder}
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setTouched(true); }}
                 onBlur={() => setTouched(true)}
