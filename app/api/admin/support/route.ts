@@ -53,12 +53,10 @@ export async function POST(req: NextRequest) {
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>");
 
-  // Plus-addressed Reply-To: client replies land in the IONOS mailbox and
-  // are pulled by the IMAP poller. The local part carries the thread id.
-  // Hidden token below is a second identifier in case plus-addressing is
-  // stripped en route.
-  const [localPart, domainPart] = INBOUND_ADDRESS_BASE.split("@");
-  const replyToAddr = `${localPart}+${rootId}@${domainPart}`;
+  // Reply-To = flat support address (IONOS doesn't support plus-addressing).
+  // Thread identification relies on the hidden token below, which mail clients
+  // preserve when quoting the original email in the reply.
+  const replyToAddr = INBOUND_ADDRESS_BASE;
   const threadToken = `[fanovera-thread:${rootId}]`;
 
   try {
@@ -71,9 +69,12 @@ export async function POST(req: NextRequest) {
       html: `
         <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e; line-height: 1.6; font-size: 14px;">
           ${escapedReply}
-          <div style="color: #ffffff; font-size: 1px; line-height: 1px;">${threadToken}</div>
+          <div style="color: #f9fafb; font-size: 10px; line-height: 1; margin-top: 24px; user-select: none;">
+            ${threadToken}
+          </div>
         </div>
       `,
+      text: `${trimmedReply}\n\n${threadToken}`,
     });
 
     if (result.error) {
