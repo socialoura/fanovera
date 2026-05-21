@@ -276,7 +276,7 @@ export default function SupportView() {
                     marginTop: 14,
                     padding: "7px 14px",
                     borderRadius: 8,
-                    background: awaitingAdmin ? "var(--a-accent)" : "var(--a-card)",
+                    background: awaitingAdmin ? "#000" : "var(--a-card)",
                     color: awaitingAdmin ? "white" : "var(--a-ink)",
                     border: awaitingAdmin ? "none" : "1px solid var(--a-line)",
                     fontWeight: 600,
