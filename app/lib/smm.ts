@@ -311,7 +311,12 @@ function buildLink(platform: string, username: string, postUrl?: string): string
     case "twitch":
       return `https://www.twitch.tv/${clean}`;
     case "linkedin":
-      return `https://www.linkedin.com/in/${clean}`;
+      // username may be a bare handle ("foo" → assume personal profile, legacy)
+      // or a path like "in/foo" / "company/acme" / "school/bar" (new format
+      // emitted by extractLinkedinHandle so company pages are supported).
+      return clean.includes("/")
+        ? `https://www.linkedin.com/${clean}`
+        : `https://www.linkedin.com/in/${clean}`;
     default:
       return clean;
   }

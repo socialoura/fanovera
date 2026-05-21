@@ -218,6 +218,9 @@ export async function initDb() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_created ON support_messages(created_at DESC)`;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS parent_id INTEGER`;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS sender_type VARCHAR(10) DEFAULT 'client'`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_parent ON support_messages(parent_id)`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS visits_by_country (
@@ -469,6 +472,17 @@ export async function getOrderById(id: number) {
   return rows[0] || null;
 }
 
+export async function getOrdersByEmail(email: string, limit = 10) {
+  return await sql`
+    SELECT id, username, platform, cart, total_cents, currency, status,
+           lang, created_at, delivered_at, followers_before
+    FROM orders
+    WHERE LOWER(email) = LOWER(${email})
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+}
+
 export async function updateOrderStatusById(id: number, status: string) {
   if (status === "delivered") {
     await sql`UPDATE orders SET status = ${status}, delivered_at = NOW() WHERE id = ${id}`;
@@ -503,6 +517,68 @@ export async function replySupportMessage(id: number, replyText: string) {
 export async function getSupportMessageById(id: number) {
   const rows = await sql`SELECT * FROM support_messages WHERE id = ${id} LIMIT 1`;
   return rows[0] || null;
+}
+
+export async function getSupportThreadReplies(rootId: number) {
+  return await sql`
+    SELECT * FROM support_messages
+    WHERE parent_id = ${rootId}
+    ORDER BY created_at ASC
+  `;
+}
+
+export async function getSupportThreads() {
+  const roots = await sql`
+    SELECT * FROM support_messages
+    WHERE parent_id IS NULL
+    ORDER BY created_at DESC
+    LIMIT 200
+  `;
+  if (roots.length === 0) return [];
+
+  const rootIds = roots.map((r) => r.id);
+  const children = await sql`
+    SELECT * FROM support_messages
+    WHERE parent_id = ANY(${rootIds})
+    ORDER BY created_at ASC
+  `;
+
+  const childrenByParent = new Map<number, typeof children>();
+  for (const child of children) {
+    const list = childrenByParent.get(child.parent_id) || [];
+    list.push(child);
+    childrenByParent.set(child.parent_id, list);
+  }
+
+  return roots.map((r) => ({ ...r, replies: childrenByParent.get(r.id) || [] }));
+}
+
+export async function insertSupportReply(params: {
+  parentId: number;
+  senderType: "admin" | "client";
+  email: string;
+  message: string;
+}): Promise<number> {
+  const result = await sql`
+    INSERT INTO support_messages (email, message, parent_id, sender_type, replied)
+    VALUES (${params.email}, ${params.message}, ${params.parentId}, ${params.senderType}, true)
+    RETURNING id
+  `;
+  return result[0].id;
+}
+
+export async function reopenSupportThread(rootId: number) {
+  await sql`UPDATE support_messages SET replied = false WHERE id = ${rootId}`;
+}
+
+export async function markThreadReplied(rootId: number, replyText: string) {
+  await sql`
+    UPDATE support_messages
+    SET replied = true,
+        reply_text = COALESCE(reply_text, ${replyText}),
+        replied_at = COALESCE(replied_at, NOW())
+    WHERE id = ${rootId}
+  `;
 }
 
 export async function upsertCheckoutPayload(params: {

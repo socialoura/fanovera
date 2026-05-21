@@ -156,7 +156,9 @@ function buildFallbackLink(platform: string, username: string): string {
     case "twitch":
       return `https://www.twitch.tv/${clean}`;
     case "linkedin":
-      return `https://www.linkedin.com/in/${clean}`;
+      return clean.includes("/")
+        ? `https://www.linkedin.com/${clean}`
+        : `https://www.linkedin.com/in/${clean}`;
     default:
       return clean;
   }

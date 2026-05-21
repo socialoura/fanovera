@@ -11,7 +11,7 @@ export function cleanLowerAtHandle(value: string): string {
 }
 
 const FACEBOOK_RE = /facebook\.com\/([a-zA-Z0-9.\-_]+)/;
-const LINKEDIN_RE = /linkedin\.com\/in\/([a-zA-Z0-9\-_]+)/;
+const LINKEDIN_RE = /linkedin\.com\/(in|company|school)\/([a-zA-Z0-9\-_.]+)/i;
 const YOUTUBE_VIDEO_RE = /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([\w-]{11})/;
 const YOUTUBE_CHANNEL_RE = /^https?:\/\/(?:www\.)?youtube\.com\/(?:@[A-Za-z0-9_.-]+|c\/[A-Za-z0-9_.-]+|user\/[A-Za-z0-9_.-]+|channel\/UC[A-Za-z0-9_-]{22})\/?$/i;
 const SPOTIFY_TRACK_RE = /(?:open\.spotify\.com\/(?:intl-[a-z]+\/)?track\/|spotify:track:)([a-zA-Z0-9]{22})/;
@@ -36,9 +36,13 @@ export function extractLinkedinHandle(input: string): string | null {
   if (trimmed.startsWith("http") || trimmed.includes("linkedin.com")) {
     const match = trimmed.match(LINKEDIN_RE);
     if (!match) return null;
-    return match[1].replace(/\/.*$/, "");
+    const kind = match[1].toLowerCase();
+    const handle = match[2].replace(/\/.*$/, "");
+    return `${kind}/${handle}`;
   }
-  return /^[a-zA-Z0-9\-_]{3,100}$/.test(trimmed) ? trimmed : null;
+  const pathMatch = trimmed.match(/^(in|company|school)\/([a-zA-Z0-9\-_.]+)$/i);
+  if (pathMatch) return `${pathMatch[1].toLowerCase()}/${pathMatch[2]}`;
+  return /^[a-zA-Z0-9\-_.]{3,100}$/.test(trimmed) ? `in/${trimmed}` : null;
 }
 
 export function isInstagramUsername(input: string): boolean {

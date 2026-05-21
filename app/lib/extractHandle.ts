@@ -75,9 +75,11 @@ export function extractHandleFromUrl(
       return m[1].replace(/\/.*$/, "");
     }
     case "linkedin": {
-      const m = trimmed.match(/linkedin\.com\/in\/([a-zA-Z0-9\-_]+)/i);
+      const m = trimmed.match(/linkedin\.com\/(in|company|school)\/([a-zA-Z0-9\-_.]+)/i);
       if (!m) return null;
-      return m[1].replace(/\/.*$/, "");
+      const kind = m[1].toLowerCase();
+      const handle = m[2].replace(/\/.*$/, "");
+      return `${kind}/${handle}`;
     }
     default:
       return null;

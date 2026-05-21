@@ -37,7 +37,7 @@ type Props = {
   onBack: () => void;
 };
 
-const LI_RE = /linkedin\.com\/in\/([a-zA-Z0-9\-_]+)/;
+const LI_RE = /linkedin\.com\/(in|company|school)\/([a-zA-Z0-9\-_.]+)/i;
 
 function extractHandle(input: string): string | null {
   const trimmed = input.replace(/^@/, "").trim();
@@ -45,9 +45,13 @@ function extractHandle(input: string): string | null {
   if (trimmed.startsWith("http") || trimmed.includes("linkedin.com")) {
     const m = trimmed.match(LI_RE);
     if (!m) return null;
-    return m[1].replace(/\/.*$/, "");
+    const kind = m[1].toLowerCase();
+    const handle = m[2].replace(/\/.*$/, "");
+    return `${kind}/${handle}`;
   }
-  if (/^[a-zA-Z0-9\-_]{3,100}$/.test(trimmed)) return trimmed;
+  const pathMatch = trimmed.match(/^(in|company|school)\/([a-zA-Z0-9\-_.]+)$/i);
+  if (pathMatch) return `${pathMatch[1].toLowerCase()}/${pathMatch[2]}`;
+  if (/^[a-zA-Z0-9\-_.]{3,100}$/.test(trimmed)) return `in/${trimmed}`;
   return null;
 }
 
@@ -76,9 +80,10 @@ export default function Step2Username({
       platform: "linkedin",
       followers_count: 0,
     });
+    const displayHandle = handle.includes("/") ? handle.split("/").pop()! : handle;
     setProfile({
-      username: handle,
-      fullName: handle,
+      username: displayHandle,
+      fullName: displayHandle,
       headline: "",
       avatarUrl: "",
       backgroundUrl: "",
@@ -123,7 +128,7 @@ export default function Step2Username({
             </label>
 
             <div className="input-shell li">
-              <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 13 }}>linkedin.com/in/</span>
+              <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 13 }}>linkedin.com/</span>
               <input
                 type="text"
                 name="li_handle"
