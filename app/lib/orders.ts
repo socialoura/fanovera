@@ -201,6 +201,20 @@ export async function ensureOrderForPaymentIntent(
     const webhookUrl = skipSideEffects ? "" : process.env.DISCORD_WEBHOOK_URL;
     if (webhookUrl) {
       try {
+        // Rang chronologique du client : on compte les commandes existantes
+        // pour cet email avec id <= orderId. `id` étant un SERIAL strictement
+        // croissant, ça donne la Nème commande du client (1 = nouveau).
+        let customerLabel = "—";
+        if (email) {
+          try {
+            const rankRes = await sql`SELECT COUNT(*)::int AS c FROM orders WHERE email = ${email} AND id <= ${orderId}`;
+            const n = Number(rankRes[0]?.c) || 0;
+            if (n === 1) customerLabel = "🆕 Nouveau client";
+            else if (n > 1) customerLabel = `🔁 ${n}ème commande`;
+          } catch (rankErr) {
+            console.error("[ensureOrder] customer rank error:", rankErr);
+          }
+        }
         await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -211,6 +225,7 @@ export async function ensureOrderForPaymentIntent(
                 color: 0x22c55e,
                 fields: [
                   { name: "Email", value: email || "—", inline: true },
+                  { name: "Client", value: customerLabel, inline: true },
                   { name: "Plateforme", value: platform || "—", inline: true },
                   { name: "Username", value: username || "—", inline: true },
                   { name: "Montant", value: `${(pi.amount / 100).toFixed(2)} ${pi.currency?.toUpperCase()}`, inline: true },

@@ -78,18 +78,50 @@ export async function GET(req: NextRequest) {
     let orders;
     let totalRes;
 
+    // customer_order_number = rang chronologique de cette commande dans
+    // l'historique du client (1 = première). customer_total_orders = total
+    // de commandes pour cet email. `id` étant un SERIAL strictement croissant,
+    // on l'utilise comme clé d'ordre pour rester correct même si plusieurs
+    // commandes partagent la même seconde dans created_at.
     if (status !== "all" && search) {
       totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE status = ${status} AND email ILIKE ${"%" + search + "%"}`;
-      orders = await sql`SELECT * FROM orders WHERE status = ${status} AND email ILIKE ${"%" + search + "%"} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+      orders = await sql`
+        SELECT o.*,
+          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
+          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
+        FROM orders o
+        WHERE o.status = ${status} AND o.email ILIKE ${"%" + search + "%"}
+        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `;
     } else if (status !== "all") {
       totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE status = ${status}`;
-      orders = await sql`SELECT * FROM orders WHERE status = ${status} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+      orders = await sql`
+        SELECT o.*,
+          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
+          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
+        FROM orders o
+        WHERE o.status = ${status}
+        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `;
     } else if (search) {
       totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE email ILIKE ${"%" + search + "%"}`;
-      orders = await sql`SELECT * FROM orders WHERE email ILIKE ${"%" + search + "%"} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+      orders = await sql`
+        SELECT o.*,
+          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
+          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
+        FROM orders o
+        WHERE o.email ILIKE ${"%" + search + "%"}
+        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `;
     } else {
       totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders`;
-      orders = await sql`SELECT * FROM orders ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+      orders = await sql`
+        SELECT o.*,
+          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
+          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
+        FROM orders o
+        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
+      `;
     }
 
     const total = totalRes[0].count;

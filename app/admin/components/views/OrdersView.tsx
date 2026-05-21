@@ -31,6 +31,8 @@ interface Order {
   experiment_id?: string | null;
   variant_id?: string | null;
   pricing_strategy?: string | null;
+  customer_order_number?: number;
+  customer_total_orders?: number;
 }
 
 type AbInfo = { experimentLabel: string; variantLabel: string; pricingStrategy: string } | null;
@@ -264,6 +266,34 @@ function OrderDetail({
             <div className="order-detail-sub">
               {order.username ? `@${order.username.replace(/^@/, "")}` : "Client sans username"} · {paidAt}
             </div>
+            {(() => {
+              const n = order.customer_order_number || 0;
+              const total = order.customer_total_orders || 0;
+              if (n <= 0) return null;
+              const isNew = n === 1 && total <= 1;
+              return (
+                <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                  <span style={{ color: "var(--a-ink-3)", fontWeight: 600 }}>Client :</span>
+                  <span
+                    className="pill"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      background: isNew ? "rgba(34,197,94,0.10)" : "rgba(82,96,230,0.10)",
+                      color: isNew ? "#16a34a" : "#5260e6",
+                      border: isNew ? "1px solid rgba(34,197,94,0.30)" : "1px solid rgba(82,96,230,0.30)",
+                    }}
+                  >
+                    {isNew ? "🆕 Nouveau client" : `🔁 ${n}ème commande`}
+                  </span>
+                  {!isNew && total > 0 && (
+                    <span style={{ color: "var(--a-ink-3)", fontSize: 11 }}>
+                      · {total} commande{total > 1 ? "s" : ""} au total
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             {ab && (
               <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
                 <span style={{ color: "var(--a-ink-3)", fontWeight: 600 }}>Test A/B :</span>
@@ -1128,6 +1158,7 @@ export default function OrdersView() {
               <tr>
                 <th>ID</th>
                 <th>Email</th>
+                <th>Client</th>
                 <th>Plateforme</th>
                 <th>Pays</th>
                 <th className="num">Montant</th>
@@ -1157,6 +1188,47 @@ export default function OrdersView() {
                         <span className="mono" style={{ fontSize: 12 }}>
                           {o.email}
                         </span>
+                      </td>
+                      <td>
+                        {(() => {
+                          const n = o.customer_order_number || 0;
+                          const total = o.customer_total_orders || 0;
+                          if (n <= 0) {
+                            return <span style={{ fontSize: 12, color: "var(--a-ink-3)" }}>—</span>;
+                          }
+                          if (n === 1 && total <= 1) {
+                            return (
+                              <span
+                                className="pill"
+                                title="Première commande de ce client"
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  background: "rgba(34,197,94,0.10)",
+                                  color: "#16a34a",
+                                  border: "1px solid rgba(34,197,94,0.30)",
+                                }}
+                              >
+                                🆕 Nouveau
+                              </span>
+                            );
+                          }
+                          return (
+                            <span
+                              className="pill"
+                              title={`${n}ème commande de ce client (${total} au total)`}
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: "rgba(82,96,230,0.10)",
+                                color: "#5260e6",
+                                border: "1px solid rgba(82,96,230,0.30)",
+                              }}
+                            >
+                              🔁 #{n}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td>
                         <span style={{ fontWeight: 600, fontSize: 12, textTransform: "capitalize" }}>
@@ -1206,7 +1278,7 @@ export default function OrdersView() {
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={9} className="order-detail-cell">
+                        <td colSpan={10} className="order-detail-cell">
                           <OrderDetail
                             order={o}
                             ab={ab}
