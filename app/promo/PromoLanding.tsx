@@ -15,7 +15,9 @@ export default function PromoLanding() {
       <div data-i18n-skip>
         <div className="paper-frame">
           <Header />
-          <Hero />
+          <main>
+            <Hero />
+          </main>
         </div>
         <HowItWorks />
         <Testimonials />

@@ -44,5 +44,14 @@
     "sharp": "^0.34.5",
     "typescript": "5.7.3",
     "vitest": "^4.1.6"
-  }
+  },
+  "browserslist": [
+    "Chrome >= 100",
+    "Firefox >= 100",
+    "Edge >= 100",
+    "Safari >= 15",
+    "iOS >= 15",
+    "not dead",
+    "not op_mini all"
+  ]
 }

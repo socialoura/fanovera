@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { ensureOrderForPaymentIntent } from "@/app/lib/orders";
 import { notifyDispute } from "@/app/lib/disputeAlert";
+import { applyRefundToOrder } from "@/app/lib/db";
 
 export const runtime = "nodejs"; // Stripe SDK needs Node, not Edge.
 export const dynamic = "force-dynamic";
@@ -65,8 +66,16 @@ export async function POST(req: NextRequest) {
       }
       case "charge.refunded": {
         const charge = event.data.object as Stripe.Charge;
-        console.warn("[stripe-webhook] charge.refunded", charge.id, charge.payment_intent);
-        // Future: mark order as refunded in DB.
+        const piId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+        if (piId) {
+          const refunded = await applyRefundToOrder(piId, charge.amount_refunded);
+          console.warn("[stripe-webhook] charge.refunded", charge.id, piId, {
+            amount_refunded: charge.amount_refunded,
+            matched: refunded.matched,
+          });
+        } else {
+          console.warn("[stripe-webhook] charge.refunded without payment_intent", charge.id);
+        }
         break;
       }
 

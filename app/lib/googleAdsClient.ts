@@ -28,6 +28,31 @@ export type GclidCampaignRow = {
   clickDate: string; // YYYY-MM-DD
 };
 
+export type AdGroupCostRow = {
+  date: string;
+  campaignId: string;
+  campaignName: string;
+  adGroupId: string;
+  adGroupName: string;
+  costCents: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+};
+
+export type SearchTermCostRow = {
+  date: string;
+  campaignId: string;
+  campaignName: string;
+  adGroupId: string;
+  adGroupName: string;
+  searchTerm: string;
+  costCents: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+};
+
 type GoogleAdsConfig = {
   developerToken: string;
   clientId: string;
@@ -187,6 +212,139 @@ export async function fetchCampaignCosts(daysBack: number): Promise<CampaignCost
     return out;
   } catch (err) {
     console.error("[googleAdsClient] fetchCampaignCosts failed:", describeError(err));
+    return [];
+  }
+}
+
+/**
+ * Pull ad-group-level cost / clicks / conversions. Same window semantics as
+ * fetchCampaignCosts. Returns an empty array on misconfiguration or error.
+ *
+ * The ad_group resource yields one row per (ad_group, date). campaign.id /
+ * campaign.name are joined automatically because each ad_group belongs to
+ * exactly one campaign.
+ */
+export async function fetchAdGroupCosts(daysBack: number): Promise<AdGroupCostRow[]> {
+  const config = readConfig();
+  if (!config) {
+    console.warn("[googleAdsClient] env not configured — skipping fetchAdGroupCosts");
+    return [];
+  }
+  const customer = (await getCustomer(config)) as
+    | { query: (gaql: string) => Promise<Array<Record<string, unknown>>> }
+    | null;
+  if (!customer) return [];
+
+  const days = Math.max(1, Math.min(90, Math.floor(daysBack)));
+  const gaql = `
+    SELECT
+      campaign.id,
+      campaign.name,
+      ad_group.id,
+      ad_group.name,
+      segments.date,
+      metrics.cost_micros,
+      metrics.clicks,
+      metrics.impressions,
+      metrics.conversions
+    FROM ad_group
+    WHERE segments.date DURING LAST_${days}_DAYS
+  `;
+
+  try {
+    const rows = await customer.query(gaql);
+    const out: AdGroupCostRow[] = [];
+    for (const r of rows) {
+      const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
+      const adGroup = r.ad_group as { id?: string | number; name?: string } | undefined;
+      const segments = r.segments as { date?: string } | undefined;
+      const metrics = r.metrics as
+        | { cost_micros?: number | string; clicks?: number | string; impressions?: number | string; conversions?: number | string }
+        | undefined;
+      if (!campaign?.id || !adGroup?.id || !segments?.date) continue;
+      out.push({
+        date: isoDate(segments.date),
+        campaignId: String(campaign.id),
+        campaignName: campaign.name || "",
+        adGroupId: String(adGroup.id),
+        adGroupName: adGroup.name || "",
+        costCents: microsToCents(metrics?.cost_micros),
+        clicks: Number(metrics?.clicks) || 0,
+        impressions: Number(metrics?.impressions) || 0,
+        conversions: Number(metrics?.conversions) || 0,
+      });
+    }
+    return out;
+  } catch (err) {
+    console.error("[googleAdsClient] fetchAdGroupCosts failed:", describeError(err));
+    return [];
+  }
+}
+
+/**
+ * Pull cost / clicks per (search_term, ad_group, date). Lets us see which
+ * actual user queries are paying off vs. which ones are bleeding budget.
+ *
+ * `search_term_view` rolls up to (ad_group, search_term) — same term in two
+ * ad groups appears twice. We respect that for cost attribution.
+ */
+export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTermCostRow[]> {
+  const config = readConfig();
+  if (!config) {
+    console.warn("[googleAdsClient] env not configured — skipping fetchSearchTermCosts");
+    return [];
+  }
+  const customer = (await getCustomer(config)) as
+    | { query: (gaql: string) => Promise<Array<Record<string, unknown>>> }
+    | null;
+  if (!customer) return [];
+
+  const days = Math.max(1, Math.min(90, Math.floor(daysBack)));
+  const gaql = `
+    SELECT
+      campaign.id,
+      campaign.name,
+      ad_group.id,
+      ad_group.name,
+      search_term_view.search_term,
+      segments.date,
+      metrics.cost_micros,
+      metrics.clicks,
+      metrics.impressions,
+      metrics.conversions
+    FROM search_term_view
+    WHERE segments.date DURING LAST_${days}_DAYS
+  `;
+
+  try {
+    const rows = await customer.query(gaql);
+    const out: SearchTermCostRow[] = [];
+    for (const r of rows) {
+      const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
+      const adGroup = r.ad_group as { id?: string | number; name?: string } | undefined;
+      const stv = r.search_term_view as { search_term?: string } | undefined;
+      const segments = r.segments as { date?: string } | undefined;
+      const metrics = r.metrics as
+        | { cost_micros?: number | string; clicks?: number | string; impressions?: number | string; conversions?: number | string }
+        | undefined;
+      const term = (stv?.search_term || "").trim().slice(0, 400);
+      if (!campaign?.id || !adGroup?.id || !segments?.date || !term) continue;
+      out.push({
+        date: isoDate(segments.date),
+        campaignId: String(campaign.id),
+        campaignName: campaign.name || "",
+        adGroupId: String(adGroup.id),
+        adGroupName: adGroup.name || "",
+        searchTerm: term,
+        costCents: microsToCents(metrics?.cost_micros),
+        clicks: Number(metrics?.clicks) || 0,
+        impressions: Number(metrics?.impressions) || 0,
+        conversions: Number(metrics?.conversions) || 0,
+      });
+    }
+    return out;
+  } catch (err) {
+    console.error("[googleAdsClient] fetchSearchTermCosts failed:", describeError(err));
     return [];
   }
 }

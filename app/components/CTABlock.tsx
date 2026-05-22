@@ -65,6 +65,8 @@ export default function CTABlock() {
                 <a
                   key={n.id}
                   href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams) : `/${n.id}`}
+                  aria-label={n.name}
+                  title={n.name}
                   onClick={() => {
                     if (!isPromo) return;
                     trackEvent("cta_clicked", {

@@ -19,10 +19,11 @@ export function Logo() {
       <Image
         src="/fanovera-logo.png"
         alt="Fanovera"
-        width={752}
-        height={252}
+        width={215}
+        height={72}
         priority
-        style={{ height: 36, width: "auto", display: "block" }}
+        sizes="108px"
+        style={{ height: 36, width: 107, display: "block" }}
       />
     </Link>
   );

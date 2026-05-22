@@ -2970,6 +2970,22 @@ input { font: inherit; color: inherit; }
   background-clip: text;
 }
 
+/* Reserve the network grid's vertical space so async hydration / pricing
+ * fetches can't shift the layout below it. Each .netcard has min-height
+ * 200px; we pre-size the grid container to roughly the final dimensions
+ * by breakpoint. Stops the ~0.27 CLS that PageSpeed flagged on /promo. */
+.net-grid {
+  min-height: 414px; /* 2 rows × 200px + 14px gap */
+  content-visibility: auto;
+  contain-intrinsic-size: 414px;
+}
+@media (max-width: 900px) and (min-width: 601px) {
+  .net-grid { min-height: 628px; contain-intrinsic-size: 628px; }
+}
+@media (max-width: 600px) {
+  .net-grid { min-height: 842px; contain-intrinsic-size: 842px; }
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 980px) {
   .hero-grid { grid-template-columns: 1fr !important; }

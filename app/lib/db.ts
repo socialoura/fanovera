@@ -168,10 +168,13 @@ export async function initDb() {
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
 
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_amount_cents INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_experiment_variant ON orders(experiment_id, variant_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_orders_refunded ON orders(refunded_at) WHERE refunded_amount_cents > 0`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS smm_config (
@@ -339,6 +342,47 @@ export async function initDb() {
   await sql`CREATE INDEX IF NOT EXISTS idx_ad_costs_date ON ad_costs_by_campaign(date DESC)`;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS ad_costs_by_ad_group (
+      date DATE NOT NULL,
+      campaign_id BIGINT NOT NULL,
+      campaign_name VARCHAR(200) NOT NULL DEFAULT '',
+      ad_group_id BIGINT NOT NULL,
+      ad_group_name VARCHAR(200) NOT NULL DEFAULT '',
+      cost_cents BIGINT NOT NULL DEFAULT 0,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      conversions NUMERIC(10,2) NOT NULL DEFAULT 0,
+      synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (date, ad_group_id)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_ad_costs_adgroup_date ON ad_costs_by_ad_group(ad_group_id, date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_ad_costs_adgroup_campaign ON ad_costs_by_ad_group(campaign_id, date DESC)`;
+
+  // Search terms = actual queries typed by users (vs keywords = what we
+  // bid on). Captures the long-tail behind broad-match keywords. Primary
+  // key is (date, ad_group_id, search_term) because the same search term
+  // can appear in multiple ad groups with different cost.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ad_costs_by_search_term (
+      date DATE NOT NULL,
+      campaign_id BIGINT NOT NULL,
+      campaign_name VARCHAR(200) NOT NULL DEFAULT '',
+      ad_group_id BIGINT NOT NULL,
+      ad_group_name VARCHAR(200) NOT NULL DEFAULT '',
+      search_term VARCHAR(400) NOT NULL,
+      cost_cents BIGINT NOT NULL DEFAULT 0,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      conversions NUMERIC(10,2) NOT NULL DEFAULT 0,
+      synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (date, ad_group_id, search_term)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_search_term_date ON ad_costs_by_search_term(date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_search_term_term ON ad_costs_by_search_term(search_term)`;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS gclid_campaign_map (
       gclid VARCHAR(200) PRIMARY KEY,
       campaign_id BIGINT NOT NULL,
@@ -495,6 +539,32 @@ export async function createOrder(params: {
 
 export async function updateOrderStatus(stripePaymentIntentId: string, status: string) {
   await sql`UPDATE orders SET status = ${status} WHERE stripe_payment_intent_id = ${stripePaymentIntentId}`;
+}
+
+/**
+ * Records a refund against an order. Called from the Stripe webhook on
+ * charge.refunded events. Stores the total refunded amount (Stripe gives us
+ * the cumulative number, so we just overwrite). Net revenue for ROAS becomes
+ * total_cents - refunded_amount_cents.
+ */
+export async function applyRefundToOrder(
+  stripePaymentIntentId: string,
+  refundedAmountCents: number,
+): Promise<{ matched: boolean }> {
+  const safeAmount = Math.max(0, Math.round(refundedAmountCents));
+  const result = await sql`
+    UPDATE orders
+    SET refunded_amount_cents = ${safeAmount},
+        refunded_at = NOW(),
+        status = CASE
+          WHEN ${safeAmount} >= total_cents THEN 'refunded'
+          WHEN ${safeAmount} > 0 THEN 'partial_refund'
+          ELSE status
+        END
+    WHERE stripe_payment_intent_id = ${stripePaymentIntentId}
+    RETURNING id
+  `;
+  return { matched: result.length > 0 };
 }
 
 export async function getOrderByPaymentIntent(piId: string) {

@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-interface CampaignRow {
+interface Row {
+  /** Present only when groupBy = "adgroup" */
+  adGroupId?: string;
+  adGroupName?: string;
   campaignId: string;
   campaignName: string;
   costCents: number;
@@ -11,16 +14,21 @@ interface CampaignRow {
   googleConversions: number;
   realOrders: number;
   realRevenueCents: number;
+  refundedCents: number;
+  refundRate: number | null;
   realRoas: number | null;
   realCpaCents: number | null;
   cpcCents: number | null;
   cvr: number | null;
 }
 
+type GroupBy = "campaign" | "adgroup";
+
 interface RoasResponse {
   days: number;
+  groupBy: GroupBy;
   configured: boolean;
-  campaigns: CampaignRow[];
+  rows: Row[];
   totals: {
     costCents: number;
     revenueCents: number;
@@ -34,6 +42,7 @@ interface RoasResponse {
     checkoutWithGclid: number;
     gclidMapSize: number;
     lastSyncedAt: string | null;
+    lastSyncedAtAdGroup: string | null;
   };
 }
 
@@ -61,10 +70,36 @@ function roasBadge(roas: number | null): string {
   return "rgba(239, 68, 68, 0.14)";
 }
 
+// Historical baselines from the Fanovaly account (pre-Cartoonova). Used as
+// a reference line so Ilyes can tell at a glance whether the new account is
+// improving on the previous one. Frozen constants — update only if Fanovaly
+// history is revisited.
+const FANOVALY_BASELINE_CPA_CENTS = {
+  fr: 768, // 7.68€
+  en: 458, // 4.58€
+};
+
+function inferLocaleFromName(name: string | undefined): "fr" | "en" | null {
+  if (!name) return null;
+  const lower = name.toLowerCase();
+  if (/\b(fr|french|fra|france)\b/.test(lower) || lower.startsWith("[fr]") || lower.startsWith("fr-")) return "fr";
+  if (/\b(en|english|eng|us|uk)\b/.test(lower) || lower.startsWith("[en]") || lower.startsWith("en-")) return "en";
+  return null;
+}
+
+function baselineCpaForRow(row: Row): { cpaCents: number; locale: "fr" | "en" } | null {
+  const fromCampaign = inferLocaleFromName(row.campaignName);
+  const fromAdGroup = inferLocaleFromName(row.adGroupName);
+  const locale = fromCampaign || fromAdGroup;
+  if (!locale) return null;
+  return { cpaCents: FANOVALY_BASELINE_CPA_CENTS[locale], locale };
+}
+
 export default function AdsROASView() {
   const [data, setData] = useState<RoasResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [groupBy, setGroupBy] = useState<GroupBy>("campaign");
   const [err, setErr] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("costCents");
 
@@ -72,7 +107,7 @@ export default function AdsROASView() {
     const pw = localStorage.getItem("admin_pw") ?? "";
     setLoading(true);
     setErr(null);
-    fetch(`/api/admin/ads-roas?days=${days}`, {
+    fetch(`/api/admin/ads-roas?days=${days}&groupBy=${groupBy}`, {
       headers: { Authorization: `Bearer ${pw}` },
     })
       .then(async (r) => {
@@ -82,11 +117,11 @@ export default function AdsROASView() {
       .then((d) => setData(d))
       .catch((e) => setErr(e instanceof Error ? e.message : "Erreur"))
       .finally(() => setLoading(false));
-  }, [days]);
+  }, [days, groupBy]);
 
   const sorted = useMemo(() => {
     if (!data) return [];
-    const rows = [...data.campaigns];
+    const rows = [...data.rows];
     rows.sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
@@ -105,6 +140,7 @@ export default function AdsROASView() {
   }
 
   const t = data.totals;
+  const isAdGroup = data.groupBy === "adgroup";
 
   const sortBtn = (key: SortKey, label: string) => (
     <button
@@ -121,9 +157,9 @@ export default function AdsROASView() {
     <div className="ads-view">
       <div className="ads-header">
         <div>
-          <div className="ads-eyebrow">ROAS réel par campagne Google Ads</div>
+          <div className="ads-eyebrow">ROAS réel Google Ads · LTV first-touch</div>
           <p className="ads-sub">
-            Coûts Google Ads croisés avec les commandes Stripe réelles via le <code>gclid</code> de chaque clic. ROAS = revenu encaissé / dépense pub.
+            ROAS basé sur le <strong>LTV</strong> : toutes les commandes (y compris les retours sans <code>gclid</code>) d&apos;un client sont attribuées à la campagne qui l&apos;a acquis la première fois.
           </p>
         </div>
         <div className="ads-controls">
@@ -138,6 +174,24 @@ export default function AdsROASView() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="ads-granularity">
+        <span className="ads-gran-label">Granularité</span>
+        <button
+          type="button"
+          className={"ads-gran-btn" + (groupBy === "campaign" ? " active" : "")}
+          onClick={() => setGroupBy("campaign")}
+        >
+          Campagne
+        </button>
+        <button
+          type="button"
+          className={"ads-gran-btn" + (groupBy === "adgroup" ? " active" : "")}
+          onClick={() => setGroupBy("adgroup")}
+        >
+          Groupe d&apos;annonces
+        </button>
       </div>
 
       {!data.configured && (
@@ -185,11 +239,12 @@ export default function AdsROASView() {
         <table className="ads-table">
           <thead>
             <tr>
-              <th>Campagne</th>
+              <th>{isAdGroup ? "Groupe d'annonces · Campagne" : "Campagne"}</th>
               <th style={{ textAlign: "right" }}>Dépense</th>
               <th style={{ textAlign: "right" }}>Clics</th>
               <th style={{ textAlign: "right" }}>Commandes</th>
-              <th style={{ textAlign: "right" }}>Revenu</th>
+              <th style={{ textAlign: "right" }}>Revenu net</th>
+              <th style={{ textAlign: "right" }}>Refund</th>
               <th style={{ textAlign: "right" }}>ROAS</th>
               <th style={{ textAlign: "right" }}>CPA</th>
               <th style={{ textAlign: "right" }}>CVR</th>
@@ -198,40 +253,86 @@ export default function AdsROASView() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--a-ink-3)" }}>
+                <td colSpan={9} style={{ textAlign: "center", padding: 32, color: "var(--a-ink-3)" }}>
                   Pas encore de données. Le premier cron tourne chaque jour à 4h UTC.
                 </td>
               </tr>
             ) : (
-              sorted.map((c) => (
-                <tr key={c.campaignId}>
-                  <td>
-                    <div style={{ fontWeight: 700 }}>{c.campaignName || `Campagne ${c.campaignId}`}</div>
-                    <div style={{ fontSize: 10, color: "var(--a-ink-3)", marginTop: 2 }}>{c.campaignId}</div>
-                  </td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>{eur(c.costCents)}</td>
-                  <td style={{ textAlign: "right" }}>{c.clicks.toLocaleString("fr-FR")}</td>
-                  <td style={{ textAlign: "right" }}>{c.realOrders}</td>
-                  <td style={{ textAlign: "right", fontWeight: 700 }}>{eur(c.realRevenueCents)}</td>
-                  <td style={{ textAlign: "right" }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "3px 8px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 800,
-                        background: roasBadge(c.realRoas),
-                        color: roasColor(c.realRoas),
-                      }}
-                    >
-                      {c.realRoas == null ? "—" : `${c.realRoas.toFixed(2)}×`}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>{c.realCpaCents == null ? "—" : eur2(c.realCpaCents)}</td>
-                  <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>{pctFmt(c.cvr)}</td>
-                </tr>
-              ))
+              sorted.map((r) => {
+                const rowId = isAdGroup ? r.adGroupId || r.campaignId : r.campaignId;
+                const primaryName = isAdGroup
+                  ? r.adGroupName || `Ad group ${r.adGroupId}`
+                  : r.campaignName || `Campagne ${r.campaignId}`;
+                const secondary = isAdGroup
+                  ? `${r.campaignName || `Campagne ${r.campaignId}`} · ${r.adGroupId}`
+                  : r.campaignId;
+                return (
+                  <tr key={rowId}>
+                    <td>
+                      <div style={{ fontWeight: 700 }}>{primaryName}</div>
+                      <div style={{ fontSize: 10, color: "var(--a-ink-3)", marginTop: 2 }}>{secondary}</div>
+                    </td>
+                    <td style={{ textAlign: "right", fontWeight: 600 }}>{eur(r.costCents)}</td>
+                    <td style={{ textAlign: "right" }}>{r.clicks.toLocaleString("fr-FR")}</td>
+                    <td style={{ textAlign: "right" }}>{r.realOrders}</td>
+                    <td style={{ textAlign: "right", fontWeight: 700 }}>{eur(r.realRevenueCents)}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {r.refundedCents > 0 ? (
+                        <span style={{ color: r.refundRate != null && r.refundRate > 0.1 ? "#ef4444" : "var(--a-ink-2)", fontSize: 12 }}>
+                          {eur(r.refundedCents)}
+                          {r.refundRate != null && <span style={{ marginLeft: 4, opacity: 0.7 }}>({(r.refundRate * 100).toFixed(0)}%)</span>}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--a-ink-3)", fontSize: 12 }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "3px 8px",
+                          borderRadius: 999,
+                          fontSize: 12,
+                          fontWeight: 800,
+                          background: roasBadge(r.realRoas),
+                          color: roasColor(r.realRoas),
+                        }}
+                      >
+                        {r.realRoas == null ? "—" : `${r.realRoas.toFixed(2)}×`}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {r.realCpaCents == null ? (
+                        "—"
+                      ) : (
+                        <>
+                          {eur2(r.realCpaCents)}
+                          {(() => {
+                            const baseline = baselineCpaForRow(r);
+                            if (!baseline) return null;
+                            const delta = r.realCpaCents! - baseline.cpaCents;
+                            const better = delta < 0;
+                            return (
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  color: better ? "#16a34a" : "#ef4444",
+                                  marginTop: 2,
+                                  fontWeight: 600,
+                                }}
+                                title={`Baseline Fanovaly ${baseline.locale.toUpperCase()} : ${eur2(baseline.cpaCents)}`}
+                              >
+                                {better ? "▼" : "▲"} {Math.abs(delta / 100).toFixed(2)}€ vs Fanovaly
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>{pctFmt(r.cvr)}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -241,8 +342,10 @@ export default function AdsROASView() {
         <div>
           Diagnostic : {data.diagnostics.checkoutWithGclid} checkouts avec gclid · {data.diagnostics.gclidMapSize} clics mappés ·
           {" "}
-          {data.diagnostics.lastSyncedAt
-            ? `dernier sync ${new Date(data.diagnostics.lastSyncedAt).toLocaleString("fr-FR")}`
+          {(isAdGroup ? data.diagnostics.lastSyncedAtAdGroup : data.diagnostics.lastSyncedAt)
+            ? `dernier sync ${new Date(
+                (isAdGroup ? data.diagnostics.lastSyncedAtAdGroup : data.diagnostics.lastSyncedAt) as string,
+              ).toLocaleString("fr-FR")}`
             : "jamais synchronisé"}
         </div>
         <div>{data.days} jours</div>
@@ -269,6 +372,25 @@ export default function AdsROASView() {
         }
         .ads-pill:hover { border-color: var(--a-ink); color: var(--a-ink); }
         .ads-pill.active {
+          background: rgba(82, 96, 230, 0.12); border-color: rgba(82, 96, 230, 0.4);
+          color: #5260e6;
+        }
+        .ads-granularity {
+          display: flex; align-items: center; gap: 8px;
+          margin-bottom: 16px;
+        }
+        .ads-gran-label {
+          font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: var(--a-ink-3);
+        }
+        .ads-gran-btn {
+          padding: 6px 14px; font-size: 12px; font-weight: 600;
+          background: transparent; border: 1px solid var(--a-line);
+          color: var(--a-ink-2); border-radius: 8px; cursor: pointer;
+          transition: all 0.18s;
+        }
+        .ads-gran-btn:hover { border-color: var(--a-ink); color: var(--a-ink); }
+        .ads-gran-btn.active {
           background: rgba(82, 96, 230, 0.12); border-color: rgba(82, 96, 230, 0.4);
           color: #5260e6;
         }
