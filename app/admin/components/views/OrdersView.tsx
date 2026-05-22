@@ -219,6 +219,9 @@ function OrderDetail({
   onCancelBf,
   onClearBf,
   onDeleteOrder,
+  onProfileNotFound,
+  onPrivateAccount,
+  profileNotFoundBusy,
 }: {
   order: Order;
   ab: AbInfo;
@@ -244,6 +247,9 @@ function OrderDetail({
   onCancelBf: () => void;
   onClearBf: (orderId: number, cartIndex: number) => void;
   onDeleteOrder: (orderId: number) => void;
+  onProfileNotFound: (orderId: number) => void;
+  onPrivateAccount: (orderId: number) => void;
+  profileNotFoundBusy: boolean;
 }) {
   const cart = asArray<CartItem>(order.cart);
   const smmOrders = asArray<SmmOrderItem>(order.smm_orders);
@@ -667,7 +673,45 @@ function OrderDetail({
 
       <JsonDetails cart={order.cart} smmOrders={order.smm_orders} />
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--a-line)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--a-line)" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={(e) => { e.stopPropagation(); onProfileNotFound(order.id); }}
+            disabled={profileNotFoundBusy || !order.email}
+            style={{
+              background: "rgba(198,138,25,0.10)",
+              border: "1px solid rgba(198,138,25,0.35)",
+              color: "#b45309",
+              fontWeight: 700,
+              padding: "8px 14px",
+              fontSize: 12,
+            }}
+            title={`Envoie au client un email (langue : ${(order.lang || "fr").toUpperCase()}) pour réclamer les infos manquantes. Le contenu s'adapte au produit acheté (username / lien du post / URL du live). Sa réponse arrivera dans Support.`}
+          >
+            {profileNotFoundBusy ? "Envoi..." : "Demander les infos au client"}
+          </button>
+          {(order.platform === "instagram" || order.platform === "tiktok") && (
+            <button
+              type="button"
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); onPrivateAccount(order.id); }}
+              disabled={profileNotFoundBusy || !order.email}
+              style={{
+                background: "rgba(82,96,230,0.10)",
+                border: "1px solid rgba(82,96,230,0.35)",
+                color: "#5260e6",
+                fontWeight: 700,
+                padding: "8px 14px",
+                fontSize: 12,
+              }}
+              title={`Envoie au client un email (langue : ${(order.lang || "fr").toUpperCase()}) lui demandant de passer son compte ${order.platform} en public. Sa réponse arrivera dans Support.`}
+            >
+              {profileNotFoundBusy ? "Envoi..." : `Compte ${order.platform} en privé`}
+            </button>
+          )}
+        </div>
         <button
           type="button"
           className="btn"
@@ -710,6 +754,7 @@ export default function OrdersView() {
   const [smmBusy, setSmmBusy] = useState(false);
   const [smmMessage, setSmmMessage] = useState<{ kind: "info" | "error"; text: string } | null>(null);
   const [editingBf, setEditingBf] = useState<BfEditState>(null);
+  const [profileNotFoundBusy, setProfileNotFoundBusy] = useState(false);
 
   const limit = 20;
 
@@ -989,6 +1034,69 @@ export default function OrdersView() {
       alert(err instanceof Error ? err.message : "Erreur lors de la suppression");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePrivateAccount = async (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const lang = (order.lang || "fr").toUpperCase();
+    if (!confirm(
+      `Envoyer un email (en ${lang}) à ${order.email} pour lui demander de passer son compte ${order.platform} en public ? (Commande #${orderId})\n\nSa réponse arrivera dans Support.`,
+    )) return;
+
+    setProfileNotFoundBusy(true);
+    setSmmMessage(null);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/orders/profile-not-found", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId, askKind: "private" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setSmmMessage({ kind: "info", text: `Email "compte privé" envoyé à ${order.email} (langue : ${lang}). Sa réponse arrivera dans Support.` });
+    } catch (err) {
+      setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de l'envoi" });
+    } finally {
+      setProfileNotFoundBusy(false);
+    }
+  };
+
+  const handleProfileNotFound = async (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const lang = (order.lang || "fr").toUpperCase();
+    if (!confirm(
+      `Envoyer un email (en ${lang}) à ${order.email} pour demander les infos manquantes pour la commande #${orderId} ?\n\nLe texte s'adapte au produit acheté (username / lien du post / URL du live).\nSa réponse arrivera dans Support.`,
+    )) return;
+
+    setProfileNotFoundBusy(true);
+    setSmmMessage(null);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/orders/profile-not-found", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      const askLabel = data?.askKind === "post"
+        ? "lien du post"
+        : data?.askKind === "live"
+        ? "URL du live"
+        : "username";
+      setSmmMessage({ kind: "info", text: `Email envoyé à ${order.email} (langue : ${lang}, demande : ${askLabel}). Sa réponse arrivera dans Support.` });
+    } catch (err) {
+      setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de l'envoi" });
+    } finally {
+      setProfileNotFoundBusy(false);
     }
   };
 
@@ -1304,6 +1412,9 @@ export default function OrdersView() {
                             onCancelBf={handleCancelBf}
                             onClearBf={handleClearBf}
                             onDeleteOrder={handleDeleteOrder}
+                            onProfileNotFound={handleProfileNotFound}
+                            onPrivateAccount={handlePrivateAccount}
+                            profileNotFoundBusy={profileNotFoundBusy}
                           />
                         </td>
                       </tr>

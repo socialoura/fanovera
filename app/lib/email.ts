@@ -1102,6 +1102,490 @@ Open in Stripe: ${dashUrl}
   }
 }
 
+// ── Missing-info email (admin-initiated, cart-aware) ──
+
+export type OrderAskKind = "profile" | "post" | "live" | "private";
+
+export interface OrderMissingInfoParams {
+  to: string;
+  orderId: number;
+  platform: string;
+  /** What the customer entered for the profile (may be wrong / private / empty). */
+  username: string;
+  /** Drives the email copy: profile / post URL / live stream. */
+  askKind: OrderAskKind;
+  locale?: string;
+  /** Reply-to address (support inbox). */
+  replyTo: string;
+  /** Hidden token so customer replies thread back via the IMAP poller. */
+  threadToken: string;
+}
+
+type AskVariant = {
+  hero: string;
+  intro: (orderId: number, platformLabel: string, handle: string) => string;
+  ask: (platformLabel: string) => string;
+  reasons: [string, string, string];
+};
+
+type MissingInfoCopy = {
+  subject: (orderId: number) => string;
+  signoff: string;
+  reasonsLabel: string;
+  cta: string;
+  variants: Record<OrderAskKind, AskVariant>;
+};
+
+const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
+  fr: {
+    subject: (id) => `Action requise pour ta commande #${id} — Fanovera`,
+    signoff: "L'équipe Fanovera",
+    reasonsLabel: "Raisons possibles",
+    cta: "Réponds simplement à cet email avec les bonnes infos.",
+    variants: {
+      profile: {
+        hero: "On n'arrive pas à trouver ton profil",
+        intro: (id, p, h) => `On a essayé de livrer ta commande <strong>#${id}</strong>, mais on n'arrive pas à trouver le profil ${p} <strong>${h}</strong>.`,
+        ask: (p) => `Peux-tu nous renvoyer ton nom d'utilisateur ${p} exact en répondant à cet email ?`,
+        reasons: [
+          "Le profil est en privé — passe-le en public le temps de la livraison",
+          "Le nom d'utilisateur a changé ou contient une faute de frappe",
+          "Le compte a été désactivé ou supprimé",
+        ],
+      },
+      post: {
+        hero: "On n'arrive pas à trouver ta publication",
+        intro: (id, p, _h) => `On a essayé de livrer ta commande <strong>#${id}</strong>, mais on n'arrive pas à accéder à la publication ${p} sur laquelle on doit délivrer.`,
+        ask: (p) => `Peux-tu nous renvoyer le lien exact de la publication ${p} à booster, en répondant à cet email ?`,
+        reasons: [
+          "La publication a été supprimée ou archivée",
+          "Le compte est en privé — passe-le en public le temps de la livraison",
+          "Le lien envoyé est incomplet ou pointe vers une autre publication",
+        ],
+      },
+      live: {
+        hero: "On n'arrive pas à trouver ton live",
+        intro: (id, p, _h) => `On a essayé de lancer les viewers pour ta commande <strong>#${id}</strong>, mais on ne trouve pas ton live ${p}.`,
+        ask: (p) => `Peux-tu nous renvoyer l'URL de ta chaîne ${p} et l'heure exacte (avec le fuseau) à laquelle ton live démarre, en répondant à cet email ?`,
+        reasons: [
+          "Le live n'a pas encore démarré ou est terminé",
+          "L'URL de la chaîne envoyée est incorrecte",
+          "Le stream n'est pas public",
+        ],
+      },
+      private: {
+        hero: "Ton compte est en privé",
+        intro: (id, p, h) => `On a essayé de livrer ta commande <strong>#${id}</strong>, mais ton compte ${p} <strong>${h}</strong> est en privé — on ne peut pas envoyer les abonnés / likes / vues tant qu'il est verrouillé.`,
+        ask: (p) => `Peux-tu passer ton compte ${p} en public le temps de la livraison, puis répondre à cet email pour confirmer ? Une fois la commande terminée, tu peux le remettre en privé.`,
+        reasons: [
+          "Sur Instagram : Paramètres → Confidentialité du compte → désactive « Compte privé »",
+          "Sur TikTok : Profil → Menu → Paramètres et confidentialité → Confidentialité → désactive « Compte privé »",
+          "Vérifie aussi qu'aucune restriction de pays / âge n'est active",
+        ],
+      },
+    },
+  },
+  en: {
+    subject: (id) => `Action needed for your order #${id} — Fanovera`,
+    signoff: "The Fanovera team",
+    reasonsLabel: "Possible reasons",
+    cta: "Just reply to this email with the correct info.",
+    variants: {
+      profile: {
+        hero: "We can't find your profile",
+        intro: (id, p, h) => `We tried to deliver your order <strong>#${id}</strong>, but we can't find the ${p} profile <strong>${h}</strong>.`,
+        ask: (p) => `Could you reply to this email with your exact ${p} username?`,
+        reasons: [
+          "Your profile is set to private — switch it to public until delivery is complete",
+          "The username has changed or contains a typo",
+          "The account has been deactivated or deleted",
+        ],
+      },
+      post: {
+        hero: "We can't find your post",
+        intro: (id, p, _h) => `We tried to deliver your order <strong>#${id}</strong>, but we can't reach the ${p} post we're supposed to boost.`,
+        ask: (p) => `Could you reply to this email with the exact URL of the ${p} post you want to boost?`,
+        reasons: [
+          "The post has been deleted or archived",
+          "Your account is private — switch it to public until delivery is complete",
+          "The link you sent is incomplete or points to a different post",
+        ],
+      },
+      live: {
+        hero: "We can't find your live stream",
+        intro: (id, p, _h) => `We tried to push viewers to your order <strong>#${id}</strong>, but we can't find your ${p} live stream.`,
+        ask: (p) => `Could you reply to this email with your ${p} channel URL and the exact time (with timezone) your live starts?`,
+        reasons: [
+          "The stream hasn't started yet or has already ended",
+          "The channel URL you sent is incorrect",
+          "The stream isn't public",
+        ],
+      },
+      private: {
+        hero: "Your account is set to private",
+        intro: (id, p, h) => `We tried to deliver your order <strong>#${id}</strong>, but your ${p} account <strong>${h}</strong> is private — we can't push followers / likes / views while it's locked.`,
+        ask: (p) => `Could you switch your ${p} account to public until delivery is complete, then reply to this email to confirm? Once the order is delivered you can switch it back.`,
+        reasons: [
+          "On Instagram: Settings → Account privacy → turn off \"Private account\"",
+          "On TikTok: Profile → Menu → Settings and privacy → Privacy → turn off \"Private account\"",
+          "Also check that no country / age restriction is active on the account",
+        ],
+      },
+    },
+  },
+  es: {
+    subject: (id) => `Acción necesaria para tu pedido #${id} — Fanovera`,
+    signoff: "El equipo Fanovera",
+    reasonsLabel: "Razones posibles",
+    cta: "Solo responde a este correo con la información correcta.",
+    variants: {
+      profile: {
+        hero: "No encontramos tu perfil",
+        intro: (id, p, h) => `Intentamos entregar tu pedido <strong>#${id}</strong>, pero no encontramos el perfil de ${p} <strong>${h}</strong>.`,
+        ask: (p) => `¿Puedes responder a este correo con tu nombre de usuario exacto de ${p}?`,
+        reasons: [
+          "Tu perfil está en privado — ponlo en público hasta que se complete la entrega",
+          "El nombre de usuario ha cambiado o contiene un error",
+          "La cuenta ha sido desactivada o eliminada",
+        ],
+      },
+      post: {
+        hero: "No encontramos tu publicación",
+        intro: (id, p, _h) => `Intentamos entregar tu pedido <strong>#${id}</strong>, pero no podemos acceder a la publicación de ${p} que debemos impulsar.`,
+        ask: (p) => `¿Puedes responder a este correo con la URL exacta de la publicación de ${p} que quieres impulsar?`,
+        reasons: [
+          "La publicación ha sido eliminada o archivada",
+          "Tu cuenta está en privado — ponla en público hasta que se complete la entrega",
+          "El enlace enviado está incompleto o apunta a otra publicación",
+        ],
+      },
+      live: {
+        hero: "No encontramos tu directo",
+        intro: (id, p, _h) => `Intentamos enviar viewers a tu pedido <strong>#${id}</strong>, pero no encontramos tu directo en ${p}.`,
+        ask: (p) => `¿Puedes responder a este correo con la URL de tu canal de ${p} y la hora exacta (con zona horaria) a la que empieza tu directo?`,
+        reasons: [
+          "El directo aún no ha empezado o ya ha terminado",
+          "La URL del canal enviada es incorrecta",
+          "El stream no es público",
+        ],
+      },
+      private: {
+        hero: "Tu cuenta está en privado",
+        intro: (id, p, h) => `Intentamos entregar tu pedido <strong>#${id}</strong>, pero tu cuenta de ${p} <strong>${h}</strong> es privada — no podemos enviar seguidores / likes / vistas mientras esté bloqueada.`,
+        ask: (p) => `¿Puedes poner tu cuenta de ${p} en público hasta que se complete la entrega y luego responder a este correo para confirmar? Cuando termine el pedido puedes volver a ponerla en privado.`,
+        reasons: [
+          "En Instagram: Configuración → Privacidad de la cuenta → desactiva \"Cuenta privada\"",
+          "En TikTok: Perfil → Menú → Configuración y privacidad → Privacidad → desactiva \"Cuenta privada\"",
+          "Verifica también que no haya restricciones de país / edad activas",
+        ],
+      },
+    },
+  },
+  pt: {
+    subject: (id) => `Ação necessária para o seu pedido #${id} — Fanovera`,
+    signoff: "A equipa Fanovera",
+    reasonsLabel: "Razões possíveis",
+    cta: "Basta responder a este e-mail com a informação correta.",
+    variants: {
+      profile: {
+        hero: "Não conseguimos encontrar o seu perfil",
+        intro: (id, p, h) => `Tentámos entregar o seu pedido <strong>#${id}</strong>, mas não conseguimos encontrar o perfil de ${p} <strong>${h}</strong>.`,
+        ask: (p) => `Pode responder a este e-mail com o seu nome de utilizador exato de ${p}?`,
+        reasons: [
+          "O seu perfil está privado — torne-o público até a entrega ser concluída",
+          "O nome de utilizador mudou ou contém um erro",
+          "A conta foi desativada ou eliminada",
+        ],
+      },
+      post: {
+        hero: "Não conseguimos encontrar a sua publicação",
+        intro: (id, p, _h) => `Tentámos entregar o seu pedido <strong>#${id}</strong>, mas não conseguimos aceder à publicação de ${p} que devemos impulsionar.`,
+        ask: (p) => `Pode responder a este e-mail com o URL exato da publicação de ${p} que quer impulsionar?`,
+        reasons: [
+          "A publicação foi eliminada ou arquivada",
+          "A sua conta está privada — torne-a pública até a entrega ser concluída",
+          "O link enviado está incompleto ou aponta para outra publicação",
+        ],
+      },
+      live: {
+        hero: "Não conseguimos encontrar o seu live",
+        intro: (id, p, _h) => `Tentámos enviar viewers para o seu pedido <strong>#${id}</strong>, mas não encontramos o seu live em ${p}.`,
+        ask: (p) => `Pode responder a este e-mail com o URL do seu canal de ${p} e a hora exata (com fuso horário) a que o seu live começa?`,
+        reasons: [
+          "O live ainda não começou ou já terminou",
+          "O URL do canal enviado está incorreto",
+          "A transmissão não é pública",
+        ],
+      },
+      private: {
+        hero: "A sua conta está privada",
+        intro: (id, p, h) => `Tentámos entregar o seu pedido <strong>#${id}</strong>, mas a sua conta de ${p} <strong>${h}</strong> está privada — não conseguimos enviar seguidores / gostos / visualizações enquanto estiver bloqueada.`,
+        ask: (p) => `Pode tornar a sua conta de ${p} pública até a entrega ser concluída e depois responder a este e-mail para confirmar? Quando o pedido terminar, pode voltar a torná-la privada.`,
+        reasons: [
+          "No Instagram: Definições → Privacidade da conta → desativar \"Conta privada\"",
+          "No TikTok: Perfil → Menu → Definições e privacidade → Privacidade → desativar \"Conta privada\"",
+          "Verifique também que não existem restrições de país / idade ativas",
+        ],
+      },
+    },
+  },
+  de: {
+    subject: (id) => `Aktion erforderlich für deine Bestellung #${id} — Fanovera`,
+    signoff: "Das Fanovera-Team",
+    reasonsLabel: "Mögliche Gründe",
+    cta: "Antworte einfach auf diese E-Mail mit den richtigen Infos.",
+    variants: {
+      profile: {
+        hero: "Wir können dein Profil nicht finden",
+        intro: (id, p, h) => `Wir haben versucht, deine Bestellung <strong>#${id}</strong> auszuliefern, aber wir können das ${p}-Profil <strong>${h}</strong> nicht finden.`,
+        ask: (p) => `Kannst du auf diese E-Mail mit deinem genauen ${p}-Benutzernamen antworten?`,
+        reasons: [
+          "Dein Profil ist auf privat gestellt — schalte es bis zum Abschluss der Lieferung auf öffentlich",
+          "Der Benutzername wurde geändert oder enthält einen Tippfehler",
+          "Das Konto wurde deaktiviert oder gelöscht",
+        ],
+      },
+      post: {
+        hero: "Wir können deinen Beitrag nicht finden",
+        intro: (id, p, _h) => `Wir haben versucht, deine Bestellung <strong>#${id}</strong> auszuliefern, aber wir können den ${p}-Beitrag, den wir pushen sollen, nicht erreichen.`,
+        ask: (p) => `Kannst du auf diese E-Mail mit der genauen URL des ${p}-Beitrags antworten, den du pushen möchtest?`,
+        reasons: [
+          "Der Beitrag wurde gelöscht oder archiviert",
+          "Dein Konto ist privat — schalte es bis zum Abschluss der Lieferung auf öffentlich",
+          "Der gesendete Link ist unvollständig oder zeigt auf einen anderen Beitrag",
+        ],
+      },
+      live: {
+        hero: "Wir können deinen Livestream nicht finden",
+        intro: (id, p, _h) => `Wir haben versucht, Viewer auf deine Bestellung <strong>#${id}</strong> zu pushen, aber wir finden deinen ${p}-Livestream nicht.`,
+        ask: (p) => `Kannst du auf diese E-Mail mit der URL deines ${p}-Kanals und der genauen Uhrzeit (inkl. Zeitzone) antworten, wann dein Stream startet?`,
+        reasons: [
+          "Der Stream hat noch nicht begonnen oder ist bereits beendet",
+          "Die gesendete Kanal-URL ist falsch",
+          "Der Stream ist nicht öffentlich",
+        ],
+      },
+      private: {
+        hero: "Dein Konto ist auf privat gestellt",
+        intro: (id, p, h) => `Wir haben versucht, deine Bestellung <strong>#${id}</strong> auszuliefern, aber dein ${p}-Konto <strong>${h}</strong> ist privat — wir können Follower / Likes / Views nicht pushen, solange es gesperrt ist.`,
+        ask: (p) => `Kannst du dein ${p}-Konto bis zum Abschluss der Lieferung auf öffentlich umstellen und dann auf diese E-Mail antworten, um zu bestätigen? Sobald die Bestellung abgeschlossen ist, kannst du es wieder auf privat stellen.`,
+        reasons: [
+          "Auf Instagram: Einstellungen → Konto-Privatsphäre → \"Privates Konto\" deaktivieren",
+          "Auf TikTok: Profil → Menü → Einstellungen und Datenschutz → Datenschutz → \"Privates Konto\" deaktivieren",
+          "Prüfe auch, dass keine Länder- oder Altersbeschränkung aktiv ist",
+        ],
+      },
+    },
+  },
+  it: {
+    subject: (id) => `Azione richiesta per il tuo ordine #${id} — Fanovera`,
+    signoff: "Il team Fanovera",
+    reasonsLabel: "Motivi possibili",
+    cta: "Basta rispondere a questa email con le informazioni corrette.",
+    variants: {
+      profile: {
+        hero: "Non riusciamo a trovare il tuo profilo",
+        intro: (id, p, h) => `Abbiamo provato a consegnare il tuo ordine <strong>#${id}</strong>, ma non riusciamo a trovare il profilo ${p} <strong>${h}</strong>.`,
+        ask: (p) => `Puoi rispondere a questa email con il tuo nome utente esatto di ${p}?`,
+        reasons: [
+          "Il tuo profilo è impostato su privato — rendilo pubblico fino al completamento della consegna",
+          "Il nome utente è cambiato o contiene un errore di battitura",
+          "L'account è stato disattivato o eliminato",
+        ],
+      },
+      post: {
+        hero: "Non riusciamo a trovare il tuo post",
+        intro: (id, p, _h) => `Abbiamo provato a consegnare il tuo ordine <strong>#${id}</strong>, ma non riusciamo a raggiungere il post ${p} che dobbiamo boostare.`,
+        ask: (p) => `Puoi rispondere a questa email con l'URL esatto del post ${p} che vuoi boostare?`,
+        reasons: [
+          "Il post è stato eliminato o archiviato",
+          "Il tuo account è privato — rendilo pubblico fino al completamento della consegna",
+          "Il link inviato è incompleto o rimanda a un altro post",
+        ],
+      },
+      live: {
+        hero: "Non riusciamo a trovare la tua diretta",
+        intro: (id, p, _h) => `Abbiamo provato a mandare viewer al tuo ordine <strong>#${id}</strong>, ma non troviamo la tua diretta su ${p}.`,
+        ask: (p) => `Puoi rispondere a questa email con l'URL del tuo canale ${p} e l'orario esatto (con fuso) di inizio della diretta?`,
+        reasons: [
+          "La diretta non è ancora iniziata o è già finita",
+          "L'URL del canale inviato non è corretto",
+          "Lo stream non è pubblico",
+        ],
+      },
+      private: {
+        hero: "Il tuo account è privato",
+        intro: (id, p, h) => `Abbiamo provato a consegnare il tuo ordine <strong>#${id}</strong>, ma il tuo account ${p} <strong>${h}</strong> è privato — non possiamo inviare follower / like / visualizzazioni mentre è bloccato.`,
+        ask: (p) => `Puoi rendere pubblico il tuo account ${p} fino al completamento della consegna e poi rispondere a questa email per confermare? A consegna avvenuta puoi rimetterlo in privato.`,
+        reasons: [
+          "Su Instagram: Impostazioni → Privacy dell'account → disattiva \"Account privato\"",
+          "Su TikTok: Profilo → Menu → Impostazioni e privacy → Privacy → disattiva \"Account privato\"",
+          "Verifica anche che non siano attive restrizioni per paese / età",
+        ],
+      },
+    },
+  },
+  tr: {
+    subject: (id) => `#${id} numaralı siparişin için işlem gerekli — Fanovera`,
+    signoff: "Fanovera ekibi",
+    reasonsLabel: "Olası nedenler",
+    cta: "Doğru bilgilerle bu e-postayı yanıtlaman yeterli.",
+    variants: {
+      profile: {
+        hero: "Profilini bulamıyoruz",
+        intro: (id, p, h) => `<strong>#${id}</strong> numaralı siparişini teslim etmeye çalıştık, ancak ${p} profilini <strong>${h}</strong> bulamıyoruz.`,
+        ask: (p) => `Bu e-postayı yanıtlayarak tam ${p} kullanıcı adını gönderebilir misin?`,
+        reasons: [
+          "Profilin gizli olarak ayarlanmış — teslimat tamamlanana kadar herkese açık yap",
+          "Kullanıcı adı değişmiş veya yazım hatası içeriyor",
+          "Hesap devre dışı bırakılmış veya silinmiş",
+        ],
+      },
+      post: {
+        hero: "Gönderini bulamıyoruz",
+        intro: (id, p, _h) => `<strong>#${id}</strong> numaralı siparişini teslim etmeye çalıştık, ancak boost etmemiz gereken ${p} gönderisine erişemiyoruz.`,
+        ask: (p) => `Bu e-postayı yanıtlayarak boost etmek istediğin ${p} gönderisinin tam URL'sini gönderebilir misin?`,
+        reasons: [
+          "Gönderi silinmiş veya arşivlenmiş",
+          "Hesabın gizli — teslimat tamamlanana kadar herkese açık yap",
+          "Gönderilen link eksik veya başka bir gönderiye işaret ediyor",
+        ],
+      },
+      live: {
+        hero: "Canlı yayınını bulamıyoruz",
+        intro: (id, p, _h) => `<strong>#${id}</strong> numaralı siparişine viewer göndermeye çalıştık, ancak ${p} canlı yayınını bulamıyoruz.`,
+        ask: (p) => `Bu e-postayı yanıtlayarak ${p} kanal URL'ni ve yayının başlayacağı tam saati (saat dilimiyle) gönderebilir misin?`,
+        reasons: [
+          "Yayın henüz başlamadı veya zaten sona erdi",
+          "Gönderilen kanal URL'si yanlış",
+          "Yayın herkese açık değil",
+        ],
+      },
+      private: {
+        hero: "Hesabın gizli",
+        intro: (id, p, h) => `<strong>#${id}</strong> numaralı siparişini teslim etmeye çalıştık, ancak ${p} hesabın <strong>${h}</strong> gizli — kilitliyken takipçi / beğeni / görüntülenme gönderemeyiz.`,
+        ask: (p) => `Teslimat tamamlanana kadar ${p} hesabını herkese açık yapıp ardından onaylamak için bu e-postayı yanıtlayabilir misin? Sipariş tamamlandığında tekrar gizli yapabilirsin.`,
+        reasons: [
+          "Instagram'da: Ayarlar → Hesap gizliliği → \"Gizli hesap\" seçeneğini kapat",
+          "TikTok'ta: Profil → Menü → Ayarlar ve gizlilik → Gizlilik → \"Gizli hesap\" seçeneğini kapat",
+          "Ayrıca aktif bir ülke / yaş kısıtlaması olmadığını kontrol et",
+        ],
+      },
+    },
+  },
+};
+
+/**
+ * Admin-triggered email when info is missing for SMM delivery (private/wrong
+ * profile, deleted post, missing live URL). The `askKind` switches between
+ * three copy variants so the customer is asked for exactly what's missing
+ * relative to the cart contents. The hidden `threadToken` lets the IMAP poller
+ * route their reply into the support inbox.
+ */
+export async function sendOrderMissingInfoEmail(
+  p: OrderMissingInfoParams,
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const resend = getResend();
+  if (!resend) return { ok: false, error: "Resend not configured" };
+
+  try {
+    const locale = normalizeEmailLocale(p.locale);
+    const copy = MISSING_INFO_COPY[locale];
+    const variant = copy.variants[p.askKind];
+    const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
+    const handle = p.username ? `@${p.username.replace(/^@/, "")}` : "—";
+    const emoji = p.askKind === "post"
+      ? "🔗"
+      : p.askKind === "live"
+      ? "📡"
+      : p.askKind === "private"
+      ? "🔒"
+      : "🔍";
+
+    const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head><meta charset="utf-8" /><title>${escapeHtml(copy.subject(p.orderId))}</title></head>
+<body style="margin:0;padding:0;background:#f8f6f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f6f1;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:24px;">
+          <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+            <img src="${APP_URL}/fanovera-logo.png" alt="Fanovera" width="140" height="auto" style="display:block;height:auto;max-height:42px;border:0;outline:none;" />
+          </a>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:36px 32px;">
+          <div style="text-align:center;">
+            <div style="font-size:44px;line-height:1;margin-bottom:12px;">${emoji}</div>
+            <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111827;letter-spacing:-0.02em;">${escapeHtml(variant.hero)}</h1>
+          </div>
+          <p style="margin:18px 0 16px;font-size:15px;color:#374151;line-height:1.55;">
+            ${variant.intro(p.orderId, escapeHtml(platformLabel), escapeHtml(handle))}
+          </p>
+          <p style="margin:0 0 18px;font-size:15px;color:#111827;line-height:1.55;font-weight:600;">
+            ${escapeHtml(variant.ask(platformLabel))}
+          </p>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin:0 0 16px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:10px;">
+              ${escapeHtml(copy.reasonsLabel)}
+            </div>
+            <ul style="margin:0;padding-left:18px;font-size:14px;color:#374151;line-height:1.6;">
+              <li>${escapeHtml(variant.reasons[0])}</li>
+              <li>${escapeHtml(variant.reasons[1])}</li>
+              <li>${escapeHtml(variant.reasons[2])}</li>
+            </ul>
+          </div>
+          <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.55;">${escapeHtml(copy.cta)}</p>
+          <p style="margin:24px 0 0;font-size:14px;color:#111827;">— ${escapeHtml(copy.signoff)}</p>
+          <div style="color:#f9fafb;font-size:10px;line-height:1;margin-top:24px;user-select:none;">
+            ${escapeHtml(p.threadToken)}
+          </div>
+        </td></tr>
+        <tr><td style="padding:18px 8px 0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5;">
+          Fanovera · ${APP_URL}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    const text = `${variant.hero}
+
+${variant.intro(p.orderId, platformLabel, handle).replace(/<[^>]+>/g, "")}
+
+${variant.ask(platformLabel)}
+
+${copy.reasonsLabel} :
+  • ${variant.reasons[0]}
+  • ${variant.reasons[1]}
+  • ${variant.reasons[2]}
+
+${copy.cta}
+
+— ${copy.signoff}
+
+${p.threadToken}`;
+
+    const result = await resend.emails.send({
+      from: RESEND_FROM,
+      to: p.to,
+      replyTo: p.replyTo,
+      subject: copy.subject(p.orderId),
+      html,
+      text,
+    });
+
+    if (result.error) {
+      console.error("[email] missing-info Resend error:", result.error);
+      return { ok: false, error: result.error.message };
+    }
+    return { ok: true, id: result.data?.id };
+  } catch (err) {
+    console.error("[email] sendOrderMissingInfoEmail error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
 export interface MagicLinkParams {
   to: string;
   link: string;
