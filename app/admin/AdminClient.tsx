@@ -5,6 +5,7 @@ import { Ic } from "./components/icons";
 import AnalyticsView from "./components/views/AnalyticsView";
 import CohortsView from "./components/views/CohortsView";
 import SourcesView from "./components/views/SourcesView";
+import AdsROASView from "./components/views/AdsROASView";
 import OrdersView from "./components/views/OrdersView";
 import PricingView from "./components/views/PricingView";
 import CombosView from "./components/views/CombosView";
@@ -15,7 +16,7 @@ import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PricingExperimentsView from "./components/views/PricingExperimentsView";
 
-type ViewId = "analytics" | "cohorts" | "sources" | "orders" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "orders" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -25,6 +26,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "analytics", label: "Analytics", icon: () => Ic.dashboard(), sub: "Vue d'ensemble" },
   { id: "cohorts", label: "Cohortes", icon: () => Ic.layers(), sub: "Rétention D7/D30/D90" },
   { id: "sources", label: "Sources", icon: () => Ic.filter(), sub: "LTV par acquisition" },
+  { id: "adsRoas", label: "Ads ROAS", icon: () => Ic.zap(), sub: "ROAS réel Google Ads" },
   { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients" },
   { id: "pricing", label: "Prix", icon: () => Ic.tag(), sub: "Packs multi-devises" },
   { id: "abPricing", label: "A/B Prix", icon: () => Ic.filter(), sub: "Tests pricing" },
@@ -230,6 +232,7 @@ export default function AdminClient() {
           {view === "analytics" && <AnalyticsView />}
           {view === "cohorts" && <CohortsView />}
           {view === "sources" && <SourcesView />}
+          {view === "adsRoas" && <AdsROASView />}
           {view === "orders" && <OrdersView />}
           {view === "pricing" && <PricingView />}
           {view === "abPricing" && <PricingExperimentsView />}

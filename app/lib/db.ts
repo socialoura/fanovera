@@ -279,6 +279,12 @@ export async function initDb() {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS source_page VARCHAR(160) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT NULL`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS gclid VARCHAR(200) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_source VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(180) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(120) DEFAULT ''`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_checkout_gclid ON checkout_payloads(gclid) WHERE gclid <> ''`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_checkout_utm_campaign ON checkout_payloads(utm_campaign) WHERE utm_campaign <> ''`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_country ON orders(country)`;
 
   await sql`
@@ -315,6 +321,35 @@ export async function initDb() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_product_visits_platform_date ON product_page_visits(platform, date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_product_visits_created ON product_page_visits(created_at DESC)`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS ad_costs_by_campaign (
+      date DATE NOT NULL,
+      campaign_id BIGINT NOT NULL,
+      campaign_name VARCHAR(200) NOT NULL DEFAULT '',
+      cost_cents BIGINT NOT NULL DEFAULT 0,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      conversions NUMERIC(10,2) NOT NULL DEFAULT 0,
+      synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (date, campaign_id)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_ad_costs_campaign_date ON ad_costs_by_campaign(campaign_id, date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_ad_costs_date ON ad_costs_by_campaign(date DESC)`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS gclid_campaign_map (
+      gclid VARCHAR(200) PRIMARY KEY,
+      campaign_id BIGINT NOT NULL,
+      campaign_name VARCHAR(200) NOT NULL DEFAULT '',
+      ad_group_id BIGINT,
+      click_date DATE NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_gclid_campaign ON gclid_campaign_map(campaign_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_gclid_click_date ON gclid_campaign_map(click_date DESC)`;
 
   // Seed global SMM toggle if missing
   const smmToggle = await sql`SELECT key FROM smm_settings WHERE key = 'auto_order_enabled'`;
@@ -602,6 +637,10 @@ export async function upsertCheckoutPayload(params: {
    * so we know the baseline against which delivery is measured.
    */
   followersBefore?: number | null;
+  gclid?: string | null;
+  utmSource?: string | null;
+  utmCampaign?: string | null;
+  utmMedium?: string | null;
 }) {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
@@ -610,15 +649,23 @@ export async function upsertCheckoutPayload(params: {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS plan VARCHAR(80) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT NULL`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS followers_before INTEGER DEFAULT 0`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS gclid VARCHAR(200) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_source VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(180) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(120) DEFAULT ''`;
 
   const normalizedCountry = normalizeCountryCode(params.country);
   const followersBefore =
     typeof params.followersBefore === "number" && Number.isFinite(params.followersBefore) && params.followersBefore >= 0
       ? Math.trunc(params.followersBefore)
       : 0;
+  const gclid = (params.gclid || "").trim().slice(0, 200);
+  const utmSource = (params.utmSource || "").trim().slice(0, 120);
+  const utmCampaign = (params.utmCampaign || "").trim().slice(0, 180);
+  const utmMedium = (params.utmMedium || "").trim().slice(0, 120);
 
   await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country, followers_before)
+    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country, followers_before, gclid, utm_source, utm_campaign, utm_medium)
     VALUES (
       ${params.paymentIntentId},
       ${params.email || ""},
@@ -633,7 +680,11 @@ export async function upsertCheckoutPayload(params: {
       ${params.sourcePage || ""},
       ${params.plan || ""},
       ${normalizedCountry},
-      ${followersBefore}
+      ${followersBefore},
+      ${gclid},
+      ${utmSource},
+      ${utmCampaign},
+      ${utmMedium}
     )
     ON CONFLICT (payment_intent_id)
     DO UPDATE SET
@@ -649,7 +700,11 @@ export async function upsertCheckoutPayload(params: {
       source_page = EXCLUDED.source_page,
       plan = EXCLUDED.plan,
       country = COALESCE(EXCLUDED.country, checkout_payloads.country),
-      followers_before = GREATEST(EXCLUDED.followers_before, checkout_payloads.followers_before)
+      followers_before = GREATEST(EXCLUDED.followers_before, checkout_payloads.followers_before),
+      gclid = CASE WHEN EXCLUDED.gclid <> '' THEN EXCLUDED.gclid ELSE checkout_payloads.gclid END,
+      utm_source = CASE WHEN EXCLUDED.utm_source <> '' THEN EXCLUDED.utm_source ELSE checkout_payloads.utm_source END,
+      utm_campaign = CASE WHEN EXCLUDED.utm_campaign <> '' THEN EXCLUDED.utm_campaign ELSE checkout_payloads.utm_campaign END,
+      utm_medium = CASE WHEN EXCLUDED.utm_medium <> '' THEN EXCLUDED.utm_medium ELSE checkout_payloads.utm_medium END
   `;
 }
 

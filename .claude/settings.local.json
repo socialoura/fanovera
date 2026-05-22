@@ -54,7 +54,9 @@
       "Bash(sort -t. -k2 -n)",
       "WebFetch(domain:resend.com)",
       "PowerShell($bytes = New-Object byte[] 32; [System.Security.Cryptography.RandomNumberGenerator]::Create\\(\\).GetBytes\\($bytes\\); \\($bytes | ForEach-Object { $_.ToString\\('x2'\\) }\\) -join '')",
-      "Bash(npm ls *)"
+      "Bash(npm ls *)",
+      "Bash(findstr /i \"google-ads\")",
+      "PowerShell([Convert]::ToBase64String\\(\\(1..48 | ForEach-Object { Get-Random -Maximum 256 }\\)\\))"
     ]
   }
 }

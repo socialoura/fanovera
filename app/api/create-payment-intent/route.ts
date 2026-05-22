@@ -157,6 +157,10 @@ export async function POST(req: NextRequest) {
         plan: pricing.plan,
         country: geoCountry,
         followersBefore: followersBeforeNum,
+        gclid: attribution.gclid,
+        utmSource: attribution.utm_source,
+        utmCampaign: attribution.utm_campaign,
+        utmMedium: attribution.utm_medium,
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);
