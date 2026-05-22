@@ -81,9 +81,44 @@ async function getCustomer(config: GoogleAdsConfig): Promise<unknown | null> {
     });
     return cachedCustomer;
   } catch (err) {
-    console.warn("[googleAdsClient] failed to init customer:", (err as Error).message);
+    console.warn("[googleAdsClient] failed to init customer:", describeError(err));
     return null;
   }
+}
+
+/**
+ * google-ads-api throws structured GoogleAdsFailure objects (not plain Errors),
+ * so `.message` is undefined. Pull out the most useful fields for logging.
+ */
+function describeError(err: unknown): string {
+  if (!err) return "(no error)";
+  if (err instanceof Error && err.message) return err.message;
+  // GoogleAdsFailure shape: { errors: [{ error_code, message, location }], request_id }
+  type GAdsErr = {
+    errors?: Array<{ message?: string; error_code?: Record<string, unknown> }>;
+    request_id?: string;
+    message?: string;
+  };
+  const e = err as GAdsErr;
+  const parts: string[] = [];
+  if (Array.isArray(e.errors) && e.errors.length > 0) {
+    for (const inner of e.errors) {
+      const codeKey = inner.error_code ? Object.keys(inner.error_code)[0] : "";
+      const codeVal = codeKey && inner.error_code ? String(inner.error_code[codeKey]) : "";
+      parts.push(`${codeKey || "error"}=${codeVal} :: ${inner.message || "(no message)"}`);
+    }
+  } else if (e.message) {
+    parts.push(e.message);
+  }
+  if (e.request_id) parts.push(`request_id=${e.request_id}`);
+  if (parts.length === 0) {
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  return parts.join(" | ");
 }
 
 function microsToCents(micros: number | string | null | undefined): number {
@@ -151,7 +186,7 @@ export async function fetchCampaignCosts(daysBack: number): Promise<CampaignCost
     }
     return out;
   } catch (err) {
-    console.error("[googleAdsClient] fetchCampaignCosts failed:", (err as Error).message);
+    console.error("[googleAdsClient] fetchCampaignCosts failed:", describeError(err));
     return [];
   }
 }
@@ -206,7 +241,7 @@ export async function fetchClickToCampaignMap(daysBack: number): Promise<GclidCa
     }
     return out;
   } catch (err) {
-    console.error("[googleAdsClient] fetchClickToCampaignMap failed:", (err as Error).message);
+    console.error("[googleAdsClient] fetchClickToCampaignMap failed:", describeError(err));
     return [];
   }
 }
