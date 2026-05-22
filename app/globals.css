@@ -2970,29 +2970,6 @@ input { font: inherit; color: inherit; }
   background-clip: text;
 }
 
-/* Reserve the network grid's vertical space — defense in depth, even though
- * .netcard already declares min-height: 200px (the *cards* don't grow, the
- * GRID does when hero text above it shifts during font swap). */
-.net-grid { min-height: 414px; }
-@media (max-width: 900px) and (min-width: 601px) {
-  .net-grid { min-height: 628px; }
-}
-@media (max-width: 600px) {
-  .net-grid { min-height: 842px; }
-}
-
-/* Reserve the hero H1 height so the web-font swap (Plus Jakarta vs system
- * fallback) does not change the number of rendered lines mid-hydration.
- * Worst case is ~3 lines on mobile at clamp(28px, 5vw, 56px) × 1.05 lh.
- * Slightly over-reserves on desktop (1 line), but the trade-off is zero
- * CLS — the visual effect of empty top space is negligible. */
-.display {
-  min-height: calc(3 * 1.05em);
-}
-@media (min-width: 980px) {
-  .display { min-height: calc(2 * 1.05em); }
-}
-
 /* ─── Responsive ─── */
 @media (max-width: 980px) {
   .hero-grid { grid-template-columns: 1fr !important; }
