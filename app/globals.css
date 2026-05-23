@@ -2567,10 +2567,11 @@ input { font: inherit; color: inherit; }
   }
 }
 
-/* Brand product toggles (Instagram / TikTok / YouTube) — same base as .spo-mode-toggle */
+/* Brand product toggles (Instagram / TikTok / YouTube / Twitch) — same base as .spo-mode-toggle */
 .ig-mode-toggle,
 .tt-mode-toggle,
-.yt-mode-toggle {
+.yt-mode-toggle,
+.tw-mode-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2582,7 +2583,8 @@ input { font: inherit; color: inherit; }
 }
 .ig-mode-toggle button,
 .tt-mode-toggle button,
-.yt-mode-toggle button {
+.yt-mode-toggle button,
+.tw-mode-toggle button {
   border: 0;
   background: transparent;
   min-height: 40px;
@@ -2600,15 +2602,18 @@ input { font: inherit; color: inherit; }
 }
 .ig-mode-toggle button:focus-visible,
 .tt-mode-toggle button:focus-visible,
-.yt-mode-toggle button:focus-visible {
+.yt-mode-toggle button:focus-visible,
+.tw-mode-toggle button:focus-visible {
   outline-offset: 2px;
 }
 .ig-mode-toggle button:hover { color: var(--ink); background: rgba(214, 41, 118, 0.08); }
 .tt-mode-toggle button:hover { color: var(--ink); background: rgba(254, 44, 85, 0.08); }
 .yt-mode-toggle button:hover { color: var(--ink); background: rgba(255, 0, 0, 0.08); }
+.tw-mode-toggle button:hover { color: var(--ink); background: rgba(145, 70, 255, 0.08); }
 .ig-mode-toggle button:focus-visible { outline: 2px solid rgba(214, 41, 118, 0.55); }
 .tt-mode-toggle button:focus-visible { outline: 2px solid rgba(254, 44, 85, 0.55); }
 .yt-mode-toggle button:focus-visible { outline: 2px solid rgba(255, 0, 0, 0.55); }
+.tw-mode-toggle button:focus-visible { outline: 2px solid rgba(145, 70, 255, 0.55); }
 .ig-mode-toggle button.active {
   background: linear-gradient(135deg, #fa7e1e 0%, #d62976 50%, #962fbf 100%);
   color: #fff;
@@ -2624,17 +2629,25 @@ input { font: inherit; color: inherit; }
   color: #fff;
   box-shadow: 0 12px 24px -16px rgba(255, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.35);
 }
+.tw-mode-toggle button.active {
+  background: linear-gradient(135deg, #9146ff 0%, #7d31e3 100%);
+  color: #fff;
+  box-shadow: 0 12px 24px -16px rgba(145, 70, 255, 0.75), inset 0 1px 0 rgba(255,255,255,0.35);
+}
 .ig-mode-toggle button.active:hover,
 .tt-mode-toggle button.active:hover,
-.yt-mode-toggle button.active:hover { transform: translateY(-1px); }
+.yt-mode-toggle button.active:hover,
+.tw-mode-toggle button.active:hover { transform: translateY(-1px); }
 
 @media (max-width: 640px) {
   .ig-mode-toggle,
   .tt-mode-toggle,
-  .yt-mode-toggle { display: flex; width: 100%; }
+  .yt-mode-toggle,
+  .tw-mode-toggle { display: flex; width: 100%; }
   .ig-mode-toggle button,
   .tt-mode-toggle button,
-  .yt-mode-toggle button { flex: 1; padding: 0 10px; font-size: 13px; }
+  .yt-mode-toggle button,
+  .tw-mode-toggle button { flex: 1; padding: 0 10px; font-size: 13px; }
 }
 
 /* Spotify track preview card */

@@ -28,8 +28,8 @@ export const LIKES_PACKS: Pack[] = [
   { qty: 100, price: 1.29, old: 4.49, bonus: 25 },
   { qty: 250, price: 2.49, old: 7.99, bonus: 50 },
   { qty: 500, price: 4.49, old: 13.99, bonus: 100 },
-  { qty: 1000, price: 6.99, old: 19.99, bonus: 200, popular: true },
-  { qty: 2500, price: 14.99, old: 39.99, bonus: 500 },
+  { qty: 1000, price: 6.99, old: 19.99, bonus: 200 },
+  { qty: 2500, price: 14.99, old: 39.99, bonus: 500, popular: true },
   { qty: 5000, price: 26.99, old: 69.99, bonus: 1000 },
   { qty: 10000, price: 49.99, old: 124.99, bonus: 2500 },
   { qty: 25000, price: 109.99, old: 274.99, bonus: 6000 },
@@ -54,6 +54,11 @@ export function getPacksForProduct(product: TikTokProductType): Pack[] {
   if (product === "likes") return LIKES_PACKS;
   if (product === "views") return VIEWS_PACKS;
   return PACKS;
+}
+
+export function defaultPackIndex(product: TikTokProductType): number {
+  const idx = getPacksForProduct(product).findIndex((p) => p.popular);
+  return idx >= 0 ? idx : 3;
 }
 
 export function getServiceForProduct(product: TikTokProductType): string {

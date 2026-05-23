@@ -10,7 +10,7 @@ import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import IgFAQ from "./components/IgFAQ";
 import IgFooter from "./components/IgFooter";
-import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct, defaultPackIndex } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -60,12 +60,12 @@ const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
 export default function InstagramPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
-  const [pack, setPack] = useState(3);
   const search = useSearchParams();
   const initialProductType: InstagramProductType = (() => {
     const raw = (search?.get("product") || "").toLowerCase();
     return raw === "likes" || raw === "views" ? (raw as InstagramProductType) : "followers";
   })();
+  const [pack, setPack] = useState(() => defaultPackIndex(initialProductType));
   const [productType, setProductType] = useState<InstagramProductType>(initialProductType);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");

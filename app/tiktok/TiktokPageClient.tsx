@@ -11,7 +11,7 @@ import Reviews from "./components/Reviews";
 import TtFAQ from "./components/TtFAQ";
 import TtFooter from "./components/TtFooter";
 import type { TtProfile, TtMedia } from "./components/Step2Username";
-import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct, defaultPackIndex } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -31,12 +31,12 @@ const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
 export default function TiktokPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
-  const [pack, setPack] = useState(3);
   const search = useSearchParams();
   const initialProductType: TikTokProductType = (() => {
     const raw = (search?.get("product") || "").toLowerCase();
     return raw === "likes" || raw === "views" ? (raw as TikTokProductType) : "followers";
   })();
+  const [pack, setPack] = useState(() => defaultPackIndex(initialProductType));
   const [productType, setProductType] = useState<TikTokProductType>(initialProductType);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
