@@ -165,6 +165,34 @@ function countryFlag(code: string | null | undefined): string {
   return String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0)));
 }
 
+function getProfileUrl(platform: string | null | undefined, username: string | null | undefined): string | null {
+  if (!platform || !username) return null;
+  const handle = username.trim().replace(/^@/, "");
+  if (!handle) return null;
+  const encoded = encodeURIComponent(handle);
+  switch (platform.toLowerCase()) {
+    case "instagram":
+      return `https://www.instagram.com/${encoded}/`;
+    case "tiktok":
+      return `https://www.tiktok.com/@${encoded}`;
+    case "twitch":
+      return `https://www.twitch.tv/${encoded}`;
+    case "youtube":
+      return `https://www.youtube.com/@${encoded}`;
+    case "twitter":
+    case "x":
+      return `https://x.com/${encoded}`;
+    case "facebook":
+      return `https://www.facebook.com/${encoded}`;
+    case "linkedin":
+      return `https://www.linkedin.com/in/${encoded}`;
+    case "spotify":
+      return `https://open.spotify.com/user/${encoded}`;
+    default:
+      return null;
+  }
+}
+
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="order-field">
@@ -1339,8 +1367,32 @@ export default function OrdersView() {
                         })()}
                       </td>
                       <td>
-                        <span style={{ fontWeight: 600, fontSize: 12, textTransform: "capitalize" }}>
-                          {o.platform}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontWeight: 600, fontSize: 12, textTransform: "capitalize" }}>
+                            {o.platform}
+                          </span>
+                          {(() => {
+                            const url = getProfileUrl(o.platform, o.username);
+                            if (!url) return null;
+                            const cleanHandle = (o.username || "").trim().replace(/^@/, "");
+                            return (
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                title={`Voir le profil @${cleanHandle} sur ${o.platform}`}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  color: "var(--a-ink-3)",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                {Ic.external(12)}
+                              </a>
+                            );
+                          })()}
                         </span>
                       </td>
                       <td>
