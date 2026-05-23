@@ -4,6 +4,7 @@ import { getOrderStatus, type SmmSubOrder } from "@/app/lib/smm";
 import { resolveBulkFollowsCharge, bulkFollowsCostCents } from "@/app/lib/smmCost";
 import { getUsdToCurrencyRate } from "@/app/lib/fxRates";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+import { captureServerEvent } from "@/app/lib/analytics.server";
 
 /**
  * POST /api/admin/orders/set-bf-id
@@ -100,17 +101,67 @@ export async function POST(req: NextRequest) {
     const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
     const costCents = bulkFollowsCostCents(subOrders.map((s) => s.charge), fxRate);
 
-    await sql`
-      UPDATE orders
-      SET smm_orders = ${JSON.stringify(subOrders)}::jsonb,
-          cost_cents = ${costCents}
-      WHERE id = ${orderId}
-    `;
+    // Roll the sub-order statuses up to the parent order.status — same logic
+    // as runSmmForOrder / refreshSmmStatus so a manual attach keeps the order
+    // state coherent (paid → processing/delivered/partial).
+    const allTerminal = subOrders.every(
+      (s) =>
+        s.status === "completed" ||
+        s.status === "partial" ||
+        s.status === "canceled" ||
+        s.status === "failed",
+    );
+    const allCompleted = subOrders.every((s) => s.status === "completed");
+    const allCanceled = subOrders.every((s) => s.status === "canceled");
+    const allPlacedOrDone = subOrders.every(
+      (s) => s.status === "placed" || s.status === "completed",
+    );
+
+    let newStatus: string = order.status;
+    if (allTerminal) {
+      if (allCompleted) newStatus = "delivered";
+      else if (allCanceled) newStatus = "canceled";
+      else newStatus = "partial";
+    } else if (allPlacedOrDone) {
+      newStatus = "processing";
+    }
+
+    if (newStatus === "delivered") {
+      const wasNotDelivered = order.status !== "delivered";
+      await sql`
+        UPDATE orders
+        SET smm_orders = ${JSON.stringify(subOrders)}::jsonb,
+            cost_cents = ${costCents},
+            status = ${newStatus},
+            delivered_at = NOW()
+        WHERE id = ${orderId}
+      `;
+      if (wasNotDelivered) {
+        void captureServerEvent("order_delivered", String(order.email || orderId), {
+          orderId,
+          platform: order.platform,
+          product_area: order.platform,
+          currency: order.currency || "eur",
+          amount_cents: order.total_cents || 0,
+          cost_cents: costCents,
+          followers_before: order.followers_before || 0,
+        });
+      }
+    } else {
+      await sql`
+        UPDATE orders
+        SET smm_orders = ${JSON.stringify(subOrders)}::jsonb,
+            cost_cents = ${costCents},
+            status = ${newStatus}
+        WHERE id = ${orderId}
+      `;
+    }
 
     return NextResponse.json({
       success: true,
       orderId,
       cartIndex,
+      orderStatus: newStatus,
       subOrder: sub,
       subOrders,
     });
