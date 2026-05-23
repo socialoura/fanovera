@@ -1372,9 +1372,17 @@ export default function OrdersView() {
                             {o.platform}
                           </span>
                           {(() => {
-                            const url = getProfileUrl(o.platform, o.username);
-                            if (!url) return null;
                             const cleanHandle = (o.username || "").trim().replace(/^@/, "");
+                            if (!cleanHandle) return null;
+                            const url = getProfileUrl(o.platform, o.username);
+                            const label = `- @${cleanHandle}`;
+                            if (!url) {
+                              return (
+                                <span style={{ fontSize: 12, color: "var(--a-ink-3)", fontWeight: 600 }}>
+                                  {label}
+                                </span>
+                              );
+                            }
                             return (
                               <a
                                 href={url}
@@ -1385,10 +1393,14 @@ export default function OrdersView() {
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
+                                  gap: 4,
                                   color: "var(--a-ink-3)",
                                   textDecoration: "none",
+                                  fontSize: 12,
+                                  fontWeight: 600,
                                 }}
                               >
+                                {label}
                                 {Ic.external(12)}
                               </a>
                             );
