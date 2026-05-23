@@ -12,7 +12,7 @@ import Reviews from "./components/Reviews";
 import YtFAQ from "./components/YtFAQ";
 import YtFooter from "./components/YtFooter";
 import type { YtPreview } from "./components/Step2Username";
-import { PACKS, SUBSCRIBERS_PACKS, type CountryId, type YouTubeProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
+import { PACKS, SUBSCRIBERS_PACKS, type CountryId, type YouTubeProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -89,7 +89,7 @@ export default function YoutubePageClient() {
     email,
     username: activeInput,
     platform: "youtube",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: isSubscribers ? "" : username.trim(), videoId: profile?.id }],
+    cart: [{ service: getServiceForProduct(productType), qty: selectedPack.qty, bonus: selectedPack.bonus, country, videoUrl: isSubscribers ? "" : username.trim(), videoId: profile?.id }],
     followersBefore: profile?.channel?.subscribers ?? 0,
     enabled: step >= 2 && activeInputValid && emailValid,
   });

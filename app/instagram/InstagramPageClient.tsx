@@ -10,7 +10,7 @@ import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import IgFAQ from "./components/IgFAQ";
 import IgFooter from "./components/IgFooter";
-import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -127,7 +127,7 @@ export default function InstagramPageClient() {
     email,
     username: isMediaProduct ? (media?.user.username || cleanUsername) : cleanUsername,
     platform: "instagram",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
+    cart: [{ service: getServiceForProduct(productType), qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
     followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && targetReady && emailValid,
   });

@@ -11,7 +11,7 @@ import Reviews from "./components/Reviews";
 import TtFAQ from "./components/TtFAQ";
 import TtFooter from "./components/TtFooter";
 import type { TtProfile, TtMedia } from "./components/Step2Username";
-import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type TikTokProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -95,7 +95,7 @@ export default function TiktokPageClient() {
     email,
     username: isMediaProduct ? (media?.user.username || cleanUsername) : cleanUsername,
     platform: "tiktok",
-    cart: [{ qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
+    cart: [{ service: getServiceForProduct(productType), qty: selectedPack.qty, bonus: selectedPack.bonus, country, postUrl: isMediaProduct ? postUrl.trim() : undefined }],
     followersBefore: profile?.followersCount ?? 0,
     enabled: step >= 2 && targetReady && emailValid,
   });

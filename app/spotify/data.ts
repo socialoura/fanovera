@@ -41,6 +41,10 @@ export function getPacksForProduct(product: SpotifyProductType): Pack[] {
   return product === "followers" ? FOLLOWERS_PACKS : PACKS;
 }
 
+export function getServiceForProduct(product: SpotifyProductType): string {
+  return product === "followers" ? "sp_followers" : "sp_streams";
+}
+
 export type CountryId = "fr" | "eu";
 
 export type Country = {

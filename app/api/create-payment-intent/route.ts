@@ -5,7 +5,7 @@ import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPri
 import { TestPromoDisabledError } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
 import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
-import { getProductConfig, normalizePlatform } from "@/app/lib/productCatalog";
+import { getProductConfig, normalizePlatform, PLATFORM_SERVICES } from "@/app/lib/productCatalog";
 import { captureServerEvent } from "@/app/lib/analytics.server";
 import { rateLimit, tooManyRequests } from "@/app/lib/rateLimit";
 
@@ -81,10 +81,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Load pricing rows for ALL services on this platform (followers, likes,
+    // views, …) so the cart-driven service override (see calculateCheckoutPricing)
+    // can resolve the right price tier — not just the platform default.
+    const platformServices = [...(PLATFORM_SERVICES[normalizedPlatform] || [config.service])];
+    if (!platformServices.includes(config.service)) platformServices.push(config.service);
     const pricingRows = (await sql`
       SELECT *
       FROM pricing
-      WHERE service = ${config.service} AND active = true
+      WHERE service = ANY(${platformServices}) AND active = true
       ORDER BY qty ASC
     `) as PricingRow[];
 

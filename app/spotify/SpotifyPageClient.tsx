@@ -12,7 +12,7 @@ import Reviews from "./components/Reviews";
 import SpoFAQ from "./components/SpoFAQ";
 import SpoFooter from "./components/SpoFooter";
 import type { SpoPreview } from "./components/Step2Track";
-import { PACKS, FOLLOWERS_PACKS, type CountryId, type SpotifyProductType, formatPrice, formatQty, getPacksForProduct } from "./data";
+import { PACKS, FOLLOWERS_PACKS, type CountryId, type SpotifyProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -90,6 +90,7 @@ export default function SpotifyPageClient() {
     platform: "spotify",
     cart: [
       {
+        service: getServiceForProduct(productType),
         qty: selectedPack.qty,
         bonus: selectedPack.bonus,
         country,

@@ -65,6 +65,21 @@ export const ALL_PRICING_SERVICES = [
   "x_followers",
 ] as const;
 
+// Whitelist of valid (sub-)services per platform. Used to validate the cart's
+// item.service server-side before trusting it for pricing + SMM routing.
+// Without this, a buyer hand-crafting the request body could pick an arbitrary
+// pricing row (e.g. cheap tt_views row for an expensive tt_followers order).
+export const PLATFORM_SERVICES: Record<PlatformId, readonly string[]> = {
+  instagram: ["ig_followers", "ig_likes", "ig_views"],
+  tiktok: ["tt_followers", "tt_likes", "tt_views"],
+  youtube: ["yt_views", "yt_subscribers", "yt_likes"],
+  spotify: ["sp_streams", "sp_followers"],
+  twitch: ["tw_followers", "tw_live_viewers"],
+  facebook: ["fb_likes", "fb_followers"],
+  linkedin: ["li_followers"],
+  twitter: ["x_followers", "x_likes", "x_retweets"],
+};
+
 export function normalizePlatform(value: unknown): PlatformId | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();

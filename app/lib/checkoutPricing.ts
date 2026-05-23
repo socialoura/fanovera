@@ -1,7 +1,7 @@
 import { SUPPORTED_CURRENCIES, currencyDbColumn, type SupportedCurrency } from "./pricingCurrency";
 import { calculatePromoPricing, type PromoPricing } from "./promoCodes";
 import { applyPricingAssignment, type PricingAssignment } from "./pricingExperiments";
-import { findFallbackPack, getProductConfig, normalizePlatform, type PlatformId } from "./productCatalog";
+import { findFallbackPack, getProductConfig, normalizePlatform, PLATFORM_SERVICES, type PlatformId } from "./productCatalog";
 import { AI_VIEWERS_PACKS as TWITCH_AI_VIEWERS_PACKS } from "@/app/twitch/data";
 
 export type PricingRow = {
@@ -129,7 +129,20 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
     // (different service, different price tiers). Canonical service name is
     // `tw_live_viewers` (matches the smm_config seed + admin pricing UI).
     const isLiveViewers = platform === "twitch" && Boolean(scheduledStartAt);
-    const serviceForItem = isLiveViewers ? "tw_live_viewers" : config.service;
+
+    // Trust item.service if it's in the platform's allowlist (covers the
+    // followers/likes/views split on IG/TT/YT/SP). Falls back to the platform
+    // default when the frontend didn't include it. Without this guard, the
+    // server would always price + route as platform default (e.g. tt_followers)
+    // even when the buyer selected likes or views — wrong price AND wrong SMM
+    // service.
+    const allowedServices = PLATFORM_SERVICES[platform] || [];
+    const rawService = typeof item.service === "string" ? item.service : "";
+    const cartService = allowedServices.includes(rawService) ? rawService : null;
+
+    const serviceForItem = isLiveViewers
+      ? "tw_live_viewers"
+      : cartService || config.service;
 
     let basePrice: number | null;
     if (isLiveViewers) {
@@ -139,7 +152,7 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
         basePrice = TWITCH_AI_VIEWERS_PACKS.find((p) => p.qty === qty)?.price ?? null;
       }
     } else {
-      basePrice = priceForQty(platform, config.service, qty, currency, rows);
+      basePrice = priceForQty(platform, serviceForItem, qty, currency, rows);
     }
     if (basePrice === null) throw new Error("Unknown pricing pack");
 
