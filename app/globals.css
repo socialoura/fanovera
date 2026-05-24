@@ -793,6 +793,33 @@ input { font: inherit; color: inherit; }
   .netcard-highlighted { animation: none; }
 }
 
+/* Bottom-CTA targeted icon: when utm_term identifies a network, that icon
+ * gets a brand-colored ring + pulse so the visitor sees "this is your one." */
+.cta-net-matched {
+  box-shadow:
+    0 12px 28px -8px color-mix(in srgb, var(--brand) 60%, transparent),
+    0 0 0 3px var(--brand),
+    0 0 0 6px rgba(255,255,255,0.55);
+  animation: cta-net-pulse 2.2s ease-in-out infinite;
+}
+@keyframes cta-net-pulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 28px -8px color-mix(in srgb, var(--brand) 60%, transparent),
+      0 0 0 3px var(--brand),
+      0 0 0 6px rgba(255,255,255,0.55);
+  }
+  50% {
+    box-shadow:
+      0 16px 36px -8px color-mix(in srgb, var(--brand) 75%, transparent),
+      0 0 0 4px var(--brand),
+      0 0 0 8px rgba(255,255,255,0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-net-matched { animation: none; }
+}
+
 /* Targeted-intent "rest" grid: 7 cards with the featured one extracted to its
  * own row above. Flex so the last incomplete row centers automatically. The
  * basis values match what `repeat(4|3|2, 1fr)` would give in grid mode. */

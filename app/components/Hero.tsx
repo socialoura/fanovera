@@ -41,6 +41,14 @@ function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
 function usePromoNetworkPriceLabels() {
   const { currency, locale } = useCurrencyPreference();
   const [pricingVersion, setPricingVersion] = useState(0);
+  // Cached pricing lives in sessionStorage and is only reachable client-side.
+  // Reading it during the first render produces SSR/CSR divergence — gate it
+  // behind a mount flag so hydration always sees the NET_META fallback.
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,12 +71,30 @@ function usePromoNetworkPriceLabels() {
 
     return Object.fromEntries(
       NETWORKS.map((network) => {
-        const cachedMinPrice = getCachedNetworkMinPrice(network.id, currency);
+        const cachedMinPrice = mounted ? getCachedNetworkMinPrice(network.id, currency) : null;
         const fallbackPrice = NET_META[network.id].minPriceEur;
         return [network.id, formatter.format(cachedMinPrice ?? fallbackPrice)];
       }),
     ) as Record<NetworkId, string>;
-  }, [currency, formatter, pricingVersion]);
+  }, [currency, formatter, pricingVersion, mounted]);
+}
+
+/**
+ * Featured-card CTA label per locale. Stays whitehat: "Voir l'offre" =
+ * "See the offer" — no product noun (followers/likes/etc.), no quantity.
+ */
+function featuredCardLabel(locale: string, network: Network): string {
+  const lower = (locale || "").toLowerCase().split("-")[0];
+  const templates: Record<string, string> = {
+    fr: `Voir l'offre ${network.name}`,
+    en: `See the ${network.name} offer`,
+    es: `Ver la oferta ${network.name}`,
+    pt: `Ver a oferta ${network.name}`,
+    de: `${network.name}-Angebot ansehen`,
+    it: `Vedi l'offerta ${network.name}`,
+    tr: `${network.name} teklifini gör`,
+  };
+  return templates[lower] || templates.fr;
 }
 
 function StarsRow({ items }: { items: { q: string; a: string }[] }) {
@@ -98,6 +124,156 @@ function StarsRow({ items }: { items: { q: string; a: string }[] }) {
           <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>- {t.a}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Network-themed visual mockup shown when `?utm_term={platform}` matches.
+ * Stays whitehat: no quantitative data ("X followers", "+200 likes"), no
+ * pack pricing — only thematic visuals (color scheme, network logo, generic
+ * "engagement progression" graph). The visitor gets a "you're on the right
+ * page" signal without exposing SMM-panel product specifics to Google's
+ * landing-page policy scan.
+ */
+function ThemedMockup({ network, copy }: { network: Network; copy: ReturnType<typeof getPublicCopy>["hero"] }) {
+  const meta = NET_META[network.id];
+  const brandStyle = {
+    "--brand": meta.brand,
+    "--brand-2": meta.brand2,
+  } as CSSProperties;
+
+  return (
+    <div className="themed-mockup mock-window" style={{ width: "100%", maxWidth: 560, ...brandStyle }}>
+      <div className="mock-titlebar">
+        <div className="traffic" style={{ background: "#ff5f57" }}></div>
+        <div className="traffic" style={{ background: "#ffbd2e" }}></div>
+        <div className="traffic" style={{ background: "#28c840" }}></div>
+        <div style={{ flex: 1, textAlign: "center", fontSize: 11, color: "var(--ink-3)" }}>
+          app.fanovera.com / {network.name.toLowerCase()}
+        </div>
+      </div>
+      <div
+        style={{
+          padding: 24,
+          background: `linear-gradient(135deg, color-mix(in srgb, ${meta.brand} 8%, white), color-mix(in srgb, ${meta.brand2} 5%, white))`,
+          minHeight: 380,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: `linear-gradient(135deg, ${meta.brand}, ${meta.brand2})`,
+              display: "grid",
+              placeItems: "center",
+              boxShadow: `0 8px 22px -8px ${meta.brand}aa`,
+            }}
+          >
+            <NetIcon kind={network.icon} color="white" size={26} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>{network.name}</div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{copy.campaignMeta}</div>
+          </div>
+        </div>
+
+        {/* Engagement progression graph — generic, no absolute numbers */}
+        <div style={{ background: "white", border: "1px solid var(--line)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-2)", marginBottom: 10, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            {copy.chartTitle}
+          </div>
+          <svg viewBox="0 0 300 110" style={{ width: "100%", height: 120 }}>
+            <defs>
+              <linearGradient id={`themed-grad-${network.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={meta.brand} stopOpacity="0.32" />
+                <stop offset="100%" stopColor={meta.brand} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[25, 55, 85].map((y) => (
+              <line key={y} x1="10" x2="290" y1={y} y2={y} stroke="#eee" strokeDasharray="2 3" />
+            ))}
+            <path
+              d="M 10 95 Q 40 88 60 82 T 110 68 T 160 50 T 210 32 T 290 14 L 290 110 L 10 110 Z"
+              fill={`url(#themed-grad-${network.id})`}
+            />
+            <path
+              d="M 10 95 Q 40 88 60 82 T 110 68 T 160 50 T 210 32 T 290 14"
+              stroke={meta.brand}
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+            {[[60, 82], [110, 68], [160, 50], [210, 32], [260, 20]].map(([x, y], i) => (
+              <circle key={i} cx={x} cy={y} r="3" fill="white" stroke={meta.brand} strokeWidth="2" />
+            ))}
+          </svg>
+        </div>
+
+        {/* Three pillars — generic descriptors only, no SMM product nouns */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          {copy.stats.map((s, i) => (
+            <div
+              key={i}
+              style={{
+                padding: 10,
+                background: "white",
+                border: "1px solid var(--line)",
+                borderRadius: 10,
+                textAlign: "left",
+              }}
+            >
+              <div style={{ fontSize: 9, color: "var(--ink-3)", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.l}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, marginTop: 2, color: "var(--ink)" }}>{s.v}</div>
+              <div style={{ fontSize: 9, color: meta.brand, fontWeight: 700, marginTop: 1 }}>{s.d}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Receipt strip — transactional proof, themed with platform accent.
+            Stays whitehat: order delivered status, no product noun / quantity. */}
+        <div
+          style={{
+            marginTop: 12,
+            padding: "8px 12px",
+            background: `color-mix(in srgb, ${meta.brand} 6%, white)`,
+            border: `1px dashed color-mix(in srgb, ${meta.brand} 35%, transparent)`,
+            borderRadius: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: meta.brand,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink)" }}>
+              {copy.receiptLabel}
+            </div>
+            <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 1, fontFamily: "ui-monospace, monospace" }}>
+              #1247 · {network.name.toLowerCase()}
+            </div>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: meta.brand, letterSpacing: "-0.01em" }}>
+            4,90€
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -187,6 +363,57 @@ function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"
         </div>
         {/* Main */}
         <div style={{ padding: 20 }}>
+          {/* Profile chip — avatar + handle + active badge.
+              Stays whitehat: no follower count, no quantitative growth claim. */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 12px",
+              background: "linear-gradient(135deg, rgba(82,96,230,0.08), rgba(124,58,237,0.06))",
+              border: "1px solid var(--line)",
+              borderRadius: 12,
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #fda085, #f6d365)",
+                color: "white",
+                display: "grid",
+                placeItems: "center",
+                fontWeight: 800,
+                fontSize: 12,
+                flexShrink: 0,
+              }}
+            >
+              C
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)" }}>@creator_42</div>
+              <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 1 }}>app.fanovera.com</div>
+            </div>
+            <span
+              style={{
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--green)",
+                padding: "3px 8px",
+                background: "rgba(77,191,138,0.12)",
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+              }}
+            >
+              ↑ {copy.profileBadge}
+            </span>
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -302,6 +529,49 @@ function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"
               ))}
             </svg>
           </div>
+
+          {/* Receipt strip — transactional proof.
+              Stays whitehat: shows that an order was delivered, never says
+              what product or quantity. The amount is generic (4,90€). */}
+          <div
+            style={{
+              marginTop: 10,
+              padding: "8px 12px",
+              background: "rgba(34,197,94,0.06)",
+              border: "1px dashed rgba(34,197,94,0.35)",
+              borderRadius: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "var(--green)",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink)" }}>
+                {copy.receiptLabel}
+              </div>
+              <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 1, fontFamily: "ui-monospace, monospace" }}>
+                #1247 · campagne #042
+              </div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--green)", letterSpacing: "-0.01em" }}>
+              4,90€
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -316,6 +586,7 @@ function NetCard({
   highlighted = false,
   targetedLabel,
   priceLabel,
+  cardLabelOverride,
 }: {
   n: Network;
   copy: ReturnType<typeof getPublicCopy>["hero"];
@@ -324,6 +595,13 @@ function NetCard({
   highlighted?: boolean;
   targetedLabel?: string;
   priceLabel: string;
+  /**
+   * When set, replaces the generic `copy.cardLabel` ("Audit et stratégie")
+   * with a network-specific safe CTA like "Voir l'offre Instagram". Used by
+   * the featured card on /promo so the visitor sees the matched platform
+   * name in the CTA. Stays whitehat — no product nouns, no quantities.
+   */
+  cardLabelOverride?: string;
 }) {
   const meta = NET_META[n.id];
   const cardStyle = {
@@ -382,7 +660,7 @@ function NetCard({
           price in the visitor's active currency so promo matches checkout. */}
       <div className="netcard-foot">
         <div>
-          <div className="netcard-cta-label">{copy.cardLabel}</div>
+          <div className="netcard-cta-label">{cardLabelOverride || copy.cardLabel}</div>
           <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2, color: "white", letterSpacing: "-0.01em" }}>
             {priceLabel}
           </div>
@@ -460,7 +738,7 @@ export default function Hero() {
   }, [isPromo, targetedNetwork, locale, router]);
 
   const networkHref = (network: Network) =>
-    isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams) : `/${network.id}`;
+    isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams, network.id) : `/${network.id}`;
   const trackNetworkSelect = (network: Network) => {
     if (!isPromo) return;
     trackEvent("cta_clicked", {
@@ -594,8 +872,26 @@ export default function Hero() {
                       highlighted
                       targetedLabel={targetedLabel}
                       priceLabel={promoNetworkPriceLabels[featured.id]}
+                      cardLabelOverride={featuredCardLabel(locale, featured)}
                     />
                   </div>
+                </div>
+              )}
+              {featured && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    margin: "8px auto 14px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-3)",
+                  }}
+                >
+                  {(locale || "fr").toLowerCase().startsWith("en")
+                    ? "Other networks available"
+                    : "Autres réseaux disponibles"}
                 </div>
               )}
               <div
@@ -640,122 +936,183 @@ export default function Hero() {
 
 
         {/* Mock with floating cards.
-            Hidden for targeted-intent visitors (utm names a specific network)
-            because their goal is "find my network → click → buy". Showing the
-            generic Fanovera dashboard mockup below the fold pushes the click
-            target off-screen on mobile and adds visual noise without value.
-            Cold/discovery visitors still see the full hero. */}
-        {!targetedNetwork && (
-        <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <MockDashboard copy={copy} />
-          </div>
+            - Default visitor (no UTM match): generic Fanovera dashboard mock +
+              all 4 floating stickers (IG, TT, SP, YT, rating).
+            - Targeted visitor (utm_term matches a network): platform-themed
+              visual mockup + only the matched network's sticker + the rating
+              sticker (off-network stickers removed for clearer message-match).
+            Both variants stay whitehat — no SMM product nouns or quantities. */}
+        {!targetedNetwork ? (
+          <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <MockDashboard copy={copy} />
+            </div>
 
-          {/* Floating left icons */}
-          <div
-            style={{ position: "absolute", left: "5%", top: 60, ["--r" as string]: "-8deg" } as CSSProperties}
-            className="floaty hide-lg-down"
-          >
+            {/* Floating left icons */}
             <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                background: "linear-gradient(135deg, #fda085, #f6d365)",
-                display: "grid",
-                placeItems: "center",
-                boxShadow: "0 14px 30px -10px rgba(253, 160, 133, 0.5)",
-              }}
+              style={{ position: "absolute", left: "5%", top: 60, ["--r" as string]: "-8deg" } as CSSProperties}
+              className="floaty hide-lg-down"
             >
-              <NetIcon kind="instagram" color="white" size={32} />
-            </div>
-          </div>
-          <div
-            style={{ position: "absolute", left: "2%", top: 220, ["--r" as string]: "5deg" } as CSSProperties}
-            className="floaty hide-lg-down"
-          >
-            <div className="sticker" style={{ borderRadius: 999 }}>
-              <NetIcon kind="tiktok" color="#1d1d2c" size={20} />
-              <div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)", fontWeight: 600 }}>{copy.tiktokLabel}</div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{copy.tiktokValue}</div>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 16,
+                  background: "linear-gradient(135deg, #fda085, #f6d365)",
+                  display: "grid",
+                  placeItems: "center",
+                  boxShadow: "0 14px 30px -10px rgba(253, 160, 133, 0.5)",
+                }}
+              >
+                <NetIcon kind="instagram" color="white" size={32} />
               </div>
             </div>
-          </div>
+            <div
+              style={{ position: "absolute", left: "2%", top: 220, ["--r" as string]: "5deg" } as CSSProperties}
+              className="floaty hide-lg-down"
+            >
+              <div className="sticker" style={{ borderRadius: 999 }}>
+                <NetIcon kind="tiktok" color="#1d1d2c" size={20} />
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", fontWeight: 600 }}>{copy.tiktokLabel}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{copy.tiktokValue}</div>
+                </div>
+              </div>
+            </div>
 
-          {/* Floating right cards */}
-          <div
-            style={{ position: "absolute", right: "5%", top: 30, ["--r" as string]: "7deg" } as CSSProperties}
-            className="floaty hide-lg-down"
-          >
-            <div className="sticker">
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: "var(--green)",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <NetIcon kind="spotify" color="white" size={20} />
+            {/* Floating right cards */}
+            <div
+              style={{ position: "absolute", right: "5%", top: 30, ["--r" as string]: "7deg" } as CSSProperties}
+              className="floaty hide-lg-down"
+            >
+              <div className="sticker">
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--green)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  <NetIcon kind="spotify" color="white" size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.spotifyTitle}</div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.spotifyMeta}</div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.spotifyTitle}</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.spotifyMeta}</div>
+            </div>
+            <div
+              style={{ position: "absolute", right: "2%", top: 180, ["--r" as string]: "-4deg" } as CSSProperties}
+              className="floaty hide-lg-down"
+            >
+              <div className="sticker">
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "linear-gradient(135deg, #ff6b9b, #c45cae)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 4l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>4,9/5</div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{withDynamicReviewCount(copy.reviewsMeta)}</div>
+                </div>
+              </div>
+            </div>
+            <div
+              style={{ position: "absolute", right: "8%", top: 320, ["--r" as string]: "3deg" } as CSSProperties}
+              className="floaty hide-lg-down"
+            >
+              <div className="sticker">
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--primary)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  <NetIcon kind="youtube" color="white" size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.youtubeTitle}</div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.youtubeMeta}</div>
+                </div>
               </div>
             </div>
           </div>
-          <div
-            style={{ position: "absolute", right: "2%", top: 180, ["--r" as string]: "-4deg" } as CSSProperties}
-            className="floaty hide-lg-down"
-          >
-            <div className="sticker">
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg, #ff6b9b, #c45cae)",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 4l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" />
-                </svg>
+        ) : (
+          (() => {
+            const themedNetwork = NETWORKS.find((n) => n.id === targetedNetwork);
+            if (!themedNetwork) return null;
+            const themedMeta = NET_META[themedNetwork.id];
+            return (
+              <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <ThemedMockup network={themedNetwork} copy={copy} />
+                </div>
+
+                {/* Left floating: only the matched network icon. */}
+                <div
+                  style={{ position: "absolute", left: "5%", top: 60, ["--r" as string]: "-8deg" } as CSSProperties}
+                  className="floaty hide-lg-down"
+                >
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 16,
+                      background: `linear-gradient(135deg, ${themedMeta.brand}, ${themedMeta.brand2})`,
+                      display: "grid",
+                      placeItems: "center",
+                      boxShadow: `0 14px 30px -10px ${themedMeta.brand}88`,
+                    }}
+                  >
+                    <NetIcon kind={themedNetwork.icon} color="white" size={32} />
+                  </div>
+                </div>
+
+                {/* Right floating: only the rating sticker (always relevant). */}
+                <div
+                  style={{ position: "absolute", right: "2%", top: 120, ["--r" as string]: "-4deg" } as CSSProperties}
+                  className="floaty hide-lg-down"
+                >
+                  <div className="sticker">
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: "linear-gradient(135deg, #ff6b9b, #c45cae)",
+                        display: "grid",
+                        placeItems: "center",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 4l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>4,9/5</div>
+                      <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{withDynamicReviewCount(copy.reviewsMeta)}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>4,9/5</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{withDynamicReviewCount(copy.reviewsMeta)}</div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{ position: "absolute", right: "8%", top: 320, ["--r" as string]: "3deg" } as CSSProperties}
-            className="floaty hide-lg-down"
-          >
-            <div className="sticker">
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: "var(--primary)",
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <NetIcon kind="youtube" color="white" size={20} />
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>{copy.youtubeTitle}</div>
-                <div style={{ fontSize: 10, color: "var(--ink-3)" }}>{copy.youtubeMeta}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+            );
+          })()
         )}
       </div>
     </section>

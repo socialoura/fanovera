@@ -57,7 +57,9 @@
       "Bash(npm ls *)",
       "Bash(findstr /i \"google-ads\")",
       "PowerShell([Convert]::ToBase64String\\(\\(1..48 | ForEach-Object { Get-Random -Maximum 256 }\\)\\))",
-      "Bash(tee /tmp/tsc.log)"
+      "Bash(tee /tmp/tsc.log)",
+      "Bash(grep -A 18 \"padding: \\\\\"14px 0\\\\\", borderBottom: \\\\\"1px dashed var\\(--line\\)\\\\\" }}>$\" \"C:/Users/ilyee/Fanovera/app/tiktok/components/Step3Checkout.tsx\")",
+      "Bash(grep -A 2 \"Step3Checkout\\\\.tsx$\")"
     ]
   }
 }

@@ -32,6 +32,10 @@ export type PublicCopy = {
     reviewsMeta: string;
     youtubeTitle: string;
     youtubeMeta: string;
+    /** Status badge inside the mock dashboard's profile chip (e.g. "Active"). */
+    profileBadge: string;
+    /** Receipt-strip label at the bottom of the mock dashboard (e.g. "Commande livrée"). */
+    receiptLabel: string;
   };
   how: {
     eyebrow: string;
@@ -127,6 +131,13 @@ export type PublicCopy = {
     paymentError: string;
     orPayByCard: string;
     networkError: string;
+    /**
+     * Collapsed-state CTA for the promo-code field on Step 3 checkout.
+     * Hidden by default to prevent coupon-induced abandonment ("let me go
+     * search a code first"); shown as a discreet text link below the totals.
+     */
+    haveCoupon: string;
+    youSaveToday: (amount: string) => string;
   };
 };
 
@@ -145,11 +156,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Campagne #042",
       campaignMeta: "Active - Jour 18 sur 30",
       stats: [
-        { l: "Audit", v: "32 pts", d: "priorisés" },
-        { l: "Contenus", v: "18 idées", d: "prêtes" },
-        { l: "Planning", v: "30 j", d: "cadence" },
+        { l: "Présence", v: "Active", d: "100%" },
+        { l: "Visibilité", v: "30 j", d: "suivie" },
+        { l: "Réseaux", v: "8", d: "couverts" },
       ],
-      chartTitle: "Plan de visibilité - 30 jours",
+      chartTitle: "Présence en ligne - 30 jours",
       cardLabel: "Audit et stratégie",
       cardCta: "Voir la solution",
       titleBefore: "Une présence en ligne ",
@@ -164,6 +175,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2 348 avis",
       youtubeTitle: "SEO video",
       youtubeMeta: "titres et calendrier",
+      profileBadge: "Active",
+      receiptLabel: "Commande livrée",
     },
     how: {
       eyebrow: "★ Comment ça marche",
@@ -268,6 +281,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       paymentError: "Erreur de paiement",
       orPayByCard: "ou payer par carte",
       networkError: "Connexion impossible au service de paiement.",
+      haveCoupon: "J'ai un code promo",
+      youSaveToday: (amount) => `Vous économisez ${amount} aujourd'hui`,
     },
   },
   en: {
@@ -284,11 +299,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Campaign #042",
       campaignMeta: "Active - Day 18 of 30",
       stats: [
-        { l: "Audit", v: "32 pts", d: "prioritized" },
-        { l: "Content", v: "18 ideas", d: "ready" },
-        { l: "Schedule", v: "30 d", d: "cadence" },
+        { l: "Presence", v: "Active", d: "100%" },
+        { l: "Visibility", v: "30 d", d: "tracked" },
+        { l: "Networks", v: "8", d: "covered" },
       ],
-      chartTitle: "Visibility plan - 30 days",
+      chartTitle: "Online presence - 30 days",
       cardLabel: "Audit and strategy",
       cardCta: "See solution",
       titleBefore: "A ",
@@ -303,6 +318,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2,348 reviews",
       youtubeTitle: "Video SEO",
       youtubeMeta: "titles and calendar",
+      profileBadge: "Active",
+      receiptLabel: "Order delivered",
     },
     how: {
       eyebrow: "★ How it works",
@@ -401,6 +418,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       paymentError: "Payment error",
       orPayByCard: "or pay by card",
       networkError: "Cannot reach the payment service.",
+      haveCoupon: "I have a promo code",
+      youSaveToday: (amount) => `You save ${amount} today`,
     },
   },
   es: {
@@ -417,11 +436,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Campaña #042",
       campaignMeta: "Activa - Día 18 de 30",
       stats: [
-        { l: "Auditoría", v: "32 pts", d: "priorizados" },
-        { l: "Contenidos", v: "18 ideas", d: "listas" },
-        { l: "Planning", v: "30 d", d: "ritmo" },
+        { l: "Presencia", v: "Activa", d: "100%" },
+        { l: "Visibilidad", v: "30 d", d: "seguida" },
+        { l: "Redes", v: "8", d: "cubiertas" },
       ],
-      chartTitle: "Plan de visibilidad - 30 días",
+      chartTitle: "Presencia online - 30 días",
       cardLabel: "Auditoría y estrategia",
       cardCta: "Ver la solución",
       titleBefore: "Una presencia online ",
@@ -436,6 +455,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2.348 reseñas",
       youtubeTitle: "SEO vídeo",
       youtubeMeta: "títulos y calendario",
+      profileBadge: "Activa",
+      receiptLabel: "Pedido entregado",
     },
     how: {
       eyebrow: "★ Cómo funciona",
@@ -489,7 +510,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     chat: { invalidEmail: "Email no válido.", shortMessage: "Mensaje demasiado corto.", retry: "Error, inténtalo de nuevo.", networkRetry: "Error de red, inténtalo de nuevo.", open: "Abrir el chat", question: "¿Una pregunta?", sentHeader: "¡Mensaje enviado!", online: "Soporte - en línea", greeting: "¡Hola! ¿Cómo podemos ayudarte? Introduce tu email para empezar.", emailLabel: "Tu email", continue: "Continuar", messageLabel: "Tu mensaje", messagePlaceholder: "Describe tu solicitud...", sending: "Enviando...", send: "Enviar mensaje", thanks: "¡Gracias!", reply: (email) => `Te responderemos a ${email} lo antes posible.`, close: "Cerrar", privacy: "Tus datos están protegidos y cifrados" },
     order: { confirmError: "No se pudo confirmar tu pedido.", unexpected: "Error inesperado.", title: "Pedido confirmado", thanks: "Gracias por tu compra. Hemos recibido tu pedido.", finalizing: "Finalizando el pedido...", verifying: "Verificando el pago...", fallbackError: "No pudimos finalizar tu pedido automáticamente.", track: (id) => `Seguir mi pedido #${id}`, home: "Volver al inicio" },
     track: { notFound: "Pedido no encontrado.", unexpected: "Error inesperado.", title: "Seguimiento del pedido", loading: "Cargando...", summary: (id, platform, status) => `Pedido #${id} - ${platform} - estado global ${status}`, delivered: "Entregado", remaining: "Restante" },
-    payment: { paying: "Procesando pago…", pay: "Pagar", loading: "Cargando pago seguro…", paymentError: "Error de pago", orPayByCard: "o paga con tarjeta", networkError: "No se puede conectar al servicio de pago." },
+    payment: { paying: "Procesando pago…", pay: "Pagar", loading: "Cargando pago seguro…", paymentError: "Error de pago", orPayByCard: "o paga con tarjeta", networkError: "No se puede conectar al servicio de pago.", haveCoupon: "Tengo un código promocional", youSaveToday: (amount) => `Ahorras ${amount} hoy` },
   },
   pt: {
     header: { track: "Acompanhar", faq: "FAQ", contact: "Contato", start: "Começar" },
@@ -505,11 +526,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Campanha #042",
       campaignMeta: "Ativa - Dia 18 de 30",
       stats: [
-        { l: "Auditoria", v: "32 pts", d: "priorizados" },
-        { l: "Conteúdos", v: "18 ideias", d: "prontas" },
-        { l: "Planejamento", v: "30 d", d: "ritmo" },
+        { l: "Presença", v: "Ativa", d: "100%" },
+        { l: "Visibilidade", v: "30 d", d: "monitorada" },
+        { l: "Redes", v: "8", d: "cobertas" },
       ],
-      chartTitle: "Plano de visibilidade - 30 dias",
+      chartTitle: "Presença online - 30 dias",
       cardLabel: "Auditoria e estratégia",
       cardCta: "Ver a solução",
       titleBefore: "Uma presença online ",
@@ -524,6 +545,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2.348 avaliações",
       youtubeTitle: "SEO vídeo",
       youtubeMeta: "títulos e calendário",
+      profileBadge: "Ativa",
+      receiptLabel: "Pedido entregue",
     },
     how: {
       eyebrow: "★ Como funciona",
@@ -577,7 +600,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     chat: { invalidEmail: "Email inválido.", shortMessage: "Mensagem muito curta.", retry: "Erro, tente novamente.", networkRetry: "Erro de rede, tente novamente.", open: "Abrir o chat", question: "Uma pergunta?", sentHeader: "Mensagem enviada!", online: "Suporte - online", greeting: "Olá! Como podemos ajudar? Insira seu email para começar.", emailLabel: "Seu email", continue: "Continuar", messageLabel: "Sua mensagem", messagePlaceholder: "Descreva sua solicitação...", sending: "Enviando...", send: "Enviar mensagem", thanks: "Obrigado!", reply: (email) => `Responderemos a ${email} o mais breve possível.`, close: "Fechar", privacy: "Seus dados estão protegidos e criptografados" },
     order: { confirmError: "Não foi possível confirmar seu pedido.", unexpected: "Erro inesperado.", title: "Pedido confirmado", thanks: "Obrigado pela sua compra. Recebemos seu pedido.", finalizing: "Finalizando o pedido...", verifying: "Verificando o pagamento...", fallbackError: "Não conseguimos finalizar seu pedido automaticamente.", track: (id) => `Acompanhar meu pedido #${id}`, home: "Voltar ao início" },
     track: { notFound: "Pedido não encontrado.", unexpected: "Erro inesperado.", title: "Acompanhamento do pedido", loading: "Carregando...", summary: (id, platform, status) => `Pedido #${id} - ${platform} - status global ${status}`, delivered: "Entregue", remaining: "Restante" },
-    payment: { paying: "Processando pagamento…", pay: "Pagar", loading: "Carregando pagamento seguro…", paymentError: "Erro de pagamento", orPayByCard: "ou pague com cartão", networkError: "Não foi possível conectar ao serviço de pagamento." },
+    payment: { paying: "Processando pagamento…", pay: "Pagar", loading: "Carregando pagamento seguro…", paymentError: "Erro de pagamento", orPayByCard: "ou pague com cartão", networkError: "Não foi possível conectar ao serviço de pagamento.", haveCoupon: "Tenho um código promocional", youSaveToday: (amount) => `Você economiza ${amount} hoje` },
   },
   de: {
     header: { track: "Tracking", faq: "FAQ", contact: "Kontakt", start: "Starten" },
@@ -593,11 +616,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Kampagne #042",
       campaignMeta: "Aktiv - Tag 18 von 30",
       stats: [
-        { l: "Audit", v: "32 Pkt.", d: "priorisiert" },
-        { l: "Inhalte", v: "18 Ideen", d: "bereit" },
-        { l: "Planung", v: "30 T", d: "Rhythmus" },
+        { l: "Präsenz", v: "Aktiv", d: "100%" },
+        { l: "Sichtbarkeit", v: "30 T", d: "verfolgt" },
+        { l: "Netzwerke", v: "8", d: "abgedeckt" },
       ],
-      chartTitle: "Sichtbarkeitsplan - 30 Tage",
+      chartTitle: "Online-Präsenz - 30 Tage",
       cardLabel: "Audit und Strategie",
       cardCta: "Lösung ansehen",
       titleBefore: "Eine ",
@@ -612,6 +635,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2.348 Bewertungen",
       youtubeTitle: "Video-SEO",
       youtubeMeta: "Titel und Kalender",
+      profileBadge: "Aktiv",
+      receiptLabel: "Bestellung geliefert",
     },
     how: {
       eyebrow: "★ So funktioniert es",
@@ -665,7 +690,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     chat: { invalidEmail: "Ungültige E-Mail.", shortMessage: "Nachricht zu kurz.", retry: "Fehler, bitte erneut versuchen.", networkRetry: "Netzwerkfehler, bitte erneut versuchen.", open: "Chat öffnen", question: "Eine Frage?", sentHeader: "Nachricht gesendet!", online: "Support - online", greeting: "Hallo! Wie können wir helfen? Gib deine E-Mail ein, um zu starten.", emailLabel: "Deine E-Mail", continue: "Weiter", messageLabel: "Deine Nachricht", messagePlaceholder: "Beschreibe dein Anliegen...", sending: "Wird gesendet...", send: "Nachricht senden", thanks: "Danke!", reply: (email) => `Wir antworten dir an ${email} so schnell wie möglich.`, close: "Schließen", privacy: "Deine Daten sind geschützt und verschlüsselt" },
     order: { confirmError: "Bestellung konnte nicht bestätigt werden.", unexpected: "Unerwarteter Fehler.", title: "Bestellung bestätigt", thanks: "Danke für deinen Kauf. Deine Bestellung ist eingegangen.", finalizing: "Bestellung wird abgeschlossen...", verifying: "Zahlung wird überprüft...", fallbackError: "Wir konnten deine Bestellung nicht automatisch abschließen.", track: (id) => `Meine Bestellung #${id} verfolgen`, home: "Zur Startseite" },
     track: { notFound: "Bestellung nicht gefunden.", unexpected: "Unerwarteter Fehler.", title: "Bestellverfolgung", loading: "Wird geladen...", summary: (id, platform, status) => `Bestellung #${id} - ${platform} - Gesamtstatus ${status}`, delivered: "Geliefert", remaining: "Verbleibend" },
-    payment: { paying: "Zahlung wird verarbeitet…", pay: "Bezahlen", loading: "Sichere Zahlung wird geladen…", paymentError: "Zahlungsfehler", orPayByCard: "oder mit Karte bezahlen", networkError: "Verbindung zum Zahlungsdienst nicht möglich." },
+    payment: { paying: "Zahlung wird verarbeitet…", pay: "Bezahlen", loading: "Sichere Zahlung wird geladen…", paymentError: "Zahlungsfehler", orPayByCard: "oder mit Karte bezahlen", networkError: "Verbindung zum Zahlungsdienst nicht möglich.", haveCoupon: "Ich habe einen Promo-Code", youSaveToday: (amount) => `Sie sparen heute ${amount}` },
   },
   it: {
     header: { track: "Tracciamento", faq: "FAQ", contact: "Contatto", start: "Inizia" },
@@ -681,11 +706,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Campagna #042",
       campaignMeta: "Attiva - Giorno 18 di 30",
       stats: [
-        { l: "Audit", v: "32 pt", d: "prioritarizzati" },
-        { l: "Contenuti", v: "18 idee", d: "pronte" },
-        { l: "Pianificazione", v: "30 g", d: "ritmo" },
+        { l: "Presenza", v: "Attiva", d: "100%" },
+        { l: "Visibilità", v: "30 g", d: "monitorata" },
+        { l: "Reti", v: "8", d: "coperte" },
       ],
-      chartTitle: "Piano di visibilità - 30 giorni",
+      chartTitle: "Presenza online - 30 giorni",
       cardLabel: "Audit e strategia",
       cardCta: "Vedi la soluzione",
       titleBefore: "Una presenza online ",
@@ -700,6 +725,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2.348 recensioni",
       youtubeTitle: "SEO video",
       youtubeMeta: "titoli e calendario",
+      profileBadge: "Attiva",
+      receiptLabel: "Ordine consegnato",
     },
     how: {
       eyebrow: "★ Come funziona",
@@ -753,7 +780,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     chat: { invalidEmail: "Email non valida.", shortMessage: "Messaggio troppo corto.", retry: "Errore, riprova.", networkRetry: "Errore di rete, riprova.", open: "Apri la chat", question: "Una domanda?", sentHeader: "Messaggio inviato!", online: "Supporto - online", greeting: "Ciao! Come possiamo aiutarti? Inserisci la tua email per iniziare.", emailLabel: "La tua email", continue: "Continua", messageLabel: "Il tuo messaggio", messagePlaceholder: "Descrivi la tua richiesta...", sending: "Invio in corso...", send: "Invia messaggio", thanks: "Grazie!", reply: (email) => `Ti risponderemo a ${email} il prima possibile.`, close: "Chiudi", privacy: "I tuoi dati sono protetti e crittografati" },
     order: { confirmError: "Impossibile confermare il tuo ordine.", unexpected: "Errore imprevisto.", title: "Ordine confermato", thanks: "Grazie per il tuo acquisto. Il tuo ordine è stato ricevuto.", finalizing: "Finalizzazione dell'ordine...", verifying: "Verifica del pagamento...", fallbackError: "Non siamo riusciti a finalizzare automaticamente il tuo ordine.", track: (id) => `Traccia il mio ordine #${id}`, home: "Torna alla home" },
     track: { notFound: "Ordine non trovato.", unexpected: "Errore imprevisto.", title: "Tracciamento ordine", loading: "Caricamento...", summary: (id, platform, status) => `Ordine #${id} - ${platform} - stato globale ${status}`, delivered: "Consegnato", remaining: "Rimanente" },
-    payment: { paying: "Elaborazione pagamento…", pay: "Paga", loading: "Caricamento pagamento sicuro…", paymentError: "Errore di pagamento", orPayByCard: "o paga con carta", networkError: "Impossibile connettersi al servizio di pagamento." },
+    payment: { paying: "Elaborazione pagamento…", pay: "Paga", loading: "Caricamento pagamento sicuro…", paymentError: "Errore di pagamento", orPayByCard: "o paga con carta", networkError: "Impossibile connettersi al servizio di pagamento.", haveCoupon: "Ho un codice promo", youSaveToday: (amount) => `Risparmi ${amount} oggi` },
   },
   tr: {
     header: { track: "Takip", faq: "SSS", contact: "İletişim", start: "Başla" },
@@ -769,11 +796,11 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       campaign: "Kampanya #042",
       campaignMeta: "Aktif - 30 günden 18'i",
       stats: [
-        { l: "Denetim", v: "32 pt", d: "öncelikli" },
-        { l: "İçerikler", v: "18 fikir", d: "hazır" },
-        { l: "Planlama", v: "30 g", d: "ritim" },
+        { l: "Varlık", v: "Aktif", d: "100%" },
+        { l: "Görünürlük", v: "30 g", d: "izlenir" },
+        { l: "Ağlar", v: "8", d: "kapsanır" },
       ],
-      chartTitle: "Görünürlük planı - 30 gün",
+      chartTitle: "Online varlık - 30 gün",
       cardLabel: "Denetim ve strateji",
       cardCta: "Çözümü gör",
       titleBefore: "Yapay vaatler olmadan ",
@@ -788,6 +815,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       reviewsMeta: "2.348 yorum",
       youtubeTitle: "Video SEO",
       youtubeMeta: "başlıklar ve takvim",
+      profileBadge: "Aktif",
+      receiptLabel: "Sipariş teslim edildi",
     },
     how: {
       eyebrow: "★ Nasıl çalışır",
@@ -841,7 +870,7 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
     chat: { invalidEmail: "Geçersiz e-posta.", shortMessage: "Mesaj çok kısa.", retry: "Hata, tekrar deneyin.", networkRetry: "Ağ hatası, tekrar deneyin.", open: "Sohbeti aç", question: "Bir sorunuz mu var?", sentHeader: "Mesaj gönderildi!", online: "Destek - çevrimiçi", greeting: "Merhaba! Size nasıl yardımcı olabiliriz? Başlamak için e-postanızı girin.", emailLabel: "E-posta adresiniz", continue: "Devam", messageLabel: "Mesajınız", messagePlaceholder: "Talebinizi açıklayın...", sending: "Gönderiliyor...", send: "Mesajı gönder", thanks: "Teşekkürler!", reply: (email) => `Size en kısa sürede ${email} adresinden yanıt vereceğiz.`, close: "Kapat", privacy: "Verileriniz korunur ve şifrelenir" },
     order: { confirmError: "Siparişiniz onaylanamadı.", unexpected: "Beklenmeyen hata.", title: "Sipariş onaylandı", thanks: "Satın aldığınız için teşekkürler. Siparişiniz alındı.", finalizing: "Sipariş sonlandırılıyor...", verifying: "Ödeme doğrulanıyor...", fallbackError: "Siparişinizi otomatik olarak sonlandıramadık.", track: (id) => `Siparişimi takip et #${id}`, home: "Ana sayfaya dön" },
     track: { notFound: "Sipariş bulunamadı.", unexpected: "Beklenmeyen hata.", title: "Sipariş takibi", loading: "Yükleniyor...", summary: (id, platform, status) => `Sipariş #${id} - ${platform} - genel durum ${status}`, delivered: "Teslim edildi", remaining: "Kalan" },
-    payment: { paying: "Ödeme işleniyor…", pay: "Öde", loading: "Güvenli ödeme yükleniyor…", paymentError: "Ödeme hatası", orPayByCard: "veya kartla öde", networkError: "Ödeme hizmetine bağlanılamadı." },
+    payment: { paying: "Ödeme işleniyor…", pay: "Öde", loading: "Güvenli ödeme yükleniyor…", paymentError: "Ödeme hatası", orPayByCard: "veya kartla öde", networkError: "Ödeme hizmetine bağlanılamadı.", haveCoupon: "Promosyon kodum var", youSaveToday: (amount) => `Bugün ${amount} tasarruf edersiniz` },
   },
 };
 

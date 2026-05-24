@@ -45,7 +45,7 @@ export default function Header() {
           {NETWORKS.map((n) => (
             <Link
               key={n.id}
-              href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams) : `/${n.id}`}
+              href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams, n.id) : `/${n.id}`}
               aria-label={n.name}
               title={n.name}
               className="nav-pill-icon"

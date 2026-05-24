@@ -22,51 +22,58 @@ type Title = {
  * locales fall back to the generic copy in publicCopy.ts via the caller.
  */
 export const PROMO_HERO_TARGETED_COPY: Partial<Record<string, Partial<Record<NetworkId, Title>>>> = {
+  // Eyebrows are intentionally NON-QUANTITATIVE and avoid product names
+  // ("followers", "likes", "views", "streams", "subscribers"). The /promo
+  // page is the URL Google Ads sees + scans for policy compliance; even
+  // descriptive product mentions can trigger a strike on a fragile account.
+  // Descriptors here stay at the "visibility / presence / growth" level —
+  // the product specifics live on /{platform} which the visitor reaches by
+  // their own click (visitor-initiated navigation = out of ad policy scope).
   fr: {
     instagram: {
-      eyebrow: "Instagram · Followers & Likes",
+      eyebrow: "Instagram · Visibilité progressive",
       titleBefore: "Boostez votre ",
       titleHighlight: "Instagram",
       titleAfter: ", en quelques clics.",
     },
     tiktok: {
-      eyebrow: "TikTok · Followers, Likes & Vues",
+      eyebrow: "TikTok · Présence ciblée",
       titleBefore: "Boostez votre ",
       titleHighlight: "TikTok",
       titleAfter: ", en quelques clics.",
     },
     youtube: {
-      eyebrow: "YouTube · Abonnés & Vues",
+      eyebrow: "YouTube · Croissance de chaîne",
       titleBefore: "Boostez votre chaîne ",
       titleHighlight: "YouTube",
       titleAfter: ", en quelques clics.",
     },
     spotify: {
-      eyebrow: "Spotify · Streams & Followers",
+      eyebrow: "Spotify · Visibilité musicale",
       titleBefore: "Boostez vos titres ",
       titleHighlight: "Spotify",
       titleAfter: ", en quelques clics.",
     },
     twitter: {
-      eyebrow: "Twitter / X · Followers & Retweets",
+      eyebrow: "Twitter / X · Présence sociale",
       titleBefore: "Boostez votre compte ",
       titleHighlight: "Twitter / X",
       titleAfter: ", en quelques clics.",
     },
     facebook: {
-      eyebrow: "Facebook · Likes & Abonnés",
+      eyebrow: "Facebook · Visibilité de page",
       titleBefore: "Boostez votre page ",
       titleHighlight: "Facebook",
       titleAfter: ", en quelques clics.",
     },
     linkedin: {
-      eyebrow: "LinkedIn · Followers & Connections",
+      eyebrow: "LinkedIn · Présence professionnelle",
       titleBefore: "Boostez votre profil ",
       titleHighlight: "LinkedIn",
       titleAfter: ", en quelques clics.",
     },
     twitch: {
-      eyebrow: "Twitch · Followers & Live viewers",
+      eyebrow: "Twitch · Visibilité de chaîne",
       titleBefore: "Boostez votre chaîne ",
       titleHighlight: "Twitch",
       titleAfter: ", en quelques clics.",
@@ -74,49 +81,49 @@ export const PROMO_HERO_TARGETED_COPY: Partial<Record<string, Partial<Record<Net
   },
   en: {
     instagram: {
-      eyebrow: "Instagram · Followers & Likes",
+      eyebrow: "Instagram · Progressive visibility",
       titleBefore: "Grow your ",
       titleHighlight: "Instagram",
       titleAfter: " in just a few clicks.",
     },
     tiktok: {
-      eyebrow: "TikTok · Followers, Likes & Views",
+      eyebrow: "TikTok · Targeted presence",
       titleBefore: "Grow your ",
       titleHighlight: "TikTok",
       titleAfter: " in just a few clicks.",
     },
     youtube: {
-      eyebrow: "YouTube · Subscribers & Views",
+      eyebrow: "YouTube · Channel growth",
       titleBefore: "Grow your ",
       titleHighlight: "YouTube",
       titleAfter: " channel in just a few clicks.",
     },
     spotify: {
-      eyebrow: "Spotify · Streams & Followers",
+      eyebrow: "Spotify · Music visibility",
       titleBefore: "Grow your ",
       titleHighlight: "Spotify",
-      titleAfter: " plays in just a few clicks.",
+      titleAfter: " presence in just a few clicks.",
     },
     twitter: {
-      eyebrow: "Twitter / X · Followers & Retweets",
+      eyebrow: "Twitter / X · Social presence",
       titleBefore: "Grow your ",
       titleHighlight: "Twitter / X",
       titleAfter: " account in just a few clicks.",
     },
     facebook: {
-      eyebrow: "Facebook · Likes & Followers",
+      eyebrow: "Facebook · Page visibility",
       titleBefore: "Grow your ",
       titleHighlight: "Facebook",
       titleAfter: " page in just a few clicks.",
     },
     linkedin: {
-      eyebrow: "LinkedIn · Followers & Connections",
+      eyebrow: "LinkedIn · Professional presence",
       titleBefore: "Grow your ",
       titleHighlight: "LinkedIn",
       titleAfter: " profile in just a few clicks.",
     },
     twitch: {
-      eyebrow: "Twitch · Followers & Live viewers",
+      eyebrow: "Twitch · Channel visibility",
       titleBefore: "Grow your ",
       titleHighlight: "Twitch",
       titleAfter: " channel in just a few clicks.",

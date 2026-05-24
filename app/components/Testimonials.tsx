@@ -1,16 +1,19 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, type NetworkId } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
+import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
 
 export default function Testimonials() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const searchParams = useSearchParams();
   const copy = getPublicCopy(locale, mode, surfaceMode).testimonials;
-  const testimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
+  const baseTestimonials: { q: string; n: string; r: string; net: NetworkId }[] = [
     {
       q: copy.items[0].q,
       n: copy.items[0].n,
@@ -30,6 +33,19 @@ export default function Testimonials() {
       net: "tiktok",
     },
   ];
+
+  // On /promo with utm_term matching, hoist the matched-platform testimonial
+  // to first position so the social proof reinforces the visitor's intent.
+  // When no testimonial matches the target (e.g. utm=youtube but no YT
+  // testimonial in the seed), fall back to the original order.
+  const isPromo = mode === "promo";
+  const targetedNetwork = isPromo ? detectTargetNetworkFromParams(searchParams) : null;
+  const testimonials = targetedNetwork
+    ? [
+        ...baseTestimonials.filter((t) => t.net === targetedNetwork),
+        ...baseTestimonials.filter((t) => t.net !== targetedNetwork),
+      ]
+    : baseTestimonials;
   return (
     <section id="proof" className="section">
       <div className="container">

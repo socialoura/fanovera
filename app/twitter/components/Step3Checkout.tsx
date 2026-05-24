@@ -4,11 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 import NetIcon from "../../components/NetIcon";
 import StripeCheckout from "../../components/StripePayment";
+import CouponField from "../../components/CouponField";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
 import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
 import type { XProfile } from "./Step2Username";
 import { useXCopy } from "../i18n";
+import { useI18n } from "../../i18n/I18nProvider";
+import { getPublicCopy } from "../../components/publicCopy";
 import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
 import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
 
@@ -25,6 +28,8 @@ type Props = {
 
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useXCopy().step3;
+  const { locale } = useI18n();
+  const paymentCopy = getPublicCopy(locale).payment;
   const initialPromo = usePromoFromUrl();
   const [coupon, setCoupon] = useState(initialPromo.code);
   const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
@@ -99,22 +104,28 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               <div style={{ fontWeight: 700 }}>{t.free}</div>
             </div>
 
-            <div style={{ padding: "14px 0", borderBottom: "1px dashed var(--line)" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-3)", marginBottom: 8, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.coupon}</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div className="input-shell" style={{ flex: 1, padding: "4px 12px" }}>
-                  <input type="text" value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder={t.couponPlaceholder} style={{ textTransform: "uppercase", fontSize: 14 }} />
-                </div>
-                <button onClick={() => setCouponApplied(!couponApplied)} style={{ padding: "10px 16px", background: couponApplied ? "var(--green)" : "var(--paper-2)", color: couponApplied ? "white" : "var(--ink)", borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  {couponApplied ? t.applied : t.apply}
-                </button>
-              </div>
-              {couponApplied && promo.type !== "none" && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
-                  {promo.isTestPromo ? `Code test - total ${fmtEuro(total)}` : `${t.saving} ${fmtEuro(discount)}`}
-                </div>
-              )}
-            </div>
+            <CouponField
+              coupon={coupon}
+              setCoupon={setCoupon}
+              couponApplied={couponApplied}
+              setCouponApplied={setCouponApplied}
+              initiallyExpanded={initialPromo.applied}
+              accentColor="var(--x-ink)"
+              labels={{
+                haveCoupon: paymentCopy.haveCoupon,
+                coupon: t.coupon,
+                couponPlaceholder: t.couponPlaceholder,
+                apply: t.apply,
+                applied: t.applied,
+              }}
+              successMessage={
+                couponApplied && promo.type !== "none" ? (
+                  <div style={{ marginTop: 8, fontSize: 12, color: "var(--green)", fontWeight: 600 }}>
+                    {promo.isTestPromo ? `Code test - total ${fmtEuro(total)}` : `${t.saving} ${fmtEuro(discount)}`}
+                  </div>
+                ) : undefined
+              }
+            />
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "16px 0 4px" }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{t.total}</div>
@@ -122,8 +133,15 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                 {fmtEuro(total)}
               </div>
             </div>
-            <div style={{ textAlign: "right", fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through", marginBottom: 16 }}>
-              {fmtEuro(PACKS[pack].old)}
+            <div style={{ textAlign: "right", marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>
+                {fmtEuro(PACKS[pack].old)}
+              </div>
+              {PACKS[pack].old - total > 0.005 && (
+                <div style={{ fontSize: 13, color: "var(--x-ink)", fontWeight: 700, marginTop: 2 }}>
+                  {paymentCopy.youSaveToday(fmtEuro(PACKS[pack].old - total))}
+                </div>
+              )}
             </div>
 
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
