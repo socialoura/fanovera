@@ -435,6 +435,30 @@ export interface OrderConfirmationParams {
    * Defaults to the FR routing if missing.
    */
   locale?: string;
+  /**
+   * Optional cross-sell block injected into the email. When `suggestion` is
+   * present, the email shows a specific complementary product (e.g. "100
+   * Instagram likes for €1.60") with the discount applied; otherwise it
+   * falls back to a generic promo-code panel.
+   */
+  crossSell?: {
+    discountPct: number;
+    code: string;
+    suggestion?: {
+      /** Platform whose page the CTA links to (e.g. "instagram"). */
+      platform: string;
+      /** Full service key, e.g. "ig_likes" (used in the URL hint param). */
+      serviceKey: string;
+      /** Kind of the suggested product, used to pick the localized label. */
+      serviceKind: string;
+      /** Pack size, e.g. 100. */
+      qty: number;
+      /** Base price in cents, BEFORE the discount. */
+      basePriceCents: number;
+      /** Currency for the price display (defaults to the order's currency). */
+      currency?: string;
+    };
+  };
 }
 
 /** Whitelist of supported tracking-URL locale prefixes. */
@@ -486,12 +510,101 @@ export async function sendOrderConfirmation(
 
 // ── HTML template ──
 
+const CROSSSELL_COPY: Record<EmailLocale, { tag: string; title: (pct: number) => string; sub: string; cta: string; codeLabel: string; suggestionTag: string; suggestionCta: string; wasLabel: string }> = {
+  fr: { tag: "Pour ta prochaine commande", title: (p) => `-${p}% offert`,           sub: "On a gardé le meilleur pour la suite. Code valable 30 jours sur n'importe quel pack.", cta: "Commander avec -X%",     codeLabel: "Ton code",     suggestionTag: "Suggéré pour toi",   suggestionCta: "Ajouter à -X%",  wasLabel: "au lieu de" },
+  en: { tag: "For your next order",         title: (p) => `${p}% off, on us`,        sub: "We saved the best for last. Valid 30 days on any pack.",                              cta: "Order with -X%",          codeLabel: "Your code",    suggestionTag: "Suggested for you",  suggestionCta: "Add at -X%",    wasLabel: "instead of" },
+  es: { tag: "Para tu próximo pedido",      title: (p) => `-${p}% de regalo`,        sub: "Guardamos lo mejor. Válido 30 días en cualquier pack.",                              cta: "Pedir con -X%",           codeLabel: "Tu código",    suggestionTag: "Sugerido para ti",   suggestionCta: "Añadir con -X%", wasLabel: "en lugar de" },
+  pt: { tag: "Para o próximo pedido",       title: (p) => `-${p}% de oferta`,        sub: "Guardamos o melhor. Válido 30 dias em qualquer pack.",                                cta: "Pedir com -X%",           codeLabel: "Seu código",   suggestionTag: "Sugerido para você", suggestionCta: "Adicionar -X%",  wasLabel: "em vez de" },
+  de: { tag: "Für deine nächste Bestellung", title: (p) => `-${p}% geschenkt`,        sub: "Wir haben uns das Beste aufgespart. 30 Tage gültig auf jedes Paket.",                cta: "Mit -X% bestellen",       codeLabel: "Dein Code",    suggestionTag: "Für dich vorgeschlagen", suggestionCta: "Mit -X% holen", wasLabel: "statt" },
+  it: { tag: "Per il prossimo ordine",      title: (p) => `-${p}% in regalo`,        sub: "Abbiamo conservato il meglio. Valido 30 giorni su qualsiasi pacchetto.",             cta: "Ordina con -X%",          codeLabel: "Il tuo codice", suggestionTag: "Suggerito per te",   suggestionCta: "Aggiungi a -X%", wasLabel: "invece di" },
+  tr: { tag: "Sonraki siparişin için",      title: (p) => `-${p}% hediye`,           sub: "En iyisini sona sakladık. Herhangi bir pakette 30 gün geçerli.",                     cta: "-X% ile sipariş ver",     codeLabel: "Kodun",        suggestionTag: "Sana özel öneri",    suggestionCta: "-X% ile ekle",   wasLabel: "yerine" },
+};
+
+function renderCrossSellBlock(p: OrderConfirmationParams, locale: EmailLocale): string {
+  if (!p.crossSell || p.crossSell.discountPct <= 0 || !p.crossSell.code) return "";
+  const c = CROSSSELL_COPY[locale];
+  const pct = p.crossSell.discountPct;
+  const code = p.crossSell.code;
+  const ctaUrl = buildPlatformUrl(p.platform, locale, code);
+
+  // ── Variant A: specific product suggestion ──
+  // Renders a 2-zone card with the bought-X → suggested-Y narrative and a
+  // crossed-out base price next to the discounted one.
+  const sug = p.crossSell.suggestion;
+  if (sug) {
+    const sugCurrency = sug.currency || p.currency || "eur";
+    const discountedCents = Math.round(sug.basePriceCents * (1 - pct / 100));
+    const priceNow = fmtPrice(discountedCents, sugCurrency, locale);
+    const priceWas = fmtPrice(sug.basePriceCents, sugCurrency, locale);
+    const platformLabel = PLATFORM_LABEL[sug.platform] || sug.platform;
+    const sugServiceLabel = localizedServiceLabel(sug.serviceKey, locale);
+    const productLabel = `${fmtQty(sug.qty)} ${sugServiceLabel} ${platformLabel}`;
+    const sugUrl = `${buildPlatformUrl(sug.platform, locale, code)}&suggested=${encodeURIComponent(sug.serviceKey)}`;
+    const sugCta = c.suggestionCta.replace("-X%", `-${pct}%`);
+
+    return `
+          <!-- Spacer -->
+          <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
+
+          <!-- Cross-sell with concrete product suggestion -->
+          <tr>
+            <td style="background:#5260e6;background:linear-gradient(135deg,#5260e6 0%,#7c3aed 100%);border-radius:18px;padding:28px 28px;color:#ffffff;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:6px;text-align:center;">
+                ${escapeHtml(c.suggestionTag)}
+              </div>
+              <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;text-align:center;margin-bottom:18px;line-height:1.25;">
+                ${escapeHtml(productLabel)}
+              </div>
+              <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:18px 20px;text-align:center;">
+                <div style="display:inline-block;text-align:left;">
+                  <div style="font-size:13px;color:rgba(255,255,255,0.7);text-decoration:line-through;margin-bottom:2px;">${escapeHtml(c.wasLabel)} ${escapeHtml(priceWas)}</div>
+                  <div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;line-height:1;">${escapeHtml(priceNow)}</div>
+                </div>
+                <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:0.04em;">${escapeHtml(c.codeLabel)} <span style="font-family:monospace;font-weight:700;color:#ffffff;letter-spacing:0.1em;">${escapeHtml(code)}</span></div>
+              </div>
+              <div style="text-align:center;margin-top:18px;">
+                <a href="${sugUrl}" style="display:inline-block;background:#ffffff;color:#5260e6;text-decoration:none;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;">${escapeHtml(sugCta)} →</a>
+              </div>
+            </td>
+          </tr>`;
+  }
+
+  // ── Variant B: generic discount block (fallback) ──
+  const cta = c.cta.replace("-X%", `-${pct}%`);
+  return `
+          <!-- Spacer -->
+          <tr><td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td></tr>
+
+          <!-- Cross-sell generic -->
+          <tr>
+            <td style="background:#5260e6;background:linear-gradient(135deg,#5260e6 0%,#7c3aed 100%);border-radius:18px;padding:32px 28px;text-align:center;color:#ffffff;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:8px;">
+                ${escapeHtml(c.tag)}
+              </div>
+              <div style="font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;margin-bottom:8px;">
+                ${escapeHtml(c.title(pct))}
+              </div>
+              <p style="margin:0 0 18px;font-size:14px;color:rgba(255,255,255,0.85);line-height:1.55;">
+                ${escapeHtml(c.sub)}
+              </p>
+              <div style="background:rgba(255,255,255,0.12);border:1px dashed rgba(255,255,255,0.4);border-radius:10px;padding:14px 16px;margin:0 auto 18px;display:inline-block;">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:4px;">${escapeHtml(c.codeLabel)}</div>
+                <div style="font-family:monospace;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:0.1em;">${escapeHtml(code)}</div>
+              </div>
+              <div>
+                <a href="${ctaUrl}" style="display:inline-block;background:#ffffff;color:#5260e6;text-decoration:none;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;">${escapeHtml(cta)} →</a>
+              </div>
+            </td>
+          </tr>`;
+}
+
 function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
   const locale = normalizeEmailLocale(p.locale);
   const copy = EMAIL_COPY[locale];
   const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
   const trackingUrl = buildTrackingUrl(p.orderId, p.locale);
   const currency = p.currency || "eur";
+  const crossSellHtml = renderCrossSellBlock(p, locale);
 
   const itemsHtml = p.cart
     .map((it) => {
@@ -600,7 +713,7 @@ function renderOrderConfirmationHtml(p: OrderConfirmationParams): string {
               </div>
             </td>
           </tr>
-
+${crossSellHtml}
           <!-- Spacer -->
           <tr><td style="height:24px;line-height:24px;font-size:0;">&nbsp;</td></tr>
 
@@ -1582,6 +1695,312 @@ ${p.threadToken}`;
     return { ok: true, id: result.data?.id };
   } catch (err) {
     console.error("[email] sendOrderMissingInfoEmail error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+// ── Lifecycle emails (post-purchase reminders + win-back) ──
+
+export type LifecycleKind = "post_purchase_7d" | "post_purchase_30d" | "win_back_60d" | "win_back_90d";
+
+export interface LifecycleEmailParams {
+  to: string;
+  kind: LifecycleKind;
+  platform: string;
+  username: string;
+  /**
+   * Dominant service from the customer's last cart (e.g. "ig_followers",
+   * "sp_streams"). When provided, the copy switches to the localized service
+   * label ("followers" → "abonnés", "streams" → "écoutes") instead of the
+   * generic default. Falls back to "followers" wording when empty.
+   */
+  service?: string;
+  /** Discount %: 0 = no code, else the FANO{N} code is used. */
+  discountPct: number;
+  /** Custom subject set in admin (falls back to a default per kind/locale). */
+  customSubject?: string;
+  locale?: string;
+}
+
+type LifecycleCopy = {
+  defaultSubject: Record<EmailLocale, string>;
+  hero: Record<EmailLocale, string>;
+  intro: Record<EmailLocale, (handle: string, platformLabel: string, serviceLabel: string) => string>;
+  cta: Record<EmailLocale, string>;
+};
+
+const LIFECYCLE_COPY: Record<LifecycleKind, LifecycleCopy> = {
+  post_purchase_7d: {
+    defaultSubject: {
+      fr: "Tes {service} tiennent bien ?",
+      en: "Are your {service} still going strong?",
+      es: "¿Tus {service} siguen aguantando?",
+      pt: "Seus {service} estão segurando bem?",
+      de: "Halten deine {service} noch durch?",
+      it: "I tuoi {service} stanno reggendo?",
+      tr: "{service} hâlâ sağlam mı?",
+    },
+    hero: {
+      fr: "Ça envoie du lourd sur ton compte ?",
+      en: "How's the boost going on your account?",
+      es: "¿Cómo va el boost en tu cuenta?",
+      pt: "Como está o boost na sua conta?",
+      de: "Wie läuft der Boost auf deinem Konto?",
+      it: "Come va il boost sul tuo account?",
+      tr: "Hesabındaki boost nasıl gidiyor?",
+    },
+    intro: {
+      fr: (h, p, s) => `Une semaine déjà depuis tes ${s} sur ${p} pour ${h}. C'est le bon moment pour recharger : l'effet est cumulatif et l'algorithme aime la croissance régulière.`,
+      en: (h, p, s) => `Already a week since your ${s} on ${p} for ${h}. Now's a great time to top up — the effect compounds and the algorithm loves steady growth.`,
+      es: (h, p, s) => `Ya pasó una semana desde tus ${s} en ${p} para ${h}. Es un buen momento para recargar — el efecto es acumulativo.`,
+      pt: (h, p, s) => `Já passou uma semana desde seus ${s} em ${p} para ${h}. É um bom momento para recarregar.`,
+      de: (h, p, s) => `Schon eine Woche seit deinen ${s} auf ${p} für ${h}. Perfekter Zeitpunkt zum Aufladen.`,
+      it: (h, p, s) => `È già passata una settimana dai tuoi ${s} su ${p} per ${h}. Momento perfetto per ricaricare.`,
+      tr: (h, p, s) => `${h} için ${p}'daki ${s} siparişinden bir hafta geçti. Tazelemek için harika bir zaman.`,
+    },
+    cta: { fr: "Recharger maintenant", en: "Top up now", es: "Recargar ahora", pt: "Recarregar agora", de: "Jetzt aufladen", it: "Ricarica ora", tr: "Şimdi yenile" },
+  },
+  post_purchase_30d: {
+    defaultSubject: {
+      fr: "On te recharge tes {service} ?",
+      en: "Time to top up your {service}?",
+      es: "¿Hora de recargar tus {service}?",
+      pt: "Hora de recarregar seus {service}?",
+      de: "Zeit, deine {service} aufzuladen?",
+      it: "È ora di ricaricare i tuoi {service}?",
+      tr: "{service} yenileme zamanı mı?",
+    },
+    hero: {
+      fr: "Un mois plus tard...",
+      en: "One month later...",
+      es: "Un mes después...",
+      pt: "Um mês depois...",
+      de: "Einen Monat später...",
+      it: "Un mese dopo...",
+      tr: "Bir ay sonra...",
+    },
+    intro: {
+      fr: (h, p, s) => `Ça fait un mois depuis ta commande de ${s} sur ${p} pour ${h}. Une recharge maintenant garde la dynamique et évite que l'algorithme te déclasse.`,
+      en: (h, p, s) => `It's been a month since your ${s} order on ${p} for ${h}. A refill now keeps the momentum so the algorithm doesn't slow you down.`,
+      es: (h, p, s) => `Ha pasado un mes desde tu pedido de ${s} en ${p} para ${h}. Una recarga ahora mantiene el ritmo.`,
+      pt: (h, p, s) => `Faz um mês desde seu pedido de ${s} em ${p} para ${h}. Uma recarga agora mantém o ritmo.`,
+      de: (h, p, s) => `Ein Monat seit deiner ${s}-Bestellung auf ${p} für ${h}. Ein Refill hält den Schwung.`,
+      it: (h, p, s) => `È passato un mese dall'ordine di ${s} su ${p} per ${h}. Una ricarica ora mantiene il ritmo.`,
+      tr: (h, p, s) => `${h} için ${p}'daki ${s} siparişinden bir ay geçti. Şimdi tazelemek momentumu korur.`,
+    },
+    cta: { fr: "Relancer ma croissance", en: "Restart my growth", es: "Reiniciar mi crecimiento", pt: "Reiniciar meu crescimento", de: "Wachstum neu starten", it: "Riavvia la mia crescita", tr: "Büyümeyi yeniden başlat" },
+  },
+  win_back_60d: {
+    defaultSubject: {
+      fr: "Ça fait un moment...",
+      en: "It's been a while...",
+      es: "Ha pasado un tiempo...",
+      pt: "Faz um tempo...",
+      de: "Ist schon eine Weile her...",
+      it: "È passato un po'...",
+      tr: "Bir süre oldu...",
+    },
+    hero: {
+      fr: "Tu nous manques",
+      en: "We miss you",
+      es: "Te echamos de menos",
+      pt: "Sentimos sua falta",
+      de: "Wir vermissen dich",
+      it: "Ci manchi",
+      tr: "Seni özledik",
+    },
+    intro: {
+      fr: (h, p, s) => `2 mois sans nouvelle pour ${h} sur ${p} ! On a pensé à toi : voici un code spécial pour relancer tes ${s} là où on les avait laissés.`,
+      en: (h, p, s) => `2 months without news for ${h} on ${p}! Here's a special code to pick your ${s} back up where we left them.`,
+      es: (h, p, s) => `2 meses sin noticias para ${h} en ${p}. Aquí tienes un código especial para retomar tus ${s}.`,
+      pt: (h, p, s) => `2 meses sem notícias para ${h} em ${p}. Aqui está um código especial para retomar seus ${s}.`,
+      de: (h, p, s) => `2 Monate ohne Nachricht für ${h} auf ${p}! Hier ein spezieller Code, um deine ${s} wieder anzukurbeln.`,
+      it: (h, p, s) => `2 mesi senza notizie per ${h} su ${p}! Ecco un codice speciale per far ripartire i tuoi ${s}.`,
+      tr: (h, p, s) => `${h} için ${p}'da 2 ay haber yok! İşte ${s} büyümesini yeniden başlatmak için özel bir kod.`,
+    },
+    cta: { fr: "Profiter du code", en: "Use my code", es: "Usar mi código", pt: "Usar meu código", de: "Code einlösen", it: "Usa il codice", tr: "Kodu kullan" },
+  },
+  win_back_90d: {
+    defaultSubject: {
+      fr: "Reviens avec -{pct}%",
+      en: "Come back with -{pct}%",
+      es: "Vuelve con -{pct}%",
+      pt: "Volte com -{pct}%",
+      de: "Komm zurück mit -{pct}%",
+      it: "Torna con -{pct}%",
+      tr: "-{pct}% ile geri dön",
+    },
+    hero: {
+      fr: "Notre meilleure offre, juste pour toi",
+      en: "Our best offer, just for you",
+      es: "Nuestra mejor oferta, solo para ti",
+      pt: "Nossa melhor oferta, só para você",
+      de: "Unser bestes Angebot, nur für dich",
+      it: "La nostra migliore offerta, solo per te",
+      tr: "En iyi teklifimiz, sadece sana",
+    },
+    intro: {
+      fr: (h, p, s) => `3 mois qu'on ne s'est pas vus. Ton compte ${p} ${h} mérite mieux — voici notre code le plus généreux pour relancer tes ${s}.`,
+      en: (h, p, s) => `3 months without you. Your ${p} account ${h} deserves better — here's our most generous code to restart your ${s}.`,
+      es: (h, p, s) => `3 meses sin verte. Tu cuenta de ${p} ${h} merece más — aquí tienes nuestro código más generoso para tus ${s}.`,
+      pt: (h, p, s) => `3 meses sem você. Sua conta de ${p} ${h} merece mais — aqui está nosso código mais generoso para seus ${s}.`,
+      de: (h, p, s) => `3 Monate ohne dich. Dein ${p}-Konto ${h} verdient Besseres — hier unser großzügigster Code für deine ${s}.`,
+      it: (h, p, s) => `3 mesi senza di te. Il tuo account ${p} ${h} merita di più — ecco il nostro codice più generoso per i tuoi ${s}.`,
+      tr: (h, p, s) => `Sensiz 3 ay geçti. ${p} hesabın ${h} daha iyisini hak ediyor — ${s} için en cömert kodumuz.`,
+    },
+    cta: { fr: "Réclamer mon -{pct}%", en: "Claim my -{pct}%", es: "Reclamar mi -{pct}%", pt: "Resgatar meu -{pct}%", de: "-{pct}% sichern", it: "Riscatta il -{pct}%", tr: "-{pct}%'imi al" },
+  },
+};
+
+/**
+ * Substitutes `{pct}`, `{code}`, and `{service}` placeholders so default
+ * copy + admin-set custom subjects automatically reflect the configured
+ * discount and the customer's bought service. Safe for strings without
+ * placeholders — falls through unchanged.
+ */
+function applyLifecyclePlaceholders(s: string, pct: number, code: string, serviceLabel: string): string {
+  return s
+    .replace(/\{pct\}/g, String(pct))
+    .replace(/\{code\}/g, code)
+    .replace(/\{service\}/g, serviceLabel);
+}
+
+/**
+ * Default lowercase service label per locale, used when the order has no
+ * recognized service (fallback). Matches the most common purchase ("followers")
+ * so the copy still reads naturally.
+ */
+const FALLBACK_SERVICE_LABEL: Record<EmailLocale, string> = {
+  fr: "abonnés",
+  en: "followers",
+  es: "seguidores",
+  pt: "seguidores",
+  de: "follower",
+  it: "follower",
+  tr: "takipçi",
+};
+
+const LIFECYCLE_CODE_INTRO: Record<EmailLocale, (pct: number, code: string) => string> = {
+  fr: (pct, code) => `Code <strong>${code}</strong> — <strong>-${pct}%</strong> sur ta prochaine commande.`,
+  en: (pct, code) => `Code <strong>${code}</strong> — <strong>-${pct}%</strong> on your next order.`,
+  es: (pct, code) => `Código <strong>${code}</strong> — <strong>-${pct}%</strong> en tu próximo pedido.`,
+  pt: (pct, code) => `Código <strong>${code}</strong> — <strong>-${pct}%</strong> no seu próximo pedido.`,
+  de: (pct, code) => `Code <strong>${code}</strong> — <strong>-${pct}%</strong> auf deine nächste Bestellung.`,
+  it: (pct, code) => `Codice <strong>${code}</strong> — <strong>-${pct}%</strong> sul tuo prossimo ordine.`,
+  tr: (pct, code) => `Kod <strong>${code}</strong> — sonraki siparişinde <strong>-${pct}%</strong>.`,
+};
+
+const LIFECYCLE_FOOTER: Record<EmailLocale, string> = {
+  fr: "Tu reçois cet email car tu as déjà passé une commande sur Fanovera.",
+  en: "You're receiving this email because you've ordered on Fanovera before.",
+  es: "Recibes este correo porque ya has comprado en Fanovera.",
+  pt: "Você recebe este e-mail porque já fez um pedido na Fanovera.",
+  de: "Du erhältst diese E-Mail, weil du bereits auf Fanovera bestellt hast.",
+  it: "Ricevi questa email perché hai già ordinato su Fanovera.",
+  tr: "Bu e-postayı, daha önce Fanovera'da sipariş verdiğin için alıyorsun.",
+};
+
+function buildPlatformUrl(platform: string, locale: EmailLocale, promoCode: string): string {
+  const cleanBase = APP_URL.replace(/\/$/, "");
+  const platformPath = platform || "instagram";
+  const localePrefix = locale && locale !== "fr" ? `/${locale}` : "";
+  const query = promoCode ? `?promo=${encodeURIComponent(promoCode)}` : "";
+  return `${cleanBase}${localePrefix}/${platformPath}${query}`;
+}
+
+/**
+ * Sends a post-purchase or win-back lifecycle email. The `kind` selects the
+ * copy variant; `discountPct=0` skips the promo block entirely; otherwise the
+ * code is auto-derived as `FANO{discountPct}` (must be 10/15/20/25/30 to be
+ * accepted by promoCodes.ts).
+ */
+export async function sendLifecycleEmail(
+  p: LifecycleEmailParams,
+): Promise<{ ok: boolean; error?: string; id?: string; code?: string }> {
+  const resend = getResend();
+  if (!resend) return { ok: false, error: "Resend not configured" };
+
+  try {
+    const locale = normalizeEmailLocale(p.locale);
+    const copy = LIFECYCLE_COPY[p.kind];
+    if (!copy) return { ok: false, error: `Unknown lifecycle kind: ${p.kind}` };
+
+    const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
+    const handle = p.username ? `@${p.username.replace(/^@/, "")}` : platformLabel;
+    const promoCode = p.discountPct > 0 ? `FANO${p.discountPct}` : "";
+    const ctaUrl = buildPlatformUrl(p.platform, locale, promoCode);
+
+    // Lowercase localized service label ("followers" → "abonnés" in FR for
+    // ig_followers). Falls back to the locale's default noun when the order
+    // has no recognized service.
+    const rawServiceLabel = p.service ? localizedServiceLabel(p.service, locale).toLowerCase() : "";
+    const serviceLabel = rawServiceLabel || FALLBACK_SERVICE_LABEL[locale];
+
+    const rawSubject = (p.customSubject || "").trim() || copy.defaultSubject[locale];
+    const subject = applyLifecyclePlaceholders(rawSubject, p.discountPct, promoCode, serviceLabel);
+    const ctaLabel = applyLifecyclePlaceholders(copy.cta[locale], p.discountPct, promoCode, serviceLabel);
+
+    const codeBlockHtml = promoCode
+      ? `<div style="background:#f5f3ec;border:1px dashed #5260e6;border-radius:12px;padding:18px 20px;margin:18px 0;text-align:center;">
+           <div style="font-size:12px;color:#6b7280;margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase;font-weight:700;">${escapeHtml(locale === "en" ? "Your code" : locale === "es" ? "Tu código" : locale === "de" ? "Dein Code" : locale === "it" ? "Il tuo codice" : locale === "pt" ? "Seu código" : locale === "tr" ? "Kodun" : "Ton code")}</div>
+           <div style="font-family:monospace;font-size:24px;font-weight:800;color:#5260e6;letter-spacing:0.08em;">${escapeHtml(promoCode)}</div>
+           <div style="font-size:13px;color:#374151;margin-top:8px;">${LIFECYCLE_CODE_INTRO[locale](p.discountPct, promoCode)}</div>
+         </div>`
+      : "";
+
+    const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:0;background:#f8f6f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f6f1;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:24px;">
+          <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+            <img src="${APP_URL}/fanovera-logo.png" alt="Fanovera" width="140" height="auto" style="display:block;height:auto;max-height:42px;border:0;outline:none;" />
+          </a>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:36px 32px;">
+          <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#111827;letter-spacing:-0.02em;text-align:center;">${escapeHtml(copy.hero[locale])}</h1>
+          <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.55;">${copy.intro[locale](escapeHtml(handle), escapeHtml(platformLabel), escapeHtml(serviceLabel))}</p>
+          ${codeBlockHtml}
+          <p style="margin:24px 0 0;text-align:center;">
+            <a href="${ctaUrl}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 28px;border-radius:12px;">${escapeHtml(ctaLabel)} →</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:18px 8px 0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5;">
+          ${escapeHtml(LIFECYCLE_FOOTER[locale])}<br>
+          <a href="${APP_URL}" style="color:#6b7280;text-decoration:underline;">fanovera.com</a> · © Fanovera SAS ${new Date().getFullYear()}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    const text = `${copy.hero[locale]}
+
+${copy.intro[locale](handle, platformLabel, serviceLabel).replace(/<[^>]+>/g, "")}
+
+${promoCode ? `Code ${promoCode} — -${p.discountPct}%\n\n` : ""}${ctaLabel}: ${ctaUrl}
+
+—
+Fanovera · ${APP_URL}`;
+
+    const result = await resend.emails.send({
+      from: RESEND_FROM,
+      to: p.to,
+      subject,
+      html,
+      text,
+    });
+
+    if (result.error) {
+      console.error("[email] lifecycle Resend error:", result.error);
+      return { ok: false, error: result.error.message };
+    }
+    return { ok: true, id: result.data?.id, code: promoCode };
+  } catch (err) {
+    console.error("[email] sendLifecycleEmail error:", err);
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }

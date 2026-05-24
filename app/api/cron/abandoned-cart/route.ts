@@ -82,6 +82,17 @@ export async function GET(req: NextRequest) {
   try {
     await ensureSchema();
 
+    // Admin kill-switch: if `abandoned_cart` flow is disabled, skip the run.
+    // We still touch nothing — payloads stay eligible if the admin re-enables
+    // the flow later (within the 48 h window).
+    const flowCfg = (await sql`
+      SELECT active, discount_pct FROM email_flows WHERE key = 'abandoned_cart' LIMIT 1
+    `) as Array<{ active: boolean; discount_pct: number }>;
+    if (flowCfg.length > 0 && !flowCfg[0].active) {
+      return NextResponse.json({ ok: true, skipped: "flow_disabled" });
+    }
+    const discountPct = flowCfg[0]?.discount_pct ?? 0;
+
     // Candidates: payloads aged 30 min - 48 h, with email & non-zero cart,
     // no matching order, no reminder yet. We pull MORE than 50 because we
     // dedupe per-email below — a customer who refreshed Step 2 five times
@@ -171,7 +182,13 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      const recoveryUrl = buildRecoveryUrl(baseUrl, row.platform, row.source_page);
+      let recoveryUrl = buildRecoveryUrl(baseUrl, row.platform, row.source_page);
+      // When admin enabled a discount, append the matching FANO{N} code so
+      // the landing page auto-applies it (see usePromoFromUrl).
+      if (discountPct > 0) {
+        const sep = recoveryUrl.includes("?") ? "&" : "?";
+        recoveryUrl = `${recoveryUrl}${sep}promo=FANO${discountPct}`;
+      }
       const locale = inferLocaleFromSourcePage(row.source_page);
 
       const result = await sendAbandonedCartEmail({

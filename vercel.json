@@ -6,6 +6,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/email-lifecycle",
+      "schedule": "0 9 * * *"
+    },
+    {
       "path": "/api/cron/sync-google-ads",
       "schedule": "0 4 * * *"
     },

@@ -18,8 +18,9 @@ import SupportView from "./components/views/SupportView";
 import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PricingExperimentsView from "./components/views/PricingExperimentsView";
+import EmailFlowsView from "./components/views/EmailFlowsView";
 
-type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -41,6 +42,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "smm", label: "SMM", icon: () => Ic.cog(), sub: "BulkFollows" },
   { id: "i18n", label: "i18n", icon: () => Ic.edit(), sub: "Traductions" },
   { id: "marketing", label: "Mode site", icon: () => Ic.zap(), sub: "Copy FR/EN" },
+  { id: "emails", label: "Emails", icon: () => Ic.bell(), sub: "Relances automatiques" },
   { id: "support", label: "Support", icon: () => Ic.chat(), sub: "Messages clients" },
 ];
 
@@ -250,6 +252,7 @@ export default function AdminClient() {
           {view === "smm" && <SmmView />}
           {view === "i18n" && <I18nSyncView />}
           {view === "marketing" && <MarketingModeView />}
+          {view === "emails" && <EmailFlowsView />}
           {view === "support" && <SupportView />}
         </div>
       </main>

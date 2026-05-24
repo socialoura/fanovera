@@ -75,6 +75,22 @@ export function calculatePromoPricing({
     };
   }
 
+  // Lifecycle email codes: FANO10, FANO15, FANO20, FANO25, FANO30. Capped at
+  // 30 % so a leaked code can never wipe the margin entirely. Anything else
+  // (FANO50, FANO99…) is silently ignored.
+  const lifecycleMatch = code.match(/^FANO(10|15|20|25|30)$/);
+  if (lifecycleMatch) {
+    const pct = Number(lifecycleMatch[1]);
+    const discountCents = Math.round(subtotal * (pct / 100));
+    return {
+      code,
+      type: "percent",
+      amountCents: Math.max(minimumAmountCents, subtotal - discountCents),
+      discountCents,
+      isTestPromo: false,
+    };
+  }
+
   return {
     code,
     type: "none",

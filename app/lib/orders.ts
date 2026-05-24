@@ -3,6 +3,7 @@ import { createOrder, getCheckoutPayload, getOrderByPaymentIntent, normalizeCoun
 import { runSmmForOrder } from "./smm";
 import { sendOrderConfirmation } from "./email";
 import { captureServerEvent } from "./analytics.server";
+import { getComplementarySuggestion, getDominantService } from "./serviceClassification";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -176,6 +177,62 @@ export async function ensureOrderForPaymentIntent(
       console.warn(`[ensureOrder] Email not sent for order #${orderId}: skipEmail (e2e=${checkoutE2E})`);
     } else {
       console.log(`[ensureOrder] Sending confirmation email to ${email} for order #${orderId}`);
+
+      // Lookup the cross-sell flow config — admin can enable/disable + change
+      // the discount % from /admin → Emails. If active and discount > 0, we
+      // also try to pick a complementary product (bought followers → suggest
+      // likes, etc.) so the block becomes a concrete CTA instead of a
+      // generic promo panel.
+      let crossSell:
+        | {
+            discountPct: number;
+            code: string;
+            suggestion?: {
+              platform: string;
+              serviceKey: string;
+              serviceKind: string;
+              qty: number;
+              basePriceCents: number;
+              currency?: string;
+            };
+          }
+        | undefined;
+      try {
+        const flowRow = await sql`
+          SELECT active, discount_pct
+          FROM email_flows
+          WHERE key = 'confirmation_crosssell'
+          LIMIT 1
+        ` as Array<{ active: boolean; discount_pct: number }>;
+        const cfg = flowRow[0];
+        if (cfg?.active && cfg.discount_pct > 0) {
+          crossSell = { discountPct: cfg.discount_pct, code: `FANO${cfg.discount_pct}` };
+
+          // Best-effort suggestion: if it fails (no complement mapped, no
+          // matching pricing row), we keep the generic discount panel.
+          const dominantService = getDominantService(cart);
+          if (dominantService) {
+            try {
+              const sug = await getComplementarySuggestion(platform, dominantService);
+              if (sug) {
+                crossSell.suggestion = {
+                  platform,
+                  serviceKey: sug.service,
+                  serviceKind: sug.serviceKind,
+                  qty: sug.qty,
+                  basePriceCents: sug.priceCents,
+                  currency: pi.currency || "eur",
+                };
+              }
+            } catch (sugErr) {
+              console.error("[ensureOrder] cross-sell suggestion lookup failed:", sugErr);
+            }
+          }
+        }
+      } catch (cfgErr) {
+        console.error("[ensureOrder] cross-sell config lookup failed:", cfgErr);
+      }
+
       sendOrderConfirmation({
         to: email,
         orderId,
@@ -187,6 +244,7 @@ export async function ensureOrderForPaymentIntent(
         totalCents: pi.amount,
         currency: pi.currency || "eur",
         locale: meta.locale || "",
+        crossSell,
       }).then((result) => {
         if (result.ok) {
           console.log(`[ensureOrder] Email sent for order #${orderId} (resend id=${result.id})`);
