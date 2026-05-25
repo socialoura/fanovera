@@ -292,8 +292,31 @@ async function isUrlReachable(rawUrl: string): Promise<boolean> {
  * Build the profile link for a given platform + username.
  */
 function buildLink(platform: string, username: string, postUrl?: string): string {
-  const clean = username.replace(/^@/, "").trim();
   if (postUrl) return postUrl;
+
+  const raw = username.trim();
+
+  // Defensive: if the username is already a full URL (user pasted a profile
+  // link instead of a handle), return it as-is. Without this guard we'd wrap
+  // the URL again — e.g. youtube would produce
+  // `https://www.youtube.com/@https://youtube.com/@foo?si=...` which BulkFollows
+  // rejects as unreachable.
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const u = new URL(raw);
+      // Strip YouTube share-tracking params that some BF parsers choke on.
+      if (platform === "youtube") {
+        u.searchParams.delete("si");
+        u.searchParams.delete("feature");
+        u.hash = "";
+      }
+      return u.toString();
+    } catch {
+      return raw;
+    }
+  }
+
+  const clean = raw.replace(/^@/, "").trim();
   switch (platform) {
     case "instagram":
       return `https://www.instagram.com/${clean}`;
