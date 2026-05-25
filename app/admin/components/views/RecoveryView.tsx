@@ -76,6 +76,17 @@ function formatDate(iso: string) {
   });
 }
 
+type PaymentRecoveryResult = {
+  paymentIntentId: string;
+  ok?: boolean;
+  orderId?: number;
+  duplicate?: boolean;
+  smmPlaced?: boolean;
+  reason?: string;
+  status?: string;
+  error?: string;
+};
+
 export default function RecoveryView() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +96,52 @@ export default function RecoveryView() {
   const [confidenceFilter, setConfidenceFilter] = useState<"all" | Confidence>("all");
   const [intendedFilter, setIntendedFilter] = useState<"all" | Intended>("all");
   const [overrides, setOverrides] = useState<Record<number, string>>({});
+
+  // Emergency PI recovery (orphan Stripe payments)
+  const [piInput, setPiInput] = useState("");
+  const [piBusy, setPiBusy] = useState(false);
+  const [piResults, setPiResults] = useState<PaymentRecoveryResult[] | null>(null);
+  const [piError, setPiError] = useState<string | null>(null);
+
+  const handlePiRecover = async () => {
+    const ids = Array.from(
+      new Set(
+        piInput
+          .split(/[\s,;]+/)
+          .map((s) => s.trim())
+          .filter((s) => s.startsWith("pi_")),
+      ),
+    );
+    if (ids.length === 0) {
+      setPiError("Aucun PI valide (doit commencer par pi_)");
+      return;
+    }
+    if (
+      !confirm(
+        `Recover ${ids.length} PaymentIntent${ids.length > 1 ? "s" : ""} ?\n\nLes commandes déjà en DB seront skip (duplicate). Les manquantes seront créées avec email + Discord + SMM (si auto_order_enabled).`,
+      )
+    ) {
+      return;
+    }
+    setPiBusy(true);
+    setPiError(null);
+    setPiResults(null);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/orders/recover-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ paymentIntentIds: ids }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+      setPiResults(body.results as PaymentRecoveryResult[]);
+    } catch (err) {
+      setPiError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setPiBusy(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -166,6 +223,108 @@ export default function RecoveryView() {
 
   return (
     <div>
+      <div
+        style={{
+          padding: "14px 18px",
+          marginBottom: 14,
+          background: "rgba(82, 96, 230, 0.06)",
+          border: "1px solid rgba(82, 96, 230, 0.30)",
+          borderRadius: 12,
+          color: "var(--a-ink)",
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>
+          Recovery paiements Stripe orphelins
+        </div>
+        <div style={{ fontSize: 12, color: "var(--a-ink-3)", marginBottom: 10 }}>
+          Colle des PaymentIntent IDs (un par ligne, ou séparés par espaces/virgules). L&apos;endpoint
+          appelle <code>ensureOrderForPaymentIntent</code> en mode cron pour chacun. Idempotent :
+          les commandes déjà en DB sont skip avec <code>duplicate: true</code>, les manquantes
+          déclenchent email + Discord + SMM auto (si activé).
+        </div>
+        <textarea
+          value={piInput}
+          onChange={(e) => setPiInput(e.target.value)}
+          placeholder="pi_xxx&#10;pi_yyy&#10;pi_zzz"
+          rows={4}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: "1px solid var(--a-line)",
+            fontFamily: "ui-monospace, monospace",
+            fontSize: 12,
+            resize: "vertical",
+            background: "var(--a-bg)",
+            color: "var(--a-ink)",
+            boxSizing: "border-box",
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+          <button
+            onClick={handlePiRecover}
+            disabled={piBusy || !piInput.trim()}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 8,
+              background: "var(--a-accent)",
+              color: "white",
+              fontWeight: 700,
+              fontSize: 12,
+              border: "none",
+              cursor: piBusy ? "not-allowed" : "pointer",
+              opacity: piBusy ? 0.7 : 1,
+            }}
+          >
+            {piBusy ? "Recovery en cours…" : "Recover"}
+          </button>
+          {piResults && (
+            <div style={{ fontSize: 11, color: "var(--a-ink-3)" }}>
+              {piResults.filter((r) => r.ok && !r.duplicate).length} créées ·{" "}
+              {piResults.filter((r) => r.ok && r.duplicate).length} déjà en DB ·{" "}
+              {piResults.filter((r) => !r.ok).length} échec
+            </div>
+          )}
+        </div>
+        {piError && (
+          <div style={{ marginTop: 8, fontSize: 12, color: "#dc2626" }}>{piError}</div>
+        )}
+        {piResults && (
+          <div style={{ marginTop: 10, maxHeight: 240, overflow: "auto", border: "1px solid var(--a-line)", borderRadius: 8, padding: 8, background: "var(--a-bg)" }}>
+            <table style={{ width: "100%", fontSize: 11, fontFamily: "ui-monospace, monospace" }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "var(--a-ink-3)" }}>
+                  <th style={{ padding: "4px 6px" }}>PI</th>
+                  <th style={{ padding: "4px 6px" }}>Status</th>
+                  <th style={{ padding: "4px 6px" }}>Order</th>
+                  <th style={{ padding: "4px 6px" }}>SMM</th>
+                  <th style={{ padding: "4px 6px" }}>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {piResults.map((r) => {
+                  const ok = r.ok;
+                  const dup = r.duplicate;
+                  const label = !ok ? "❌ failed" : dup ? "🟰 duplicate" : "✅ created";
+                  const color = !ok ? "#dc2626" : dup ? "var(--a-ink-3)" : "#16a34a";
+                  return (
+                    <tr key={r.paymentIntentId}>
+                      <td style={{ padding: "3px 6px", whiteSpace: "nowrap" }}>{r.paymentIntentId}</td>
+                      <td style={{ padding: "3px 6px", color, fontWeight: 700 }}>{label}</td>
+                      <td style={{ padding: "3px 6px" }}>{r.orderId ?? "—"}</td>
+                      <td style={{ padding: "3px 6px" }}>{r.smmPlaced ? "yes" : "no"}</td>
+                      <td style={{ padding: "3px 6px", color: "var(--a-ink-3)" }}>
+                        {r.reason || r.status || r.error || ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div
         style={{
           padding: "14px 18px",
