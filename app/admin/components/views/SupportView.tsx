@@ -37,6 +37,7 @@ export default function SupportView() {
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [draftContext, setDraftContext] = useState("");
 
   const fetchThreads = async () => {
     try {
@@ -60,7 +61,10 @@ export default function SupportView() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("admin_pw") || ""}`,
         },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({
+          id,
+          additionalContext: draftContext.trim() || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.draft) {
@@ -89,6 +93,7 @@ export default function SupportView() {
       if (res.ok) {
         setReplyId(null);
         setReplyText("");
+        setDraftContext("");
         fetchThreads();
       }
     } catch { /* ignore */ }
@@ -215,6 +220,31 @@ export default function SupportView() {
                       boxSizing: "border-box",
                     }}
                   />
+                  {replyText.trim() && (
+                    <div style={{ marginTop: 8 }}>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--a-ink-3)", marginBottom: 4 }}>
+                        Consigne pour la régénération (optionnel)
+                      </label>
+                      <textarea
+                        value={draftContext}
+                        onChange={(e) => setDraftContext(e.target.value)}
+                        placeholder="Ex: plus court, ton apaisant, mentionne un refund de 5€…"
+                        rows={2}
+                        style={{
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: 8,
+                          border: "1px dashed var(--a-line)",
+                          fontSize: 12,
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                          background: "var(--a-bg)",
+                          color: "var(--a-ink)",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+                  )}
                   <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                     <button
                       onClick={() => handleReply(thread.id)}
@@ -251,7 +281,7 @@ export default function SupportView() {
                       {drafting ? "Génération…" : replyText.trim() ? "Régénérer IA" : "Brouillon IA"}
                     </button>
                     <button
-                      onClick={() => { setReplyId(null); setReplyText(""); setDraftError(null); }}
+                      onClick={() => { setReplyId(null); setReplyText(""); setDraftError(null); setDraftContext(""); }}
                       style={{
                         padding: "8px 16px",
                         borderRadius: 8,
@@ -271,7 +301,7 @@ export default function SupportView() {
                 </div>
               ) : (
                 <button
-                  onClick={() => { setReplyId(thread.id); setReplyText(""); setDraftError(null); }}
+                  onClick={() => { setReplyId(thread.id); setReplyText(""); setDraftError(null); setDraftContext(""); }}
                   style={{
                     marginTop: 14,
                     padding: "7px 14px",

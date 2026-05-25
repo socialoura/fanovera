@@ -56,11 +56,16 @@ export async function POST(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
   const body = await req.json().catch(() => ({}));
-  const { id } = body;
+  const { id, additionalContext } = body;
 
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
+
+  const guidance =
+    typeof additionalContext === "string" && additionalContext.trim()
+      ? additionalContext.trim().slice(0, 1000)
+      : null;
 
   const msg = await getSupportMessageById(Number(id));
   if (!msg) {
@@ -108,10 +113,11 @@ export async function POST(req: NextRequest) {
     "- Si aucune commande trouvée et le client en réclame une : demande poliment plus d'infos (email utilisé pour payer, date approximative).",
     "- Pas de bullshit, pas de 'nous prenons votre demande très au sérieux'. Va droit au but.",
     "- Réponse concise : 2 à 5 phrases max, sauf si la question demande vraiment plus.",
+    "- Si un champ 'admin_guidance' est fourni, suis ces instructions supplémentaires en plus des règles ci-dessus (ton, longueur, contenu spécifique à mentionner, etc.).",
     "- Retourne UNIQUEMENT le texte de la réponse, sans guillemets, sans markdown, sans préfixe.",
   ].join("\n");
 
-  const userPayload = {
+  const userPayload: Record<string, unknown> = {
     client_email: msg.email,
     conversation_history: conversation,
     instruction: conversation.length > 1
@@ -119,6 +125,7 @@ export async function POST(req: NextRequest) {
       : "Rédige la première réponse de l'équipe Fanovera au message du client.",
     client_orders: orderContext.length > 0 ? orderContext : "Aucune commande trouvée pour cet email.",
   };
+  if (guidance) userPayload.admin_guidance = guidance;
 
   try {
     const res = await fetch("https://api.openai.com/v1/responses", {
