@@ -18,7 +18,7 @@ import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { extractLinkedinHandle, isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
-import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useLinkedinCopy } from "./i18n";
@@ -38,7 +38,8 @@ export default function LinkedinPageClient() {
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
   const tCopy = useLinkedinCopy();
-  useFunnelPersistence("linkedin", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  const hydration = useFunnelPersistence("linkedin", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  useAutoSelectPopularPack(canDisplayPricing, PACKS, setPack, hydration);
   useProductAnalytics({
     productArea: "linkedin",
     step,

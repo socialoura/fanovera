@@ -19,7 +19,7 @@ import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
-import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useTikTokCopy } from "./i18n";
@@ -66,7 +66,8 @@ export default function TiktokPageClient() {
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const tCopy = useTikTokCopy();
-  useFunnelPersistence("tiktok", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  const hydration = useFunnelPersistence("tiktok", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  useAutoSelectPopularPack(canDisplayPricing, activePacks, setPack, hydration);
   useProductAnalytics({
     productArea: "tiktok",
     step,

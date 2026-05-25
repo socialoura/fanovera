@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Lightweight funnel persistence so users coming back from Step3 (or refreshing
 // the page) don't lose what they already typed. We deliberately only persist
@@ -60,22 +60,38 @@ function writeState(platform: string, data: FunnelState) {
   }
 }
 
+export type FunnelPersistenceStatus = {
+  /** True once the initial restore attempt has run (regardless of outcome). */
+  hydrated: boolean;
+  /** True if a saved pack was restored from storage on this mount. Lets
+   *  callers skip post-hydration defaults so a returning visitor keeps
+   *  their previous pick instead of being snapped back to "popular". */
+  restoredPack: boolean;
+};
+
 export function useFunnelPersistence(
   platform: string,
   state: FunnelState,
   setters: Setters,
-) {
+): FunnelPersistenceStatus {
   const hydratedRef = useRef(false);
+  const [status, setStatus] = useState<FunnelPersistenceStatus>({ hydrated: false, restoredPack: false });
 
   // Restore once on mount.
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
     const saved = readState(platform);
-    if (!saved) return;
-    if (typeof saved.pack === "number" && setters.setPack) setters.setPack(saved.pack);
-    if (typeof saved.username === "string" && saved.username && setters.setUsername) setters.setUsername(saved.username);
-    if (typeof saved.email === "string" && saved.email && setters.setEmail) setters.setEmail(saved.email);
+    let restoredPack = false;
+    if (saved) {
+      if (typeof saved.pack === "number" && setters.setPack) {
+        setters.setPack(saved.pack);
+        restoredPack = true;
+      }
+      if (typeof saved.username === "string" && saved.username && setters.setUsername) setters.setUsername(saved.username);
+      if (typeof saved.email === "string" && saved.email && setters.setEmail) setters.setEmail(saved.email);
+    }
+    setStatus({ hydrated: true, restoredPack });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform]);
 
@@ -89,6 +105,30 @@ export function useFunnelPersistence(
       email: state.email,
     });
   }, [platform, state.pack, state.username, state.email]);
+
+  return status;
+}
+
+/**
+ * Sync the selected pack index to whichever pack is flagged `popular` once
+ * DB pricing has loaded. Skipped when persistence already restored a saved
+ * pack (returning visitor) or after the first apply (so a user toggling
+ * product types isn't snapped back to the popular pack against their will).
+ */
+export function useAutoSelectPopularPack(
+  enabled: boolean,
+  packs: readonly { popular?: boolean }[],
+  setPack: (i: number) => void,
+  hydration: FunnelPersistenceStatus,
+) {
+  const appliedRef = useRef(false);
+  useEffect(() => {
+    if (!enabled || !hydration.hydrated || hydration.restoredPack || appliedRef.current) return;
+    const popularIdx = packs.findIndex((p) => p.popular);
+    if (popularIdx < 0) return;
+    setPack(popularIdx);
+    appliedRef.current = true;
+  }, [enabled, packs, setPack, hydration]);
 }
 
 export function clearFunnelPersistence(platform: string) {

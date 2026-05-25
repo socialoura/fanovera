@@ -19,7 +19,7 @@ import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
-import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useTwitchCopy } from "./i18n";
@@ -62,7 +62,8 @@ export default function TwitchPageClient() {
   const selectedPack = activePacks[safePack] ?? activePacks[0];
   useTrackPageVisit("twitch");
   const tCopy = useTwitchCopy();
-  useFunnelPersistence("twitch", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  const hydration = useFunnelPersistence("twitch", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  useAutoSelectPopularPack(canDisplayPricing, activePacks, setPack, hydration);
   useProductAnalytics({
     productArea: "twitch",
     step,

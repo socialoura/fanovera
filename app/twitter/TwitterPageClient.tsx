@@ -18,7 +18,7 @@ import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
-import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useXCopy } from "./i18n";
@@ -38,7 +38,8 @@ export default function TwitterPageClient() {
   const safePack = Math.min(pack, Math.max(0, PACKS.length - 1));
   const selectedPack = PACKS[safePack] ?? PACKS[0];
   const tCopy = useXCopy();
-  useFunnelPersistence("twitter", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  const hydration = useFunnelPersistence("twitter", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
+  useAutoSelectPopularPack(canDisplayPricing, PACKS, setPack, hydration);
   useProductAnalytics({
     productArea: "twitter",
     step,

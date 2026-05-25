@@ -20,7 +20,7 @@ import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
-import { useFunnelPersistence } from "../lib/useFunnelPersistence";
+import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useSpotifyCopy } from "./i18n";
@@ -62,7 +62,8 @@ export default function SpotifyPageClient() {
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const tCopy = useSpotifyCopy();
-  useFunnelPersistence("spotify", { pack: safePack, username: trackInput, email }, { setPack, setUsername: setTrackInput, setEmail });
+  const hydration = useFunnelPersistence("spotify", { pack: safePack, username: trackInput, email }, { setPack, setUsername: setTrackInput, setEmail });
+  useAutoSelectPopularPack(canDisplayPricing, activePacks, setPack, hydration);
   useProductAnalytics({
     productArea: "spotify",
     step,
