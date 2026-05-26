@@ -53,6 +53,10 @@ export async function GET(req: NextRequest) {
       servicePerfRaw,
       ordersPrevPeriodRes,
     ] = await Promise.all([
+      // Note: every date/hour aggregation is shifted to Europe/Paris (Fanovera
+      // operates from France) so the "today" / "by day" / "peak hours" buckets
+      // align with the operator's calendar instead of UTC. The TIMESTAMPTZ
+      // storage stays UTC — only the cast to DATE / HOUR is timezone-shifted.
       sql`
         SELECT COUNT(*)::int AS count
         FROM orders
@@ -78,11 +82,17 @@ export async function GET(req: NextRequest) {
           AND created_at <  NOW() - ${range} * INTERVAL '1 day'
         GROUP BY currency
       `,
-      sql`SELECT COUNT(*)::int AS count FROM orders WHERE created_at >= CURRENT_DATE AND status IN ('paid','processing','delivered')`,
+      sql`
+        SELECT COUNT(*)::int AS count
+        FROM orders
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+          AND status IN ('paid','processing','delivered')
+      `,
       sql`
         SELECT currency, COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE created_at >= CURRENT_DATE AND status IN ('paid','processing','delivered')
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+          AND status IN ('paid','processing','delivered')
         GROUP BY currency
       `,
       sql`
@@ -114,13 +124,17 @@ export async function GET(req: NextRequest) {
         SELECT d.date::text AS date, o.currency,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
-        FROM generate_series(CURRENT_DATE - ${seriesDays} * INTERVAL '1 day', CURRENT_DATE, '1 day') AS d(date)
-        LEFT JOIN orders o ON o.created_at::date = d.date
+        FROM generate_series(
+          (NOW() AT TIME ZONE 'Europe/Paris')::date - ${seriesDays} * INTERVAL '1 day',
+          (NOW() AT TIME ZONE 'Europe/Paris')::date,
+          '1 day'
+        ) AS d(date)
+        LEFT JOIN orders o ON (o.created_at AT TIME ZONE 'Europe/Paris')::date = d.date
         GROUP BY d.date, o.currency
         ORDER BY d.date ASC
       `,
-      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date >= CURRENT_DATE - ${range} * INTERVAL '1 day'`,
-      sql`SELECT date::text AS date, COALESCE(SUM(cost_cents), 0)::int AS cost FROM ad_costs WHERE date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY date ORDER BY date DESC`,
+      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date >= (NOW() AT TIME ZONE 'Europe/Paris')::date - ${range} * INTERVAL '1 day'`,
+      sql`SELECT date::text AS date, COALESCE(SUM(cost_cents), 0)::int AS cost FROM ad_costs WHERE date >= (NOW() AT TIME ZONE 'Europe/Paris')::date - INTERVAL '7 days' GROUP BY date ORDER BY date DESC`,
       sql`
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
@@ -158,7 +172,7 @@ export async function GET(req: NextRequest) {
         GROUP BY LOWER(email), currency
       `,
       sql`
-        SELECT EXTRACT(HOUR FROM created_at)::int AS hour,
+        SELECT EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Paris')::int AS hour,
                COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
