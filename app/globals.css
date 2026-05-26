@@ -757,9 +757,9 @@ input { font: inherit; color: inherit; }
 .netcard:hover .netcard-arrow { transform: translate(4px, -4px) rotate(-45deg); background: white; color: var(--brand); }
 
 /* Targeted-intent card: highlighted when the visitor arrived from an ad
- * naming this specific network. Effects kept tight so the ring + glow do
- * NOT extend beyond the wrapper width — we already feature the card alone
- * on its own row, so subtle highlighting is enough. */
+ * naming this specific network. Sits at position 1 of the unified network
+ * grid; the brand-colored ring + pulse make it stand out without being
+ * orphaned on its own row. */
 .netcard-highlighted {
   transform: translateY(-3px);
   box-shadow:
@@ -818,26 +818,6 @@ input { font: inherit; color: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cta-net-matched { animation: none; }
-}
-
-/* Targeted-intent "rest" grid: 7 cards with the featured one extracted to its
- * own row above. Flex so the last incomplete row centers automatically. The
- * basis values match what `repeat(4|3|2, 1fr)` would give in grid mode. */
-.net-grid--rest > .netcard,
-.net-grid--rest > .netcard-wrap {
-  flex: 0 0 calc(25% - 11px); /* 4 per row, gap=14 → (gap*(n-1))/n = 10.5 ≈ 11 */
-}
-@media (max-width: 900px) and (min-width: 601px) {
-  .net-grid--rest > .netcard,
-  .net-grid--rest > .netcard-wrap {
-    flex: 0 0 calc(33.333% - 10px); /* 3 per row on tablet */
-  }
-}
-@media (max-width: 600px) {
-  .net-grid--rest > .netcard,
-  .net-grid--rest > .netcard-wrap {
-    flex: 0 0 calc(50% - 5px); /* 2 per row mobile */
-  }
 }
 
 /* Wrapper so the targeted-intent pin can sit OUTSIDE the card without being
@@ -2902,6 +2882,19 @@ input { font: inherit; color: inherit; }
 }
 .slide-in { animation: slide-in .45s ease-out; }
 
+/* Coupon-applied feedback: success message drops from above with a tiny
+ * overshoot bounce so the visitor's eye is pulled to the savings figure
+ * (instead of just the button color flip, which felt under-communicated). */
+@keyframes coupon-success-slide {
+  0%   { opacity: 0; transform: translateY(-10px); }
+  60%  { opacity: 1; transform: translateY(3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.coupon-success-flash { animation: coupon-success-slide .45s cubic-bezier(.16,1.05,.56,1.02); }
+@media (prefers-reduced-motion: reduce) {
+  .coupon-success-flash { animation: none; }
+}
+
 /* Form input shell */
 .input-shell {
   background: white;
@@ -3014,20 +3007,14 @@ input { font: inherit; color: inherit; }
 @media (max-width: 980px) {
   .hero-grid { grid-template-columns: 1fr !important; }
   .net-grid { grid-template-columns: repeat(4, 1fr) !important; }
-  .checkout-grid { grid-template-columns: 1fr !important; }
   .pack-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .country-grid { grid-template-columns: 1fr !important; }
   .why-grid { grid-template-columns: 1fr 1fr !important; }
   .reviews-grid { grid-template-columns: 1fr 1fr !important; }
   .hide-md { display: none !important; }
   .nav-pill { display: none !important; }
-  .pf-header { justify-content: center !important; position: relative; }
-  .pf-header-actions {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
+  /* Mobile pf-header layout: logo left, actions group (lang + currency)
+     right — inherits the desktop space-between, no override needed. */
   .currency-select {
     position: static;
   }
@@ -3067,9 +3054,43 @@ input { font: inherit; color: inherit; }
 }
 @media (max-width: 640px) {
   .net-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  /* Featured card (utm_term=instagram etc.) gets its own full-width row at
+     the top of the 2-column mobile grid so the matched platform stays the
+     visitor's first visual hit. The wrapper is only rendered when the card
+     is highlighted, so the rule scopes itself naturally. */
+  .net-grid > .netcard-wrap { grid-column: 1 / -1; }
   .pack-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
   .why-grid { grid-template-columns: 1fr !important; }
   .reviews-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Small mobile (≤480px / iPhone SE & co): swap the cramped 2-col pricing grid
+ * for a horizontal snap-scroll carousel. Each tile fits ~72vw with a peek of
+ * the next tile visible on the right so the visitor sees the carousel is
+ * scrollable. overflow-y stays auto (browsers force visible→auto when the
+ * other axis scrolls), so top padding gives the .popular/.best pin (top:-10px)
+ * room without clipping. */
+@media (max-width: 480px) {
+  .pack-grid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    grid-template-columns: none !important;
+    gap: 12px !important;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 18px 4px 8px;
+    margin-left: -8px;
+    margin-right: -8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pack-grid::-webkit-scrollbar { display: none; }
+  .pack-grid > .pack-tile {
+    flex: 0 0 72vw;
+    max-width: 280px;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
 }
 
 /* HowItWorks (steps) + Testimonials (stats + cards): 3-4 → 2 → 1 */
@@ -3145,8 +3166,12 @@ input { font: inherit; color: inherit; }
   .ig-new-total-sticker { display: none !important; }
 }
 
-/* Center the 2 stacked cards (form + IG preview) on mobile, full width of grid cell */
-@media (max-width: 980px) {
+/* Step 2 checkout layout: stack form + preview vertically up to 1180px so
+   that tablets (incl. iPad landscape ~1024) get a clean single-column read
+   instead of a cramped 2-column where neither side has room to breathe.
+   Above 1180px, the 2-col `1fr 0.9fr` grid kicks in (set inline in Step2). */
+@media (max-width: 1180px) {
+  .checkout-grid { grid-template-columns: 1fr !important; }
   .checkout-grid > * {
     width: 100%;
     margin-left: auto;
@@ -3181,7 +3206,7 @@ input { font: inherit; color: inherit; }
 .yt-preview-step2-inline {
   display: none;
 }
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   .ig-preview-step2-inline,
   .tt-preview-step2-inline,
   .spo-preview-step2-inline,
@@ -3278,55 +3303,16 @@ input { font: inherit; color: inherit; }
   .pay-wallet { height: 56px; }
 }
 
-/* Header row: flex space-between desktop, centered logo on mobile */
+/* Header row: flex space-between on every breakpoint — logo left, action
+   group (language + currency, plus desktop-only CTA/rating) right. The old
+   mobile layout centered the logo and absolutely positioned the language
+   selector on the left edge, which produced an odd "lang before logo" DOM
+   order and visual order. Removing those overrides means mobile inherits
+   the desktop space-between layout naturally. */
 .header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-.header-lang-mobile { display: none; }
-@media (max-width: 980px) {
-  .header-row {
-    justify-content: center;
-    position: relative;
-  }
-  .header-row .header-cta-group {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .header-row .header-lang-mobile {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-  }
-  .header-row .header-lang-desktop-only { display: none; }
-}
-@media (max-width: 768px) {
-  .pf-header .header-lang-mobile {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
-  }
-  .pf-header .header-lang-desktop-only { display: none; }
-}
-
-/* When the language selector lives at the left edge on mobile, its dropdown
-   must open rightwards (left: 0) instead of the default right: 0 used by the
-   currency selector — otherwise the menu extends past the viewport edge. */
-@media (max-width: 980px) {
-  .header-lang-mobile .currency-menu {
-    right: auto;
-    left: 0;
-    width: min(286px, calc(100vw - 32px));
-  }
 }
 
 /* Reduced motion: respect user preference */
@@ -3394,8 +3380,11 @@ input { font: inherit; color: inherit; }
   align-items: center;
   gap: 8px;
   z-index: 9999;
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s, bottom 220ms ease;
   font-family: inherit;
+}
+@media (max-width: 980px) {
+  .chat-fab { bottom: calc(24px + var(--sticky-cta-h, 0px)); }
 }
 .chat-fab:hover {
   transform: translateY(-1px);
@@ -3600,7 +3589,7 @@ input { font: inherit; color: inherit; }
 }
 @media (max-width: 420px) {
   .chat-widget { bottom: 12px; right: 12px; width: calc(100vw - 24px); border-radius: 18px; }
-  .chat-fab { bottom: 16px; right: 16px; height: 40px; padding: 0 16px 0 14px; }
+  .chat-fab { bottom: calc(16px + var(--sticky-cta-h, 0px)); right: 16px; height: 40px; padding: 0 16px 0 14px; }
   .chat-fab-text { font-size: 12px; }
 }
 
