@@ -26,6 +26,45 @@ function storageKey(platform: string) {
   return `fanovera:funnel:v${VERSION}:${platform}`;
 }
 
+// Global "last email used" cache shared across platforms. Lets a visitor who
+// typed their email on /instagram come back via /tiktok a week later and
+// find the field pre-filled. We keep this on a longer TTL than the per-
+// platform state because the per-platform state is meant for in-progress
+// recovery (close tab → come back same day) whereas this one is for the
+// "remember me" UX across visits.
+const GLOBAL_EMAIL_KEY = "fanovera:last-email:v1";
+const GLOBAL_EMAIL_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+function readLastEmail(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(GLOBAL_EMAIL_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts?: number; email?: string };
+    if (!parsed?.ts || typeof parsed.email !== "string" || !parsed.email) return null;
+    if (Date.now() - parsed.ts > GLOBAL_EMAIL_TTL_MS) {
+      window.localStorage.removeItem(GLOBAL_EMAIL_KEY);
+      return null;
+    }
+    return parsed.email;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastEmail(email: string) {
+  if (typeof window === "undefined") return;
+  // Only persist once the field looks like a complete email — we don't want
+  // a half-typed string like "ily" to clobber the previous valid value if
+  // the user closes the tab mid-keystroke.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
+  try {
+    window.localStorage.setItem(GLOBAL_EMAIL_KEY, JSON.stringify({ ts: Date.now(), email: email.trim() }));
+  } catch {
+    /* ignore */
+  }
+}
+
 // We store in localStorage (not sessionStorage) so that a visitor who closes
 // the tab and comes back within 24h — typical pattern after a card decline
 // or "let me check my username on the app first" — finds their inputs intact
@@ -83,13 +122,24 @@ export function useFunnelPersistence(
     hydratedRef.current = true;
     const saved = readState(platform);
     let restoredPack = false;
+    let restoredEmail = false;
     if (saved) {
       if (typeof saved.pack === "number" && setters.setPack) {
         setters.setPack(saved.pack);
         restoredPack = true;
       }
       if (typeof saved.username === "string" && saved.username && setters.setUsername) setters.setUsername(saved.username);
-      if (typeof saved.email === "string" && saved.email && setters.setEmail) setters.setEmail(saved.email);
+      if (typeof saved.email === "string" && saved.email && setters.setEmail) {
+        setters.setEmail(saved.email);
+        restoredEmail = true;
+      }
+    }
+    // Cross-platform email fallback: if no per-platform email survived, try
+    // the global "last email used" cache so a returning visitor sees their
+    // address pre-filled even when they land on a different platform.
+    if (!restoredEmail && setters.setEmail) {
+      const lastEmail = readLastEmail();
+      if (lastEmail) setters.setEmail(lastEmail);
     }
     setStatus({ hydrated: true, restoredPack });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +154,7 @@ export function useFunnelPersistence(
       username: state.username,
       email: state.email,
     });
+    if (state.email) writeLastEmail(state.email);
   }, [platform, state.pack, state.username, state.email]);
 
   return status;
