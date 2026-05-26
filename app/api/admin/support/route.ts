@@ -7,8 +7,16 @@ import {
   markThreadReplied,
 } from "@/app/lib/db";
 import { RESEND_FROM } from "@/app/lib/email";
+import { pollInboundMail } from "@/app/lib/inboundMailPoll";
 
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+
+// Throttle Ionos IMAP polling on the admin support GET to avoid hammering
+// the mailbox when the operator refreshes the tab in quick succession.
+// Module-level state is per Lambda instance — acceptable since each instance
+// will at worst poll once per OPPORTUNISTIC_POLL_MS.
+let lastOpportunisticPollAt = 0;
+const OPPORTUNISTIC_POLL_MS = 30_000;
 
 // Plus-addressed alias on the existing IONOS mailbox. The IMAP poller
 // extracts the thread id from the local part. A hidden token in the email
@@ -17,6 +25,22 @@ const INBOUND_ADDRESS_BASE = process.env.SUPPORT_INBOUND_ADDRESS || "support@fan
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
+
+  // Opportunistic IMAP drain: every time the operator opens the Support tab
+  // we drain the IONOS inbox so new client emails surface without waiting
+  // for an external cron. Throttled to OPPORTUNISTIC_POLL_MS per Lambda
+  // instance to keep refresh-button mashing cheap. Fail-soft: if IMAP is
+  // misconfigured or unreachable, we still return the existing threads.
+  const now = Date.now();
+  if (now - lastOpportunisticPollAt > OPPORTUNISTIC_POLL_MS) {
+    lastOpportunisticPollAt = now;
+    try {
+      await pollInboundMail();
+    } catch (err) {
+      console.error("[admin/support] inbound poll failed:", err);
+    }
+  }
+
   const threads = await getSupportThreads();
   return NextResponse.json(threads);
 }
