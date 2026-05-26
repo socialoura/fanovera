@@ -63,19 +63,23 @@ export async function GET(
     const services = subOrders.map((s) => {
       const live = s.bfOrderId ? liveStatuses[String(s.bfOrderId)] : undefined;
 
-      // Determine simplified status
-      let status: "delivered" | "processing" | "partial" | "canceled" | "failed" | "pending" =
+      // Determine simplified status — we deliberately never expose "canceled"
+      // to the customer-facing tracking view. A BulkFollows cancellation just
+      // means the upstream refunded us and the admin will top-up / re-route
+      // on another service. From the customer's perspective the order is
+      // still in flight, so we surface "processing".
+      let status: "delivered" | "processing" | "partial" | "failed" | "pending" =
         "pending";
       const raw = (live?.status || "").toLowerCase();
       if (raw.includes("completed")) status = "delivered";
       else if (raw.includes("partial")) status = "partial";
       else if (raw.includes("progress") || raw.includes("processing")) status = "processing";
-      else if (raw.includes("canceled") || raw.includes("cancelled")) status = "canceled";
+      else if (raw.includes("canceled") || raw.includes("cancelled")) status = "processing";
       else if (s.status === "completed") status = "delivered";
       else if (s.status === "partial") status = "partial";
       else if (s.status === "placed") status = "processing";
       else if (s.status === "failed") status = "failed";
-      else if (s.status === "canceled") status = "canceled";
+      else if (s.status === "canceled") status = "processing";
 
       const remains = live?.remains;
       const delivered =
@@ -94,12 +98,15 @@ export async function GET(
       };
     });
 
-    // Aggregate overall status
-    let overallStatus: string = order.status || "paid";
+    // Aggregate overall status. Mirrors the per-service "never expose
+    // canceled" rule: a DB-level canceled order is reported as "processing"
+    // to the client, because the admin re-routes the delivery on another
+    // service rather than letting the customer think their order was killed.
+    let overallStatus: string = order.status === "canceled" ? "processing" : (order.status || "paid");
     if (services.length > 0) {
       const allDelivered = services.every((s) => s.status === "delivered");
       const someProcessing = services.some((s) => s.status === "processing");
-      const someFailed = services.some((s) => s.status === "failed" || s.status === "canceled");
+      const someFailed = services.some((s) => s.status === "failed");
       if (allDelivered) overallStatus = "delivered";
       else if (someProcessing) overallStatus = "processing";
       else if (someFailed && services.some((s) => s.status === "delivered")) overallStatus = "partial";

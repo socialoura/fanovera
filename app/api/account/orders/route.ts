@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   try {
-    const orders = await sql`
+    const rows = await sql`
       SELECT
         id,
         username,
@@ -32,6 +32,15 @@ export async function GET() {
       ORDER BY created_at DESC
       LIMIT 100
     `;
+
+    // Customer-facing tracking must never show "canceled". A BulkFollows
+    // cancellation just triggers an internal re-route by the admin; the
+    // client sees the order as still in flight (processing).
+    const orders = rows.map((o: Record<string, unknown>) =>
+      o.status === "canceled" || o.status === "cancelled"
+        ? { ...o, status: "processing" }
+        : o,
+    );
 
     return NextResponse.json({ email, orders });
   } catch (err) {
