@@ -17,6 +17,7 @@ export type LegalPageCopy = {
 const updatedAtFr = "Dernière mise à jour : 13 mai 2026";
 const updatedAtEn = "Last updated: May 13, 2026";
 const updatedAtDe = "Zuletzt aktualisiert: 13. Mai 2026";
+const updatedAtEs = "Última actualización: 13 de mayo de 2026";
 
 const fr: Record<LegalRouteId, LegalPageCopy> = {
   legalNotice: {
@@ -348,14 +349,81 @@ const de: Record<LegalRouteId, LegalPageCopy> = {
   },
 };
 
+const es: Record<LegalRouteId, LegalPageCopy> = {
+  legalNotice: {
+    eyebrow: "Información legal",
+    title: "Aviso legal",
+    intro: "Esta página recoge la información relativa al editor, al alojamiento y al uso del sitio Fanovera.",
+    updatedAt: updatedAtEs,
+    sections: [
+      { title: "Editor del sitio", body: ["Fanovera SAS, 17 rue de Paradis, 75010 París, Francia.", "Contacto: support@fanovera.com.", "Los datos de inscripción, capital social y representante legal deben completarse con la información definitiva de la empresa antes de cualquier campaña publicitaria a gran escala."] },
+      { title: "Alojamiento", body: ["El sitio está alojado por Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, Estados Unidos.", "Los servicios técnicos de terceros utilizados pueden incluir Stripe para los pagos, Resend para los correos transaccionales y PostHog para la medición de producto cuando esté activado."] },
+      { title: "Propiedad intelectual", body: ["La marca Fanovera, los textos, interfaces, elementos visuales, gráficos y código presentes en el sitio están protegidos, salvo indicación contraria.", "Queda prohibida cualquier reproducción o reutilización no autorizada del contenido del sitio."] },
+      { title: "Responsabilidad", body: ["Fanovera aplica medios razonables para mantener el sitio accesible y exacto, sin garantizar una disponibilidad permanente.", "Las plataformas mencionadas en el sitio son marcas pertenecientes a sus respectivos propietarios. Fanovera no está afiliado a Instagram, TikTok, YouTube, Spotify, Twitch, Facebook, LinkedIn ni X."] },
+    ],
+  },
+  terms: {
+    eyebrow: "Venta y pedidos",
+    title: "Condiciones generales de venta",
+    intro: "Estas condiciones regulan los pedidos realizados en Fanovera para servicios de visibilidad y seguimiento de campaña.",
+    updatedAt: updatedAtEs,
+    sections: [
+      { title: "Servicios", body: ["Fanovera ofrece packs de visibilidad y acompañamiento para perfiles, páginas, canales, vídeos o canciones públicos.", "No se solicita ninguna contraseña. El cliente sigue siendo responsable del contenido, del cumplimiento normativo y de la accesibilidad pública de la página o perfil indicado."] },
+      { title: "Precios y pago", body: ["Los precios mostrados se indican con todos los impuestos incluidos cuando proceda. El pago se realiza a través de Stripe o de otro proveedor de pagos activado en el sitio.", "Un pedido se considera validado cuando el pago ha sido confirmado por el proveedor de pagos."] },
+      { title: "Ejecución", body: ["La entrega comienza tras la confirmación del pago y la verificación de la información necesaria para el pedido.", "Los plazos indicados son orientativos y pueden variar según la plataforma, la disponibilidad del servicio, los controles antifraude o la información facilitada por el cliente."] },
+      { title: "Límites del servicio", body: ["Fanovera no garantiza ingresos, viralidad, interacción orgánica futura ni decisiones de las plataformas de terceros.", "El cliente se compromete a proporcionar información veraz y a no utilizar el servicio para contenidos ilegales, engañosos, de odio o que vulneren derechos."] },
+      { title: "Soporte e incidencias", body: ["Para errores en el pedido o problemas de entrega, contacta con support@fanovera.com.", "Las reglas de reembolso y gestión de incidencias se detallan en la página Reembolsos y entrega."] },
+      { title: "Derecho de desistimiento", body: ["Cuando la ejecución de un servicio digital comienza inmediatamente tras el pago con el consentimiento expreso del consumidor, el derecho de desistimiento puede verse limitado en las condiciones previstas por la normativa aplicable.", "Si el pedido aún no ha comenzado, contacta con support@fanovera.com lo antes posible."] },
+    ],
+  },
+  privacy: {
+    eyebrow: "Datos personales",
+    title: "Política de privacidad",
+    intro: "Esta política explica qué datos trata Fanovera, con qué finalidad y cómo ejercer tus derechos.",
+    updatedAt: updatedAtEs,
+    sections: [
+      { title: "Responsable del tratamiento", body: ["El responsable del tratamiento en el sentido del RGPD es Fanovera SAS, 17 rue de Paradis, 75010 París, Francia.", "Contacto para consultas de privacidad: support@fanovera.com."] },
+      { title: "Datos recogidos", body: ["Fanovera puede tratar tu dirección de correo electrónico, los detalles del pedido, la página o perfil público, la divisa, el idioma, el país aproximado y los datos técnicos necesarios para el sitio.", "Los datos completos de la tarjeta de pago no se almacenan en Fanovera y son tratados por el proveedor de pagos."] },
+      { title: "Finalidades", body: ["Los datos se utilizan para preparar y entregar los pedidos, enviar confirmaciones, ofrecer soporte, asegurar los pagos, medir el rendimiento del sitio y mejorar el producto.", "Los datos analíticos no deben contener información sensible ni datos de tarjeta."] },
+      { title: "Base legal y conservación", body: ["El tratamiento puede basarse en la ejecución del contrato (art. 6.1.b RGPD), el interés legítimo de Fanovera (art. 6.1.f), obligaciones legales (art. 6.1.c) o tu consentimiento (art. 6.1.a) cuando sea necesario.", "Los datos se conservan durante el tiempo necesario para los fines indicados y, después, se archivan o eliminan conforme a las obligaciones aplicables."] },
+      { title: "Tus derechos", body: ["Tienes derecho de acceso, rectificación, supresión, limitación, oposición y portabilidad cuando estos derechos sean aplicables.", "Para ejercerlos, contacta con support@fanovera.com. También puedes presentar una reclamación ante la autoridad de control competente — en España, la Agencia Española de Protección de Datos (AEPD)."] },
+      { title: "Encargados del tratamiento", body: ["Fanovera puede utilizar proveedores técnicos para alojamiento, pagos, envío de correos, analítica de producto, seguridad y soporte.", "Estos proveedores acceden a los datos únicamente en la medida necesaria para su función."] },
+    ],
+  },
+  cookies: {
+    eyebrow: "Trackers",
+    title: "Política de cookies",
+    intro: "Esta página describe las cookies y trackers que puede utilizar Fanovera.",
+    updatedAt: updatedAtEs,
+    sections: [
+      { title: "Cookies necesarias", body: ["Algunas cookies son imprescindibles para el funcionamiento del sitio, por ejemplo para recordar el idioma, la divisa, el estado de sesión o asegurar un pedido.", "Estas cookies no siempre pueden desactivarse sin degradar gravemente el servicio."] },
+      { title: "Analítica y medición de producto", body: ["Fanovera puede utilizar herramientas como PostHog o Vercel Analytics para entender los recorridos, mejorar las páginas y medir las conversiones.", "Cuando la normativa lo exija, los trackers no esenciales estarán sujetos al consentimiento previo del usuario."] },
+      { title: "Pago y seguridad", body: ["Stripe u otros proveedores de pago pueden depositar cookies necesarias para la seguridad, la prevención del fraude y el procesamiento del pago.", "Estas cookies se gestionan según las políticas de los proveedores correspondientes."] },
+      { title: "Gestión", body: ["Puedes configurar tu navegador para bloquear o eliminar las cookies.", "Si en producción se activan trackers sujetos a consentimiento, se incorporará un banner o centro de preferencias."] },
+    ],
+  },
+  refund: {
+    eyebrow: "Después del pago",
+    title: "Reembolsos y entrega",
+    intro: "Esta página explica las reglas de gestión de pedidos, incidencias de entrega y solicitudes de reembolso.",
+    updatedAt: updatedAtEs,
+    sections: [
+      { title: "Inicio del pedido", body: ["Tras el pago, Fanovera prepara el pedido con la información proporcionada por el cliente.", "Si el perfil, página, vídeo o canción no es público, o si la información proporcionada es incorrecta, la ejecución puede retrasarse hasta su corrección."] },
+      { title: "Incidencias", body: ["En caso de incidencia técnica, volumen no alcanzado o error de servicio, Fanovera puede ofrecer una nueva ejecución, un abono, un ajuste o un reembolso total o parcial según el caso.", "Cada solicitud se examina a partir de la información del pedido, las pruebas disponibles y el estado real de ejecución."] },
+      { title: "Desistimiento", body: ["Cuando la ejecución de un servicio digital comienza inmediatamente tras el pago con tu consentimiento expreso, el derecho de desistimiento puede verse limitado conforme a la normativa aplicable.", "Si el pedido aún no ha comenzado, contacta con support@fanovera.com lo antes posible."] },
+      { title: "Contacto", body: ["Para cualquier solicitud, indica el correo del pedido, la plataforma afectada, el enlace o perfil objetivo y una descripción clara del problema.", "Contacto: support@fanovera.com."] },
+    ],
+  },
+};
+
 /**
  * Returns the legal page copy for the requested locale.
  *
  * Localization policy:
  *  - `fr` is the authoritative legal version (the company is French, Paris-based).
- *  - `en` and `de` ship reviewed translations.
+ *  - `en`, `de` and `es` ship reviewed translations.
  *  - Other locales fall back to the `en` translation. This is intentional:
- *    a professional legal translation per locale (es/pt/it/tr) is required
+ *    a professional legal translation per locale (pt/it/tr) is required
  *    before serving it to users, otherwise we risk shipping inaccurate clauses
  *    that could weaken our enforceability or compliance posture.
  *  - When adding a new locale, replace the fallback below with the reviewed
@@ -368,10 +436,11 @@ const de: Record<LegalRouteId, LegalPageCopy> = {
 export function getLegalPageCopy(pageId: LegalRouteId, locale: SupportedLocale): LegalPageCopy {
   if (locale === "fr") return fr[pageId];
   if (locale === "de") return de[pageId];
+  if (locale === "es") return es[pageId];
   return en[pageId];
 }
 
 /** Whether the displayed legal copy is an official translation for the locale. */
 export function isLegalLocaleNative(locale: SupportedLocale): boolean {
-  return locale === "fr" || locale === "en" || locale === "de";
+  return locale === "fr" || locale === "en" || locale === "de" || locale === "es";
 }
