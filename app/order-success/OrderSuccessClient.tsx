@@ -352,6 +352,18 @@ function OrderSuccessContent() {
               <p className="success-sub">{copy.thanks}</p>
             </header>
 
+            <div className="email-callout" role="status">
+              <span className="email-callout-icon" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <div className="email-callout-text">
+                <strong>{nextSteps[0].title}</strong>
+                <span>{nextSteps[0].body}</span>
+              </div>
+            </div>
+
             <article
               className="ticket"
               style={{ ["--accent" as string]: accent } as React.CSSProperties}
@@ -400,8 +412,8 @@ function OrderSuccessContent() {
             <section className="success-checklist" aria-label={labels.nextSteps}>
               <h2>{labels.nextSteps}</h2>
               <ul>
-                {nextSteps.map((step, i) => {
-                  const isDone = i < 2;
+                {nextSteps.slice(1).map((step, i) => {
+                  const isDone = i < 1;
                   return (
                     <li key={i} className={isDone ? "done" : "pending"}>
                       <span className="checklist-marker" aria-hidden>
@@ -622,6 +634,49 @@ function OrderSuccessContent() {
           font-size: 15px;
           line-height: 1.5;
           margin: 0;
+        }
+
+        /* Email confirmation callout — surfaces the receipt-sent reassurance
+           above the order ticket so the user sees it before reading the
+           transaction details. Mirrors the success-checklist visual language
+           (green check on tinted background) but in a single emphasised row. */
+        .email-callout {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: 18px 0 20px;
+          padding: 14px 16px;
+          background: rgba(77, 191, 138, 0.10);
+          border: 1px solid rgba(77, 191, 138, 0.30);
+          border-radius: 14px;
+        }
+        .email-callout-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: var(--green);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        .email-callout-text {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          min-width: 0;
+        }
+        .email-callout-text strong {
+          font-weight: 800;
+          color: var(--ink);
+          font-size: 15px;
+          line-height: 1.3;
+        }
+        .email-callout-text span {
+          color: var(--ink-2);
+          font-size: 13px;
+          line-height: 1.45;
         }
 
         /* Ticket / receipt */
