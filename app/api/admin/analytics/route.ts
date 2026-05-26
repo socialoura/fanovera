@@ -20,8 +20,6 @@ async function sumInEur(rows: CurrencyRevenueRow[], field: "revenue" | "cost" = 
   return total;
 }
 
-const STATUS_OK = "('paid','processing','delivered','partial')";
-
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
@@ -46,7 +44,7 @@ export async function GET(req: NextRequest) {
       servicePerfRaw,
       ordersPrevPeriodRes,
     ] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count FROM orders`,
+      sql`SELECT COUNT(*)::int AS count FROM orders WHERE status IN ('paid','processing','delivered')`,
       sql`
         SELECT currency,
                COALESCE(SUM(total_cents), 0)::int AS revenue,
@@ -66,7 +64,7 @@ export async function GET(req: NextRequest) {
           AND created_at <  NOW() - INTERVAL '30 days'
         GROUP BY currency
       `,
-      sql`SELECT COUNT(*)::int AS count FROM orders WHERE created_at >= CURRENT_DATE`,
+      sql`SELECT COUNT(*)::int AS count FROM orders WHERE created_at >= CURRENT_DATE AND status IN ('paid','processing','delivered')`,
       sql`
         SELECT currency, COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
@@ -78,7 +76,8 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS orders,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE created_at >= NOW() - INTERVAL '30 days'
+        WHERE status IN ('paid','processing','delivered')
+          AND created_at >= NOW() - INTERVAL '30 days'
         GROUP BY platform, currency
       `,
       sql`
@@ -86,7 +85,8 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS orders,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE created_at >= NOW() - INTERVAL '30 days'
+        WHERE status IN ('paid','processing','delivered')
+          AND created_at >= NOW() - INTERVAL '30 days'
         GROUP BY currency
       `,
       sql`SELECT status, COUNT(*)::int AS count FROM orders WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY status ORDER BY count DESC`,
@@ -141,7 +141,8 @@ export async function GET(req: NextRequest) {
         SELECT EXTRACT(HOUR FROM created_at)::int AS hour,
                COUNT(*)::int AS count
         FROM orders
-        WHERE created_at >= NOW() - INTERVAL '7 days'
+        WHERE status IN ('paid','processing','delivered')
+          AND created_at >= NOW() - INTERVAL '7 days'
         GROUP BY hour
       `,
       sql`
