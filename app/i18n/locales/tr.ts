@@ -18,8 +18,7 @@ const tr: LocaleDictionary = {
     manualMeta: "Manuel",
     active: "Aktif"},
   status: {
-    operational: "Tum hizmetler calisiyor",
-    asOf: "tarih"},
+    ordersThisWeek: "{count} bu hafta teslim edilen siparis"},
   seo: {
     title: "Fanovera - Yapay zeka destekli çevrimiçi varlık",
     description:

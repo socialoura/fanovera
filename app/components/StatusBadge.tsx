@@ -5,7 +5,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { getDictionary } from "../i18n/dictionaries";
 
 export default function StatusBadge() {
-  const [ordersToday, setOrdersToday] = useState<number | null>(null);
+  const [ordersCount, setOrdersCount] = useState<number | null>(null);
   const { locale } = useI18n();
   const dict = getDictionary(locale);
 
@@ -18,8 +18,11 @@ export default function StatusBadge() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
-        const n = Number(data.ordersToday);
-        if (Number.isFinite(n) && n > 0) setOrdersToday(n);
+        // Accept the new field name (ordersLast7Days) and fall back to the
+        // legacy one (ordersToday) so an in-flight CDN cache from before
+        // the rename doesn't leave the pill stuck at null until expiry.
+        const n = Number(data.ordersLast7Days ?? data.ordersToday);
+        if (Number.isFinite(n) && n > 0) setOrdersCount(n);
       })
       .catch(() => {});
     return () => {
@@ -28,13 +31,13 @@ export default function StatusBadge() {
   }, []);
 
   const formattedCount =
-    ordersToday !== null
-      ? new Intl.NumberFormat(dict.htmlLang).format(ordersToday)
+    ordersCount !== null
+      ? new Intl.NumberFormat(dict.htmlLang).format(ordersCount)
       : null;
   const [ordersBefore = "", ordersAfter = ""] = (
-    formattedCount && dict.status.ordersToday ? dict.status.ordersToday : ""
+    formattedCount && dict.status.ordersThisWeek ? dict.status.ordersThisWeek : ""
   ).split("{count}");
-  const showOrders = formattedCount !== null && dict.status.ordersToday;
+  const showOrders = formattedCount !== null && dict.status.ordersThisWeek;
 
   if (!showOrders) return null;
 

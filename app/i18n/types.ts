@@ -26,8 +26,7 @@ export type LocaleDictionary = {
     active: string;
   };
   status: {
-    operational: string;
-    asOf: string;
+    ordersThisWeek: string;
   };
   seo: {
     title: string;

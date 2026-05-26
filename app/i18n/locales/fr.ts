@@ -17,8 +17,7 @@ const fr: LocaleDictionary = {
     active: "Actif",
   },
   status: {
-    operational: "Tous nos services sont opérationnels",
-    asOf: "au",
+    ordersThisWeek: "{count} commandes livrées cette semaine",
   },
   seo: {
     title: "Fanovera - Présence en ligne accompagnée par IA",

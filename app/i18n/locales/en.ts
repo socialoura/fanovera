@@ -16,8 +16,7 @@ const en: LocaleDictionary = {
     manualMeta: "Manual",
     active: "Active"},
   status: {
-    operational: "All services are operational",
-    asOf: "as of"},
+    ordersThisWeek: "{count} orders delivered this week"},
   seo: {
     title: "Fanovera - AI-assisted online presence",
     description:

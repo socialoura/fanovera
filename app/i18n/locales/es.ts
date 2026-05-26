@@ -18,8 +18,7 @@ const es: LocaleDictionary = {
     manualMeta: "Manual",
     active: "Activo"},
   status: {
-    operational: "Todos los servicios estan operativos",
-    asOf: "a"},
+    ordersThisWeek: "{count} pedidos entregados esta semana"},
   seo: {
     title: "Fanovera - Presencia online asistida por IA",
     description:
