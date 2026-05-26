@@ -103,10 +103,13 @@ function todayISO() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+type RangeDays = 7 | 30 | 90;
+
 export default function AnalyticsView() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
+  const [range, setRange] = useState<RangeDays>(30);
 
   // Ads cost entry form state.
   const [adsDate, setAdsDate] = useState<string>(todayISO());
@@ -114,11 +117,11 @@ export default function AnalyticsView() {
   const [adsSaving, setAdsSaving] = useState(false);
   const [adsError, setAdsError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (rangeDays: RangeDays = range) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("admin_pw") ?? "";
-      const res = await fetch("/api/admin/analytics", {
+      const res = await fetch(`/api/admin/analytics?range=${rangeDays}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -190,8 +193,9 @@ export default function AnalyticsView() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(range);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
 
   // Sparkline series derived from the 30-day window.
   const sparklines = useMemo(() => {
@@ -247,12 +251,32 @@ export default function AnalyticsView() {
       {/* Top action row */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <div className="chip">{Ic.calendar()} 30 derniers jours {Ic.chevronRight()}</div>
+          <label className="chip" style={{ cursor: "pointer", paddingRight: 4 }}>
+            {Ic.calendar()}
+            <select
+              value={range}
+              onChange={(e) => setRange(Number(e.target.value) as RangeDays)}
+              disabled={loading}
+              style={{
+                background: "transparent",
+                border: 0,
+                font: "inherit",
+                color: "inherit",
+                cursor: "pointer",
+                outline: "none",
+                paddingRight: 4,
+              }}
+            >
+              <option value={7}>7 derniers jours</option>
+              <option value={30}>30 derniers jours</option>
+              <option value={90}>90 derniers jours</option>
+            </select>
+          </label>
           <div className="chip">{Ic.filter()} Tous les réseaux</div>
           <div className="chip">{Ic.refresh()} Mis à jour {refreshedAgo}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn" onClick={fetchData} disabled={loading}>
+          <button className="btn" onClick={() => fetchData()} disabled={loading}>
             {Ic.refresh()} Rafraîchir
           </button>
         </div>
@@ -347,7 +371,7 @@ export default function AnalyticsView() {
         <div className="card">
           <div className="card-head">
             <div>
-              <div className="card-title">Revenu, coûts & profit · 30 jours</div>
+              <div className="card-title">Revenu, coûts & profit · {range} jours</div>
               <div className="card-sub">Évolution du CA, coût SMM (BulkFollows) et coût Google Ads</div>
             </div>
             <div style={{ display: "flex", gap: 14, fontSize: 12, fontWeight: 600, flexWrap: "wrap" }}>
@@ -363,7 +387,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Statut des commandes</div>
-              <div className="card-sub">Répartition sur 30 jours</div>
+              <div className="card-sub">Répartition sur {range} jours</div>
             </div>
           </div>
           {statusForDonut.length > 0 ? (
@@ -380,7 +404,7 @@ export default function AnalyticsView() {
               </div>
             </div>
           ) : (
-            <div className="order-empty">Pas de commandes sur 30 jours.</div>
+            <div className="order-empty">Pas de commandes sur {range} jours.</div>
           )}
         </div>
       </div>
@@ -391,7 +415,7 @@ export default function AnalyticsView() {
         <div className="card" style={{ padding: "16px 18px" }}>
           <div className="kpi-label">Clients uniques</div>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{fmt(data.customers.unique)}</div>
-          <div className="kpi-sub" style={{ marginTop: 6 }}>sur 30 jours · {data.deltas.customers >= 0 ? "+" : ""}{data.deltas.customers}% vs. mois préc.</div>
+          <div className="kpi-sub" style={{ marginTop: 6 }}>sur {range} jours · {data.deltas.customers >= 0 ? "+" : ""}{data.deltas.customers}% vs. période préc.</div>
         </div>
         <div className="card" style={{ padding: "16px 18px" }}>
           <div className="kpi-label">Panier moyen</div>
@@ -416,7 +440,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Revenu par plateforme</div>
-              <div className="card-sub">Classement par CA · 30 jours</div>
+              <div className="card-sub">Classement par CA · {range} jours</div>
             </div>
             <span className="pill ink">{data.byPlatform.length} actifs</span>
           </div>
@@ -450,7 +474,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Heures de pointe (UTC)</div>
-              <div className="card-sub">Volume de commandes par heure · 7 derniers jours</div>
+              <div className="card-sub">Volume de commandes par heure · {range} derniers jours</div>
             </div>
             {(() => {
               const max = Math.max(...data.peakHours);
@@ -494,7 +518,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Top pays par revenu</div>
-              <div className="card-sub">Commandes · revenu (30 jours)</div>
+              <div className="card-sub">Commandes · revenu ({range} jours)</div>
             </div>
           </div>
           {data.topCountries.length === 0 ? (
@@ -560,7 +584,7 @@ export default function AnalyticsView() {
           <div>
             <div className="card-title">Performance par service</div>
             <div className="card-sub">
-              Revenu / cmd & revenu / visite plateforme · 30 jours · trié par rentabilité par visite
+              Revenu / cmd & revenu / visite plateforme · {range} jours · trié par rentabilité par visite
             </div>
           </div>
         </div>

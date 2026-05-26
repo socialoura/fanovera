@@ -24,6 +24,15 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
   try {
+    // Range is the rolling window the dashboard summarises. We accept a few
+    // discrete values (7 / 30 / 90 days) so the SQL intervals stay safe even
+    // though we interpolate the number into a raw INTERVAL string below — the
+    // value is whitelisted, never the raw query param.
+    const rangeParam = Number(new URL(req.url).searchParams.get("range") || "30");
+    const range = [7, 30, 90].includes(rangeParam) ? rangeParam : 30;
+    const prevRange = range * 2;
+    const seriesDays = Math.max(1, range - 1);
+
     const [
       totalOrdersRes,
       revenueByCurrencyAll,
@@ -44,14 +53,19 @@ export async function GET(req: NextRequest) {
       servicePerfRaw,
       ordersPrevPeriodRes,
     ] = await Promise.all([
-      sql`SELECT COUNT(*)::int AS count FROM orders WHERE status IN ('paid','processing','delivered')`,
+      sql`
+        SELECT COUNT(*)::int AS count
+        FROM orders
+        WHERE status IN ('paid','processing','delivered')
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+      `,
       sql`
         SELECT currency,
                COALESCE(SUM(total_cents), 0)::int AS revenue,
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY currency
       `,
       sql`
@@ -60,8 +74,8 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '60 days'
-          AND created_at <  NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
+          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
         GROUP BY currency
       `,
       sql`SELECT COUNT(*)::int AS count FROM orders WHERE created_at >= CURRENT_DATE AND status IN ('paid','processing','delivered')`,
@@ -77,7 +91,7 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY platform, currency
       `,
       sql`
@@ -86,35 +100,41 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY currency
       `,
-      sql`SELECT status, COUNT(*)::int AS count FROM orders WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY status ORDER BY count DESC`,
+      sql`
+        SELECT status, COUNT(*)::int AS count
+        FROM orders
+        WHERE created_at >= NOW() - ${range} * INTERVAL '1 day'
+        GROUP BY status
+        ORDER BY count DESC
+      `,
       sql`
         SELECT d.date::text AS date, o.currency,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
-        FROM generate_series(CURRENT_DATE - INTERVAL '29 days', CURRENT_DATE, '1 day') AS d(date)
+        FROM generate_series(CURRENT_DATE - ${seriesDays} * INTERVAL '1 day', CURRENT_DATE, '1 day') AS d(date)
         LEFT JOIN orders o ON o.created_at::date = d.date
         GROUP BY d.date, o.currency
         ORDER BY d.date ASC
       `,
-      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date >= CURRENT_DATE - INTERVAL '30 days'`,
+      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date >= CURRENT_DATE - ${range} * INTERVAL '1 day'`,
       sql`SELECT date::text AS date, COALESCE(SUM(cost_cents), 0)::int AS cost FROM ad_costs WHERE date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY date ORDER BY date DESC`,
       sql`
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
           AND status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
       `,
       sql`
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
           AND status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '60 days'
-          AND created_at <  NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
+          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
       `,
       sql`
         SELECT COALESCE(NULLIF(country, ''), '??') AS country,
@@ -123,7 +143,7 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY country, currency
       `,
       sql`
@@ -142,7 +162,7 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '7 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY hour
       `,
       sql`
@@ -154,7 +174,7 @@ export async function GET(req: NextRequest) {
           CASE WHEN jsonb_typeof(cart) = 'array' THEN cart ELSE '[]'::jsonb END
         ) AS item
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
           AND item->>'service' IS NOT NULL
         GROUP BY service, currency
       `,
@@ -162,8 +182,8 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - INTERVAL '60 days'
-          AND created_at <  NOW() - INTERVAL '30 days'
+          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
+          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
       `,
     ]);
 
@@ -177,7 +197,7 @@ export async function GET(req: NextRequest) {
         SELECT platform,
                COUNT(DISTINCT anonymous_id)::int AS visitors
         FROM product_page_visits
-        WHERE created_at >= NOW() - INTERVAL '30 days'
+        WHERE created_at >= NOW() - ${range} * INTERVAL '1 day'
         GROUP BY platform
       `) as Array<{ platform: string; visitors: number }>;
     } catch (visitErr) {
@@ -352,6 +372,7 @@ export async function GET(req: NextRequest) {
     const recurrenceRate = uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 100) : 0;
 
     return NextResponse.json({
+      range,
       totalOrders,
       totalRevenue,
       totalCost,
