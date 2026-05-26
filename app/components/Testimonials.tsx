@@ -6,7 +6,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, type NetworkId } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
-import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
+import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 
 export default function Testimonials() {
   const { locale } = useI18n();
@@ -67,7 +67,7 @@ export default function Testimonials() {
             {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
+            {copy.titleBefore}<span className={squiggleClass(targetedNetwork)}>{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 

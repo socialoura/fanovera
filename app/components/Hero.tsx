@@ -14,7 +14,7 @@ import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
 import { trackEvent } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
-import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
+import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
 
 const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
@@ -28,21 +28,6 @@ const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
   twitch: ["tw_followers", "tw_live_viewers"],
 };
 
-// Maps a network id to the short class the squiggle CSS already targets
-// (.squiggle.ig, .squiggle.tw, .squiggle.spo, ...). Used to tint the hero
-// title's highlighted span when the visitor arrives with utm_term=twitch
-// (or any other matched network) so the squiggle matches the featured-card
-// brand colour.
-const SQUIGGLE_NETWORK_CLASS: Record<NetworkId, string> = {
-  instagram: "ig",
-  tiktok: "tt",
-  youtube: "yt",
-  twitch: "tw",
-  linkedin: "li",
-  facebook: "fb",
-  twitter: "x",
-  spotify: "spo",
-};
 
 function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
   const prices = PROMO_NETWORK_SERVICES[networkId].flatMap((service) =>
@@ -925,7 +910,7 @@ export default function Hero({
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          {heroTitle.titleBefore}<span className={`squiggle${targetedNetwork ? " " + SQUIGGLE_NETWORK_CLASS[targetedNetwork] : ""}`}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
+          {heroTitle.titleBefore}<span className={squiggleClass(targetedNetwork)}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
         </h1>
 
         {/* When a network is targeted via UTM, the matching card sits at

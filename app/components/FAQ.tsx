@@ -1,16 +1,20 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { getPublicCopy } from "./publicCopy";
+import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 
 export default function FAQ() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const searchParams = useSearchParams();
   const copy = getPublicCopy(locale, mode, surfaceMode).faq;
   const [open, setOpen] = useState(0);
   const items = copy.items;
+  const targetedNetwork = mode === "promo" ? detectTargetNetworkFromParams(searchParams) : null;
   return (
     <section id="faq" style={{ background: "var(--frame)", padding: "clamp(56px, 8vw, 100px) 0" }}>
       <div className="container">
@@ -33,7 +37,7 @@ export default function FAQ() {
             {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
+            {copy.titleBefore}<span className={squiggleClass(targetedNetwork)}>{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 

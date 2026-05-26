@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { getPublicCopy } from "./publicCopy";
-import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
+import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 
 type StepKind = "analyze" | "target" | "growth";
 
@@ -171,7 +171,7 @@ export default function HowItWorks() {
             {copy.eyebrow}
           </div>
           <h2 className="display" style={{ fontSize: "clamp(36px, 4.6vw, 60px)", margin: 0 }}>
-            {copy.titleBefore}<span className="squiggle">{copy.titleHighlight}</span>{copy.titleAfter}
+            {copy.titleBefore}<span className={squiggleClass(targetedNetwork)}>{copy.titleHighlight}</span>{copy.titleAfter}
           </h2>
         </div>
 

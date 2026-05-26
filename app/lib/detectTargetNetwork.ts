@@ -1,5 +1,27 @@
 import type { NetworkId } from "./networks";
 
+/**
+ * Maps a NetworkId to the short class that the squiggle stylesheet targets in
+ * globals.css (.squiggle.ig, .squiggle.tw, .squiggle.spo, ...). Used by every
+ * promo-mode hero/section so the highlighted title adopts the brand colour of
+ * the UTM-matched network instead of the default ink tint.
+ */
+export const SQUIGGLE_NETWORK_CLASS: Record<NetworkId, string> = {
+  instagram: "ig",
+  tiktok: "tt",
+  youtube: "yt",
+  twitch: "tw",
+  linkedin: "li",
+  facebook: "fb",
+  twitter: "x",
+  spotify: "spo",
+};
+
+/** Build the className for a squiggle that may inherit a network's brand. */
+export function squiggleClass(network: NetworkId | null | undefined): string {
+  return network ? `squiggle ${SQUIGGLE_NETWORK_CLASS[network]}` : "squiggle";
+}
+
 // Order matters: more specific aliases first. "tik tok" before "tik" so the
 // space variant matches before any bare prefix would.
 const NETWORK_ALIASES: { id: NetworkId; patterns: RegExp[] }[] = [
