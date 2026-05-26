@@ -884,22 +884,42 @@ export default function Hero({
             </svg>
           </div>
         </div>
-        <StatusBadge />
+        {/* The top StatusBadge stays on desktop, but on mobile UTM-match
+            visits we move it down to the eyebrow's slot for tighter social-
+            proof → H1 hand-off. Without this rule mobile would render two
+            StatusBadges (top + eyebrow slot) on /promo?utm_term=*. */}
+        <div className={targetedTitle ? "hide-md" : ""}>
+          <StatusBadge />
+        </div>
         <StarsRow items={copy.stars} />
         {targetedTitle && (
-          <div
-            style={{
-              textAlign: "center",
-              margin: "0 auto 12px",
-              fontSize: 16,
-              fontWeight: 800,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: targetedNetwork ? NET_META[targetedNetwork].brand2 : "var(--ink-3)",
-            }}
-          >
-            {targetedTitle.eyebrow}
-          </div>
+          <>
+            {/* Mobile: drop the promotional eyebrow ("Instagram · Visibilité
+                progressive") in favour of the live "X commandes livrées
+                aujourd'hui" trust pill so the pre-H1 signal is concrete
+                instead of marketing-flavoured. */}
+            <div
+              className="show-md-only"
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              <StatusBadge />
+            </div>
+            {/* Desktop: keep the original platform eyebrow. */}
+            <div
+              className="hide-md"
+              style={{
+                textAlign: "center",
+                margin: "0 auto 12px",
+                fontSize: 16,
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: targetedNetwork ? NET_META[targetedNetwork].brand2 : "var(--ink-3)",
+              }}
+            >
+              {targetedTitle.eyebrow}
+            </div>
+          </>
         )}
         <h1
           className="display"
