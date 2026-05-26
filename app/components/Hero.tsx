@@ -28,6 +28,22 @@ const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
   twitch: ["tw_followers", "tw_live_viewers"],
 };
 
+// Maps a network id to the short class the squiggle CSS already targets
+// (.squiggle.ig, .squiggle.tw, .squiggle.spo, ...). Used to tint the hero
+// title's highlighted span when the visitor arrives with utm_term=twitch
+// (or any other matched network) so the squiggle matches the featured-card
+// brand colour.
+const SQUIGGLE_NETWORK_CLASS: Record<NetworkId, string> = {
+  instagram: "ig",
+  tiktok: "tt",
+  youtube: "yt",
+  twitch: "tw",
+  linkedin: "li",
+  facebook: "fb",
+  twitter: "x",
+  spotify: "spo",
+};
+
 function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
   const prices = PROMO_NETWORK_SERVICES[networkId].flatMap((service) =>
     (getCachedPricingPacks(service, currency) || [])
@@ -584,7 +600,6 @@ function NetCard({
   href,
   onSelect,
   highlighted = false,
-  targetedLabel,
   priceLabel,
   cardLabelOverride,
 }: {
@@ -593,7 +608,6 @@ function NetCard({
   href: string;
   onSelect: () => void;
   highlighted?: boolean;
-  targetedLabel?: string;
   priceLabel: string;
   /**
    * When set, replaces the generic `copy.cardLabel` ("Audit et stratégie")
@@ -683,7 +697,6 @@ function NetCard({
   // The featured card uses a relative wrapper so the pulse/ring isn't clipped
   // by neighbors' stacking context. No "Pour vous" / "For you" pin: the H1
   // already names the network and the card itself is visually unmistakable.
-  void targetedLabel;
   if (!highlighted) return card;
   return (
     <div className="netcard-wrap" style={cardStyle}>
@@ -692,7 +705,16 @@ function NetCard({
   );
 }
 
-export default function Hero() {
+export default function Hero({
+  initialTargetedNetwork = null,
+}: {
+  // Server-detected UTM target (from /promo/page.tsx). Used as the source
+  // of truth on the very first render so the SSR HTML already contains the
+  // targeted layout — `useSearchParams()` returns empty during static
+  // rendering of nested client components, which previously produced a
+  // hydration flash when the layout swapped to the featured-card variant.
+  initialTargetedNetwork?: NetworkId | null;
+} = {}) {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
   const searchParams = useSearchParams();
@@ -706,15 +728,38 @@ export default function Hero() {
   // the matching network card. The rest of the grid stays in place so any
   // off-intent visitor can still pick a different network — and the URL
   // remains /promo, which keeps the LP whitehat for Google Ads policy.
+  //
+  // Resolution order: client-side searchParams (handles client navigation
+  // between /promo links with different UTMs) → SSR fallback prop → null.
+  // The fallback only matters on the initial render when useSearchParams
+  // hasn't yet resolved on the server; once hydrated it's always the URL.
   const targetedNetwork: NetworkId | null = isPromo
-    ? detectTargetNetworkFromParams(searchParams)
+    ? detectTargetNetworkFromParams(searchParams) ?? initialTargetedNetwork
     : null;
+
+  // A/B variant driven by ad URL: when /promo is hit with ?promo=FANO5, show
+  // a slim banner at the top of the hero so the visitor sees the discount
+  // before scrolling. The code itself is already auto-applied at checkout via
+  // usePromoFromUrl — this banner only surfaces the value on the LP.
+  const showPromoCodeBanner =
+    isPromo && (searchParams?.get("promo")?.trim().toUpperCase() === "FANO5");
   const targetedTitle = getTargetedHeroTitle(locale, targetedNetwork);
   const heroTitle = targetedTitle || {
     titleBefore: copy.titleBefore,
     titleHighlight: copy.titleHighlight,
     titleAfter: copy.titleAfter,
   };
+
+  useEffect(() => {
+    if (!showPromoCodeBanner) return;
+    trackEvent("promo_code_banner_exposed", {
+      page_type: "promo",
+      entry_surface: "promo",
+      feature_name: "promo_code_banner",
+      promo_code: "FANO5",
+      locale,
+    });
+  }, [showPromoCodeBanner, locale]);
 
   useEffect(() => {
     if (!isPromo || !targetedNetwork) return;
@@ -757,6 +802,54 @@ export default function Hero() {
   return (
     <section style={{ padding: "32px 0 0", position: "relative" }}>
       <div className="container">
+        {showPromoCodeBanner && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: 18,
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 16px",
+                background: "linear-gradient(135deg, rgba(77,191,138,0.12), rgba(34,197,94,0.08))",
+                border: "1px solid rgba(34,197,94,0.35)",
+                borderRadius: 999,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--ink)",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-grid",
+                  placeItems: "center",
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "var(--green)",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path
+                    d="M3 7l3 3 5-6"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span>{copy.promoCodeBanner}</span>
+            </div>
+          </div>
+        )}
+
         {/* Trustpilot-style rating — first thing the visitor sees */}
         <div
           style={{
@@ -812,12 +905,12 @@ export default function Hero() {
           <div
             style={{
               textAlign: "center",
-              margin: "0 auto 10px",
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
+              margin: "0 auto 12px",
+              fontSize: 16,
+              fontWeight: 800,
+              letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "var(--ink-3)",
+              color: targetedNetwork ? NET_META[targetedNetwork].brand2 : "var(--ink-3)",
             }}
           >
             {targetedTitle.eyebrow}
@@ -832,107 +925,56 @@ export default function Hero() {
             fontSize: "clamp(28px, 5vw, 56px)",
           }}
         >
-          {heroTitle.titleBefore}<span className="squiggle">{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
+          {heroTitle.titleBefore}<span className={`squiggle${targetedNetwork ? " " + SQUIGGLE_NETWORK_CLASS[targetedNetwork] : ""}`}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
         </h1>
 
-        {/* When a network is targeted via UTM, surface it alone on its own
-            row right under the title so the visitor's first CTA is the card
-            that matches their search intent. The remaining 7 networks render
-            below as alternatives. Without a target, fall back to the
-            regular 8-card grid. */}
+        {/* When a network is targeted via UTM, the matching card sits at
+            position 1 of the unified grid (top-left) — highlighted with a
+            brand-colored pulse ring so it stands out without being orphaned
+            on its own row. The H1 already names the network, so the pulse
+            alone is enough signal that "this is your card". Without a
+            target, the 8 networks render in their default order.
+            id="networks" is the anchor target for the header "Commencer"
+            button — landing on the network picker, not the CTABlock at the
+            bottom of the page (which was wasted scroll). */}
+        <div id="networks">
         {(() => {
-          const targetedLabel = (locale || "fr").toLowerCase().startsWith("en") ? "★ For you" : "★ Pour vous";
           const featured = targetedNetwork ? NETWORKS.find((n) => n.id === targetedNetwork) : null;
-          const rest = featured ? NETWORKS.filter((n) => n.id !== featured.id) : NETWORKS;
+          const ordered = featured
+            ? [featured, ...NETWORKS.filter((n) => n.id !== featured.id)]
+            : NETWORKS;
           return (
-            <>
-              {featured && (
-                <div
-                  className="net-featured-row"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    // Top/bottom margin so the highlight ring + glow have
-                    // room around the H1 and the rest of the network grid
-                    // below without overlapping. Horizontal padding gives
-                    // the white halo (~18px at peak) room to render without
-                    // bleeding against the viewport edge on small screens.
-                    margin: "32px auto",
-                    padding: "0 24px",
-                    maxWidth: 1100,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <div className="net-featured-slot" style={{ width: "100%", maxWidth: 480 }}>
-                    <NetCard
-                      n={featured}
-                      copy={copy}
-                      href={networkHref(featured)}
-                      onSelect={() => trackNetworkSelect(featured)}
-                      highlighted
-                      targetedLabel={targetedLabel}
-                      priceLabel={promoNetworkPriceLabels[featured.id]}
-                      cardLabelOverride={featuredCardLabel(locale, featured)}
-                    />
-                  </div>
-                </div>
-              )}
-              {featured && (
-                <div
-                  style={{
-                    textAlign: "center",
-                    margin: "8px auto 14px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-3)",
-                  }}
-                >
-                  {(locale || "fr").toLowerCase().startsWith("en")
-                    ? "Other networks available"
-                    : "Autres réseaux disponibles"}
-                </div>
-              )}
-              <div
-                className={featured ? "net-grid net-grid--rest" : "net-grid"}
-                style={
-                  featured
-                    ? {
-                        // 7 cards don't tile cleanly into a 4- or 2-col grid
-                        // (4+3 desktop, 3+3+1 mobile leaves an orphan).
-                        // Flex + center makes the last incomplete row center
-                        // itself instead of stranding a lonely card.
-                        display: "flex",
-                        flexWrap: "wrap",
-                        justifyContent: "center",
-                        gap: 14,
-                        maxWidth: 1100,
-                        margin: "0 auto 24px",
-                      }
-                    : {
-                        display: "grid",
-                        gridTemplateColumns: "repeat(4, 1fr)",
-                        gap: 14,
-                        maxWidth: 1100,
-                        margin: "0 auto 24px",
-                      }
-                }
-              >
-                {rest.map((n) => (
+            <div
+              className="net-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 14,
+                maxWidth: 1100,
+                margin: "32px auto 24px",
+              }}
+            >
+              {ordered.map((n) => {
+                const isFeatured = featured?.id === n.id;
+                return (
                   <NetCard
                     key={n.id}
                     n={n}
                     copy={copy}
                     href={networkHref(n)}
                     onSelect={() => trackNetworkSelect(n)}
+                    highlighted={isFeatured}
                     priceLabel={promoNetworkPriceLabels[n.id]}
+                    cardLabelOverride={
+                      isFeatured && featured ? featuredCardLabel(locale, featured) : undefined
+                    }
                   />
-                ))}
-              </div>
-            </>
+                );
+              })}
+            </div>
           );
         })()}
+        </div>
 
 
         {/* Mock with floating cards.
@@ -1114,6 +1156,66 @@ export default function Hero() {
             );
           })()
         )}
+
+        {/* Payment badges — trust signal under the hero. Grayscale + reduced
+            opacity so it reads as reassurance, not a primary visual element.
+            Legal: showing card brand marks for accepted payment methods is
+            permitted under Visa/MC/Amex/PayPal merchant agreements. */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            marginTop: 60,
+            paddingTop: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--ink-3)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M12 2l8 3v6c0 5-3.5 9.4-8 11-4.5-1.6-8-6-8-11V5l8-3z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8 12l3 3 5-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {copy.securePayment}
+          </div>
+          <img
+            src="/badges_paiement.png"
+            alt="Visa, Mastercard, American Express, PayPal"
+            width={320}
+            height={50}
+            loading="lazy"
+            decoding="async"
+            style={{
+              width: "100%",
+              maxWidth: 320,
+              height: "auto",
+              filter: "grayscale(100%)",
+              opacity: 0.65,
+            }}
+          />
+        </div>
       </div>
     </section>
   );
