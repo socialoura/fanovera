@@ -3052,13 +3052,14 @@ input { font: inherit; color: inherit; }
   .step-pill.active .step-pill-label { display: inline; padding-left: 6px; }
   .step-divider { width: 18px; }
 }
+/* Featured card (utm_term=instagram etc.) spans the full network-grid row,
+   on every viewport: 4 columns on desktop, 2 on mobile. The wrapper is only
+   rendered when the card is highlighted, so this rule scopes itself
+   naturally to UTM-matched visits. */
+.net-grid > .netcard-wrap { grid-column: 1 / -1; }
+
 @media (max-width: 640px) {
   .net-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-  /* Featured card (utm_term=instagram etc.) gets its own full-width row at
-     the top of the 2-column mobile grid so the matched platform stays the
-     visitor's first visual hit. The wrapper is only rendered when the card
-     is highlighted, so the rule scopes itself naturally. */
-  .net-grid > .netcard-wrap { grid-column: 1 / -1; }
   .pack-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
   .why-grid { grid-template-columns: 1fr !important; }
   .reviews-grid { grid-template-columns: 1fr !important; }
