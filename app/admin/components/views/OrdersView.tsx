@@ -778,6 +778,8 @@ export default function OrdersView() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [bfSearch, setBfSearch] = useState("");
+  const [bfSearchInput, setBfSearchInput] = useState("");
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingStatus, setEditingStatus] = useState<string>("");
@@ -800,6 +802,7 @@ export default function OrdersView() {
       status: statusFilter,
       search,
     });
+    if (bfSearch) params.set("bfOrderId", bfSearch);
     try {
       const res = await fetch(`/api/admin/orders?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -818,7 +821,7 @@ export default function OrdersView() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, search]);
+  }, [page, statusFilter, search, bfSearch]);
 
   useEffect(() => {
     fetchOrders();
@@ -835,14 +838,27 @@ export default function OrdersView() {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, search]);
+  }, [statusFilter, search, bfSearch]);
 
   const handleSearch = () => {
     setSearch(searchInput.trim());
   };
 
+  const handleBfSearch = () => {
+    // Allow either a raw integer or accidentally-pasted prefixes ("BF #1234",
+    // "Order 1234") — extract the first integer chunk so the admin can paste
+    // whatever's on screen without trimming.
+    const digits = bfSearchInput.match(/\d+/)?.[0] || "";
+    setBfSearchInput(digits);
+    setBfSearch(digits);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSearch();
+  };
+
+  const handleBfKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleBfSearch();
   };
 
   const handleRowClick = (order: Order) => {
@@ -1239,6 +1255,17 @@ export default function OrdersView() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleSearch}
+          />
+        </div>
+        <div className="search-box" style={{ width: 220 }}>
+          {Ic.search()}
+          <input
+            placeholder="ID BulkFollows..."
+            value={bfSearchInput}
+            onChange={(e) => setBfSearchInput(e.target.value)}
+            onKeyDown={handleBfKeyDown}
+            onBlur={handleBfSearch}
+            inputMode="numeric"
           />
         </div>
         <div className="tabs" style={{ padding: 3 }}>

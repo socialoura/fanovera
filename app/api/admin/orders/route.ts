@@ -68,6 +68,8 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
     const status = searchParams.get("status") || "all";
     const search = searchParams.get("search") || "";
+    const bfOrderIdRaw = parseInt(searchParams.get("bfOrderId") || "0", 10);
+    const bfOrderId = Number.isFinite(bfOrderIdRaw) && bfOrderIdRaw > 0 ? bfOrderIdRaw : 0;
     const offset = (page - 1) * limit;
 
     // Opt-out via ?refresh=0 (used by the refresh button to avoid double work).
@@ -75,54 +77,36 @@ export async function GET(req: NextRequest) {
       await autoRefreshPendingOrders();
     }
 
-    let orders;
-    let totalRes;
+    // Build filter args once and reuse them in both the count and the data
+    // query. Each branch is a no-op when its filter isn't set, so we avoid
+    // the previous 4-branch ladder. The bfOrderId match uses jsonb containment
+    // on `smm_orders` — Postgres can use the default GIN index for that if
+    // one exists, otherwise it sequential-scans (fine at admin volumes).
+    const emailPattern = "%" + search + "%";
+    const bfFilter = JSON.stringify([{ bfOrderId }]);
 
     // customer_order_number = rang chronologique de cette commande dans
     // l'historique du client (1 = première). customer_total_orders = total
     // de commandes pour cet email. `id` étant un SERIAL strictement croissant,
     // on l'utilise comme clé d'ordre pour rester correct même si plusieurs
     // commandes partagent la même seconde dans created_at.
-    if (status !== "all" && search) {
-      totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE status = ${status} AND email ILIKE ${"%" + search + "%"}`;
-      orders = await sql`
-        SELECT o.*,
-          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
-          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
-        FROM orders o
-        WHERE o.status = ${status} AND o.email ILIKE ${"%" + search + "%"}
-        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else if (status !== "all") {
-      totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE status = ${status}`;
-      orders = await sql`
-        SELECT o.*,
-          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
-          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
-        FROM orders o
-        WHERE o.status = ${status}
-        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else if (search) {
-      totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders WHERE email ILIKE ${"%" + search + "%"}`;
-      orders = await sql`
-        SELECT o.*,
-          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
-          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
-        FROM orders o
-        WHERE o.email ILIKE ${"%" + search + "%"}
-        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
-      `;
-    } else {
-      totalRes = await sql`SELECT COUNT(*)::int AS count FROM orders`;
-      orders = await sql`
-        SELECT o.*,
-          (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
-          (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
-        FROM orders o
-        ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
-      `;
-    }
+    const totalRes = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM orders
+      WHERE (${status} = 'all' OR status = ${status})
+        AND (${search} = '' OR email ILIKE ${emailPattern})
+        AND (${bfOrderId} = 0 OR smm_orders @> ${bfFilter}::jsonb)
+    `;
+    const orders = await sql`
+      SELECT o.*,
+        (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
+        (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
+      FROM orders o
+      WHERE (${status} = 'all' OR o.status = ${status})
+        AND (${search} = '' OR o.email ILIKE ${emailPattern})
+        AND (${bfOrderId} = 0 OR o.smm_orders @> ${bfFilter}::jsonb)
+      ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}
+    `;
 
     const total = totalRes[0].count;
     const totalPages = Math.ceil(total / limit);
