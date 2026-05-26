@@ -43,11 +43,13 @@ export async function POST(req: NextRequest) {
       LIMIT 50
     `;
 
-    // Customer-facing tracking must never show "canceled". A BulkFollows
-    // cancellation just triggers an internal re-route by the admin; the
-    // client sees the order as still in flight (processing).
+    // Customer-facing tracking must never expose internal blocking states
+    // ("canceled" from a BF refund, "account_unavailable" when the target
+    // profile is private/suspended). The admin is re-routing / waiting on
+    // info; from the client's perspective the order is still in flight.
+    const HIDDEN_STATUSES = new Set(["canceled", "cancelled", "account_unavailable"]);
     const orders = rows.map((o: Record<string, unknown>) =>
-      o.status === "canceled" || o.status === "cancelled"
+      typeof o.status === "string" && HIDDEN_STATUSES.has(o.status)
         ? { ...o, status: "processing" }
         : o,
     );

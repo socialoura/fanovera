@@ -64,9 +64,13 @@ const STATUS_MAP: Record<string, { label: string; pill: string }> = {
   partial: { label: "Partielle", pill: "amber" },
   canceled: { label: "Annulée", pill: "red" },
   failed: { label: "Échouée", pill: "red" },
+  // Internal-only — masked as "processing" on every customer-facing surface
+  // (see api/order/[id], orders-by-email, account/orders). Used when BF
+  // refuses to deliver because the target account is private/suspended/etc.
+  account_unavailable: { label: "Compte non dispo", pill: "amber" },
 };
 
-const STATUSES = ["pending", "paid", "processing", "delivered", "partial", "canceled", "failed"] as const;
+const STATUSES = ["pending", "paid", "processing", "delivered", "partial", "canceled", "account_unavailable", "failed"] as const;
 
 const SERVICE_LABELS: Record<string, string> = {
   followers: "Followers",
@@ -1247,6 +1251,7 @@ export default function OrdersView() {
               ["delivered", "Livrées"],
               ["partial", "Partielles"],
               ["canceled", "Annulées"],
+              ["account_unavailable", "Compte non dispo"],
               ["failed", "Échouées"],
             ] as const
           ).map(([k, l]) => (

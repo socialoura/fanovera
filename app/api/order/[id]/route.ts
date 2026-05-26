@@ -99,10 +99,15 @@ export async function GET(
     });
 
     // Aggregate overall status. Mirrors the per-service "never expose
-    // canceled" rule: a DB-level canceled order is reported as "processing"
-    // to the client, because the admin re-routes the delivery on another
-    // service rather than letting the customer think their order was killed.
-    let overallStatus: string = order.status === "canceled" ? "processing" : (order.status || "paid");
+    // blocking states" rule: a DB-level "canceled" (BF refund) or
+    // "account_unavailable" (private/suspended target) is reported as
+    // "processing" to the client. The admin is re-routing or waiting on
+    // info internally — letting the client see the real state just
+    // triggers refund tickets while we silently fix the order.
+    const HIDDEN_DB_STATUSES = new Set(["canceled", "cancelled", "account_unavailable"]);
+    let overallStatus: string = typeof order.status === "string" && HIDDEN_DB_STATUSES.has(order.status)
+      ? "processing"
+      : (order.status || "paid");
     if (services.length > 0) {
       const allDelivered = services.every((s) => s.status === "delivered");
       const someProcessing = services.some((s) => s.status === "processing");
