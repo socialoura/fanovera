@@ -3065,34 +3065,6 @@ input { font: inherit; color: inherit; }
   .reviews-grid { grid-template-columns: 1fr !important; }
 }
 
-/* Small mobile (≤480px / iPhone SE & co): swap the cramped 2-col pricing grid
- * for a horizontal snap-scroll carousel. Each tile fits ~72vw with a peek of
- * the next tile visible on the right so the visitor sees the carousel is
- * scrollable. overflow-y stays auto (browsers force visible→auto when the
- * other axis scrolls), so top padding gives the .popular/.best pin (top:-10px)
- * room without clipping. */
-@media (max-width: 480px) {
-  .pack-grid {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    grid-template-columns: none !important;
-    gap: 12px !important;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding: 18px 4px 8px;
-    margin-left: -8px;
-    margin-right: -8px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pack-grid::-webkit-scrollbar { display: none; }
-  .pack-grid > .pack-tile {
-    flex: 0 0 72vw;
-    max-width: 280px;
-    scroll-snap-align: center;
-    scroll-snap-stop: always;
-  }
-}
 
 /* HowItWorks (steps) + Testimonials (stats + cards): 3-4 → 2 → 1 */
 @media (max-width: 1099px) {
