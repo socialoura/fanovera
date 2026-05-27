@@ -24,14 +24,61 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
   try {
-    // Range is the rolling window the dashboard summarises. We accept a few
-    // discrete values (7 / 30 / 90 days) so the SQL intervals stay safe even
-    // though we interpolate the number into a raw INTERVAL string below — the
-    // value is whitelisted, never the raw query param.
-    const rangeParam = Number(new URL(req.url).searchParams.get("range") || "30");
-    const range = [7, 30, 90].includes(rangeParam) ? rangeParam : 30;
-    const prevRange = range * 2;
-    const seriesDays = Math.max(1, range - 1);
+    // The dashboard summarises an inclusive [fromDate, toDate] window of
+    // Europe/Paris calendar days. Two ways to specify it:
+    //   - preset:  ?range=7|30|90       → trailing N days ending today (Paris)
+    //   - custom:  ?from=Y-M-D&to=Y-M-D → arbitrary window (capped to 365 days)
+    // The custom form wins when both params are valid and from <= to.
+    const searchParams = new URL(req.url).searchParams;
+    const rangeParam = Number(searchParams.get("range") || "30");
+    const presetRange = [7, 30, 90].includes(rangeParam) ? rangeParam : 30;
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+
+    // Today in Europe/Paris as YYYY-MM-DD — used as the preset upper bound
+    // and as the default end of the custom range if only `from` is provided.
+    const todayParis = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Paris",
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    const shiftDays = (isoDate: string, delta: number) => {
+      const d = new Date(`${isoDate}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + delta);
+      return d.toISOString().slice(0, 10);
+    };
+    const daysBetween = (a: string, b: string) =>
+      Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+
+    let fromDate: string;
+    let toDate: string;
+    let rangeDays: number;
+    const customValid =
+      fromParam && toParam && DATE_RE.test(fromParam) && DATE_RE.test(toParam) && fromParam <= toParam;
+    if (customValid) {
+      fromDate = fromParam!;
+      toDate = toParam!;
+      rangeDays = Math.min(365, daysBetween(fromDate, toDate) + 1);
+      // Re-clamp fromDate if the user asked for more than 365 days.
+      fromDate = shiftDays(toDate, -(rangeDays - 1));
+    } else {
+      toDate = todayParis;
+      fromDate = shiftDays(todayParis, -(presetRange - 1));
+      rangeDays = presetRange;
+    }
+    const prevToDate = shiftDays(fromDate, -1);
+    const prevFromDate = shiftDays(prevToDate, -(rangeDays - 1));
+
+    // Optional platform filter. Whitelisted against the 8 canonical platform
+    // ids — anything else (including 'all', '', null) means "no filter". Used
+    // in every per-orders query below via the `(${platform}::text IS NULL OR
+    // platform = ${platform})` trick so a single SQL stays valid in both modes.
+    const PLATFORM_WHITELIST = new Set([
+      "instagram", "tiktok", "youtube", "facebook",
+      "twitter", "spotify", "linkedin", "twitch",
+    ]);
+    const rawPlatform = searchParams.get("platform");
+    const platform: string | null = rawPlatform && PLATFORM_WHITELIST.has(rawPlatform) ? rawPlatform : null;
 
     const [
       totalOrdersRes,
@@ -61,7 +108,8 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
       `,
       sql`
         SELECT currency,
@@ -69,7 +117,8 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
       `,
       sql`
@@ -78,8 +127,8 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
-          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
       `,
       sql`
@@ -87,21 +136,25 @@ export async function GET(req: NextRequest) {
         FROM orders
         WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
           AND status IN ('paid','processing','delivered')
+          AND (${platform}::text IS NULL OR platform = ${platform})
       `,
       sql`
         SELECT currency, COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
           AND status IN ('paid','processing','delivered')
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
       `,
+      // Top réseaux panel stays global on purpose — filtering it would
+      // collapse the chart to a single bar whenever a platform is selected.
       sql`
         SELECT platform, currency,
                COUNT(*)::int AS orders,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
         GROUP BY platform, currency
       `,
       sql`
@@ -110,13 +163,15 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
       `,
       sql`
         SELECT status, COUNT(*)::int AS count
         FROM orders
-        WHERE created_at >= NOW() - ${range} * INTERVAL '1 day'
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY status
         ORDER BY count DESC
       `,
@@ -124,31 +179,29 @@ export async function GET(req: NextRequest) {
         SELECT d.date::text AS date, o.currency,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
-        FROM generate_series(
-          (NOW() AT TIME ZONE 'Europe/Paris')::date - ${seriesDays} * INTERVAL '1 day',
-          (NOW() AT TIME ZONE 'Europe/Paris')::date,
-          '1 day'
-        ) AS d(date)
+        FROM generate_series(${fromDate}::date, ${toDate}::date, '1 day') AS d(date)
         LEFT JOIN orders o ON (o.created_at AT TIME ZONE 'Europe/Paris')::date = d.date
+          AND (${platform}::text IS NULL OR o.platform = ${platform})
         GROUP BY d.date, o.currency
         ORDER BY d.date ASC
       `,
-      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date >= (NOW() AT TIME ZONE 'Europe/Paris')::date - ${range} * INTERVAL '1 day'`,
-      sql`SELECT date::text AS date, COALESCE(SUM(cost_cents), 0)::int AS cost FROM ad_costs WHERE date >= (NOW() AT TIME ZONE 'Europe/Paris')::date - INTERVAL '7 days' GROUP BY date ORDER BY date DESC`,
+      sql`SELECT COALESCE(SUM(cost_cents), 0)::int AS sum FROM ad_costs WHERE date BETWEEN ${fromDate}::date AND ${toDate}::date`,
+      sql`SELECT date::text AS date, COALESCE(SUM(cost_cents), 0)::int AS cost FROM ad_costs WHERE date BETWEEN ${fromDate}::date AND ${toDate}::date GROUP BY date ORDER BY date DESC`,
       sql`
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
           AND status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
       `,
       sql`
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
           AND status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
-          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
       `,
       sql`
         SELECT COALESCE(NULLIF(country, ''), '??') AS country,
@@ -157,7 +210,8 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY country, currency
       `,
       sql`
@@ -169,6 +223,7 @@ export async function GET(req: NextRequest) {
         FROM orders
         WHERE status IN ('paid','processing','delivered')
           AND email <> ''
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY LOWER(email), currency
       `,
       sql`
@@ -176,7 +231,8 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY hour
       `,
       sql`
@@ -188,16 +244,17 @@ export async function GET(req: NextRequest) {
           CASE WHEN jsonb_typeof(cart) = 'array' THEN cart ELSE '[]'::jsonb END
         ) AS item
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND item->>'service' IS NOT NULL
+          AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY service, currency
       `,
       sql`
         SELECT COUNT(*)::int AS count
         FROM orders
         WHERE status IN ('paid','processing','delivered')
-          AND created_at >= NOW() - ${prevRange} * INTERVAL '1 day'
-          AND created_at <  NOW() - ${range} * INTERVAL '1 day'
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
       `,
     ]);
 
@@ -211,7 +268,7 @@ export async function GET(req: NextRequest) {
         SELECT platform,
                COUNT(DISTINCT anonymous_id)::int AS visitors
         FROM product_page_visits
-        WHERE created_at >= NOW() - ${range} * INTERVAL '1 day'
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
         GROUP BY platform
       `) as Array<{ platform: string; visitors: number }>;
     } catch (visitErr) {
@@ -223,7 +280,10 @@ export async function GET(req: NextRequest) {
     const revenueToday = await sumInEur(revenueTodayByCurrency as CurrencyRevenueRow[], "revenue");
     const prevRevenue = await sumInEur(revenueByCurrencyPrevPeriod as CurrencyRevenueRow[], "revenue");
     const prevCost = await sumInEur(revenueByCurrencyPrevPeriod as CurrencyRevenueRow[], "cost");
-    const adCosts = Number(adCostsTotalRes[0]?.sum) || 0;
+    // ad_costs are tracked globally (not per platform). When a single platform
+    // is selected we can't honestly attribute spend to it — zero out rather
+    // than inflate the platform's cost with the whole network's ad budget.
+    const adCosts = platform ? 0 : (Number(adCostsTotalRes[0]?.sum) || 0);
     const profit = totalRevenue - totalCost - adCosts;
     const prevProfit = prevRevenue - prevCost; // prior period ad cost not tracked separately by date here
     const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
@@ -386,7 +446,9 @@ export async function GET(req: NextRequest) {
     const recurrenceRate = uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 100) : 0;
 
     return NextResponse.json({
-      range,
+      range: rangeDays,
+      fromDate,
+      toDate,
       totalOrders,
       totalRevenue,
       totalCost,

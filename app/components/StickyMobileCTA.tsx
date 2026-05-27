@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-const STICKY_MOBILE_CTA_ENABLED = false;
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   visible: boolean;
@@ -33,21 +31,45 @@ export default function StickyMobileCTA({
   showAfterScroll = 280,
 }: Props) {
   const [scrolled, setScrolled] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!STICKY_MOBILE_CTA_ENABLED || !visible) return;
+    if (!visible) return;
     const onScroll = () => setScrolled(window.scrollY > showAfterScroll);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [visible, showAfterScroll]);
 
-  if (!STICKY_MOBILE_CTA_ENABLED || !visible) return null;
+  const shouldShow = visible && scrolled;
 
-  const shouldShow = scrolled;
+  // Expose the bar height as a CSS var so other fixed-bottom elements
+  // (notably the chat FAB) can lift themselves above it without overlap.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!shouldShow) {
+      root.style.removeProperty("--sticky-cta-h");
+      return;
+    }
+    const el = barRef.current;
+    if (!el) return;
+    const update = () => {
+      root.style.setProperty("--sticky-cta-h", `${el.offsetHeight}px`);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--sticky-cta-h");
+    };
+  }, [shouldShow]);
+
+  if (!visible) return null;
 
   return (
     <div
+      ref={barRef}
       className="show-md-only"
       aria-hidden={!shouldShow}
       style={{

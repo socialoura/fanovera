@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
           SUM(cost_cents)::bigint AS cost_cents,
           SUM(clicks)::int AS clicks,
           SUM(impressions)::int AS impressions,
-          SUM(conversions)::numeric(12, 2) AS google_conversions
+          SUM(conversions)::numeric(12, 2) AS google_conversions,
+          SUM(conversions_value)::numeric(14, 2) AS google_conversions_value
         FROM ad_costs_by_search_term
         WHERE date >= CURRENT_DATE - (${days}::int * INTERVAL '1 day')
         GROUP BY search_term, ad_group_id
@@ -88,6 +89,7 @@ export async function GET(req: NextRequest) {
         tc.clicks,
         tc.impressions,
         tc.google_conversions,
+        tc.google_conversions_value,
         atc.ag_cost_cents,
         COALESCE(agr.ag_real_orders, 0) AS ag_real_orders,
         COALESCE(agr.ag_real_revenue_cents, 0) AS ag_real_revenue_cents
@@ -130,6 +132,7 @@ export async function GET(req: NextRequest) {
           clicks,
           impressions: Number(r.impressions) || 0,
           googleConversions: Number(r.google_conversions) || 0,
+          googleConversionsValueCents: Math.round((Number(r.google_conversions_value) || 0) * 100),
           attributedRevenueCents,
           attributedOrders,
           realRoas,

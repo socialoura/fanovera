@@ -87,9 +87,9 @@ async function syncSearchTermCosts(daysBack: number) {
   for (const r of rows) {
     await sql`
       INSERT INTO ad_costs_by_search_term
-        (date, campaign_id, campaign_name, ad_group_id, ad_group_name, search_term, cost_cents, clicks, impressions, conversions, synced_at)
+        (date, campaign_id, campaign_name, ad_group_id, ad_group_name, search_term, cost_cents, clicks, impressions, conversions, conversions_value, synced_at)
       VALUES
-        (${r.date}::date, ${r.campaignId}::bigint, ${r.campaignName}, ${r.adGroupId}::bigint, ${r.adGroupName}, ${r.searchTerm}, ${r.costCents}, ${r.clicks}, ${r.impressions}, ${r.conversions}, NOW())
+        (${r.date}::date, ${r.campaignId}::bigint, ${r.campaignName}, ${r.adGroupId}::bigint, ${r.adGroupName}, ${r.searchTerm}, ${r.costCents}, ${r.clicks}, ${r.impressions}, ${r.conversions}, ${r.conversionsValue}, NOW())
       ON CONFLICT (date, ad_group_id, search_term) DO UPDATE SET
         campaign_id = EXCLUDED.campaign_id,
         campaign_name = EXCLUDED.campaign_name,
@@ -98,6 +98,7 @@ async function syncSearchTermCosts(daysBack: number) {
         clicks = EXCLUDED.clicks,
         impressions = EXCLUDED.impressions,
         conversions = EXCLUDED.conversions,
+        conversions_value = EXCLUDED.conversions_value,
         synced_at = NOW()
     `;
     upserted++;

@@ -28,7 +28,8 @@ type Props = {
 };
 
 export default function Step3Checkout({ country, pack, username, postUrl = "", email, profile, clientSecret, onBack, onBackToPacks }: Props) {
-  const t = useInstagramCopy().step3;
+  const igCopy = useInstagramCopy();
+  const t = igCopy.step3;
   const { locale } = useI18n();
   const paymentCopy = getPublicCopy(locale).payment;
   const initialPromo = usePromoFromUrl();
@@ -66,11 +67,20 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
 
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <div style={{ background: "white", border: "2px solid var(--ig-2)", borderRadius: 22, padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               <NetIcon kind="instagram" color="var(--ig-2)" size={20} />
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ig-2)" }}>
                 {t.summary}
               </div>
+              <button
+                onClick={onBackToPacks}
+                style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--ink-3)", padding: 0, display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden>
+                  <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t.backToPacks}
+              </button>
             </div>
 
             <div style={{ padding: 14, background: "linear-gradient(135deg, rgba(250,126,30,0.08), rgba(214,41,118,0.08))", borderRadius: 14, display: "flex", gap: 12, alignItems: "center", marginBottom: 18 }}>
@@ -84,8 +94,16 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.recipient}</div>
                 <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipientLabel}</div>
+                {profile && profile.followersCount > 0 && !postUrl.trim() && (
+                  <div style={{ marginTop: 4, fontSize: 12, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ color: "var(--ink-2)" }}>{formatQty(profile.followersCount)}</span>
+                    <span style={{ color: "var(--green)", fontWeight: 800 }}>→</span>
+                    <span style={{ color: "var(--green)", fontWeight: 800 }}>{formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}</span>
+                    <span style={{ color: "var(--ink-3)" }}>{igCopy.step1.audience}</span>
+                  </div>
+                )}
               </div>
-              <button onClick={onBack} style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, background: "white", borderRadius: 999, border: "1px solid var(--line)", cursor: "pointer" }}>
+              <button onClick={onBack} style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, background: "white", borderRadius: 999, border: "1px solid var(--line)", cursor: "pointer", flexShrink: 0 }}>
                 {t.edit}
               </button>
             </div>
@@ -165,12 +183,6 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
               <span style={{ fontSize: 11, color: "var(--ink-3)" }}>SSL</span>
               <span style={{ fontSize: 11, color: "var(--ink-3)" }}>✓ 3D Secure</span>
               <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{t.gdpr}</span>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: 14 }}>
-              <button onClick={onBackToPacks} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--ink-3)", textDecoration: "underline", textUnderlineOffset: 3 }}>
-                {t.backToPacks}
-              </button>
             </div>
           </div>
         </div>

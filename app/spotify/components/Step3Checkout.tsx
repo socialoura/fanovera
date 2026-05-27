@@ -64,9 +64,15 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
 
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <div className="checkout-recap spo" style={{ background: "white", borderRadius: 22, padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               <NetIcon kind="spotify" color="var(--spo-green-2)" size={20} />
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--spo-green-2)" }}>{t.summary}</div>
+              <button onClick={onBackToPacks} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--ink-3)", padding: 0, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden>
+                  <path d="M11 7H3M7 3L3 7l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t.backToPacks}
+              </button>
             </div>
 
             <div style={{ padding: "14px", background: "linear-gradient(135deg, rgba(30,215,96,0.08), rgba(25,20,20,0.06))", borderRadius: 14, display: "flex", gap: 12, alignItems: "center", marginBottom: 18 }}>
@@ -172,12 +178,6 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
               <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>SSL</span>
               <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>3D Secure</span>
               <span style={{ fontSize: 11, color: "var(--ink-3)", display: "flex", gap: 4, alignItems: "center" }}>{t.gdpr}</span>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: 14 }}>
-              <button onClick={onBackToPacks} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--ink-3)", textDecoration: "underline", textUnderlineOffset: 3 }}>
-                {t.backToPacks}
-              </button>
             </div>
           </div>
         </div>

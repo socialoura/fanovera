@@ -19,7 +19,6 @@ export default function YtHeader() {
   return (
     <div data-i18n-skip style={{ padding: "24px 0" }}>
       <div className="container pf-header">
-        <span className="header-lang-mobile"><LanguageSelector compact /></span>
         <Logo />
         <nav className="nav-pill">
           {NETWORKS.map((n) => (
@@ -39,7 +38,7 @@ export default function YtHeader() {
           <Link href="/contact">{publicHeader.contact}</Link>
         </nav>
         <div className="pf-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="header-lang-desktop-only"><LanguageSelector compact /></span>
+          <LanguageSelector compact />
           <CurrencySelector compact />
           <div
             className="hide-md"

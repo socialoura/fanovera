@@ -428,10 +428,12 @@ export async function initDb() {
       clicks INTEGER NOT NULL DEFAULT 0,
       impressions INTEGER NOT NULL DEFAULT 0,
       conversions NUMERIC(10,2) NOT NULL DEFAULT 0,
+      conversions_value NUMERIC(12,2) NOT NULL DEFAULT 0,
       synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (date, ad_group_id, search_term)
     )
   `;
+  await sql`ALTER TABLE ad_costs_by_search_term ADD COLUMN IF NOT EXISTS conversions_value NUMERIC(12,2) NOT NULL DEFAULT 0`;
   await sql`CREATE INDEX IF NOT EXISTS idx_search_term_date ON ad_costs_by_search_term(date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_search_term_term ON ad_costs_by_search_term(search_term)`;
 

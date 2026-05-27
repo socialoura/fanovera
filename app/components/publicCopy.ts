@@ -36,6 +36,10 @@ export type PublicCopy = {
     profileBadge: string;
     /** Receipt-strip label at the bottom of the mock dashboard (e.g. "Commande livrée"). */
     receiptLabel: string;
+    /** Trust-signal label above the payment-badges strip under the hero. */
+    securePayment: string;
+    /** Top-of-hero banner shown on /promo when ?promo=FANO5 is in the URL. */
+    promoCodeBanner: string;
   };
   how: {
     eyebrow: string;
@@ -177,6 +181,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "titres et calendrier",
       profileBadge: "Active",
       receiptLabel: "Commande livrée",
+      securePayment: "Paiement 100% sécurisé",
+      promoCodeBanner: "Code FANO5 inclus dans ce lien — 5% offerts",
     },
     how: {
       eyebrow: "★ Comment ça marche",
@@ -320,6 +326,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "titles and calendar",
       profileBadge: "Active",
       receiptLabel: "Order delivered",
+      securePayment: "100% secure payment",
+      promoCodeBanner: "FANO5 code included in this link — 5% off",
     },
     how: {
       eyebrow: "★ How it works",
@@ -457,6 +465,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "títulos y calendario",
       profileBadge: "Activa",
       receiptLabel: "Pedido entregado",
+      securePayment: "Pago 100% seguro",
+      promoCodeBanner: "Código FANO5 incluido en este enlace — 5% de descuento",
     },
     how: {
       eyebrow: "★ Cómo funciona",
@@ -547,6 +557,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "títulos e calendário",
       profileBadge: "Ativa",
       receiptLabel: "Pedido entregue",
+      securePayment: "Pagamento 100% seguro",
+      promoCodeBanner: "Código FANO5 incluído neste link — 5% de desconto",
     },
     how: {
       eyebrow: "★ Como funciona",
@@ -637,6 +649,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "Titel und Kalender",
       profileBadge: "Aktiv",
       receiptLabel: "Bestellung geliefert",
+      securePayment: "100% sicheres Bezahlen",
+      promoCodeBanner: "Code FANO5 in diesem Link enthalten — 5% Rabatt",
     },
     how: {
       eyebrow: "★ So funktioniert es",
@@ -727,6 +741,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "titoli e calendario",
       profileBadge: "Attiva",
       receiptLabel: "Ordine consegnato",
+      securePayment: "Pagamento 100% sicuro",
+      promoCodeBanner: "Codice FANO5 incluso in questo link — 5% di sconto",
     },
     how: {
       eyebrow: "★ Come funziona",
@@ -817,6 +833,8 @@ export const PUBLIC_COPY: Record<SupportedLocale, PublicCopy> = {
       youtubeMeta: "başlıklar ve takvim",
       profileBadge: "Aktif",
       receiptLabel: "Sipariş teslim edildi",
+      securePayment: "%100 güvenli ödeme",
+      promoCodeBanner: "Bu bağlantıda FANO5 kodu dahil — %5 indirim",
     },
     how: {
       eyebrow: "★ Nasıl çalışır",

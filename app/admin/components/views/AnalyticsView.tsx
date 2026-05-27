@@ -21,6 +21,9 @@ type ServicePerf = {
 type AdsDay = { date: string; cost: number };
 
 interface AnalyticsData {
+  range: number;
+  fromDate: string;
+  toDate: string;
   totalOrders: number;
   totalRevenue: number;
   totalCost: number;
@@ -103,13 +106,37 @@ function todayISO() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-type RangeDays = 7 | 30 | 90;
+type RangeMode = 7 | 30 | 90 | "custom";
+type PlatformFilter =
+  | "all" | "instagram" | "tiktok" | "youtube" | "facebook"
+  | "twitter" | "spotify" | "linkedin" | "twitch";
+
+const PLATFORM_FILTER_OPTIONS: Array<{ value: PlatformFilter; label: string }> = [
+  { value: "all", label: "Tous les réseaux" },
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
+  { value: "facebook", label: "Facebook" },
+  { value: "twitter", label: "Twitter / X" },
+  { value: "spotify", label: "Spotify" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "twitch", label: "Twitch" },
+];
+
+function shiftDayISO(isoDate: string, delta: number) {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function AnalyticsView() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
-  const [range, setRange] = useState<RangeDays>(30);
+  const [range, setRange] = useState<RangeMode>(30);
+  const [customFrom, setCustomFrom] = useState<string>(() => shiftDayISO(todayISO(), -29));
+  const [customTo, setCustomTo] = useState<string>(() => todayISO());
+  const [platform, setPlatform] = useState<PlatformFilter>("all");
 
   // Ads cost entry form state.
   const [adsDate, setAdsDate] = useState<string>(todayISO());
@@ -117,11 +144,24 @@ export default function AnalyticsView() {
   const [adsSaving, setAdsSaving] = useState(false);
   const [adsError, setAdsError] = useState<string | null>(null);
 
-  const fetchData = async (rangeDays: RangeDays = range) => {
+  const fetchData = async (
+    rangeMode: RangeMode = range,
+    platformFilter: PlatformFilter = platform,
+    from: string = customFrom,
+    to: string = customTo,
+  ) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("admin_pw") ?? "";
-      const res = await fetch(`/api/admin/analytics?range=${rangeDays}`, {
+      const params = new URLSearchParams();
+      if (rangeMode === "custom") {
+        params.set("from", from);
+        params.set("to", to);
+      } else {
+        params.set("range", String(rangeMode));
+      }
+      if (platformFilter !== "all") params.set("platform", platformFilter);
+      const res = await fetch(`/api/admin/analytics?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -193,9 +233,12 @@ export default function AnalyticsView() {
   };
 
   useEffect(() => {
-    fetchData(range);
+    // Skip refetch when in custom mode but the dates aren't both set yet —
+    // <input type="date"> can briefly hold an empty string while editing.
+    if (range === "custom" && (!customFrom || !customTo || customFrom > customTo)) return;
+    fetchData(range, platform, customFrom, customTo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range]);
+  }, [range, platform, customFrom, customTo]);
 
   // Sparkline series derived from the 30-day window.
   const sparklines = useMemo(() => {
@@ -232,6 +275,10 @@ export default function AnalyticsView() {
       })()
     : "—";
 
+  // Day count for subtitle interpolation ("· N jours"). The API returns the
+  // resolved day count under `range`; we trust that as the source of truth.
+  const rangeDaysLabel = data.range;
+
   const statusForDonut = data.byStatus.map((b) => ({
     key: b.status,
     label: STATUS_LABEL[b.status] || b.status,
@@ -254,8 +301,11 @@ export default function AnalyticsView() {
           <label className="chip" style={{ cursor: "pointer", paddingRight: 4 }}>
             {Ic.calendar()}
             <select
-              value={range}
-              onChange={(e) => setRange(Number(e.target.value) as RangeDays)}
+              value={String(range)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setRange(v === "custom" ? "custom" : (Number(v) as RangeMode));
+              }}
               disabled={loading}
               style={{
                 background: "transparent",
@@ -267,12 +317,57 @@ export default function AnalyticsView() {
                 paddingRight: 4,
               }}
             >
-              <option value={7}>7 derniers jours</option>
-              <option value={30}>30 derniers jours</option>
-              <option value={90}>90 derniers jours</option>
+              <option value="7">7 derniers jours</option>
+              <option value="30">30 derniers jours</option>
+              <option value="90">90 derniers jours</option>
+              <option value="custom">Personnalisé</option>
             </select>
           </label>
-          <div className="chip">{Ic.filter()} Tous les réseaux</div>
+          {range === "custom" && (
+            <>
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || todayISO()}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                disabled={loading}
+                className="chip"
+                style={{ cursor: "pointer", font: "inherit" }}
+              />
+              <span style={{ alignSelf: "center", color: "var(--a-ink-3)" }}>→</span>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                max={todayISO()}
+                onChange={(e) => setCustomTo(e.target.value)}
+                disabled={loading}
+                className="chip"
+                style={{ cursor: "pointer", font: "inherit" }}
+              />
+            </>
+          )}
+          <label className="chip" style={{ cursor: "pointer", paddingRight: 4 }}>
+            {Ic.filter()}
+            <select
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
+              disabled={loading}
+              style={{
+                background: "transparent",
+                border: 0,
+                font: "inherit",
+                color: "inherit",
+                cursor: "pointer",
+                outline: "none",
+                paddingRight: 4,
+              }}
+            >
+              {PLATFORM_FILTER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
           <div className="chip">{Ic.refresh()} Mis à jour {refreshedAgo}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -371,7 +466,7 @@ export default function AnalyticsView() {
         <div className="card">
           <div className="card-head">
             <div>
-              <div className="card-title">Revenu, coûts & profit · {range} jours</div>
+              <div className="card-title">Revenu, coûts & profit · {rangeDaysLabel} jours</div>
               <div className="card-sub">Évolution du CA, coût SMM (BulkFollows) et coût Google Ads</div>
             </div>
             <div style={{ display: "flex", gap: 14, fontSize: 12, fontWeight: 600, flexWrap: "wrap" }}>
@@ -387,7 +482,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Statut des commandes</div>
-              <div className="card-sub">Répartition sur {range} jours</div>
+              <div className="card-sub">Répartition sur {rangeDaysLabel} jours</div>
             </div>
           </div>
           {statusForDonut.length > 0 ? (
@@ -404,7 +499,7 @@ export default function AnalyticsView() {
               </div>
             </div>
           ) : (
-            <div className="order-empty">Pas de commandes sur {range} jours.</div>
+            <div className="order-empty">Pas de commandes sur {rangeDaysLabel} jours.</div>
           )}
         </div>
       </div>
@@ -415,7 +510,7 @@ export default function AnalyticsView() {
         <div className="card" style={{ padding: "16px 18px" }}>
           <div className="kpi-label">Clients uniques</div>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", marginTop: 6 }}>{fmt(data.customers.unique)}</div>
-          <div className="kpi-sub" style={{ marginTop: 6 }}>sur {range} jours · {data.deltas.customers >= 0 ? "+" : ""}{data.deltas.customers}% vs. période préc.</div>
+          <div className="kpi-sub" style={{ marginTop: 6 }}>sur {rangeDaysLabel} jours · {data.deltas.customers >= 0 ? "+" : ""}{data.deltas.customers}% vs. période préc.</div>
         </div>
         <div className="card" style={{ padding: "16px 18px" }}>
           <div className="kpi-label">Panier moyen</div>
@@ -440,7 +535,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Revenu par plateforme</div>
-              <div className="card-sub">Classement par CA · {range} jours</div>
+              <div className="card-sub">Classement par CA · {rangeDaysLabel} jours</div>
             </div>
             <span className="pill ink">{data.byPlatform.length} actifs</span>
           </div>
@@ -474,7 +569,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Heures de pointe (UTC)</div>
-              <div className="card-sub">Volume de commandes par heure · {range} derniers jours</div>
+              <div className="card-sub">Volume de commandes par heure · {rangeDaysLabel} derniers jours</div>
             </div>
             {(() => {
               const max = Math.max(...data.peakHours);
@@ -518,7 +613,7 @@ export default function AnalyticsView() {
           <div className="card-head">
             <div>
               <div className="card-title">Top pays par revenu</div>
-              <div className="card-sub">Commandes · revenu ({range} jours)</div>
+              <div className="card-sub">Commandes · revenu ({rangeDaysLabel} jours)</div>
             </div>
           </div>
           {data.topCountries.length === 0 ? (
@@ -584,7 +679,7 @@ export default function AnalyticsView() {
           <div>
             <div className="card-title">Performance par service</div>
             <div className="card-sub">
-              Revenu / cmd & revenu / visite plateforme · {range} jours · trié par rentabilité par visite
+              Revenu / cmd & revenu / visite plateforme · {rangeDaysLabel} jours · trié par rentabilité par visite
             </div>
           </div>
         </div>

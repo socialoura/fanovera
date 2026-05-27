@@ -51,6 +51,7 @@ export type SearchTermCostRow = {
   clicks: number;
   impressions: number;
   conversions: number;
+  conversionsValue: number;
 };
 
 type GoogleAdsConfig = {
@@ -311,7 +312,8 @@ export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTerm
       metrics.cost_micros,
       metrics.clicks,
       metrics.impressions,
-      metrics.conversions
+      metrics.conversions,
+      metrics.conversions_value
     FROM search_term_view
     WHERE segments.date DURING LAST_${days}_DAYS
   `;
@@ -325,7 +327,13 @@ export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTerm
       const stv = r.search_term_view as { search_term?: string } | undefined;
       const segments = r.segments as { date?: string } | undefined;
       const metrics = r.metrics as
-        | { cost_micros?: number | string; clicks?: number | string; impressions?: number | string; conversions?: number | string }
+        | {
+            cost_micros?: number | string;
+            clicks?: number | string;
+            impressions?: number | string;
+            conversions?: number | string;
+            conversions_value?: number | string;
+          }
         | undefined;
       const term = (stv?.search_term || "").trim().slice(0, 400);
       if (!campaign?.id || !adGroup?.id || !segments?.date || !term) continue;
@@ -340,6 +348,7 @@ export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTerm
         clicks: Number(metrics?.clicks) || 0,
         impressions: Number(metrics?.impressions) || 0,
         conversions: Number(metrics?.conversions) || 0,
+        conversionsValue: Number(metrics?.conversions_value) || 0,
       });
     }
     return out;
@@ -354,8 +363,10 @@ export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTerm
  * the click_view resource. This is the bridge that lets us join each of our
  * Stripe orders back to the campaign that produced the click.
  *
- * NB: click_view requires segments.date in the WHERE clause and is limited
- * to the last 90 days by the API itself.
+ * click_view enforces `segments.date = 'YYYY-MM-DD'` (single day) in the
+ * WHERE clause — ranges and DURING literals are rejected with
+ * click_view_error=2. So we loop day-by-day. The API only retains the last
+ * 90 days regardless of the loop bound.
  */
 export async function fetchClickToCampaignMap(daysBack: number): Promise<GclidCampaignRow[]> {
   const config = readConfig();
@@ -369,39 +380,45 @@ export async function fetchClickToCampaignMap(daysBack: number): Promise<GclidCa
   if (!customer) return [];
 
   const days = Math.max(1, Math.min(90, Math.floor(daysBack)));
-  const gaql = `
-    SELECT
-      click_view.gclid,
-      campaign.id,
-      campaign.name,
-      ad_group.id,
-      segments.date
-    FROM click_view
-    WHERE segments.date DURING LAST_${days}_DAYS
-  `;
+  const out: GclidCampaignRow[] = [];
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
-  try {
-    const rows = await customer.query(gaql);
-    const out: GclidCampaignRow[] = [];
-    for (const r of rows) {
-      const click = r.click_view as { gclid?: string } | undefined;
-      const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
-      const adGroup = r.ad_group as { id?: string | number } | undefined;
-      const segments = r.segments as { date?: string } | undefined;
-      if (!click?.gclid || !campaign?.id || !segments?.date) continue;
-      out.push({
-        gclid: click.gclid,
-        campaignId: String(campaign.id),
-        campaignName: campaign.name || "",
-        adGroupId: adGroup?.id ? String(adGroup.id) : null,
-        clickDate: isoDate(segments.date),
-      });
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    const day = d.toISOString().slice(0, 10);
+    const gaql = `
+      SELECT
+        click_view.gclid,
+        campaign.id,
+        campaign.name,
+        ad_group.id,
+        segments.date
+      FROM click_view
+      WHERE segments.date = '${day}'
+    `;
+    try {
+      const rows = await customer.query(gaql);
+      for (const r of rows) {
+        const click = r.click_view as { gclid?: string } | undefined;
+        const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
+        const adGroup = r.ad_group as { id?: string | number } | undefined;
+        const segments = r.segments as { date?: string } | undefined;
+        if (!click?.gclid || !campaign?.id || !segments?.date) continue;
+        out.push({
+          gclid: click.gclid,
+          campaignId: String(campaign.id),
+          campaignName: campaign.name || "",
+          adGroupId: adGroup?.id ? String(adGroup.id) : null,
+          clickDate: isoDate(segments.date),
+        });
+      }
+    } catch (err) {
+      console.error(`[googleAdsClient] fetchClickToCampaignMap failed for ${day}:`, describeError(err));
     }
-    return out;
-  } catch (err) {
-    console.error("[googleAdsClient] fetchClickToCampaignMap failed:", describeError(err));
-    return [];
   }
+  return out;
 }
 
 /** Surface readiness state so the admin / cron can show a status badge. */

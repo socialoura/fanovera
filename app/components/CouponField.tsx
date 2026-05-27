@@ -114,12 +114,15 @@ export default function CouponField({
             fontSize: 13,
             cursor: "pointer",
             border: "none",
+            transition: "background .25s, color .25s",
           }}
         >
           {couponApplied ? labels.applied : labels.apply}
         </button>
       </div>
-      {successMessage}
+      {successMessage && (
+        <div className="coupon-success-flash">{successMessage}</div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ interface TermRow {
   clicks: number;
   impressions: number;
   googleConversions: number;
+  googleConversionsValueCents: number;
   attributedRevenueCents: number;
   attributedOrders: number;
   realRoas: number | null;
@@ -152,7 +153,10 @@ export default function SearchTermsView() {
               <th>Terme · Groupe d&apos;annonces</th>
               <th style={{ textAlign: "right" }}>Dépense</th>
               <th style={{ textAlign: "right" }}>Clics</th>
+              <th style={{ textAlign: "right" }}>Conv. G</th>
+              <th style={{ textAlign: "right" }}>Val. Conv. G</th>
               <th style={{ textAlign: "right" }}>Commandes ~</th>
+              <th style={{ textAlign: "right" }}>CPA ~</th>
               <th style={{ textAlign: "right" }}>Revenu ~</th>
               <th style={{ textAlign: "right" }}>ROAS ~</th>
               <th style={{ textAlign: "right" }}>CPC</th>
@@ -161,7 +165,7 @@ export default function SearchTermsView() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: 32, color: "var(--a-ink-3)" }}>
+                <td colSpan={10} style={{ textAlign: "center", padding: 32, color: "var(--a-ink-3)" }}>
                   Aucun search term trouvé. Le cron quotidien les sync depuis la search_term_view Google Ads.
                 </td>
               </tr>
@@ -179,7 +183,16 @@ export default function SearchTermsView() {
                   </td>
                   <td style={{ textAlign: "right", fontWeight: 600 }}>{eur(r.costCents)}</td>
                   <td style={{ textAlign: "right" }}>{r.clicks}</td>
+                  <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>
+                    {r.googleConversions > 0 ? r.googleConversions.toFixed(2) : "—"}
+                  </td>
+                  <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>
+                    {r.googleConversionsValueCents > 0 ? eur(r.googleConversionsValueCents) : "—"}
+                  </td>
                   <td style={{ textAlign: "right" }}>{r.attributedOrders.toFixed(1)}</td>
+                  <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>
+                    {r.realCpaCents == null ? "—" : eur2(r.realCpaCents)}
+                  </td>
                   <td style={{ textAlign: "right", fontWeight: 700 }}>{eur(r.attributedRevenueCents)}</td>
                   <td style={{ textAlign: "right" }}>
                     <span

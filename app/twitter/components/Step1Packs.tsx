@@ -48,7 +48,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile x" + (pack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{t.audience}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{formatQty(p.qty)}</div>
-                <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} {t.included}</div>
+                <div style={{ marginTop: 8 }}><span style={{ display: "inline-block", fontSize: 13, color: "var(--green)", fontWeight: 700, padding: "3px 8px", background: "rgba(77,191,138,0.12)", borderRadius: 6 }}>+{formatQty(p.bonus)} {t.included}</span></div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: pack === i ? "var(--x-ink)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(p, country)}</div>
@@ -91,6 +91,7 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
+              <span>{formatPrice(selectedPack, country)}</span>
             </button>
             <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>{t.reassurance}</div>
             <ValueFraming priceEur={PACKS[pack].price} qty={PACKS[pack].qty + PACKS[pack].bonus} />

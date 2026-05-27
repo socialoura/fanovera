@@ -4,7 +4,8 @@ import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
 import TtSprinkle from "./TtSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type TikTokProductType, getPacksForProduct, defaultPackIndex } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type TikTokProductType, getPacksForProduct } from "../data";
+import { findEquivalentPackIndex } from "../../lib/packEquivalence";
 import { useTikTokCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -22,6 +23,12 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   const handlePackClick = (index: number) => {
     setPack(index);
     requestAnimationFrame(() => orderCardRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }));
+  };
+
+  const switchProduct = (newType: TikTokProductType) => {
+    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    setProductType(newType);
+    setPack(newIdx);
   };
 
   return (
@@ -43,15 +50,15 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
           </h1>
 
           <div className="tt-mode-toggle" style={{ marginTop: 20, marginBottom: 0 }}>
-            <button className={productType === "followers" ? "active" : ""} onClick={() => { setProductType("followers"); setPack(defaultPackIndex("followers")); }}>
+            <button className={productType === "followers" ? "active" : ""} onClick={() => switchProduct("followers")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               {t.productFollowers}
             </button>
-            <button className={productType === "likes" ? "active" : ""} onClick={() => { setProductType("likes"); setPack(defaultPackIndex("likes")); }}>
+            <button className={productType === "likes" ? "active" : ""} onClick={() => switchProduct("likes")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               {t.productLikes}
             </button>
-            <button className={productType === "views" ? "active" : ""} onClick={() => { setProductType("views"); setPack(defaultPackIndex("views")); }}>
+            <button className={productType === "views" ? "active" : ""} onClick={() => switchProduct("views")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               {t.productViews}
             </button>
@@ -65,7 +72,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile" + (safePack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{audienceLabel}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{formatQty(p.qty)}</div>
-                <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} {t.included}</div>
+                <div style={{ marginTop: 8 }}><span style={{ display: "inline-block", fontSize: 13, color: "var(--green)", fontWeight: 700, padding: "3px 8px", background: "rgba(77,191,138,0.12)", borderRadius: 6 }}>+{formatQty(p.bonus)} {t.included}</span></div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: safePack === i ? "var(--tt-red)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(p, country)}</div>
@@ -101,6 +108,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
             <button className="btn-primary btn-tt" onClick={onNext} style={{ width: "100%", padding: "16px 26px", fontSize: 16, marginTop: 8 }}>
               {t.continue}
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span>{formatPrice(selectedPack, country)}</span>
             </button>
             <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>{t.reassurance}</div>
             <ValueFraming priceEur={packs[safePack].price} qty={packs[safePack].qty + packs[safePack].bonus} />

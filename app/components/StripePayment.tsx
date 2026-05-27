@@ -306,7 +306,12 @@ function CardPayment({
       <div data-testid="stripe-payment-element">
         <PaymentElement
           options={{
-            layout: "tabs",
+            // Express wallets (Apple/Google Pay) live in the ExpressCheckout
+            // block above; this PaymentElement is card-only. The "tabs" layout
+            // wastes a row on a single-method tab that suggests choices the
+            // visitor can't actually make. Accordion with radios off + open
+            // by default renders the card form flat — no chrome.
+            layout: { type: "accordion", defaultCollapsed: false, radios: "never", spacedAccordionItems: false },
             paymentMethodOrder: ["card"],
             fields: { billingDetails: { email: email ? "never" : "auto" } },
           }}
@@ -516,8 +521,33 @@ export default function StripeCheckout({
         onSuccess={onSuccess}
         checkoutContext={{ email, username, followersBefore }}
       />
-      <div style={{ textAlign: "center", margin: "16px 0" }}>
-        <span style={{ color: "var(--ink-3)", fontSize: 12 }}>{paymentCopy.orPayByCard}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          margin: "28px 0 22px",
+        }}
+        aria-hidden
+      >
+        <hr style={{ flex: 1, border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
+        <span
+          style={{
+            color: "var(--ink-2)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            padding: "5px 12px",
+            background: "var(--paper-2)",
+            border: "1px solid var(--line)",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {paymentCopy.orPayByCard}
+        </span>
+        <hr style={{ flex: 1, border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
       </div>
       <CardPayment
         email={email}

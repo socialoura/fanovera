@@ -3,6 +3,7 @@ import NetIcon from "../../components/NetIcon";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
 import { formatPrice, formatOld, formatQty, fmtEuro, getPacksForProduct, type CountryId, type TwitchProductType } from "../data";
+import { findEquivalentPackIndex } from "../../lib/packEquivalence";
 import { useTwitchCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -31,6 +32,12 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
     });
   };
 
+  const switchProduct = (newType: TwitchProductType) => {
+    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    setProductType(newType);
+    setPack(newIdx);
+  };
+
   return (
     <section className="slide-in" data-i18n-skip style={{ padding: "40px 0 0", position: "relative" }}>
       <TwSprinkle count={6} seed={0} />
@@ -51,11 +58,11 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
           </h1>
 
           <div className="tw-mode-toggle" style={{ marginTop: 20, marginBottom: 0 }}>
-            <button className={productType === "followers" ? "active" : ""} onClick={() => { setProductType("followers"); setPack(3); }}>
+            <button className={productType === "followers" ? "active" : ""} onClick={() => switchProduct("followers")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               {t.step1.productFollowers}
             </button>
-            <button className={productType === "ai_viewers" ? "active" : ""} onClick={() => { setProductType("ai_viewers"); setPack(3); }}>
+            <button className={productType === "ai_viewers" ? "active" : ""} onClick={() => switchProduct("ai_viewers")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
               {t.step1.productAiViewers}
             </button>
@@ -69,7 +76,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               <button key={i} onClick={() => handlePackClick(i)} className={"pack-tile tw" + (safePack === i ? " selected" : "") + (p.popular ? " popular" : "") + (p.best ? " best" : "")}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{audienceLabel}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1 }}>{formatQty(p.qty)}</div>
-                <div style={{ marginTop: 8, fontSize: 11, color: "var(--green)", fontWeight: 700 }}>+{formatQty(p.bonus)} {t.step1.included}</div>
+                <div style={{ marginTop: 8 }}><span style={{ display: "inline-block", fontSize: 13, color: "var(--green)", fontWeight: 700, padding: "3px 8px", background: "rgba(77,191,138,0.12)", borderRadius: 6 }}>+{formatQty(p.bonus)} {t.step1.included}</span></div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: safePack === i ? "var(--tw-purple)" : "var(--ink)", letterSpacing: "-0.01em" }}>{formatPrice(p, country)}</div>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>{formatOld(p, country)}</div>
@@ -112,6 +119,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
+              <span>{formatPrice(selectedPack, country)}</span>
             </button>
             <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>{t.step1.reassurance}</div>
             <ValueFraming priceEur={selectedPack.price} qty={selectedPack.qty + selectedPack.bonus} />
