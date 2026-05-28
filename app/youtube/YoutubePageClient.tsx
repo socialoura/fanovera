@@ -159,6 +159,7 @@ export default function YoutubePageClient() {
             clientSecret={clientSecret}
             onBack={back}
             onBackToPacks={backToPacks}
+            productType={productType}
           />
         )}
       </div>

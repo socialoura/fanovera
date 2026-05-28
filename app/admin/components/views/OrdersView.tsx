@@ -102,6 +102,10 @@ type CartItem = {
   postUrl?: string;
   link?: string;
   scheduledStartAt?: string;
+  upsell?: boolean;
+  upsellId?: number;
+  priceCents?: number;
+  label?: string;
 };
 
 type SmmOrderItem = {
@@ -394,11 +398,33 @@ function OrderDetail({
                 const qty = item.qty || item.quantity || 0;
                 const service = item.service || String(firstItem.service || "service");
                 return (
-                  <div className="order-item-card" key={`${service}-${index}`}>
+                  <div
+                    className="order-item-card"
+                    key={`${service}-${index}`}
+                    style={item.upsell ? { borderColor: "#16a34a", background: "rgba(34,197,94,0.04)" } : undefined}
+                  >
+                    {item.upsell && (
+                      <div
+                        style={{
+                          marginBottom: 8,
+                          fontSize: 10,
+                          fontWeight: 800,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          color: "#16a34a",
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: "rgba(34,197,94,0.12)",
+                        }}
+                      >
+                        ⚡ Upsell {item.priceCents ? `· +${(item.priceCents / 100).toFixed(2)} €` : ""}
+                      </div>
+                    )}
                     <div className="order-item-main">
                       <div className="order-item-icon">{getInitial(service)}</div>
                       <div>
-                        <strong>{getServiceLabel(service)}</strong>
+                        <strong>{item.label || getServiceLabel(service)}</strong>
                         <span>
                           {formatQty(qty)} unité{qty > 1 ? "s" : ""}
                           {item.bonus ? ` + ${formatQty(item.bonus)} bonus` : ""}

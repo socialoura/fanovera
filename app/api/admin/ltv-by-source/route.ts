@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         FROM orders
         WHERE
           email <> ''
-          AND status IN ('paid', 'processing', 'delivered', 'partial')
+          AND status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
           AND created_at >= NOW() - (${days}::int * INTERVAL '1 day')
         ORDER BY LOWER(email), created_at ASC
       )
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         COALESCE(SUM(o.cost_cents), 0)::int AS cost_cents
       FROM first_orders fo
       JOIN orders o ON LOWER(o.email) = fo.email
-      WHERE o.status IN ('paid', 'processing', 'delivered', 'partial')
+      WHERE o.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
       GROUP BY fo.source_page, fo.email, o.currency
     `;
 

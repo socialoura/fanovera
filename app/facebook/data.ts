@@ -10,16 +10,16 @@ export type Pack = {
 };
 
 export const PACKS: Pack[] = [
-  { qty: 100, price: 4.99, old: 12.99, bonus: 15 },
-  { qty: 250, price: 9.99, old: 24.99, bonus: 35 },
-  { qty: 500, price: 17.99, old: 44.99, bonus: 75 },
-  { qty: 1000, price: 29.99, old: 69.99, bonus: 150, popular: true },
-  { qty: 2500, price: 64.99, old: 149.99, bonus: 400 },
-  { qty: 5000, price: 119.99, old: 269.99, bonus: 800 },
-  { qty: 10000, price: 219.99, old: 489.99, bonus: 1800 },
-  { qty: 25000, price: 499.99, old: 1099.99, bonus: 5000 },
-  { qty: 50000, price: 899.99, old: 1899.99, bonus: 10000, best: true },
-  { qty: 100000, price: 1599.99, old: 3399.99, bonus: 20000 },
+  { qty: 100, price: 2.5, old: 12.99, bonus: 15 },
+  { qty: 250, price: 4, old: 24.99, bonus: 35 },
+  { qty: 500, price: 7.99, old: 44.99, bonus: 75 },
+  { qty: 1000, price: 14.99, old: 69.99, bonus: 150, popular: true },
+  { qty: 2500, price: 24.99, old: 149.99, bonus: 400 },
+  { qty: 5000, price: 39.99, old: 269.99, bonus: 800 },
+  { qty: 10000, price: 69.99, old: 489.99, bonus: 1800 },
+  { qty: 20000, price: 129.99, old: 325.99, bonus: 4000 },
+  { qty: 50000, price: 299.99, old: 1899.99, bonus: 10000, best: true },
+  { qty: 100000, price: 499.99, old: 3399.99, bonus: 20000 },
 ];
 
 export type CountryId = "fr" | "eu";

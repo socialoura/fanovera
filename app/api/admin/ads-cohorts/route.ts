@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
  * Granularity: campaign (or "all" for blended).
  */
 
-const PAID_STATUSES = ["paid", "processing", "delivered", "partial_refund", "refunded"];
+const PAID_STATUSES = ["paid", "processing", "delivered", "partial", "canceled"];
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();

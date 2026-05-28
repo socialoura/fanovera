@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
           COALESCE(SUM(cost_cents), 0)::int AS cost_cents
         FROM orders
         WHERE created_at >= NOW() - ${since}::interval
-          AND status IN ('paid','processing','delivered')
+          AND status IN ('paid','processing','delivered','partial','canceled')
         GROUP BY 1, 2, 3, 4
       `,
       sql`

@@ -5,9 +5,10 @@ import Image from "next/image";
 import NetIcon from "../../components/NetIcon";
 import StripeCheckout from "../../components/StripePayment";
 import CouponField from "../../components/CouponField";
+import CheckoutUpsell, { type CheckoutUpsellItem } from "../../components/CheckoutUpsell";
 import SpoSprinkle from "./SpoSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
+import { COUNTRIES, PACKS, getServiceForProduct, formatQty, fmtEuro, type CountryId, type SpotifyProductType } from "../data";
 import type { SpoPreview } from "./Step2Track";
 import { useSpotifyCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
@@ -24,15 +25,17 @@ type Props = {
   clientSecret?: string | null;
   onBack: () => void;
   onBackToPacks: () => void;
+  productType?: SpotifyProductType;
 };
 
-export default function Step3Checkout({ country, pack, trackInput, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
+export default function Step3Checkout({ country, pack, trackInput, email, profile, clientSecret, onBack, onBackToPacks, productType = "streams" }: Props) {
   const t = useSpotifyCopy().step3;
   const { locale } = useI18n();
   const paymentCopy = getPublicCopy(locale).payment;
   const initialPromo = usePromoFromUrl();
   const [coupon, setCoupon] = useState(initialPromo.code);
   const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
+  const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({
@@ -41,9 +44,11 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
     allowTestPromo: true,
   });
   const discount = promo.discountCents / 100;
-  const total = promo.amountCents / 100;
+  const upsellCents = upsell?.price_cents ?? 0;
+  const finalAmountCents = promo.amountCents + upsellCents;
+  const total = finalAmountCents / 100;
   const promoCode = couponApplied ? coupon : "";
-  const canUsePrefetchedSecret = promo.discountCents === 0;
+  const canUsePrefetchedSecret = promo.discountCents === 0 && upsellCents === 0;
 
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
@@ -139,6 +144,14 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
               }
             />
 
+            <CheckoutUpsell
+              platform="spotify"
+              baseService={productType}
+              locale={locale}
+              accentColor="var(--spo-green-2)"
+              onChange={setUpsell}
+            />
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "16px 0 4px" }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{t.total}</div>
               <div style={{ fontSize: 32, fontWeight: 800, color: "var(--spo-green-2)", letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -159,12 +172,15 @@ export default function Step3Checkout({ country, pack, trackInput, email, profil
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.securePayment}</div>
               <StripeCheckout
-                amount={promo.amountCents}
+                amount={finalAmountCents}
                 email={email}
                 username={trackInput.trim()}
                 platform="spotify"
                 brandColor="var(--spo-green-2)"
-                cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country, trackUrl: trackInput.trim(), trackId: profile?.id }]}
+                cart={[
+                  { service: getServiceForProduct(productType), qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country, trackUrl: trackInput.trim(), trackId: profile?.id },
+                  ...(upsell ? [{ service: upsell.service, qty: upsell.qty, upsell: true, upsellId: upsell.id, priceCents: upsell.price_cents }] : []),
+                ]}
                 promoCode={promoCode}
                 clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
               />

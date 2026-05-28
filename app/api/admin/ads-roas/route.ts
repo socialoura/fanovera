@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 // Accept refunded statuses on the acquisition side (we still consider a
 // refunded customer to have been acquired), but the SUM uses
 // GREATEST(0, total - refunded) so the net revenue is what counts.
-const PAID_STATUSES = ["paid", "processing", "delivered", "partial_refund", "refunded"];
+const PAID_STATUSES = ["paid", "processing", "delivered", "partial", "canceled"];
 
 type GroupBy = "campaign" | "adgroup";
 

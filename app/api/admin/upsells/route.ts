@@ -19,15 +19,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { service, qty, label, label_en, active, sort_order } = body;
+    const { service, qty, label, label_en, active, sort_order, price_cents, trigger_platform, trigger_service } = body;
 
     if (!service || !qty) {
       return NextResponse.json({ error: "service and qty are required" }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO upsells (service, qty, label, label_en, active, sort_order)
-      VALUES (${service}, ${qty}, ${label || ""}, ${label_en || ""}, ${active !== false}, ${sort_order || 0})
+      INSERT INTO upsells (service, qty, label, label_en, active, sort_order, price_cents, trigger_platform, trigger_service)
+      VALUES (
+        ${service},
+        ${qty},
+        ${label || ""},
+        ${label_en || ""},
+        ${active !== false},
+        ${sort_order || 0},
+        ${Math.max(0, Math.round(Number(price_cents) || 0))},
+        ${trigger_platform || null},
+        ${trigger_service || null}
+      )
       RETURNING *
     `;
 
@@ -55,6 +65,12 @@ export async function PUT(req: NextRequest) {
     if (fields.label_en !== undefined) await sql`UPDATE upsells SET label_en = ${fields.label_en} WHERE id = ${id}`;
     if (fields.active !== undefined) await sql`UPDATE upsells SET active = ${fields.active} WHERE id = ${id}`;
     if (fields.sort_order !== undefined) await sql`UPDATE upsells SET sort_order = ${fields.sort_order} WHERE id = ${id}`;
+    if (fields.price_cents !== undefined) {
+      const cents = Math.max(0, Math.round(Number(fields.price_cents) || 0));
+      await sql`UPDATE upsells SET price_cents = ${cents} WHERE id = ${id}`;
+    }
+    if (fields.trigger_platform !== undefined) await sql`UPDATE upsells SET trigger_platform = ${fields.trigger_platform || null} WHERE id = ${id}`;
+    if (fields.trigger_service !== undefined) await sql`UPDATE upsells SET trigger_service = ${fields.trigger_service || null} WHERE id = ${id}`;
 
     const updated = await sql`SELECT * FROM upsells WHERE id = ${id} LIMIT 1`;
     return NextResponse.json({ upsell: updated[0] });

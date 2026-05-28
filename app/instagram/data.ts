@@ -10,16 +10,16 @@ export type Pack = {
 };
 
 export const PACKS: Pack[] = [
-  { qty: 100, price: 2.79, old: 9.99, bonus: 25 },
-  { qty: 250, price: 5.49, old: 14.99, bonus: 50 },
-  { qty: 500, price: 8.99, old: 24.99, bonus: 100 },
-  { qty: 1000, price: 14.99, old: 39.99, bonus: 200, popular: true },
-  { qty: 2500, price: 32.99, old: 84.99, bonus: 500 },
-  { qty: 5000, price: 59.99, old: 149.99, bonus: 1000 },
-  { qty: 10000, price: 109.99, old: 269.99, bonus: 2500 },
-  { qty: 25000, price: 249.99, old: 599.99, bonus: 6000 },
-  { qty: 50000, price: 449.99, old: 1099.99, bonus: 12500, best: true },
-  { qty: 100000, price: 799.99, old: 1999.99, bonus: 25000 },
+  { qty: 100, price: 0.99, old: 9.99, bonus: 25 },
+  { qty: 250, price: 1.49, old: 14.99, bonus: 50 },
+  { qty: 500, price: 2.49, old: 24.99, bonus: 100 },
+  { qty: 1000, price: 3.99, old: 39.99, bonus: 200, popular: true },
+  { qty: 5000, price: 14.99, old: 149.99, bonus: 1000 },
+  { qty: 10000, price: 29.99, old: 269.99, bonus: 2500 },
+  { qty: 20000, price: 54.99, old: 137.99, bonus: 4800 },
+  { qty: 50000, price: 99.99, old: 1099.99, bonus: 12500, best: true },
+  { qty: 100000, price: 169.99, old: 1999.99, bonus: 25000 },
+  { qty: 500000, price: 799.99, old: 2000.99, bonus: 125000 },
 ];
 
 export type InstagramProductType = "followers" | "likes" | "views";

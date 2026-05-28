@@ -5,6 +5,7 @@ import {
   getSupportMessageById,
   insertSupportReply,
   markThreadReplied,
+  reopenSupportThread,
 } from "@/app/lib/db";
 import { RESEND_FROM } from "@/app/lib/email";
 import { pollInboundMail } from "@/app/lib/inboundMailPoll";
@@ -43,6 +44,30 @@ export async function GET(req: NextRequest) {
 
   const threads = await getSupportThreads();
   return NextResponse.json(threads);
+}
+
+export async function PATCH(req: NextRequest) {
+  if (!isAdmin(req)) return unauthorized();
+
+  const body = await req.json().catch(() => ({}));
+  const { id, resolved } = body as { id?: number | string; resolved?: boolean };
+
+  if (!id || typeof resolved !== "boolean") {
+    return NextResponse.json({ error: "id and resolved required" }, { status: 400 });
+  }
+
+  const msg = await getSupportMessageById(Number(id));
+  if (!msg) {
+    return NextResponse.json({ error: "message not found" }, { status: 404 });
+  }
+  const rootId = msg.parent_id ? Number(msg.parent_id) : Number(msg.id);
+
+  if (resolved) {
+    await markThreadReplied(rootId, "");
+  } else {
+    await reopenSupportThread(rootId);
+  }
+  return NextResponse.json({ success: true });
 }
 
 export async function POST(req: NextRequest) {

@@ -35,6 +35,7 @@ export default function SupportView() {
   const [replyId, setReplyId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [draftContext, setDraftContext] = useState("");
@@ -76,6 +77,22 @@ export default function SupportView() {
       setDraftError("Échec du brouillon IA");
     }
     setDrafting(false);
+  };
+
+  const handleToggleResolved = async (id: number, resolved: boolean) => {
+    setResolvingId(id);
+    try {
+      await fetch("/api/admin/support", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_pw") || ""}`,
+        },
+        body: JSON.stringify({ id, resolved }),
+      });
+      await fetchThreads();
+    } catch { /* ignore */ }
+    setResolvingId(null);
   };
 
   const handleReply = async (id: number) => {
@@ -137,7 +154,7 @@ export default function SupportView() {
           ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
           const lastEntry = timeline[timeline.length - 1];
-          const awaitingAdmin = lastEntry.sender_type === "client";
+          const awaitingAdmin = lastEntry.sender_type === "client" && !thread.replied;
 
           return (
             <div
@@ -300,22 +317,44 @@ export default function SupportView() {
                   )}
                 </div>
               ) : (
-                <button
-                  onClick={() => { setReplyId(thread.id); setReplyText(""); setDraftError(null); setDraftContext(""); }}
-                  style={{
-                    marginTop: 14,
-                    padding: "7px 14px",
-                    borderRadius: 8,
-                    background: awaitingAdmin ? "#000" : "var(--a-card)",
-                    color: awaitingAdmin ? "white" : "var(--a-ink)",
-                    border: awaitingAdmin ? "none" : "1px solid var(--a-line)",
-                    fontWeight: 600,
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  {awaitingAdmin ? "Répondre" : "Relancer"}
-                </button>
+                <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => { setReplyId(thread.id); setReplyText(""); setDraftError(null); setDraftContext(""); }}
+                    style={{
+                      padding: "7px 14px",
+                      borderRadius: 8,
+                      background: awaitingAdmin ? "#000" : "var(--a-card)",
+                      color: awaitingAdmin ? "white" : "var(--a-ink)",
+                      border: awaitingAdmin ? "none" : "1px solid var(--a-line)",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {awaitingAdmin ? "Répondre" : "Relancer"}
+                  </button>
+                  <button
+                    onClick={() => handleToggleResolved(thread.id, awaitingAdmin)}
+                    disabled={resolvingId === thread.id}
+                    style={{
+                      padding: "7px 14px",
+                      borderRadius: 8,
+                      background: "var(--a-card)",
+                      color: "var(--a-ink-3)",
+                      border: "1px solid var(--a-line)",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: resolvingId === thread.id ? "not-allowed" : "pointer",
+                      opacity: resolvingId === thread.id ? 0.6 : 1,
+                    }}
+                  >
+                    {resolvingId === thread.id
+                      ? "…"
+                      : awaitingAdmin
+                        ? "Marquer comme traité"
+                        : "Rouvrir"}
+                  </button>
+                </div>
               )}
             </div>
           );

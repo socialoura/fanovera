@@ -10,16 +10,16 @@ export type Pack = {
 };
 
 export const PACKS: Pack[] = [
-  { qty: 1000, price: 1.99, old: 4.99, bonus: 150 },
-  { qty: 5000, price: 7.99, old: 19.99, bonus: 750 },
-  { qty: 10000, price: 12.99, old: 29.99, bonus: 1500 },
-  { qty: 25000, price: 27.99, old: 59.99, bonus: 4000, popular: true },
-  { qty: 50000, price: 49.99, old: 109.99, bonus: 8000 },
-  { qty: 100000, price: 89.99, old: 199.99, bonus: 16000 },
-  { qty: 250000, price: 199.99, old: 449.99, bonus: 40000 },
-  { qty: 500000, price: 379.99, old: 799.99, bonus: 80000 },
-  { qty: 1000000, price: 699.99, old: 1499.99, bonus: 200000, best: true },
-  { qty: 5000000, price: 2999.99, old: 6499.99, bonus: 1000000 },
+  { qty: 1000, price: 3.99, old: 4.99, bonus: 150 },
+  { qty: 2000, price: 6.99, old: 17.99, bonus: 300 },
+  { qty: 5000, price: 9.5, old: 19.99, bonus: 750 },
+  { qty: 10000, price: 18.99, old: 29.99, bonus: 1500, popular: true },
+  { qty: 20000, price: 33.99, old: 85.99, bonus: 3200 },
+  { qty: 50000, price: 69.99, old: 109.99, bonus: 8000 },
+  { qty: 100000, price: 139.99, old: 199.99, bonus: 16000 },
+  { qty: 500000, price: 499.99, old: 799.99, bonus: 80000 },
+  { qty: 1000000, price: 849.99, old: 1499.99, bonus: 200000, best: true },
+  { qty: 2000000, price: 1699.99, old: 4250.99, bonus: 400000 },
 ];
 
 export type SpotifyProductType = "streams" | "followers";

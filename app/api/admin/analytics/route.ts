@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
       sql`
         SELECT COUNT(*)::int AS count
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue,
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue,
                COALESCE(SUM(cost_cents), 0)::int AS cost
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
@@ -135,14 +135,14 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(*)::int AS count
         FROM orders
         WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
-          AND status IN ('paid','processing','delivered')
+          AND status IN ('paid','processing','delivered','partial','canceled')
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,
       sql`
         SELECT currency, COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
         WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
-          AND status IN ('paid','processing','delivered')
+          AND status IN ('paid','processing','delivered','partial','canceled')
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
       `,
@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS orders,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
         GROUP BY platform, currency
       `,
@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
                COUNT(*)::int AS orders,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY currency
@@ -177,8 +177,8 @@ export async function GET(req: NextRequest) {
       `,
       sql`
         SELECT d.date::text AS date, o.currency,
-          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
-          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
+          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
+          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
         FROM generate_series(${fromDate}::date, ${toDate}::date, '1 day') AS d(date)
         LEFT JOIN orders o ON (o.created_at AT TIME ZONE 'Europe/Paris')::date = d.date
           AND (${platform}::text IS NULL OR o.platform = ${platform})
@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
-          AND status IN ('paid','processing','delivered')
+          AND status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,
@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(DISTINCT LOWER(email))::int AS count
         FROM orders
         WHERE email <> ''
-          AND status IN ('paid','processing','delivered')
+          AND status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,
@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
                currency,
                COALESCE(SUM(total_cents), 0)::int AS revenue
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY country, currency
@@ -221,7 +221,7 @@ export async function GET(req: NextRequest) {
                COALESCE(SUM(total_cents), 0)::int AS revenue,
                MAX(country) AS country
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND email <> ''
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY LOWER(email), currency
@@ -230,7 +230,7 @@ export async function GET(req: NextRequest) {
         SELECT EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Paris')::int AS hour,
                COUNT(*)::int AS count
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
         GROUP BY hour
@@ -243,7 +243,7 @@ export async function GET(req: NextRequest) {
         FROM orders, jsonb_array_elements(
           CASE WHEN jsonb_typeof(cart) = 'array' THEN cart ELSE '[]'::jsonb END
         ) AS item
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
           AND item->>'service' IS NOT NULL
           AND (${platform}::text IS NULL OR platform = ${platform})
@@ -252,7 +252,7 @@ export async function GET(req: NextRequest) {
       sql`
         SELECT COUNT(*)::int AS count
         FROM orders
-        WHERE status IN ('paid','processing','delivered')
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,

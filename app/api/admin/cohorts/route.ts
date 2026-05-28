@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           MIN(created_at) AS first_at
         FROM orders
         WHERE
-          status IN ('paid', 'processing', 'delivered', 'partial')
+          status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
           AND email <> ''
           AND created_at >= NOW() - (${weeks}::int * INTERVAL '7 days')
         GROUP BY LOWER(email)
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
           COALESCE(SUM(o.total_cents), 0)::int AS revenue_cents
         FROM first_orders fo
         JOIN orders o ON LOWER(o.email) = fo.email
-        WHERE o.status IN ('paid', 'processing', 'delivered', 'partial')
+        WHERE o.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
         GROUP BY fo.email, o.currency
       ),
       retention AS (
@@ -74,28 +74,28 @@ export async function GET(req: NextRequest) {
           (
             SELECT COUNT(*)::int FROM orders o3
             WHERE LOWER(o3.email) = fo.email
-              AND o3.status IN ('paid', 'processing', 'delivered', 'partial')
+              AND o3.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
               AND o3.created_at > fo.first_at
               AND o3.created_at <= fo.first_at + INTERVAL '7 days'
           ) AS d7_orders,
           (
             SELECT COUNT(*)::int FROM orders o3
             WHERE LOWER(o3.email) = fo.email
-              AND o3.status IN ('paid', 'processing', 'delivered', 'partial')
+              AND o3.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
               AND o3.created_at > fo.first_at
               AND o3.created_at <= fo.first_at + INTERVAL '30 days'
           ) AS d30_orders,
           (
             SELECT COUNT(*)::int FROM orders o3
             WHERE LOWER(o3.email) = fo.email
-              AND o3.status IN ('paid', 'processing', 'delivered', 'partial')
+              AND o3.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
               AND o3.created_at > fo.first_at
               AND o3.created_at <= fo.first_at + INTERVAL '90 days'
           ) AS d90_orders,
           (
             SELECT COUNT(*)::int FROM orders o3
             WHERE LOWER(o3.email) = fo.email
-              AND o3.status IN ('paid', 'processing', 'delivered', 'partial')
+              AND o3.status IN ('paid', 'processing', 'delivered', 'partial', 'canceled')
               AND o3.created_at > fo.first_at
           ) AS ever_orders
         FROM first_orders fo

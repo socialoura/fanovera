@@ -53,7 +53,26 @@ export default function AdminClient() {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [ordersToday, setOrdersToday] = useState(0);
+  const [pendingSupport, setPendingSupport] = useState(0);
   const meta = NAV.find((n) => n.id === view)!;
+
+  useEffect(() => {
+    if (!authorized) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/admin/support/pending-count", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("admin_pw") || ""}` },
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { count?: number };
+        if (!cancelled) setPendingSupport(Number(data.count) || 0);
+      } catch { /* ignore */ }
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [authorized, view]);
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_pw") || "";
@@ -228,9 +247,14 @@ export default function AdminClient() {
               <input placeholder="Rechercher partout..." />
               <span className="search-kbd">⌘K</span>
             </div>
-            <button className="icon-btn">
+            <button
+              className="icon-btn"
+              onClick={() => setView("support")}
+              aria-label={pendingSupport > 0 ? `${pendingSupport} demande(s) de support en attente` : "Aucune demande de support en attente"}
+              title={pendingSupport > 0 ? `${pendingSupport} demande${pendingSupport > 1 ? "s" : ""} en attente` : "Support"}
+            >
               {Ic.bell()}
-              <span className="dot" />
+              {pendingSupport > 0 ? <span className="dot" /> : null}
             </button>
             <div className="avatar" style={{ width: 36, height: 36, fontSize: 12 }}>SK</div>
           </div>

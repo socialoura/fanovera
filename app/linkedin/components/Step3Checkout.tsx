@@ -5,6 +5,7 @@ import Image from "next/image";
 import NetIcon from "../../components/NetIcon";
 import StripeCheckout from "../../components/StripePayment";
 import CouponField from "../../components/CouponField";
+import CheckoutUpsell, { type CheckoutUpsellItem } from "../../components/CheckoutUpsell";
 import LiSprinkle from "./LiSprinkle";
 import Stepper from "./Stepper";
 import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
@@ -33,6 +34,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const initialPromo = usePromoFromUrl();
   const [coupon, setCoupon] = useState(initialPromo.code);
   const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
+  const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
   const subtotal = PACKS[pack].price;
   const promo = calculatePromoPricing({
@@ -41,9 +43,11 @@ export default function Step3Checkout({ country, pack, username, email, profile,
     allowTestPromo: true,
   });
   const discount = promo.discountCents / 100;
-  const total = promo.amountCents / 100;
+  const upsellCents = upsell?.price_cents ?? 0;
+  const finalAmountCents = promo.amountCents + upsellCents;
+  const total = finalAmountCents / 100;
   const promoCode = couponApplied ? coupon : "";
-  const canUsePrefetchedSecret = promo.discountCents === 0;
+  const canUsePrefetchedSecret = promo.discountCents === 0 && upsellCents === 0;
 
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
@@ -137,6 +141,14 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               }
             />
 
+            <CheckoutUpsell
+              platform="linkedin"
+              baseService="followers"
+              locale={locale}
+              accentColor="var(--li-blue)"
+              onChange={setUpsell}
+            />
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "16px 0 4px" }}>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{t.step3.total}</div>
               <div style={{ fontSize: 32, fontWeight: 800, color: "var(--li-blue)", letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -157,12 +169,15 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.step3.securePayment}</div>
               <StripeCheckout
-                amount={promo.amountCents}
+                amount={finalAmountCents}
                 email={email}
                 username={username.replace(/^@/, "").trim()}
                 platform="linkedin"
                 brandColor="var(--li-blue)"
-                cart={[{ qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country }]}
+                cart={[
+                  { service: "li_followers", qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country },
+                  ...(upsell ? [{ service: upsell.service, qty: upsell.qty, upsell: true, upsellId: upsell.id, priceCents: upsell.price_cents }] : []),
+                ]}
                 promoCode={promoCode}
                 clientSecret={canUsePrefetchedSecret ? clientSecret : undefined}
               />

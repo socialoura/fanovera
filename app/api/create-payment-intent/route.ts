@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { sql, upsertCheckoutPayload } from "@/app/lib/db";
+import { sql, upsertCheckoutPayload, getUpsellById } from "@/app/lib/db";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
 import { TestPromoDisabledError } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
@@ -65,7 +65,39 @@ export async function POST(req: NextRequest) {
     }
 
     const config = getProductConfig(normalizedPlatform);
-    const firstQty = Array.isArray(cart) && cart[0] ? String(cart[0].qty || cart[0].quantity || "") : "";
+
+    // Split off upsell items: they're priced from the upsells admin table,
+    // not from pricing rows, so we exclude them from calculateCheckoutPricing
+    // (which would throw on unknown service/qty combos) and re-attach their
+    // server-validated price after.
+    const rawCart = Array.isArray(cart) ? cart : [];
+    const baseCart: unknown[] = [];
+    const upsellRequests: Array<{ upsellId: number }> = [];
+    for (const item of rawCart) {
+      if (item && typeof item === "object" && (item as Record<string, unknown>).upsell === true) {
+        const id = Number((item as Record<string, unknown>).upsellId);
+        if (Number.isFinite(id) && id > 0) upsellRequests.push({ upsellId: id });
+      } else {
+        baseCart.push(item);
+      }
+    }
+    let upsellAddCents = 0;
+    const validatedUpsells: Array<{ id: number; service: string; qty: number; price_cents: number; label: string }> = [];
+    for (const req of upsellRequests) {
+      const row = await getUpsellById(req.upsellId);
+      if (!row || !row.active) continue;
+      const cents = Math.max(0, Math.round(Number(row.price_cents) || 0));
+      upsellAddCents += cents;
+      validatedUpsells.push({
+        id: row.id,
+        service: row.service,
+        qty: row.qty,
+        price_cents: cents,
+        label: row.label || "",
+      });
+    }
+
+    const firstQty = Array.isArray(baseCart) && baseCart[0] ? String((baseCart[0] as Record<string, unknown>).qty || (baseCart[0] as Record<string, unknown>).quantity || "") : "";
     const experiments = await getActivePricingExperiments();
     const assignment = assignPricingVariant({
       anonymousId,
@@ -76,7 +108,7 @@ export async function POST(req: NextRequest) {
         locale,
         page: sourcePage,
         plan: firstQty,
-        country: Array.isArray(cart) && cart[0] ? cart[0].country : null,
+        country: Array.isArray(baseCart) && baseCart[0] ? (baseCart[0] as Record<string, unknown>).country as string | null : null,
         userType: userId ? "authenticated" : "anonymous",
       },
     });
@@ -101,12 +133,13 @@ export async function POST(req: NextRequest) {
     const pricing = calculateCheckoutPricing({
       platform: normalizedPlatform,
       currency,
-      cart,
+      cart: baseCart,
       pricingRows,
       assignment,
       promoCode,
       allowTestPromo: isTestPromoEnabled(),
     });
+    const finalAmountCents = pricing.amountCents + upsellAddCents;
     const effectivePricingStrategy = pricing.promo.isTestPromo
       ? "test_promo_fixed_total"
       : assignment.pricingStrategy;
@@ -119,8 +152,16 @@ export async function POST(req: NextRequest) {
       req.headers.get("cf-ipcountry") ||
       "";
 
+    const upsellsForMeta = validatedUpsells.map((u) => ({
+      id: u.id,
+      service: u.service,
+      qty: u.qty,
+      price_cents: u.price_cents,
+      label: u.label,
+    }));
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: pricing.amountCents,
+      amount: finalAmountCents,
       currency: pricing.currency.toLowerCase(),
       metadata: {
         email: email || "",
@@ -142,6 +183,8 @@ export async function POST(req: NextRequest) {
         country: geoCountry.slice(0, 4),
         followersBefore: String(followersBeforeNum),
         cart: JSON.stringify(pricing.sanitizedCart).slice(0, 490),
+        upsells: upsellsForMeta.length ? JSON.stringify(upsellsForMeta).slice(0, 480) : "",
+        upsell_total_cents: upsellAddCents ? String(upsellAddCents) : "",
       },
       automatic_payment_methods: { enabled: true },
     });
@@ -152,8 +195,17 @@ export async function POST(req: NextRequest) {
         email,
         username,
         platform: pricing.platform,
-        cart: pricing.sanitizedCart,
-        amountCents: pricing.amountCents,
+        cart: [...pricing.sanitizedCart, ...upsellsForMeta.map((u) => ({
+          service: u.service,
+          platform: pricing.platform,
+          qty: u.qty,
+          bonus: 0,
+          upsell: true as const,
+          upsellId: u.id,
+          priceCents: u.price_cents,
+          label: u.label,
+        }))],
+        amountCents: finalAmountCents,
         currency: pricing.currency.toLowerCase(),
         experimentId: assignment.experimentId || "",
         variantId: assignment.variantId,
@@ -175,7 +227,7 @@ export async function POST(req: NextRequest) {
       product_area: config.productArea,
       platform: pricing.platform,
       plan: pricing.plan,
-      amount_cents: pricing.amountCents,
+      amount_cents: finalAmountCents,
       currency: pricing.currency,
       locale,
       pathname: sourcePage,
@@ -190,7 +242,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
-      amount: pricing.amountCents,
+      amount: finalAmountCents,
       currency: pricing.currency,
       experimentId: assignment.experimentId,
       variantId: assignment.variantId,

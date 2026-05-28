@@ -167,6 +167,7 @@ export default function SpotifyPageClient() {
             clientSecret={clientSecret}
             onBack={back}
             onBackToPacks={backToPacks}
+            productType={productType}
           />
         )}
       </div>

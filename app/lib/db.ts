@@ -208,6 +208,10 @@ export async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS trigger_platform VARCHAR(30)`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS trigger_service VARCHAR(30)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_upsells_trigger ON upsells(trigger_platform, trigger_service) WHERE active = true`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS support_messages (
@@ -685,6 +689,38 @@ export async function getSupportThreadReplies(rootId: number) {
     WHERE parent_id = ${rootId}
     ORDER BY created_at ASC
   `;
+}
+
+export async function getUpsellById(id: number) {
+  const rows = await sql`
+    SELECT id, service, qty, label, label_en, price_cents, active, trigger_platform, trigger_service
+    FROM upsells
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
+export async function getMatchingUpsell(platform: string, service: string) {
+  const rows = await sql`
+    SELECT id, service, qty, label, label_en, price_cents, sort_order
+    FROM upsells
+    WHERE active = true
+      AND trigger_platform = ${platform}
+      AND trigger_service = ${service}
+    ORDER BY sort_order ASC, id ASC
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
+export async function getPendingSupportCount(): Promise<number> {
+  const rows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM support_messages
+    WHERE parent_id IS NULL AND replied = false
+  `;
+  return Number(rows[0]?.count) || 0;
 }
 
 export async function getSupportThreads() {

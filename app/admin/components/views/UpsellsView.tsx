@@ -11,9 +11,39 @@ interface Upsell {
   label_en: string;
   active: boolean;
   sort_order: number;
+  price_cents: number;
+  trigger_platform: string | null;
+  trigger_service: string | null;
 }
 
-const emptyForm = { service: "", qty: 0, label: "", label_en: "", active: true, sort_order: 0 };
+const emptyForm = {
+  service: "",
+  qty: 0,
+  label: "",
+  label_en: "",
+  active: true,
+  sort_order: 0,
+  price_eur: 0,
+  trigger_platform: "",
+  trigger_service: "",
+};
+
+const PLATFORMS = ["instagram", "tiktok", "youtube", "spotify", "twitter", "twitch", "linkedin", "facebook"];
+const SERVICES = ["followers", "likes", "views", "subscribers", "streams"];
+
+function formToPayload(f: typeof emptyForm) {
+  return {
+    service: f.service,
+    qty: f.qty,
+    label: f.label,
+    label_en: f.label_en,
+    active: f.active,
+    sort_order: f.sort_order,
+    price_cents: Math.round((Number(f.price_eur) || 0) * 100),
+    trigger_platform: f.trigger_platform || null,
+    trigger_service: f.trigger_service || null,
+  };
+}
 
 export default function UpsellsView() {
   const [upsells, setUpsells] = useState<Upsell[]>([]);
@@ -64,7 +94,7 @@ export default function UpsellsView() {
       const res = await fetch("/api/admin/upsells", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify(addForm),
+        body: JSON.stringify(formToPayload(addForm)),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -101,7 +131,17 @@ export default function UpsellsView() {
   // Start edit
   const startEdit = (u: Upsell) => {
     setEditingId(u.id);
-    setEditForm({ service: u.service, qty: u.qty, label: u.label, label_en: u.label_en, active: u.active, sort_order: u.sort_order });
+    setEditForm({
+      service: u.service,
+      qty: u.qty,
+      label: u.label,
+      label_en: u.label_en,
+      active: u.active,
+      sort_order: u.sort_order,
+      price_eur: (u.price_cents || 0) / 100,
+      trigger_platform: u.trigger_platform || "",
+      trigger_service: u.trigger_service || "",
+    });
   };
 
   // Save edit
@@ -112,7 +152,7 @@ export default function UpsellsView() {
       const res = await fetch("/api/admin/upsells", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ id: editingId, ...editForm }),
+        body: JSON.stringify({ id: editingId, ...formToPayload(editForm) }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -180,9 +220,25 @@ export default function UpsellsView() {
       {showAdd && (
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, color: "var(--a-ink)" }}>Nouvel upsell</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 1fr 1fr 80px 60px", gap: 10, alignItems: "center" }}>
-            <input style={inputStyle} placeholder="Service (ex: instagram)" value={addForm.service} onChange={(e) => setAddForm({ ...addForm, service: e.target.value })} />
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--a-ink-3)", marginBottom: 6 }}>Déclencheur (quand l&apos;afficher)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+            <select style={inputStyle} value={addForm.trigger_platform} onChange={(e) => setAddForm({ ...addForm, trigger_platform: e.target.value })}>
+              <option value="">— Plateforme —</option>
+              {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select style={inputStyle} value={addForm.trigger_service} onChange={(e) => setAddForm({ ...addForm, trigger_service: e.target.value })}>
+              <option value="">— Service acheté —</option>
+              {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--a-ink-3)", marginBottom: 6 }}>Offre upsell</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 100px 100px", gap: 10, marginBottom: 10 }}>
+            <input style={inputStyle} placeholder="Service livré (ex: ig_likes)" value={addForm.service} onChange={(e) => setAddForm({ ...addForm, service: e.target.value })} />
             <input style={inputStyle} type="number" placeholder="Qty" value={addForm.qty || ""} onChange={(e) => setAddForm({ ...addForm, qty: Number(e.target.value) })} />
+            <input style={inputStyle} type="number" step="0.01" placeholder="Prix €" value={addForm.price_eur || ""} onChange={(e) => setAddForm({ ...addForm, price_eur: Number(e.target.value) })} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px 80px", gap: 10, alignItems: "center" }}>
             <input style={inputStyle} placeholder="Label (FR)" value={addForm.label} onChange={(e) => setAddForm({ ...addForm, label: e.target.value })} />
             <input style={inputStyle} placeholder="Label EN" value={addForm.label_en} onChange={(e) => setAddForm({ ...addForm, label_en: e.target.value })} />
             <input style={inputStyle} type="number" placeholder="Sort" value={addForm.sort_order || ""} onChange={(e) => setAddForm({ ...addForm, sort_order: Number(e.target.value) })} />
@@ -212,12 +268,14 @@ export default function UpsellsView() {
           <table className="table">
             <thead>
               <tr>
-                <th>Service</th>
+                <th>Déclencheur</th>
+                <th>Service livré</th>
                 <th className="num">Qty</th>
+                <th className="num">Prix</th>
                 <th>Label (FR)</th>
                 <th>Label EN</th>
                 <th>Active</th>
-                <th className="num">Sort Order</th>
+                <th className="num">Sort</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -225,8 +283,21 @@ export default function UpsellsView() {
               {upsells.map((u) => (
                 editingId === u.id ? (
                   <tr key={u.id}>
+                    <td>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <select style={{ ...inputStyle, width: 110 }} value={editForm.trigger_platform} onChange={(e) => setEditForm({ ...editForm, trigger_platform: e.target.value })}>
+                          <option value="">—</option>
+                          {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <select style={{ ...inputStyle, width: 100 }} value={editForm.trigger_service} onChange={(e) => setEditForm({ ...editForm, trigger_service: e.target.value })}>
+                          <option value="">—</option>
+                          {SERVICES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </td>
                     <td><input style={inputStyle} value={editForm.service} onChange={(e) => setEditForm({ ...editForm, service: e.target.value })} /></td>
-                    <td><input style={{ ...inputStyle, width: 60 }} type="number" value={editForm.qty || ""} onChange={(e) => setEditForm({ ...editForm, qty: Number(e.target.value) })} /></td>
+                    <td><input style={{ ...inputStyle, width: 70 }} type="number" value={editForm.qty || ""} onChange={(e) => setEditForm({ ...editForm, qty: Number(e.target.value) })} /></td>
+                    <td><input style={{ ...inputStyle, width: 70 }} type="number" step="0.01" value={editForm.price_eur || ""} onChange={(e) => setEditForm({ ...editForm, price_eur: Number(e.target.value) })} /></td>
                     <td><input style={inputStyle} value={editForm.label} onChange={(e) => setEditForm({ ...editForm, label: e.target.value })} /></td>
                     <td><input style={inputStyle} value={editForm.label_en} onChange={(e) => setEditForm({ ...editForm, label_en: e.target.value })} /></td>
                     <td>
@@ -246,8 +317,16 @@ export default function UpsellsView() {
                   </tr>
                 ) : (
                   <tr key={u.id}>
+                    <td style={{ fontSize: 12, color: "var(--a-ink-2)" }}>
+                      {u.trigger_platform && u.trigger_service ? (
+                        <span><strong>{u.trigger_platform}</strong> · {u.trigger_service}</span>
+                      ) : (
+                        <span style={{ color: "var(--a-ink-3)" }}>— non configuré —</span>
+                      )}
+                    </td>
                     <td style={{ fontWeight: 600 }}>{u.service}</td>
                     <td className="num">{u.qty}</td>
+                    <td className="num">{((u.price_cents || 0) / 100).toFixed(2)} €</td>
                     <td>{u.label}</td>
                     <td style={{ color: "var(--a-ink-3)" }}>{u.label_en}</td>
                     <td>
