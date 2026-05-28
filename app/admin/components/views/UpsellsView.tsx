@@ -194,7 +194,7 @@ export default function UpsellsView() {
 
   const openEdit = (u: Upsell) => {
     setForm(upsellToForm(u));
-    setShowAdvanced(Boolean(u.sort_order) || (u.service && !CODE_TO_KIND[u.service]));
+    setShowAdvanced(Boolean(u.sort_order) || Boolean(u.service && !CODE_TO_KIND[u.service]));
     setEditing(u.id);
   };
 
