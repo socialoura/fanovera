@@ -1,6 +1,5 @@
 /**
- * Adds the new upsells columns (price_cents, trigger_platform, trigger_service)
- * and the trigger index. Idempotent — safe to run multiple times.
+ * Adds the new upsells columns. Idempotent — safe to run multiple times.
  *
  * Run with: node scripts/migrate-upsells.mjs
  */
@@ -45,6 +44,16 @@ const steps = [
     label: "trigger index",
     run: () => sql`CREATE INDEX IF NOT EXISTS idx_upsells_trigger ON upsells(trigger_platform, trigger_service) WHERE active = true`,
   },
+  // Per-currency prices. Nullable: NULL = "auto-convert from EUR baseline".
+  { label: "price_cents_usd", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_usd INTEGER` },
+  { label: "price_cents_gbp", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_gbp INTEGER` },
+  { label: "price_cents_brl", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_brl INTEGER` },
+  { label: "price_cents_try", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_try INTEGER` },
+  { label: "price_cents_cad", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_cad INTEGER` },
+  { label: "price_cents_aud", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_aud INTEGER` },
+  { label: "price_cents_chf", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_chf INTEGER` },
+  { label: "price_cents_mxn", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_mxn INTEGER` },
+  { label: "price_cents_sek", run: () => sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_sek INTEGER` },
 ];
 
 console.log("Migrating upsells table…\n");
@@ -62,7 +71,7 @@ for (const step of steps) {
 }
 
 const cols = await sql`
-  SELECT column_name, data_type, is_nullable, column_default
+  SELECT column_name, data_type, is_nullable
   FROM information_schema.columns
   WHERE table_name = 'upsells'
   ORDER BY ordinal_position
@@ -70,7 +79,7 @@ const cols = await sql`
 
 console.log("\nCurrent upsells columns:");
 for (const c of cols) {
-  console.log(`  ${c.column_name.padEnd(20)} ${c.data_type.padEnd(20)} ${c.is_nullable === "NO" ? "NOT NULL" : "NULL"} ${c.column_default || ""}`);
+  console.log(`  ${c.column_name.padEnd(24)} ${c.data_type.padEnd(20)} ${c.is_nullable === "NO" ? "NOT NULL" : "NULL"}`);
 }
 
 console.log("\nDone.");

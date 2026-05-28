@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMatchingUpsell } from "@/app/lib/db";
-import { convertEurCentsTo } from "@/app/lib/fxRates";
+import { resolveUpsellPriceCents } from "@/app/lib/fxRates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,17 +17,18 @@ export async function GET(req: NextRequest) {
     const upsell = await getMatchingUpsell(platform, service);
     if (!upsell) return NextResponse.json({ upsell: null });
 
-    const baseCents = Math.max(0, Number(upsell.price_cents) || 0);
-    const displayCents = currency === "EUR" ? baseCents : await convertEurCentsTo(baseCents, currency);
+    const resolved = await resolveUpsellPriceCents(upsell, currency);
     return NextResponse.json({
       upsell: {
-        ...upsell,
-        price_cents: displayCents,
+        id: upsell.id,
+        service: upsell.service,
+        qty: upsell.qty,
+        label: upsell.label,
+        label_en: upsell.label_en,
+        price_cents: resolved.cents,
+        price_cents_eur: resolved.centsEur,
         currency,
-        // Echo the EUR baseline so the checkout's source-of-truth (server-side
-        // PaymentIntent) can re-validate using the DB value, not the converted
-        // one shown in the UI.
-        price_cents_eur: baseCents,
+        price_is_override: resolved.isOverride,
       },
     });
   } catch (err) {

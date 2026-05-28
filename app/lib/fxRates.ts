@@ -108,3 +108,26 @@ export async function convertEurCentsTo(amountCentsEur: number, targetCurrency: 
   const out = await convertEurTo(amountCentsEur / 100, targetCurrency);
   return Math.round(out * 100);
 }
+
+/**
+ * Resolve an upsell's price in cents for a given currency.
+ * Uses the per-currency override column when set, otherwise auto-converts
+ * from the EUR baseline. Returns 0 if neither is available.
+ */
+export async function resolveUpsellPriceCents(
+  upsell: Record<string, unknown>,
+  currency: string,
+): Promise<{ cents: number; centsEur: number; isOverride: boolean }> {
+  const target = normalizeCurrency(currency);
+  const centsEur = Math.max(0, Math.round(Number(upsell.price_cents) || 0));
+  if (target === "EUR") {
+    return { cents: centsEur, centsEur, isOverride: false };
+  }
+  const overrideKey = `price_cents_${target.toLowerCase()}`;
+  const raw = upsell[overrideKey];
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) {
+    return { cents: Math.round(raw), centsEur, isOverride: true };
+  }
+  const converted = await convertEurCentsTo(centsEur, target);
+  return { cents: converted, centsEur, isOverride: false };
+}

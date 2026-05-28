@@ -14,6 +14,33 @@ interface Upsell {
   price_cents: number;
   trigger_platform: string | null;
   trigger_service: string | null;
+  price_cents_usd: number | null;
+  price_cents_gbp: number | null;
+  price_cents_brl: number | null;
+  price_cents_try: number | null;
+  price_cents_cad: number | null;
+  price_cents_aud: number | null;
+  price_cents_chf: number | null;
+  price_cents_mxn: number | null;
+  price_cents_sek: number | null;
+}
+
+// USD-based fallback rates (mirror of fxRates.ts FALLBACK_USD_RATES). Used
+// for auto-conversion placeholders in the form — actual conversion uses the
+// live frankfurter rates server-side.
+const FALLBACK_USD_RATES: Record<string, number> = {
+  USD: 1, EUR: 0.92, GBP: 0.79, BRL: 5.20, TRY: 34.0,
+  CAD: 1.37, AUD: 1.52, CHF: 0.88, MXN: 18.5, SEK: 10.6,
+};
+
+const EXTRA_CURRENCIES = ["USD", "GBP", "BRL", "TRY", "CAD", "AUD", "CHF", "MXN", "SEK"] as const;
+type ExtraCurrency = typeof EXTRA_CURRENCIES[number];
+
+function autoConvertFromEur(amountEur: number, target: ExtraCurrency): number {
+  if (!amountEur) return 0;
+  const eurRate = FALLBACK_USD_RATES.EUR;
+  const targetRate = FALLBACK_USD_RATES[target];
+  return amountEur * (targetRate / eurRate);
 }
 
 // Platform catalog: emoji + label + which "kinds" exist on that platform.
@@ -96,12 +123,19 @@ type FormState = {
   customServiceCode: string;   // override if user wants a custom code
   qty: number;
   priceEur: number;
+  // Per-currency override prices in EUR-equivalent units (€). Empty string =
+  // "no override, auto-convert from priceEur at request time".
+  pricesOverride: Record<ExtraCurrency, string>;
   labelFr: string;
   labelEn: string;
   labelTouched: { fr: boolean; en: boolean }; // suppress auto-fill once user typed
   active: boolean;
   sortOrder: number;
 };
+
+const emptyOverrides: Record<ExtraCurrency, string> = Object.fromEntries(
+  EXTRA_CURRENCIES.map((c) => [c, ""]),
+) as Record<ExtraCurrency, string>;
 
 const emptyForm: FormState = {
   triggerPlatform: "",
@@ -110,6 +144,7 @@ const emptyForm: FormState = {
   customServiceCode: "",
   qty: 100,
   priceEur: 2,
+  pricesOverride: { ...emptyOverrides },
   labelFr: "",
   labelEn: "",
   labelTouched: { fr: false, en: false },
@@ -119,13 +154,20 @@ const emptyForm: FormState = {
 
 function upsellToForm(u: Upsell): FormState {
   const reverseKind = CODE_TO_KIND[u.service] || "";
+  const overrides: Record<ExtraCurrency, string> = { ...emptyOverrides };
+  for (const c of EXTRA_CURRENCIES) {
+    const col = `price_cents_${c.toLowerCase()}` as keyof Upsell;
+    const raw = u[col];
+    if (typeof raw === "number" && raw > 0) overrides[c] = (raw / 100).toString();
+  }
   return {
     triggerPlatform: u.trigger_platform || "",
     triggerService: u.trigger_service || "",
     upsellKind: reverseKind,
-    customServiceCode: reverseKind ? "" : u.service, // only show custom if no kind matches
+    customServiceCode: reverseKind ? "" : u.service,
     qty: u.qty,
     priceEur: (u.price_cents || 0) / 100,
+    pricesOverride: overrides,
     labelFr: u.label || "",
     labelEn: u.label_en || "",
     labelTouched: { fr: Boolean(u.label), en: Boolean(u.label_en) },
@@ -138,6 +180,17 @@ function formToPayload(f: FormState) {
   const code =
     SERVICE_CODE[f.triggerPlatform]?.[f.upsellKind] ||
     f.customServiceCode.trim();
+  // Per-currency overrides: empty string → null (auto-convert), otherwise cents.
+  const pricesByCurrency: Record<string, number | null> = {};
+  for (const c of EXTRA_CURRENCIES) {
+    const raw = f.pricesOverride[c]?.trim();
+    if (!raw) {
+      pricesByCurrency[c] = null;
+    } else {
+      const n = Number(raw);
+      pricesByCurrency[c] = Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
+    }
+  }
   return {
     service: code,
     qty: Math.max(1, Math.round(f.qty || 0)),
@@ -148,6 +201,7 @@ function formToPayload(f: FormState) {
     price_cents: Math.round((Number(f.priceEur) || 0) * 100),
     trigger_platform: f.triggerPlatform || null,
     trigger_service: f.triggerService || null,
+    prices_by_currency: pricesByCurrency,
   };
 }
 
@@ -160,6 +214,7 @@ export default function UpsellsView() {
   const [editing, setEditing] = useState<null | "new" | number>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showCurrencies, setShowCurrencies] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const token = () => localStorage.getItem("admin_pw") || "";
@@ -189,12 +244,15 @@ export default function UpsellsView() {
   const openNew = () => {
     setForm(emptyForm);
     setShowAdvanced(false);
+    setShowCurrencies(false);
     setEditing("new");
   };
 
   const openEdit = (u: Upsell) => {
-    setForm(upsellToForm(u));
+    const next = upsellToForm(u);
+    setForm(next);
     setShowAdvanced(Boolean(u.sort_order) || Boolean(u.service && !CODE_TO_KIND[u.service]));
+    setShowCurrencies(EXTRA_CURRENCIES.some((c) => next.pricesOverride[c]));
     setEditing(u.id);
   };
 
@@ -399,6 +457,53 @@ export default function UpsellsView() {
             {generatedCode && (
               <div style={{ fontSize: 11, color: "var(--a-ink-3)", marginTop: 6 }}>
                 Code SMM : <code style={{ background: "var(--a-bg)", padding: "1px 6px", borderRadius: 4 }}>{generatedCode}</code>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowCurrencies(!showCurrencies)}
+              style={{
+                marginTop: 10, background: "none", border: "none", padding: 0,
+                color: "var(--a-ink-3)", fontSize: 11, fontWeight: 700,
+                letterSpacing: "0.04em", textTransform: "uppercase", cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 4,
+              }}
+            >
+              {showCurrencies ? "▾" : "▸"} Prix par devise
+              {EXTRA_CURRENCIES.some((c) => form.pricesOverride[c]) && (
+                <span style={{ marginLeft: 4, padding: "1px 6px", background: "var(--a-accent)", color: "white", borderRadius: 999, fontSize: 9 }}>
+                  {EXTRA_CURRENCIES.filter((c) => form.pricesOverride[c]).length} override
+                </span>
+              )}
+            </button>
+
+            {showCurrencies && (
+              <div style={{ marginTop: 10, padding: 12, background: "var(--a-bg)", borderRadius: 8 }}>
+                <div style={{ fontSize: 11, color: "var(--a-ink-3)", marginBottom: 10, lineHeight: 1.5 }}>
+                  Laisse vide pour conversion auto depuis l&apos;EUR. Sinon, ta valeur écrase la conversion.
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  {EXTRA_CURRENCIES.map((c) => {
+                    const auto = autoConvertFromEur(form.priceEur, c);
+                    return (
+                      <div key={c}>
+                        <label style={{ ...fieldLabel, marginBottom: 4, fontSize: 10 }}>{c}</label>
+                        <input
+                          style={inputStyle}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder={auto > 0 ? `auto ${auto.toFixed(2)}` : "auto"}
+                          value={form.pricesOverride[c]}
+                          onChange={(e) =>
+                            setForm({ ...form, pricesOverride: { ...form.pricesOverride, [c]: e.target.value } })
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

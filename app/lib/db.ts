@@ -212,6 +212,16 @@ export async function initDb() {
   await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS trigger_platform VARCHAR(30)`;
   await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS trigger_service VARCHAR(30)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_upsells_trigger ON upsells(trigger_platform, trigger_service) WHERE active = true`;
+  // Per-currency price overrides. NULL = "auto-convert from EUR baseline at request time".
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_usd INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_gbp INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_brl INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_try INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_cad INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_aud INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_chf INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_mxn INTEGER`;
+  await sql`ALTER TABLE upsells ADD COLUMN IF NOT EXISTS price_cents_sek INTEGER`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS support_messages (
@@ -692,19 +702,13 @@ export async function getSupportThreadReplies(rootId: number) {
 }
 
 export async function getUpsellById(id: number) {
-  const rows = await sql`
-    SELECT id, service, qty, label, label_en, price_cents, active, trigger_platform, trigger_service
-    FROM upsells
-    WHERE id = ${id}
-    LIMIT 1
-  `;
+  const rows = await sql`SELECT * FROM upsells WHERE id = ${id} LIMIT 1`;
   return rows[0] || null;
 }
 
 export async function getMatchingUpsell(platform: string, service: string) {
   const rows = await sql`
-    SELECT id, service, qty, label, label_en, price_cents, sort_order
-    FROM upsells
+    SELECT * FROM upsells
     WHERE active = true
       AND trigger_platform = ${platform}
       AND trigger_service = ${service}
