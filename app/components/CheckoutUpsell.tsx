@@ -30,16 +30,17 @@ const COPY: Record<string, Copy> = {
   tr: { eyebrow: "+ Daha da güçlendir", cta: (p) => `${p} ekle`, addedNote: "Siparişe eklendi" },
 };
 
-function fmtPrice(cents: number, locale: string) {
+function fmtPrice(cents: number, locale: string, currency: string) {
   const value = cents / 100;
+  const safeCurrency = (currency || "EUR").toUpperCase();
   try {
     return new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US", {
       style: "currency",
-      currency: "EUR",
+      currency: safeCurrency,
       maximumFractionDigits: value < 10 ? 2 : 0,
     }).format(value);
   } catch {
-    return `${value.toFixed(2)} €`;
+    return `${value.toFixed(2)} ${safeCurrency}`;
   }
 }
 
@@ -56,12 +57,14 @@ export default function CheckoutUpsell({
   baseService,
   locale,
   accentColor,
+  currency = "EUR",
   onChange,
 }: {
   platform: string;
   baseService: string;
   locale: string;
   accentColor: string;
+  currency?: string;
   onChange: (item: CheckoutUpsellItem | null) => void;
 }) {
   const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
@@ -73,7 +76,8 @@ export default function CheckoutUpsell({
     setLoaded(false);
     setSelected(false);
     setUpsell(null);
-    fetch(`/api/upsells/match?platform=${encodeURIComponent(platform)}&service=${encodeURIComponent(baseService)}`)
+    onChange(null);
+    fetch(`/api/upsells/match?platform=${encodeURIComponent(platform)}&service=${encodeURIComponent(baseService)}&currency=${encodeURIComponent(currency)}`)
       .then((res) => (res.ok ? res.json() : { upsell: null }))
       .then((data: { upsell: (CheckoutUpsellItem & { label_en?: string }) | null }) => {
         if (cancelled) return;
@@ -91,7 +95,10 @@ export default function CheckoutUpsell({
       })
       .catch(() => { if (!cancelled) setLoaded(true); });
     return () => { cancelled = true; };
-  }, [platform, baseService, locale]);
+    // onChange intentionally omitted: a new function ref each render would
+    // re-fire this effect, causing infinite refetches.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platform, baseService, locale, currency]);
 
   const toggle = () => {
     if (!upsell) return;
@@ -103,7 +110,7 @@ export default function CheckoutUpsell({
   if (!loaded || !upsell) return null;
 
   const copy = COPY[locale] || COPY.fr;
-  const priceLabel = fmtPrice(upsell.price_cents, locale);
+  const priceLabel = fmtPrice(upsell.price_cents, locale, currency);
 
   return (
     <div

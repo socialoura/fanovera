@@ -91,3 +91,20 @@ export async function convertCentsToEur(amountCents: number, fromCurrency: strin
   const eur = await convertToEur(amountCents / 100, fromCurrency);
   return Math.round(eur * 100);
 }
+
+/** Convert from EUR to any supported currency. */
+export async function convertEurTo(amountEur: number, targetCurrency: string): Promise<number> {
+  const target = normalizeCurrency(targetCurrency);
+  if (target === "EUR") return amountEur;
+  const rates = await getRates();
+  const eurRate = rates.EUR ?? FALLBACK_USD_RATES.EUR;
+  const targetRate = rates[target] ?? FALLBACK_USD_RATES[target as SupportedCurrency] ?? 1;
+  // amountEur is in EUR. 1 EUR = 1/eurRate USD = targetRate/eurRate target.
+  return amountEur * (targetRate / eurRate);
+}
+
+/** Convert EUR cents → cents in target currency (rounded). */
+export async function convertEurCentsTo(amountCentsEur: number, targetCurrency: string): Promise<number> {
+  const out = await convertEurTo(amountCentsEur / 100, targetCurrency);
+  return Math.round(out * 100);
+}

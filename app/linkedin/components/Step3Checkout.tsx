@@ -15,6 +15,7 @@ import { useI18n } from "../../i18n/I18nProvider";
 import { getPublicCopy } from "../../components/publicCopy";
 import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
 import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
+import { useCurrencyPreference } from "../../lib/useCurrencyPricing";
 
 type Props = {
   country: CountryId;
@@ -30,6 +31,7 @@ type Props = {
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
   const t = useLinkedinCopy();
   const { locale } = useI18n();
+  const { currency } = useCurrencyPreference();
   const paymentCopy = getPublicCopy(locale).payment;
   const initialPromo = usePromoFromUrl();
   const [coupon, setCoupon] = useState(initialPromo.code);
@@ -146,6 +148,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               baseService="followers"
               locale={locale}
               accentColor="var(--li-blue)"
+              currency={currency}
               onChange={setUpsell}
             />
 

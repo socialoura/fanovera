@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sql, upsertCheckoutPayload, getUpsellById } from "@/app/lib/db";
+import { convertEurCentsTo } from "@/app/lib/fxRates";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
 import { TestPromoDisabledError } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
@@ -81,18 +82,25 @@ export async function POST(req: NextRequest) {
         baseCart.push(item);
       }
     }
+    // Upsell prices are stored in EUR cents. Convert to the request currency
+    // so the total billed matches the rest of the cart (which calculateCheckoutPricing
+    // already prices in `currency`). The DB row is the source of truth — we
+    // ignore any priceCents echo the client may have sent.
+    const requestCurrency = typeof currency === "string" ? currency.toUpperCase() : "EUR";
     let upsellAddCents = 0;
-    const validatedUpsells: Array<{ id: number; service: string; qty: number; price_cents: number; label: string }> = [];
+    const validatedUpsells: Array<{ id: number; service: string; qty: number; price_cents: number; price_cents_eur: number; label: string }> = [];
     for (const req of upsellRequests) {
       const row = await getUpsellById(req.upsellId);
       if (!row || !row.active) continue;
-      const cents = Math.max(0, Math.round(Number(row.price_cents) || 0));
-      upsellAddCents += cents;
+      const eurCents = Math.max(0, Math.round(Number(row.price_cents) || 0));
+      const convertedCents = requestCurrency === "EUR" ? eurCents : await convertEurCentsTo(eurCents, requestCurrency);
+      upsellAddCents += convertedCents;
       validatedUpsells.push({
         id: row.id,
         service: row.service,
         qty: row.qty,
-        price_cents: cents,
+        price_cents: convertedCents,
+        price_cents_eur: eurCents,
         label: row.label || "",
       });
     }
@@ -157,6 +165,7 @@ export async function POST(req: NextRequest) {
       service: u.service,
       qty: u.qty,
       price_cents: u.price_cents,
+      price_cents_eur: u.price_cents_eur,
       label: u.label,
     }));
 

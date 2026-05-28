@@ -15,6 +15,7 @@ import { useI18n } from "../../i18n/I18nProvider";
 import { getPublicCopy } from "../../components/publicCopy";
 import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
 import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
+import { useCurrencyPreference } from "../../lib/useCurrencyPricing";
 
 type Props = {
   country: CountryId;
@@ -31,6 +32,7 @@ type Props = {
 export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks, productType = "views" }: Props) {
   const t = useYouTubeCopy().step3;
   const { locale } = useI18n();
+  const { currency } = useCurrencyPreference();
   const paymentCopy = getPublicCopy(locale).payment;
   const initialPromo = usePromoFromUrl();
   const [coupon, setCoupon] = useState(initialPromo.code);
@@ -161,6 +163,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               baseService={productType}
               locale={locale}
               accentColor="var(--yt-red)"
+              currency={currency}
               onChange={setUpsell}
             />
 
