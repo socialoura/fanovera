@@ -535,6 +535,111 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
 }
 
 /**
+ * Full "refill" / relaunch from scratch with an operator-chosen BulkFollows
+ * service ID. Unlike {@link runSmmForOrder} (which skips lines already placed),
+ * this ALWAYS re-places every cart line at its full quantity (qty + bonus) as
+ * fresh sub-orders, regardless of prior delivery — used when a delivery dropped
+ * and the admin wants to re-buy the whole order on a (possibly different)
+ * service. No URL pre-flight: the admin is explicitly forcing the relaunch.
+ *
+ * New sub-orders are appended with synthetic cartIndex (1000+) so the original
+ * audit trail and cost stay intact (same convention as the top-up route).
+ */
+export async function refillOrderFromScratch(
+  orderId: number,
+  serviceId: number,
+): Promise<{ subOrders: SmmSubOrder[]; placed: number; failed: number }> {
+  const rows = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
+  const order = rows[0];
+  if (!order) throw new Error("Order not found");
+
+  const cart: Array<{
+    service?: string;
+    qty?: number;
+    quantity?: number;
+    bonus?: number;
+    platform?: string;
+    postUrl?: string;
+  }> = Array.isArray(order.cart) ? order.cart : JSON.parse(order.cart || "[]");
+  if (cart.length === 0) throw new Error("Order has an empty cart");
+
+  const existing: SmmSubOrder[] = Array.isArray(order.smm_orders)
+    ? order.smm_orders
+    : JSON.parse(order.smm_orders || "[]");
+
+  const platform = order.platform || "instagram";
+  const username = order.username || "";
+
+  const newSubs: SmmSubOrder[] = [];
+  let synthetic = 1000 + existing.filter((s) => s.cartIndex >= 1000).length;
+
+  for (let i = 0; i < cart.length; i++) {
+    const item = cart[i];
+    const svc = item.service || "followers";
+    const qty = Number(item.qty || item.quantity || 0) + Number(item.bonus || 0);
+    const itemPlatform = item.platform || platform;
+    const link = buildLink(itemPlatform, username, item.postUrl);
+    const cartIndex = synthetic++;
+
+    if (qty <= 0) {
+      newSubs.push({
+        cartIndex, service: svc, platform: itemPlatform, qty,
+        bfServiceId: serviceId, bfOrderId: null, status: "failed",
+        charge: null, error: "Quantity is 0 — nothing to relaunch", placedAt: null,
+      });
+      continue;
+    }
+
+    try {
+      const result = await withBfRetry(
+        () => placeOrder({ serviceId, link, quantity: qty }),
+        { maxAttempts: 3, baseDelayMs: 600, label: `refill ${itemPlatform}:${svc}` },
+      );
+      let charge: number | null = null;
+      try {
+        const st = await withBfRetry(
+          () => getOrderStatus(result.orderId),
+          { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
+        );
+        charge = resolveBulkFollowsCharge(st.charge, 0);
+      } catch {
+        /* non-critical — charge picked up on refresh */
+      }
+      newSubs.push({
+        cartIndex, service: svc, platform: itemPlatform, qty,
+        bfServiceId: serviceId, bfOrderId: result.orderId, status: "placed",
+        charge, error: null, placedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      newSubs.push({
+        cartIndex, service: svc, platform: itemPlatform, qty,
+        bfServiceId: serviceId, bfOrderId: null, status: "failed",
+        charge: null, error: err instanceof Error ? err.message : String(err), placedAt: null,
+      });
+    }
+  }
+
+  const allSubs = [...existing, ...newSubs];
+  const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
+  const costCents = bulkFollowsCostCents(allSubs.map((s) => s.charge), fxRate);
+
+  await sql`
+    UPDATE orders
+    SET smm_orders = ${JSON.stringify(allSubs)}::jsonb,
+        cost_cents = ${costCents},
+        status = 'processing',
+        delivered_at = NULL
+    WHERE id = ${orderId}
+  `;
+
+  return {
+    subOrders: allSubs,
+    placed: newSubs.filter((s) => s.status === "placed").length,
+    failed: newSubs.filter((s) => s.status === "failed").length,
+  };
+}
+
+/**
  * Retry a specific failed sub-order within an order.
  *
  * `opts.serviceId` overrides the BulkFollows service ID for this retry only —

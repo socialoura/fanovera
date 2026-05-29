@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+import { refillOrderFromScratch } from "@/app/lib/smm";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/admin/orders/refill-smm
+ * Body: { orderId: number, serviceId: number }
+ *
+ * Full "refill" — relaunches the entire order from scratch on the
+ * operator-chosen BulkFollows service ID, re-buying every cart line at its full
+ * quantity (qty + bonus) as fresh sub-orders. Used when a delivery dropped and
+ * the admin wants to re-run the whole order on a (possibly different) service.
+ */
+export async function POST(req: NextRequest) {
+  if (!isAdmin(req)) return unauthorized();
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const orderId = Number(body?.orderId);
+    const serviceId = Number(body?.serviceId);
+
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      return NextResponse.json({ error: "orderId is required" }, { status: 400 });
+    }
+    if (!Number.isFinite(serviceId) || serviceId <= 0) {
+      return NextResponse.json({ error: "serviceId (BulkFollows service ID) is required" }, { status: 400 });
+    }
+
+    const { placed, failed } = await refillOrderFromScratch(orderId, serviceId);
+
+    return NextResponse.json({
+      success: true,
+      orderId,
+      serviceId,
+      summary: { placed, failed },
+    });
+  } catch (err) {
+    console.error("[refill-smm] error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal server error" },
+      { status: 500 },
+    );
+  }
+}

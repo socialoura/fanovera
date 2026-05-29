@@ -246,6 +246,7 @@ function OrderDetail({
   editingBf,
   onRunSmm,
   onRefreshSmm,
+  onRefillSmm,
   onRetrySub,
   onTopUpSub,
   onStartEditBf,
@@ -275,6 +276,7 @@ function OrderDetail({
   editingBf: BfEditState;
   onRunSmm: (orderId: number) => void;
   onRefreshSmm: (orderId: number) => void;
+  onRefillSmm: (orderId: number) => void;
   onRetrySub: (orderId: number, cartIndex: number, currentServiceId: number) => void;
   onTopUpSub: (orderId: number, cartIndex: number, originalQty: number, bfServiceId: number) => void;
   onStartEditBf: (cartIndex: number, currentBf: string, currentService: string) => void;
@@ -555,6 +557,15 @@ function OrderDetail({
               title="Rafraîchit les statuts BulkFollows et recalcule le coût"
             >
               {Ic.refresh()} Rafraîchir statuts
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); onRefillSmm(order.id); }}
+              disabled={smmBusy || cart.length === 0}
+              title="Refill : relance TOUTE la commande de zéro sur un service BulkFollows que tu choisis (re-commande chaque ligne à sa quantité complète, en sous-commandes neuves)."
+            >
+              {smmBusy ? "..." : Ic.refresh()} Refill (relancer de 0)
             </button>
           </div>
         </div>
@@ -986,6 +997,31 @@ export default function OrdersView() {
         const inProgress = summary.inProgress ?? 0;
         const failed = summary.failed ?? 0;
         return `Statuts rafraîchis : ${completed} terminée(s), ${inProgress} en cours, ${failed} en erreur.`;
+      },
+    );
+  };
+
+  const handleRefillSmm = async (orderId: number) => {
+    const raw = window.prompt(
+      `Refill — relancer TOUTE la commande #${orderId} de zéro.\n\n` +
+      `Quel BulkFollows service ID utiliser ?\n` +
+      `(Re-commande chaque ligne du panier à sa quantité complète sur ce service, ` +
+      `en sous-commandes neuves. L'ancienne livraison n'est pas écrasée.)`,
+    );
+    if (raw === null) return; // user canceled
+    const n = Number(raw.trim());
+    if (!Number.isFinite(n) || n <= 0) {
+      setSmmMessage({ kind: "error", text: "Service ID invalide." });
+      return;
+    }
+    await callSmmEndpoint(
+      "/api/admin/orders/refill-smm",
+      { orderId, serviceId: n },
+      (data) => {
+        const summary = (data?.summary || {}) as Record<string, number>;
+        const placed = summary.placed ?? 0;
+        const failed = summary.failed ?? 0;
+        return `Refill lancé sur le service #${n} : ${placed} sous-commande(s) relancée(s), ${failed} en erreur.`;
       },
     );
   };
@@ -1582,6 +1618,7 @@ export default function OrdersView() {
                             editingBf={editingBf}
                             onRunSmm={handleRunSmm}
                             onRefreshSmm={handleRefreshSmm}
+                            onRefillSmm={handleRefillSmm}
                             onRetrySub={handleRetrySub}
                             onTopUpSub={handleTopUpSub}
                             onStartEditBf={handleStartEditBf}
