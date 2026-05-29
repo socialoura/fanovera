@@ -257,6 +257,7 @@ function OrderDetail({
   onDeleteOrder,
   onProfileNotFound,
   onPrivateAccount,
+  onRefillNotice,
   profileNotFoundBusy,
 }: {
   order: Order;
@@ -285,6 +286,7 @@ function OrderDetail({
   onDeleteOrder: (orderId: number) => void;
   onProfileNotFound: (orderId: number) => void;
   onPrivateAccount: (orderId: number) => void;
+  onRefillNotice: (orderId: number) => void;
   profileNotFoundBusy: boolean;
 }) {
   const cart = asArray<CartItem>(order.cart);
@@ -775,6 +777,26 @@ function OrderDetail({
               {Ic.mail()} {profileNotFoundBusy ? "Envoi..." : order.platform === "twitter" ? "Compte X protégé" : `Compte ${order.platform} en privé`}
             </button>
           )}
+          <button
+            type="button"
+            className="btn"
+            onClick={(e) => { e.stopPropagation(); onRefillNotice(order.id); }}
+            disabled={profileNotFoundBusy || !order.email}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(22,163,74,0.10)",
+              border: "1px solid rgba(22,163,74,0.35)",
+              color: "#16a34a",
+              fontWeight: 700,
+              padding: "8px 14px",
+              fontSize: 12,
+            }}
+            title={`Envoie au client un email de fidélité (langue : ${(order.lang || "fr").toUpperCase()}) l'informant qu'on vient de relancer gratuitement sa commande suite à une baisse de followers / likes. Pense à relancer la livraison avant.`}
+          >
+            {Ic.mail()} {profileNotFoundBusy ? "Envoi..." : "Relance fidélité"}
+          </button>
         </div>
         <button
           type="button"
@@ -1139,6 +1161,35 @@ export default function OrdersView() {
         throw new Error(data?.error || `HTTP ${res.status}`);
       }
       setSmmMessage({ kind: "info", text: `Email "compte privé" envoyé à ${order.email} (langue : ${lang}). Sa réponse arrivera dans Support.` });
+    } catch (err) {
+      setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de l'envoi" });
+    } finally {
+      setProfileNotFoundBusy(false);
+    }
+  };
+
+  const handleRefillNotice = async (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const lang = (order.lang || "fr").toUpperCase();
+    if (!confirm(
+      `Envoyer un email de fidélité (en ${lang}) à ${order.email} pour l'informer qu'on vient de relancer gratuitement sa commande #${orderId} suite à une baisse ?\n\nPense à avoir relancé la livraison (Retry / Lancer BulkFollows) avant.`,
+    )) return;
+
+    setProfileNotFoundBusy(true);
+    setSmmMessage(null);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/orders/refill-notice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setSmmMessage({ kind: "info", text: `Email de fidélité (relance) envoyé à ${order.email} (langue : ${lang}).` });
     } catch (err) {
       setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de l'envoi" });
     } finally {
@@ -1542,6 +1593,7 @@ export default function OrdersView() {
                             onDeleteOrder={handleDeleteOrder}
                             onProfileNotFound={handleProfileNotFound}
                             onPrivateAccount={handlePrivateAccount}
+                            onRefillNotice={handleRefillNotice}
                             profileNotFoundBusy={profileNotFoundBusy}
                           />
                         </td>

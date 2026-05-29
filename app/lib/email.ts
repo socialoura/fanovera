@@ -1745,6 +1745,281 @@ ${p.threadToken}`;
   }
 }
 
+// ── Refill / loyalty notice (admin-initiated) ──
+
+export interface RefillNoticeParams {
+  to: string;
+  /**
+   * Every distinct platform+service combo the customer has ever bought, so the
+   * email reflects their whole history (e.g. "your Instagram followers and your
+   * TikTok likes"), not a single order. Built from all their orders by email.
+   */
+  purchases: Array<{ platform: string; service?: string }>;
+  locale?: string;
+}
+
+type RefillCopy = {
+  subject: string;
+  hero: string;
+  /** `summary` is the localized list of what they bought (e.g. "abonnés Instagram, likes TikTok"). */
+  intro: (summary: string) => string;
+  loyalty: string;
+  relaunched: string;
+  trackingIntro: string;
+  trackingButton: string;
+  closing: string;
+  signoff: string;
+  footerLine: string;
+  /** Conjunction joining the last two items of the summary list. */
+  and: string;
+  /** Fallback summary when no purchase history could be resolved. */
+  genericStats: string;
+};
+
+const REFILL_COPY: Record<EmailLocale, RefillCopy> = {
+  fr: {
+    subject: "On a rechargé tes comptes 💙 — Fanovera",
+    hero: "On veille sur tes comptes",
+    intro: (s) => `On a remarqué que certaines de tes stats avaient un peu baissé : ${s}.`,
+    loyalty: "Comme tu fais partie de nos meilleurs clients, on ne te laisse pas tomber.",
+    relaunched: "On vient de tout relancer gratuitement pour recompléter ce qui manquait.",
+    trackingIntro: "Tu peux suivre tes commandes ici :",
+    trackingButton: "Voir mes commandes →",
+    closing: "Rien à faire de ton côté — on s'occupe de tout.",
+    signoff: "L'équipe Fanovera",
+    footerLine: "Tu reçois cet email car tu as passé une commande sur Fanovera.",
+    and: "et",
+    genericStats: "tes abonnés, likes et vues",
+  },
+  en: {
+    subject: "We've topped up your accounts 💙 — Fanovera",
+    hero: "We've got your back",
+    intro: (s) => `We noticed some of your stats had dropped a little: ${s}.`,
+    loyalty: "Because you're one of our best customers, we're not leaving you hanging.",
+    relaunched: "We just relaunched everything for free to top back up what was missing.",
+    trackingIntro: "You can track your orders here:",
+    trackingButton: "View my orders →",
+    closing: "Nothing to do on your end — we've handled everything.",
+    signoff: "The Fanovera team",
+    footerLine: "You're receiving this email because you placed an order on Fanovera.",
+    and: "and",
+    genericStats: "your followers, likes and views",
+  },
+  es: {
+    subject: "Hemos recargado tus cuentas 💙 — Fanovera",
+    hero: "Cuidamos tus cuentas",
+    intro: (s) => `Notamos que algunas de tus estadísticas habían bajado un poco: ${s}.`,
+    loyalty: "Como eres uno de nuestros mejores clientes, no te dejamos solo.",
+    relaunched: "Acabamos de relanzar todo gratis para reponer lo que faltaba.",
+    trackingIntro: "Puedes seguir tus pedidos aquí:",
+    trackingButton: "Ver mis pedidos →",
+    closing: "No tienes que hacer nada — nos encargamos de todo.",
+    signoff: "El equipo Fanovera",
+    footerLine: "Recibes este correo porque has realizado un pedido en Fanovera.",
+    and: "y",
+    genericStats: "tus seguidores, me gusta y vistas",
+  },
+  pt: {
+    subject: "Recarregámos as tuas contas 💙 — Fanovera",
+    hero: "Cuidamos das tuas contas",
+    intro: (s) => `Reparámos que algumas das tuas estatísticas tinham baixado um pouco: ${s}.`,
+    loyalty: "Como és um dos nossos melhores clientes, não te deixamos ficar mal.",
+    relaunched: "Acabámos de relançar tudo gratuitamente para repor o que faltava.",
+    trackingIntro: "Podes acompanhar os teus pedidos aqui:",
+    trackingButton: "Ver os meus pedidos →",
+    closing: "Não precisas de fazer nada — tratamos de tudo.",
+    signoff: "A equipa Fanovera",
+    footerLine: "Você está recebendo este e-mail porque fez um pedido na Fanovera.",
+    and: "e",
+    genericStats: "os teus seguidores, gostos e visualizações",
+  },
+  de: {
+    subject: "Wir haben deine Konten aufgefüllt 💙 — Fanovera",
+    hero: "Wir kümmern uns um deine Konten",
+    intro: (s) => `Uns ist aufgefallen, dass einige deiner Werte etwas zurückgegangen sind: ${s}.`,
+    loyalty: "Da du einer unserer besten Kunden bist, lassen wir dich nicht im Stich.",
+    relaunched: "Wir haben alles gerade kostenlos neu gestartet, um das Fehlende wieder aufzufüllen.",
+    trackingIntro: "Du kannst deine Bestellungen hier verfolgen:",
+    trackingButton: "Meine Bestellungen ansehen →",
+    closing: "Du musst nichts tun — wir kümmern uns um alles.",
+    signoff: "Das Fanovera-Team",
+    footerLine: "Du erhältst diese E-Mail, weil du eine Bestellung bei Fanovera aufgegeben hast.",
+    and: "und",
+    genericStats: "deine Follower, Likes und Views",
+  },
+  it: {
+    subject: "Abbiamo ricaricato i tuoi account 💙 — Fanovera",
+    hero: "Ci prendiamo cura dei tuoi account",
+    intro: (s) => `Abbiamo notato che alcune delle tue statistiche erano un po' calate: ${s}.`,
+    loyalty: "Dato che sei uno dei nostri migliori clienti, non ti lasciamo a piedi.",
+    relaunched: "Abbiamo appena rilanciato tutto gratuitamente per ripristinare ciò che mancava.",
+    trackingIntro: "Puoi seguire i tuoi ordini qui:",
+    trackingButton: "Vedi i miei ordini →",
+    closing: "Non devi fare nulla — pensiamo a tutto noi.",
+    signoff: "Il team Fanovera",
+    footerLine: "Ricevi questa email perché hai effettuato un ordine su Fanovera.",
+    and: "e",
+    genericStats: "i tuoi follower, like e visualizzazioni",
+  },
+  tr: {
+    subject: "Hesaplarını tamamladık 💙 — Fanovera",
+    hero: "Hesaplarını biz takip ediyoruz",
+    intro: (s) => `Bazı istatistiklerinin biraz azaldığını fark ettik: ${s}.`,
+    loyalty: "En iyi müşterilerimizden biri olduğun için seni yarı yolda bırakmıyoruz.",
+    relaunched: "Eksik kalanı tamamlamak için her şeyi ücretsiz olarak yeniden başlattık.",
+    trackingIntro: "Siparişlerini buradan takip edebilirsin:",
+    trackingButton: "Siparişlerimi gör →",
+    closing: "Senin bir şey yapmana gerek yok — her şeyi biz hallettik.",
+    signoff: "Fanovera ekibi",
+    footerLine: "Bu e-postayı, Fanovera üzerinde bir sipariş verdiğin için alıyorsun.",
+    and: "ve",
+    genericStats: "takipçi, beğeni ve görüntülenmelerin",
+  },
+};
+
+/** Localized service word for mid-sentence use (lowercased, except German
+ * where nouns stay capitalized). */
+function inlineServiceLabel(service: string | undefined, locale: EmailLocale): string {
+  const label = localizedServiceLabel(service, locale);
+  if (locale === "de") return label;
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
+/** Account URL with the right locale prefix (mirrors buildTrackingUrl). */
+function buildAccountUrl(locale?: string): string {
+  const normalized = (locale || "").toLowerCase().split("-")[0];
+  if (normalized && TRACK_URL_LOCALES.has(normalized) && normalized !== "fr") {
+    return `${APP_URL}/${normalized}/account`;
+  }
+  return `${APP_URL}/account`;
+}
+
+/**
+ * Turn the customer's purchase history into a localized, human list like
+ * "abonnés Instagram, likes TikTok et vues YouTube". Dedupes on the rendered
+ * phrase (so two services mapping to the same label collapse) and caps at 4
+ * entries to keep the sentence readable.
+ */
+function buildPurchaseSummary(
+  purchases: RefillNoticeParams["purchases"],
+  locale: EmailLocale,
+  andWord: string,
+  fallback: string,
+): string {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  for (const it of purchases || []) {
+    const platformLabel = PLATFORM_LABEL[it.platform] || it.platform;
+    if (!platformLabel) continue;
+    const svc = inlineServiceLabel(it.service, locale);
+    const phrase = `${svc} ${platformLabel}`.trim();
+    const key = phrase.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    parts.push(phrase);
+    if (parts.length >= 4) break;
+  }
+  if (parts.length === 0) return fallback;
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(", ")} ${andWord} ${parts[parts.length - 1]}`;
+}
+
+/**
+ * Admin-triggered loyalty / refill notice: tells a top customer we just
+ * relaunched their orders for free after a follower/like drop. The copy is
+ * built from their whole purchase history (all platforms/services), not a
+ * single order. Send-only — the actual BulkFollows relaunch is done separately
+ * via the SMM action buttons.
+ */
+export async function sendRefillNoticeEmail(
+  p: RefillNoticeParams,
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const resend = getResend();
+  if (!resend) return { ok: false, error: "Resend not configured" };
+
+  try {
+    const locale = normalizeEmailLocale(p.locale);
+    const copy = REFILL_COPY[locale];
+    const summary = buildPurchaseSummary(p.purchases, locale, copy.and, copy.genericStats);
+    const accountUrl = buildAccountUrl(p.locale);
+
+    const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head><meta charset="utf-8" /><title>${escapeHtml(copy.subject)}</title></head>
+<body style="margin:0;padding:0;background:#f8f6f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f6f1;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:24px;">
+          <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+            <img src="${APP_URL}/fanovera-logo.png" alt="Fanovera" width="140" height="auto" style="display:block;height:auto;max-height:42px;border:0;outline:none;" />
+          </a>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:36px 32px;">
+          <div style="text-align:center;">
+            <div style="font-size:44px;line-height:1;margin-bottom:12px;">💙</div>
+            <h1 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#111827;letter-spacing:-0.02em;">${escapeHtml(copy.hero)}</h1>
+          </div>
+          <p style="margin:18px 0 14px;font-size:15px;color:#374151;line-height:1.55;">
+            ${escapeHtml(copy.intro(summary))}
+          </p>
+          <p style="margin:0 0 14px;font-size:15px;color:#374151;line-height:1.55;">
+            ${escapeHtml(copy.loyalty)}
+          </p>
+          <p style="margin:0 0 18px;font-size:15px;color:#111827;line-height:1.55;font-weight:600;">
+            ${escapeHtml(copy.relaunched)}
+          </p>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;margin:0 0 16px;text-align:center;">
+            <div style="font-size:14px;color:#374151;margin-bottom:14px;line-height:1.55;">${escapeHtml(copy.trackingIntro)}</div>
+            <a href="${accountUrl}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 26px;border-radius:10px;">${escapeHtml(copy.trackingButton)}</a>
+          </div>
+          <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.55;">${escapeHtml(copy.closing)}</p>
+          <p style="margin:24px 0 0;font-size:14px;color:#111827;">— ${escapeHtml(copy.signoff)}</p>
+        </td></tr>
+        <tr><td style="padding:18px 8px 0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5;">
+          ${escapeHtml(copy.footerLine)}<br>
+          <a href="${APP_URL}" style="color:#6b7280;text-decoration:underline;">fanovera.com</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    const text = `${copy.hero}
+
+${copy.intro(summary)}
+${copy.loyalty}
+${copy.relaunched}
+
+${copy.trackingIntro}
+${accountUrl}
+
+${copy.closing}
+
+— ${copy.signoff}
+
+—
+Fanovera · ${APP_URL}`;
+
+    const result = await resend.emails.send({
+      from: RESEND_FROM,
+      to: p.to,
+      subject: copy.subject,
+      html,
+      text,
+    });
+
+    if (result.error) {
+      console.error("[email] refill notice Resend error:", result.error);
+      return { ok: false, error: result.error.message };
+    }
+    return { ok: true, id: result.data?.id };
+  } catch (err) {
+    console.error("[email] sendRefillNoticeEmail error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
 // ── Lifecycle emails (post-purchase reminders + win-back) ──
 
 export type LifecycleKind = "post_purchase_7d" | "post_purchase_30d" | "win_back_60d" | "win_back_90d";
