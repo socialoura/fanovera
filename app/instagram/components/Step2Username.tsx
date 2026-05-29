@@ -79,7 +79,7 @@ export default function Step2Username({
   const tAll = useInstagramCopy();
   const t = tAll.step2;
   const tm = t.media;
-  const isMediaMode = productType === "likes" || productType === "views";
+  const isMediaMode = productType === "likes" || productType === "views" || productType === "reposts";
 
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -276,16 +276,16 @@ export default function Step2Username({
 
   // i18n strings for the heading
   const titleBefore = isMediaMode
-    ? productType === "likes" ? tm.titleBeforeLikes : tm.titleBeforeViews
+    ? productType === "likes" ? tm.titleBeforeLikes : productType === "reposts" ? tm.titleBeforeReposts : tm.titleBeforeViews
     : t.titleBefore;
   const titleFocus = isMediaMode
-    ? productType === "likes" ? tm.titleFocusLikes : tm.titleFocusViews
+    ? productType === "likes" ? tm.titleFocusLikes : productType === "reposts" ? tm.titleFocusReposts : tm.titleFocusViews
     : t.titleFocus;
   const titleAfter = isMediaMode
-    ? productType === "likes" ? tm.titleAfterLikes : tm.titleAfterViews
+    ? productType === "likes" ? tm.titleAfterLikes : productType === "reposts" ? tm.titleAfterReposts : tm.titleAfterViews
     : t.titleAfter;
   const intro = isMediaMode
-    ? productType === "likes" ? tm.introLikes : tm.introViews
+    ? productType === "likes" ? tm.introLikes : productType === "reposts" ? tm.introReposts : tm.introViews
     : t.intro;
 
   return (
@@ -595,10 +595,12 @@ function MediaPreviewCard({
   tChecking: string;
   tFound: string;
 }) {
-  const focusMetric = productType === "views" ? "play" : "like";
-  const baseCount = focusMetric === "play" ? media?.playCount ?? 0 : media?.likeCount ?? 0;
+  const focusMetric = productType === "views" ? "play" : productType === "reposts" ? "repost" : "like";
+  // Instagram doesn't expose a public share/repost count, so reposts have no
+  // meaningful base metric — show 0 and let the projected total carry the value.
+  const baseCount = focusMetric === "play" ? media?.playCount ?? 0 : focusMetric === "repost" ? 0 : media?.likeCount ?? 0;
   const projected = baseCount + bonusVolume;
-  const focusLabel = focusMetric === "play" ? tm.viewsUnit : tm.likesUnit;
+  const focusLabel = focusMetric === "play" ? tm.viewsUnit : focusMetric === "repost" ? tm.repostsUnit : tm.likesUnit;
   const statusText = verified ? tFound : verifying ? tChecking : apiError ? "" : tWaiting;
   const isReel = media?.mediaType === 2;
 

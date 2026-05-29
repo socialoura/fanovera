@@ -17,17 +17,21 @@ interface EmailFlow {
   sort_order: number;
   sent_30d: number;
   sent_total: number;
+  converted_30d: number;
+  converted_total: number;
+  conv_revenue_cents: number;
   last_sent_at: string | null;
 }
 
 const GROUP_META: Record<string, { title: string; sub: string; trigger: string }> = {
-  abandoned:     { title: "Panier abandonné",     sub: "Quand un visiteur saisit son email mais ne paie pas",          trigger: "Trigger : begin_checkout sans purchase" },
-  post_purchase: { title: "Relance post-achat",   sub: "Recharge sur la nature consommable du produit (followers, etc.)", trigger: "Trigger : commande payée, X heures plus tard" },
-  winback:       { title: "Win-back client inactif", sub: "Réactivation des clients qui n'ont pas recommandé",          trigger: "Trigger : dernière commande il y a X jours" },
-  crosssell:     { title: "Cross-sell dans confirmation", sub: "Bloc upsell injecté dans l'email de confirmation",       trigger: "Trigger : ajouté à l'email de confirmation" },
+  abandoned:       { title: "Panier abandonné",     sub: "Quand un visiteur saisit son email mais ne paie pas",          trigger: "Trigger : begin_checkout sans purchase" },
+  post_purchase:   { title: "Relance post-achat",   sub: "Recharge sur la nature consommable du produit (followers, etc.)", trigger: "Trigger : commande payée, X heures plus tard" },
+  crosssell_likes: { title: "Cross-sell likes",     sub: "Propose des likes aux clients ayant acheté uniquement des followers (jamais de likes)", trigger: "Trigger : commande followers-only, X heures plus tard" },
+  winback:         { title: "Win-back client inactif", sub: "Réactivation des clients qui n'ont pas recommandé",          trigger: "Trigger : dernière commande il y a X jours" },
+  crosssell:       { title: "Cross-sell dans confirmation", sub: "Bloc upsell injecté dans l'email de confirmation",       trigger: "Trigger : ajouté à l'email de confirmation" },
 };
 
-const GROUP_ORDER = ["abandoned", "post_purchase", "winback", "crosssell"];
+const GROUP_ORDER = ["abandoned", "post_purchase", "crosssell_likes", "winback", "crosssell"];
 
 const token = () => localStorage.getItem("admin_pw") || "";
 
@@ -35,6 +39,10 @@ function fmtDelay(hours: number): string {
   if (hours === 0) return "immédiat";
   if (hours < 24) return `H+${hours}`;
   return `J+${Math.round(hours / 24)}`;
+}
+
+function fmtEuros(cents: number): string {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(cents / 100);
 }
 
 function fmtRelative(iso: string | null): string {
@@ -209,6 +217,12 @@ function FlowRow({
           <div style={{ fontSize: 11, color: "var(--a-ink-3)" }}>
             {flow.sent_30d} envois (30j) · {flow.sent_total} au total · Dernier : {fmtRelative(flow.last_sent_at)}
           </div>
+          {flow.sent_total > 0 && (
+            <div style={{ fontSize: 11, color: "var(--a-accent)", fontWeight: 600, marginTop: 2 }}>
+              {flow.converted_30d} conv. (30j) · {flow.converted_total} au total · {fmtEuros(flow.conv_revenue_cents)} CA
+              {flow.sent_30d > 0 && ` · ${Math.round((flow.converted_30d / flow.sent_30d) * 100)}% taux`}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

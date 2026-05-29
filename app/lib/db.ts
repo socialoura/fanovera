@@ -145,6 +145,7 @@ export async function initDb() {
       post_assignments JSONB,
       total_cents INTEGER NOT NULL,
       cost_cents INTEGER DEFAULT 0,
+      stripe_fee_cents INTEGER NOT NULL DEFAULT 0,
       currency VARCHAR(3) DEFAULT 'eur',
       experiment_id VARCHAR(120) DEFAULT '',
       variant_id VARCHAR(120) DEFAULT '',
@@ -170,6 +171,12 @@ export async function initDb() {
 
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_amount_cents INTEGER NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ`;
+  // Real Stripe processing fee, stored in the account settlement currency (EUR).
+  // The balance_transaction.fee Stripe reports is already net of any FX
+  // conversion, so we keep it as EUR cents and never re-convert it. 0 means the
+  // fee wasn't captured yet (orders created before this column / backfill) —
+  // analytics falls back to an estimate for those.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_fee_cents INTEGER NOT NULL DEFAULT 0`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`;
@@ -353,8 +360,14 @@ export async function initDb() {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_source VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(180) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(120) DEFAULT ''`;
+  // Matched keyword + match type captured from Google Ads ValueTrack
+  // ({keyword}/{matchtype}) in the ad final-URL suffix. Lets us attribute
+  // first-touch LTV down to the exact bidded keyword, not just the ad group.
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS keyword VARCHAR(400) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS match_type VARCHAR(20) DEFAULT ''`;
   await sql`CREATE INDEX IF NOT EXISTS idx_checkout_gclid ON checkout_payloads(gclid) WHERE gclid <> ''`;
   await sql`CREATE INDEX IF NOT EXISTS idx_checkout_utm_campaign ON checkout_payloads(utm_campaign) WHERE utm_campaign <> ''`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_checkout_keyword ON checkout_payloads(LOWER(keyword)) WHERE keyword <> ''`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_country ON orders(country)`;
 
   await sql`
@@ -451,6 +464,33 @@ export async function initDb() {
   await sql`CREATE INDEX IF NOT EXISTS idx_search_term_date ON ad_costs_by_search_term(date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_search_term_term ON ad_costs_by_search_term(search_term)`;
 
+  // Keywords = what we BID on (vs search_term = what users typed). Synced from
+  // keyword_view. Unlike search terms, the matched keyword text is exposed to
+  // ValueTrack ({keyword}), so we can join this cost table to checkout_payloads
+  // .keyword for exact per-keyword LTV ROAS. Primary key (date, ad_group_id,
+  // criterion_id) because the same keyword text can live in multiple ad groups.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ad_costs_by_keyword (
+      date DATE NOT NULL,
+      campaign_id BIGINT NOT NULL,
+      campaign_name VARCHAR(200) NOT NULL DEFAULT '',
+      ad_group_id BIGINT NOT NULL,
+      ad_group_name VARCHAR(200) NOT NULL DEFAULT '',
+      criterion_id BIGINT NOT NULL,
+      keyword_text VARCHAR(400) NOT NULL,
+      match_type VARCHAR(20) NOT NULL DEFAULT '',
+      cost_cents BIGINT NOT NULL DEFAULT 0,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      conversions NUMERIC(10,2) NOT NULL DEFAULT 0,
+      conversions_value NUMERIC(12,2) NOT NULL DEFAULT 0,
+      synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (date, ad_group_id, criterion_id)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_kw_cost_date ON ad_costs_by_keyword(date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_kw_cost_text ON ad_costs_by_keyword(LOWER(keyword_text))`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS gclid_campaign_map (
       gclid VARCHAR(200) PRIMARY KEY,
@@ -502,6 +542,15 @@ export async function initDb() {
       await sql`INSERT INTO smm_config (platform, service, bulkfollows_service_id) VALUES (${m.platform}, ${m.service}, ${m.id}) ON CONFLICT DO NOTHING`;
     }
   }
+
+  // Instagram reposts (shares) — added after the initial seed, so insert it
+  // idempotently on every boot rather than only when the table is empty.
+  // BulkFollows service 14832. Adjust the ID / toggle via the admin SMM view.
+  await sql`
+    INSERT INTO smm_config (platform, service, bulkfollows_service_id, enabled)
+    VALUES ('instagram', 'ig_reposts', 14832, true)
+    ON CONFLICT (platform, service) DO NOTHING
+  `;
 }
 
 // ── Orders ──
@@ -514,6 +563,8 @@ export async function createOrder(params: {
   cart: unknown;
   postAssignments: unknown;
   totalCents: number;
+  /** Real Stripe fee in EUR cents (balance_transaction.fee). 0 if unknown. */
+  stripeFeeCents?: number;
   status?: string;
   followersBefore?: number;
   currency?: string;
@@ -533,7 +584,7 @@ export async function createOrder(params: {
     // used to fetch the already-existing id without firing side effects
     // (email, Discord, SMM) twice.
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -542,6 +593,7 @@ export async function createOrder(params: {
         ${JSON.stringify(params.cart)},
         ${params.postAssignments ? JSON.stringify(params.postAssignments) : null},
         ${params.totalCents},
+        ${params.stripeFeeCents || 0},
         ${params.status || "pending"},
         ${params.followersBefore || 0},
         ${params.currency || "eur"},
@@ -580,7 +632,7 @@ export async function createOrder(params: {
     // We can't tell new vs. existing here — assume new to be safe (caller will
     // de-dupe via getOrderByPaymentIntent on next request anyway).
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -589,6 +641,7 @@ export async function createOrder(params: {
         ${JSON.stringify(params.cart)},
         ${params.postAssignments ? JSON.stringify(params.postAssignments) : null},
         ${params.totalCents},
+        ${params.stripeFeeCents || 0},
         ${params.status || "pending"},
         ${params.followersBefore || 0},
         ${params.currency || "eur"},
@@ -806,6 +859,8 @@ export async function upsertCheckoutPayload(params: {
   utmSource?: string | null;
   utmCampaign?: string | null;
   utmMedium?: string | null;
+  keyword?: string | null;
+  matchType?: string | null;
 }) {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS experiment_id VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS variant_id VARCHAR(120) DEFAULT ''`;
@@ -818,6 +873,8 @@ export async function upsertCheckoutPayload(params: {
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_source VARCHAR(120) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(180) DEFAULT ''`;
   await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS utm_medium VARCHAR(120) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS keyword VARCHAR(400) DEFAULT ''`;
+  await sql`ALTER TABLE checkout_payloads ADD COLUMN IF NOT EXISTS match_type VARCHAR(20) DEFAULT ''`;
 
   const normalizedCountry = normalizeCountryCode(params.country);
   const followersBefore =
@@ -828,9 +885,11 @@ export async function upsertCheckoutPayload(params: {
   const utmSource = (params.utmSource || "").trim().slice(0, 120);
   const utmCampaign = (params.utmCampaign || "").trim().slice(0, 180);
   const utmMedium = (params.utmMedium || "").trim().slice(0, 120);
+  const keyword = (params.keyword || "").trim().slice(0, 400);
+  const matchType = (params.matchType || "").trim().slice(0, 20);
 
   await sql`
-    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country, followers_before, gclid, utm_source, utm_campaign, utm_medium)
+    INSERT INTO checkout_payloads (payment_intent_id, email, username, platform, cart, amount_cents, currency, experiment_id, variant_id, pricing_strategy, source_page, plan, country, followers_before, gclid, utm_source, utm_campaign, utm_medium, keyword, match_type)
     VALUES (
       ${params.paymentIntentId},
       ${params.email || ""},
@@ -849,7 +908,9 @@ export async function upsertCheckoutPayload(params: {
       ${gclid},
       ${utmSource},
       ${utmCampaign},
-      ${utmMedium}
+      ${utmMedium},
+      ${keyword},
+      ${matchType}
     )
     ON CONFLICT (payment_intent_id)
     DO UPDATE SET
@@ -869,7 +930,9 @@ export async function upsertCheckoutPayload(params: {
       gclid = CASE WHEN EXCLUDED.gclid <> '' THEN EXCLUDED.gclid ELSE checkout_payloads.gclid END,
       utm_source = CASE WHEN EXCLUDED.utm_source <> '' THEN EXCLUDED.utm_source ELSE checkout_payloads.utm_source END,
       utm_campaign = CASE WHEN EXCLUDED.utm_campaign <> '' THEN EXCLUDED.utm_campaign ELSE checkout_payloads.utm_campaign END,
-      utm_medium = CASE WHEN EXCLUDED.utm_medium <> '' THEN EXCLUDED.utm_medium ELSE checkout_payloads.utm_medium END
+      utm_medium = CASE WHEN EXCLUDED.utm_medium <> '' THEN EXCLUDED.utm_medium ELSE checkout_payloads.utm_medium END,
+      keyword = CASE WHEN EXCLUDED.keyword <> '' THEN EXCLUDED.keyword ELSE checkout_payloads.keyword END,
+      match_type = CASE WHEN EXCLUDED.match_type <> '' THEN EXCLUDED.match_type ELSE checkout_payloads.match_type END
   `;
 }
 

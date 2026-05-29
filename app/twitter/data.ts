@@ -22,6 +22,60 @@ export const PACKS: Pack[] = [
   { qty: 100000, price: 1999.99, old: 3799.99, bonus: 20000 },
 ];
 
+export type XProductType = "followers" | "likes" | "retweets";
+
+// Likes target a single tweet (post), unlike followers (profile). Prices are
+// fallbacks only — the Neon `pricing` table (service "x_likes") is the source
+// of truth and overrides these at runtime.
+export const LIKES_PACKS: Pack[] = [
+  { qty: 100, price: 2.99, old: 9.99, bonus: 20 },
+  { qty: 250, price: 5.99, old: 17.99, bonus: 50 },
+  { qty: 500, price: 9.99, old: 29.99, bonus: 100 },
+  { qty: 1000, price: 16.99, old: 49.99, bonus: 200, popular: true },
+  { qty: 2500, price: 34.99, old: 99.99, bonus: 500 },
+  { qty: 5000, price: 59.99, old: 169.99, bonus: 1000 },
+  { qty: 10000, price: 99.99, old: 279.99, bonus: 2500 },
+  { qty: 25000, price: 199.99, old: 549.99, bonus: 6000 },
+  { qty: 50000, price: 349.99, old: 899.99, bonus: 12500, best: true },
+  { qty: 100000, price: 599.99, old: 1499.99, bonus: 25000 },
+];
+
+// Retweets target a single tweet (post), like likes. Higher-value engagement,
+// so priced above likes. Prices are fallbacks only — the Neon `pricing` table
+// (service "x_retweets") is the source of truth and overrides these at runtime.
+export const RETWEET_PACKS: Pack[] = [
+  { qty: 100, price: 4.99, old: 14.99, bonus: 20 },
+  { qty: 250, price: 9.99, old: 29.99, bonus: 50 },
+  { qty: 500, price: 17.99, old: 49.99, bonus: 100 },
+  { qty: 1000, price: 29.99, old: 79.99, bonus: 200, popular: true },
+  { qty: 2500, price: 64.99, old: 169.99, bonus: 500 },
+  { qty: 5000, price: 119.99, old: 299.99, bonus: 1000 },
+  { qty: 10000, price: 199.99, old: 499.99, bonus: 2500 },
+  { qty: 25000, price: 449.99, old: 1099.99, bonus: 6000 },
+  { qty: 50000, price: 799.99, old: 1999.99, bonus: 12500, best: true },
+  { qty: 100000, price: 1399.99, old: 3299.99, bonus: 25000 },
+];
+
+export function getPacksForProduct(product: XProductType): Pack[] {
+  if (product === "likes") return LIKES_PACKS;
+  if (product === "retweets") return RETWEET_PACKS;
+  return PACKS;
+}
+
+export function defaultPackIndex(product: XProductType): number {
+  const idx = getPacksForProduct(product).findIndex((p) => p.popular);
+  return idx >= 0 ? idx : 3;
+}
+
+export function getServiceForProduct(product: XProductType): string {
+  if (product === "likes") return "x_likes";
+  if (product === "retweets") return "x_retweets";
+  return "x_followers";
+}
+
+// Tweet/status URL matcher for the likes target (x.com or twitter.com).
+export const TWEET_URL_RE = /(?:twitter|x)\.com\/[^/?#]+\/status\/\d+/i;
+
 export type CountryId = "fr" | "eu";
 
 export type Country = {

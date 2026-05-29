@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatQty, type CountryId } from "../data";
+import { formatQty, type CountryId, type XProductType, getPacksForProduct, TWEET_URL_RE } from "../data";
 import { useXCopy } from "../i18n";
 import { trackEvent } from "../../lib/analytics";
 import { extractHandleFromUrl } from "../../lib/extractHandle";
@@ -25,8 +25,11 @@ export type XProfile = {
 type Props = {
   country: CountryId;
   pack: number;
+  productType: XProductType;
   username: string;
   setUsername: (u: string) => void;
+  postUrl: string;
+  setPostUrl: (u: string) => void;
   email: string;
   setEmail: (e: string) => void;
   profile: XProfile | null;
@@ -36,9 +39,10 @@ type Props = {
 };
 
 export default function Step2Username({
-  country, pack, username, setUsername, email, setEmail, profile, setProfile, onNext, onBack,
+  country, pack, productType, username, setUsername, postUrl, setPostUrl, email, setEmail, profile, setProfile, onNext, onBack,
 }: Props) {
   const t = useXCopy().step2;
+  const isMediaMode = productType === "likes" || productType === "retweets";
   const [touched, setTouched] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(!!profile);
@@ -49,16 +53,27 @@ export default function Step2Username({
   const clean = username.replace(/^@/, "").trim().toLowerCase();
   // X handles: 4-15 chars, letters/digits/underscore
   const valid = /^[a-zA-Z0-9_]{4,15}$/.test(clean);
+  const postValid = TWEET_URL_RE.test(postUrl.trim());
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  const packData = getPacksForProduct(productType)[pack] ?? getPacksForProduct(productType)[0];
+  const bonusVolume = packData.qty + packData.bonus;
+
   const handleNext = () => {
-    if (!username.trim()) { setSubmitError(t.errors.missingUrl); return; }
+    if (isMediaMode) {
+      if (!postUrl.trim()) { setSubmitError(t.errors.post); return; }
+    } else if (!username.trim()) {
+      setSubmitError(t.errors.missingUrl); return;
+    }
     if (!emailValid) { setSubmitError(t.errors.email); return; }
     setSubmitError(null);
     onNext();
   };
 
   useEffect(() => {
+    // Followers-only: live profile verification. Likes target a tweet URL with
+    // no public preview API, so we skip the fetch in media mode.
+    if (isMediaMode) return;
     setVerified(false);
     setProfile(null);
     setApiError(null);
@@ -91,9 +106,16 @@ export default function Step2Username({
     }, 500);
 
     return () => { clearTimeout(debounce); controller.abort(); setVerifying(false); };
-  }, [clean, valid, setProfile]);
+  }, [clean, valid, setProfile, isMediaMode]);
 
   void country;
+  void touched;
+
+  // Headings differ between followers (profile) and likes (tweet).
+  const titleBefore = isMediaMode ? t.media.titleBefore : t.titleBefore;
+  const titleFocus = isMediaMode ? t.media.titleFocus : t.titleFocus;
+  const titleAfter = isMediaMode ? t.media.titleAfter : t.titleAfter;
+  const intro = isMediaMode ? t.media.intro : t.intro;
 
   return (
     <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
@@ -103,10 +125,10 @@ export default function Step2Username({
 
         <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 36px" }}>
           <h1 className="display" style={{ fontSize: "clamp(32px, 4vw, 52px)", margin: "0 0 12px" }}>
-            {t.titleBefore} <span className="squiggle x">{t.titleFocus}</span> {t.titleAfter}
+            {titleBefore} <span className="squiggle x">{titleFocus}</span> {titleAfter}
           </h1>
           <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 16, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            {t.intro}
+            {intro}
           </p>
         </div>
 
@@ -116,41 +138,70 @@ export default function Step2Username({
             style={{ background: "white", border: "1px solid var(--line)", borderRadius: 22, padding: 28 }}
           >
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10 }}>
-              {t.urlLabel}
+              {isMediaMode ? t.media.postLabel : t.urlLabel}
             </label>
 
-            <div className="input-shell x">
-              <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
-              <input
-                type="text"
-                name="handle"
-                enterKeyHint="next"
-                placeholder="votrepseudo"
-                value={username.replace(/^@/, "")}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  const extracted = extractHandleFromUrl("x", raw);
-                  setUsername(extracted ?? raw);
-                  setTouched(true);
-                }}
-                onBlur={() => setTouched(true)}
-                autoFocus
-                spellCheck={false}
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect="off"
-              />
-              <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
-                {verifying && <div className="spinner" style={{ borderColor: "rgba(0,0,0,0.25)", borderTopColor: "var(--x-ink)" }}></div>}
-                {!verifying && verified && (
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--green)", display: "grid", placeItems: "center" }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                )}
+            {isMediaMode ? (
+              <div className="input-shell x">
+                <input
+                  type="url"
+                  name="post_url"
+                  inputMode="url"
+                  enterKeyHint="next"
+                  placeholder={t.media.postPlaceholder}
+                  value={postUrl}
+                  onChange={(e) => { setPostUrl(e.target.value); setTouched(true); }}
+                  onBlur={() => setTouched(true)}
+                  autoFocus
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                />
+                <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
+                  {postValid && (
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--green)", display: "grid", placeItems: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="input-shell x">
+                <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
+                <input
+                  type="text"
+                  name="handle"
+                  enterKeyHint="next"
+                  placeholder="votrepseudo"
+                  value={username.replace(/^@/, "")}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const extracted = extractHandleFromUrl("x", raw);
+                    setUsername(extracted ?? raw);
+                    setTouched(true);
+                  }}
+                  onBlur={() => setTouched(true)}
+                  autoFocus
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                />
+                <div style={{ paddingRight: 8, display: "flex", alignItems: "center" }}>
+                  {verifying && <div className="spinner" style={{ borderColor: "rgba(0,0,0,0.25)", borderTopColor: "var(--x-ink)" }}></div>}
+                  {!verifying && verified && (
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--green)", display: "grid", placeItems: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 7l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Format / API errors intentionally silent: preview is a
                 reassurance feature, never a payment gate. */}
@@ -211,8 +262,37 @@ export default function Step2Username({
             )}
           </form>
 
-          {/* X profile preview */}
+          {/* Preview: profile (followers) or tweet target (likes) */}
           <div className="x-preview-col" style={{ position: "relative" }}>
+            {isMediaMode ? (
+            <div className="x-card">
+              <div className="x-banner">
+                <div className="x-follow-pill">X</div>
+              </div>
+              <div className="x-card-body">
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(29,155,240,0.18)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d9bf0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, fontSize: 16, color: "white" }}>{t.media.targetTitle}</div>
+                    <div style={{ fontSize: 12, color: "#71767b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {postUrl.trim() ? postUrl.trim() : t.media.postPlaceholder}
+                    </div>
+                  </div>
+                </div>
+                <div className="x-stats-row" style={{ marginTop: 14 }}>
+                  <div>
+                    <span style={{ fontWeight: 800, color: postValid ? "#1d9bf0" : "white" }}>+{formatQty(bonusVolume)}</span>
+                    <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>{productType === "retweets" ? t.media.retweetsUnit : t.media.likesUnit}</span>
+                  </div>
+                </div>
+                <div style={{ marginTop: 10, fontSize: 11, color: "#71767b" }}>
+                  {postValid ? t.media.foundPost : t.media.waitingPost}
+                </div>
+              </div>
+            </div>
+            ) : (
             <div className="x-card">
               <div className="x-banner">
                 <div className="x-follow-pill">X</div>
@@ -253,7 +333,7 @@ export default function Step2Username({
                           {formatQty(profile.followersCount)}
                           <span style={{ fontSize: 12, color: "var(--green)" }}>
                             {" -> "}
-                            {formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}
+                            {formatQty(profile.followersCount + packData.qty + packData.bonus)}
                           </span>
                         </>
                       ) : "-"}
@@ -266,6 +346,7 @@ export default function Step2Username({
                 </div>
               </div>
             </div>
+            )}
 
             <div className="floaty x-new-total-sticker" style={{ position: "absolute", top: -14, right: -12, ["--r" as string]: "8deg" } as CSSProperties}>
               <div className="sticker">
@@ -276,7 +357,7 @@ export default function Step2Username({
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600 }}>{t.newTotal}</div>
-                  <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(PACKS[pack].qty + PACKS[pack].bonus)}</div>
+                  <div style={{ fontWeight: 800, fontSize: 13 }}>+{formatQty(bonusVolume)}</div>
                 </div>
               </div>
             </div>

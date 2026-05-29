@@ -26,6 +26,8 @@ const ATTRIBUTION_KEYS = [
   "msclkid",
   "fbclid",
   "entry_surface",
+  "kw",
+  "mt",
 ] as const;
 
 function isTestPromoEnabled() {
@@ -226,6 +228,8 @@ export async function POST(req: NextRequest) {
         utmSource: attribution.utm_source,
         utmCampaign: attribution.utm_campaign,
         utmMedium: attribution.utm_medium,
+        keyword: attribution.kw,
+        matchType: attribution.mt,
       });
     } catch (payloadErr) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);

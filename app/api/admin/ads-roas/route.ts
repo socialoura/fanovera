@@ -32,10 +32,12 @@ export const dynamic = "force-dynamic";
 // GREATEST(0, total - refunded) so the net revenue is what counts.
 const PAID_STATUSES = ["paid", "processing", "delivered", "partial", "canceled"];
 
-type GroupBy = "campaign" | "adgroup";
+type GroupBy = "campaign" | "adgroup" | "keyword";
 
 function parseGroupBy(raw: string | null): GroupBy {
-  return raw === "adgroup" ? "adgroup" : "campaign";
+  if (raw === "adgroup") return "adgroup";
+  if (raw === "keyword") return "keyword";
+  return "campaign";
 }
 
 type Row = {
@@ -227,6 +229,94 @@ async function queryByAdGroup(days: number) {
   });
 }
 
+async function queryByKeyword(days: number) {
+  // Keyword identity = the matched keyword TEXT (lowercased). ValueTrack
+  // {keyword} only exposes the text, not the ad group, so the same keyword
+  // bid in two ad groups is collapsed here on purpose — both cost and revenue
+  // sides key off the text alone, keeping the join honest.
+  const rows = await sql`
+    WITH window_costs AS (
+      SELECT
+        LOWER(keyword_text) AS keyword_key,
+        MAX(keyword_text) AS keyword_text,
+        MAX(match_type) AS match_type,
+        MAX(campaign_id)::bigint AS campaign_id,
+        MAX(campaign_name) AS campaign_name,
+        SUM(cost_cents)::bigint AS cost_cents,
+        SUM(clicks)::int AS clicks,
+        SUM(impressions)::int AS impressions,
+        SUM(conversions)::numeric(12, 2) AS google_conversions
+      FROM ad_costs_by_keyword
+      WHERE date >= CURRENT_DATE - (${days}::int * INTERVAL '1 day')
+      GROUP BY LOWER(keyword_text)
+    ),
+    customer_acquisitions AS (
+      -- Pin each customer to the keyword text of their FIRST order that carried
+      -- a captured keyword (lifetime, via checkout_payloads.keyword — NOT the
+      -- gclid map, which has no keyword).
+      SELECT DISTINCT ON (LOWER(TRIM(o.email)))
+        LOWER(TRIM(o.email)) AS email_key,
+        LOWER(TRIM(cp.keyword)) AS keyword_key
+      FROM orders o
+      JOIN checkout_payloads cp ON cp.payment_intent_id = o.stripe_payment_intent_id
+      WHERE cp.keyword <> ''
+        AND o.email <> ''
+        AND o.status = ANY(${PAID_STATUSES})
+      ORDER BY LOWER(TRIM(o.email)), o.created_at ASC
+    ),
+    revenue AS (
+      SELECT
+        ca.keyword_key,
+        COUNT(DISTINCT o2.id)::int AS real_orders,
+        SUM(GREATEST(0, o2.total_cents - o2.refunded_amount_cents))::bigint AS real_revenue_cents,
+        SUM(o2.refunded_amount_cents)::bigint AS refunded_cents
+      FROM customer_acquisitions ca
+      JOIN orders o2 ON LOWER(TRIM(o2.email)) = ca.email_key
+      WHERE o2.status = ANY(${PAID_STATUSES})
+        AND o2.created_at >= CURRENT_DATE - (${days}::int * INTERVAL '1 day')
+      GROUP BY ca.keyword_key
+    )
+    SELECT
+      wc.keyword_text,
+      wc.match_type,
+      wc.campaign_id::text AS campaign_id,
+      wc.campaign_name,
+      wc.cost_cents,
+      wc.clicks,
+      wc.impressions,
+      wc.google_conversions,
+      COALESCE(rv.real_orders, 0) AS real_orders,
+      COALESCE(rv.real_revenue_cents, 0) AS real_revenue_cents,
+      COALESCE(rv.refunded_cents, 0) AS refunded_cents
+    FROM window_costs wc
+    LEFT JOIN revenue rv ON rv.keyword_key = wc.keyword_key
+    ORDER BY wc.cost_cents DESC
+  `;
+
+  return rows.map((r) => {
+    const costCents = Number(r.cost_cents) || 0;
+    const revenueCents = Number(r.real_revenue_cents) || 0;
+    const refundedCents = Number(r.refunded_cents) || 0;
+    const realOrders = Number(r.real_orders) || 0;
+    const clicks = Number(r.clicks) || 0;
+    return {
+      keyword: r.keyword_text as string,
+      matchType: (r.match_type as string) || "",
+      campaignId: r.campaign_id,
+      campaignName: r.campaign_name,
+      costCents,
+      clicks,
+      impressions: Number(r.impressions) || 0,
+      googleConversions: Number(r.google_conversions) || 0,
+      realOrders,
+      realRevenueCents: revenueCents,
+      refundedCents,
+      refundRate: revenueCents + refundedCents > 0 ? refundedCents / (revenueCents + refundedCents) : null,
+      ...metrics(costCents, clicks, realOrders, revenueCents),
+    };
+  });
+}
+
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
@@ -235,7 +325,12 @@ export async function GET(req: NextRequest) {
     const days = Math.max(1, Math.min(365, Number(sp.get("days")) || 30));
     const groupBy = parseGroupBy(sp.get("groupBy"));
 
-    const rows = groupBy === "adgroup" ? await queryByAdGroup(days) : await queryByCampaign(days);
+    const rows =
+      groupBy === "adgroup"
+        ? await queryByAdGroup(days)
+        : groupBy === "keyword"
+          ? await queryByKeyword(days)
+          : await queryByCampaign(days);
 
     const totals = rows.reduce(
       (acc, r) => {
@@ -255,15 +350,19 @@ export async function GET(req: NextRequest) {
     const diag = await sql`
       SELECT
         (SELECT COUNT(*)::int FROM checkout_payloads WHERE gclid <> '') AS checkout_with_gclid,
+        (SELECT COUNT(*)::int FROM checkout_payloads WHERE keyword <> '') AS checkout_with_keyword,
         (SELECT COUNT(*)::int FROM gclid_campaign_map) AS gclid_map_size,
         (SELECT MAX(synced_at) FROM ad_costs_by_campaign) AS last_synced_at,
-        (SELECT MAX(synced_at) FROM ad_costs_by_ad_group) AS last_synced_at_adgroup
+        (SELECT MAX(synced_at) FROM ad_costs_by_ad_group) AS last_synced_at_adgroup,
+        (SELECT MAX(synced_at) FROM ad_costs_by_keyword) AS last_synced_at_keyword
     `;
     const diagRow = diag[0] as {
       checkout_with_gclid: number;
+      checkout_with_keyword: number;
       gclid_map_size: number;
       last_synced_at: string | null;
       last_synced_at_adgroup: string | null;
+      last_synced_at_keyword: string | null;
     };
 
     return NextResponse.json({
@@ -277,9 +376,11 @@ export async function GET(req: NextRequest) {
       totals: { ...totals, blendedRoas, blendedCpaCents },
       diagnostics: {
         checkoutWithGclid: diagRow.checkout_with_gclid,
+        checkoutWithKeyword: diagRow.checkout_with_keyword,
         gclidMapSize: diagRow.gclid_map_size,
         lastSyncedAt: diagRow.last_synced_at,
         lastSyncedAtAdGroup: diagRow.last_synced_at_adgroup,
+        lastSyncedAtKeyword: diagRow.last_synced_at_keyword,
       },
     });
   } catch (err) {

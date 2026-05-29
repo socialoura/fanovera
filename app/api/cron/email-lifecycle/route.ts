@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/app/lib/db";
-import { sendLifecycleEmail, type LifecycleKind } from "@/app/lib/email";
-import { getDominantService } from "@/app/lib/serviceClassification";
+import { sendLifecycleEmail, sendCrossSellLikesEmail, type LifecycleKind } from "@/app/lib/email";
+import {
+  getDominantService,
+  getServiceKind,
+  getComplementarySuggestion,
+} from "@/app/lib/serviceClassification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -146,6 +150,133 @@ async function processWinBack(flow: FlowConfig): Promise<{ sent: number; skipped
   return { sent, skipped, errors };
 }
 
+/** Kind of a single cart item, from its `service` key (label fallback). */
+function cartItemKind(item: unknown): ReturnType<typeof getServiceKind> | null {
+  if (!item || typeof item !== "object") return null;
+  const o = item as { service?: unknown; label?: unknown };
+  if (typeof o.service === "string" && o.service) return getServiceKind(o.service);
+  if (typeof o.label === "string" && o.label) {
+    return getServiceKind(o.label.toLowerCase().replace(/\s+/g, "_"));
+  }
+  return null;
+}
+
+/** True when the cart has ≥1 followers item and zero likes items. */
+function isFollowersOnlyCart(cart: unknown): boolean {
+  if (!Array.isArray(cart)) return false;
+  let hasFollowers = false;
+  for (const item of cart) {
+    const kind = cartItemKind(item);
+    if (kind === "likes") return false;
+    if (kind === "followers") hasFollowers = true;
+  }
+  return hasFollowers;
+}
+
+/**
+ * Cross-sell likes flow — targets buyers who purchased FOLLOWERS ONLY and have
+ * never bought likes on that platform. Same time window as post-purchase, plus
+ * three gates per order:
+ *   1. triggering cart is followers-only (no likes),
+ *   2. customer has no prior likes purchase on this platform,
+ *   3. a concrete likes pack exists for the platform (else skip).
+ */
+async function processCrossSellLikes(flow: FlowConfig): Promise<{ sent: number; skipped: number; errors: number }> {
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  const rows = (await sql`
+    SELECT o.id, o.email, o.username, o.platform, o.lang, o.total_cents, o.created_at, o.cart
+    FROM orders o
+    WHERE o.status IN ('paid', 'delivered')
+      AND o.email <> ''
+      AND COALESCE(o.refunded_amount_cents, 0) < o.total_cents
+      AND o.total_cents >= ${flow.min_order_cents}
+      AND o.created_at <= NOW() - (${flow.delay_hours}::text || ' hours')::interval + INTERVAL '12 hours'
+      AND o.created_at >= NOW() - (${flow.delay_hours}::text || ' hours')::interval - INTERVAL '12 hours'
+      AND NOT EXISTS (
+        SELECT 1 FROM email_flow_runs r
+        WHERE r.flow_key = ${flow.key} AND r.order_id = o.id
+      )
+    ORDER BY o.created_at DESC
+    LIMIT 200
+  `) as OrderRow[];
+
+  for (const order of rows) {
+    if (!EMAIL_RX.test(order.email)) {
+      skipped++;
+      continue;
+    }
+
+    // Gate 1: triggering cart is followers-only.
+    if (!isFollowersOnlyCart(order.cart)) {
+      skipped++;
+      continue;
+    }
+
+    // Gate 2: no prior likes purchase on this platform (whole history by email).
+    const history = (await sql`
+      SELECT cart FROM orders
+      WHERE LOWER(email) = LOWER(${order.email})
+        AND platform = ${order.platform}
+        AND status IN ('paid', 'delivered')
+    `) as Array<{ cart: unknown }>;
+    const everBoughtLikes = history.some((h) =>
+      Array.isArray(h.cart) && h.cart.some((it) => cartItemKind(it) === "likes"),
+    );
+    if (everBoughtLikes) {
+      skipped++;
+      continue;
+    }
+
+    // Gate 3: a concrete likes pack exists for this platform.
+    const dominantService = getDominantService(order.cart);
+    const suggestion = dominantService
+      ? await getComplementarySuggestion(order.platform, dominantService)
+      : null;
+    if (!suggestion || suggestion.serviceKind !== "likes") {
+      skipped++;
+      continue;
+    }
+
+    const subject = order.lang === "en" ? flow.subject_en : flow.subject_fr;
+    const result = await sendCrossSellLikesEmail({
+      to: order.email,
+      platform: order.platform,
+      username: order.username,
+      suggestion: {
+        serviceKey: suggestion.service,
+        qty: suggestion.qty,
+        basePriceCents: suggestion.priceCents,
+        currency: "eur",
+      },
+      discountPct: flow.discount_pct,
+      customSubject: subject,
+      locale: order.lang,
+    });
+
+    if (!result.ok) {
+      console.error(`[cron/email-lifecycle] ${flow.key} send failed for order #${order.id}:`, result.error);
+      errors++;
+      continue;
+    }
+
+    try {
+      await sql`
+        INSERT INTO email_flow_runs (flow_key, order_id, email, promo_code)
+        VALUES (${flow.key}, ${order.id}, ${order.email}, ${result.code || ""})
+        ON CONFLICT (flow_key, order_id) DO NOTHING
+      `;
+    } catch (insErr) {
+      console.error(`[cron/email-lifecycle] dedupe insert failed for ${flow.key} #${order.id}:`, insErr);
+    }
+    sent++;
+  }
+
+  return { sent, skipped, errors };
+}
+
 async function fireLifecycle(
   flow: FlowConfig,
   order: OrderRow,
@@ -199,7 +330,7 @@ export async function GET(req: NextRequest) {
              subject_fr, subject_en, min_order_cents
       FROM email_flows
       WHERE active = true
-        AND group_key IN ('post_purchase', 'winback')
+        AND group_key IN ('post_purchase', 'winback', 'crosssell_likes')
     `) as FlowConfig[];
 
     const summary: Record<string, { sent: number; skipped: number; errors: number }> = {};
@@ -209,6 +340,8 @@ export async function GET(req: NextRequest) {
         summary[flow.key] = await processPostPurchase(flow);
       } else if (flow.group_key === "winback") {
         summary[flow.key] = await processWinBack(flow);
+      } else if (flow.group_key === "crosssell_likes") {
+        summary[flow.key] = await processCrossSellLikes(flow);
       }
     }
 

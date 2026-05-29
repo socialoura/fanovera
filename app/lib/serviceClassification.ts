@@ -40,7 +40,7 @@ export function getServiceKind(service: string): ServiceKind {
   if (stripped.includes("like")) return "likes";
   if (stripped.includes("view")) return "views";
   if (stripped.includes("comment")) return "comments";
-  if (stripped.includes("share")) return "shares";
+  if (stripped.includes("repost") || stripped.includes("share")) return "shares";
   if (stripped.includes("save")) return "saves";
   return "other";
 }

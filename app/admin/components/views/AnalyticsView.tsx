@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Ic } from "../icons";
 import { LineChart, Sparkline, Donut, Heatmap } from "../charts";
 
-type Series30Point = { date: string; revenue: number; cost: number; ads: number };
+type Series30Point = { date: string; revenue: number; cost: number; ads: number; stripeFees: number };
 type Platform = { platform: string; orders: number; revenue: number; share: number };
 type Currency = { currency: string; orders: number; revenue: number };
 type StatusBucket = { status: string; count: number };
@@ -28,6 +28,7 @@ interface AnalyticsData {
   totalRevenue: number;
   totalCost: number;
   adCosts: number;
+  stripeFees: number;
   profit: number;
   margin: number;
   ordersToday: number;
@@ -244,9 +245,9 @@ export default function AnalyticsView() {
   const sparklines = useMemo(() => {
     if (!data) return null;
     const revVals = data.last30days.map((d) => d.revenue);
-    const profitVals = data.last30days.map((d) => d.revenue - d.cost - d.ads);
+    const profitVals = data.last30days.map((d) => d.revenue - d.cost - d.ads - d.stripeFees);
     const marginVals = data.last30days.map((d) =>
-      d.revenue > 0 ? Math.round(((d.revenue - d.cost - d.ads) / d.revenue) * 100) : 0,
+      d.revenue > 0 ? Math.round(((d.revenue - d.cost - d.ads - d.stripeFees) / d.revenue) * 100) : 0,
     );
     const ordersVals = data.last30days.map((d) => Math.max(1, Math.round(d.revenue / Math.max(1, (data.totalRevenue / Math.max(1, data.totalOrders)) || 1))));
     return { revVals, profitVals, marginVals, ordersVals };
@@ -397,7 +398,7 @@ export default function AnalyticsView() {
             <span className={"delta " + (data.deltas.profit >= 0 ? "up" : "down")}>
               {data.deltas.profit >= 0 ? "▲" : "▼"} {Math.abs(data.deltas.profit)}%
             </span>
-            <span className="kpi-sub">après SMM + Ads</span>
+            <span className="kpi-sub">après SMM + Ads + Stripe ({fmtMoneyCents(data.stripeFees)} €)</span>
           </div>
           {sparklines && sparklines.profitVals.length > 1 && <Sparkline values={sparklines.profitVals} color="#2EA86F" w={90} h={30} />}
         </div>

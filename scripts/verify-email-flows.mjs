@@ -64,14 +64,14 @@ async function checkSchema() {
     WHERE table_name = 'email_flow_runs'
   `;
   const runsNames = runsCol.map((r) => r.column_name);
-  for (const c of ["flow_key", "order_id", "email", "promo_code", "sent_at"]) {
+  for (const c of ["flow_key", "order_id", "email", "promo_code", "sent_at", "converted_order_id", "converted_at", "converted_revenue_cents"]) {
     expect(runsNames.includes(c), `email_flow_runs.${c} exists`);
   }
 
   const flows = await sql`SELECT key, group_key, active, delay_hours, discount_pct FROM email_flows ORDER BY sort_order`;
-  expect(flows.length === 6, `6 flows seeded (found: ${flows.length})`);
+  expect(flows.length === 7, `7 flows seeded (found: ${flows.length})`);
 
-  const expectedKeys = ["abandoned_cart", "post_purchase_7d", "post_purchase_30d", "win_back_60d", "win_back_90d", "confirmation_crosssell"];
+  const expectedKeys = ["abandoned_cart", "post_purchase_7d", "cross_sell_likes", "post_purchase_30d", "win_back_60d", "win_back_90d", "confirmation_crosssell"];
   for (const k of expectedKeys) {
     expect(flows.some((f) => f.key === k), `flow "${k}" present`);
   }
@@ -110,16 +110,16 @@ async function dryRunCron() {
   const flows = await sql`
     SELECT key, group_key, delay_hours, discount_pct, min_order_cents
     FROM email_flows
-    WHERE active = true AND group_key IN ('post_purchase', 'winback')
+    WHERE active = true AND group_key IN ('post_purchase', 'winback', 'crosssell_likes')
   `;
 
   if (flows.length === 0) {
-    info("No active post_purchase/winback flows — cron would no-op.");
+    info("No active post_purchase/winback/crosssell_likes flows — cron would no-op.");
     return;
   }
 
   for (const flow of flows) {
-    if (flow.group_key === "post_purchase") {
+    if (flow.group_key === "post_purchase" || flow.group_key === "crosssell_likes") {
       const rows = await sql`
         SELECT COUNT(*)::int AS n FROM orders o
         WHERE o.status IN ('paid', 'delivered')
@@ -187,6 +187,8 @@ async function renderSamples() {
   const cronPath = join(__dirname, "..", "app", "api", "cron", "email-lifecycle", "route.ts");
   expect(readFileSync(cronPath, "utf8").includes("processPostPurchase"), "Cron handles post-purchase");
   expect(readFileSync(cronPath, "utf8").includes("processWinBack"), "Cron handles win-back");
+  expect(readFileSync(cronPath, "utf8").includes("processCrossSellLikes"), "Cron handles cross-sell likes");
+  expect(readFileSync(tsxPath, "utf8").includes("sendCrossSellLikesEmail"), "sendCrossSellLikesEmail exported");
 
   const vercelPath = join(__dirname, "..", "vercel.json");
   expect(readFileSync(vercelPath, "utf8").includes("/api/cron/email-lifecycle"), "vercel.json schedules email-lifecycle");
@@ -235,7 +237,7 @@ async function checkAdminApi() {
     expect(res.status === 200 || res.status === 404, `GET /api/admin/email-flows responded (${res.status})`);
     if (res.status === 200) {
       const data = await res.json();
-      expect(Array.isArray(data.flows) && data.flows.length === 6, `API returned 6 flows`);
+      expect(Array.isArray(data.flows) && data.flows.length === 7, `API returned 7 flows`);
     } else if (res.status === 404) {
       info("404 = route not deployed yet (build not pushed). Local code is correct.");
     }

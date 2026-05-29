@@ -49,7 +49,11 @@ export async function ensureOrderForPaymentIntent(
   const overrides = options.overrides;
   try {
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      expand: ["latest_charge.payment_method_details", "latest_charge.billing_details"],
+      expand: [
+        "latest_charge.payment_method_details",
+        "latest_charge.billing_details",
+        "latest_charge.balance_transaction",
+      ],
     });
     if (pi.status !== "succeeded") {
       return { ok: false, reason: "payment_not_succeeded", status: pi.status };
@@ -76,6 +80,15 @@ export async function ensureOrderForPaymentIntent(
       pi.latest_charge && typeof pi.latest_charge === "object"
         ? (pi.latest_charge as Stripe.Charge)
         : null;
+
+    // Real Stripe processing fee, read from the charge's balance transaction.
+    // It's denominated in the account settlement currency (EUR) and already
+    // accounts for any FX conversion, so we store it verbatim as EUR cents.
+    const balanceTx =
+      latestCharge?.balance_transaction && typeof latestCharge.balance_transaction === "object"
+        ? (latestCharge.balance_transaction as Stripe.BalanceTransaction)
+        : null;
+    const stripeFeeCents = balanceTx ? Number(balanceTx.fee) || 0 : 0;
 
     // Precedence: client-supplied overrides (freshest) → persisted DB row →
     // PaymentIntent metadata → Stripe billing_details.email (last-resort
@@ -136,6 +149,7 @@ export async function ensureOrderForPaymentIntent(
       cart,
       postAssignments: null,
       totalCents: pi.amount,
+      stripeFeeCents,
       status: "paid",
       followersBefore,
       currency: pi.currency || "eur",
@@ -154,6 +168,33 @@ export async function ensureOrderForPaymentIntent(
     // here so we never double-send / double-charge BulkFollows.
     if (!created.isNew) {
       return { ok: true, orderId, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn, totalCents: pi.amount, currency: pi.currency || "eur" };
+    }
+
+    // Lifecycle-email conversion attribution (best-effort, never blocks): tie
+    // this fresh paid order to the most recent lifecycle email this customer
+    // received in the last 30 days that hasn't already been credited with a
+    // conversion. Lets /admin → Emails show which flows actually drive orders.
+    if (email) {
+      try {
+        await sql`
+          UPDATE email_flow_runs
+          SET converted_order_id = ${orderId},
+              converted_at = NOW(),
+              converted_revenue_cents = ${pi.amount}
+          WHERE id = (
+            SELECT id FROM email_flow_runs
+            WHERE LOWER(email) = LOWER(${email})
+              AND converted_order_id IS NULL
+              AND sent_at <= NOW()
+              AND sent_at >= NOW() - INTERVAL '30 days'
+              AND (order_id IS NULL OR order_id <> ${orderId})
+            ORDER BY sent_at DESC
+            LIMIT 1
+          )
+        `;
+      } catch (attrErr) {
+        console.error(`[ensureOrder] conversion attribution failed for order #${orderId}:`, attrErr);
+      }
     }
 
     void captureServerEvent("checkout_completed", meta.anonymousId || email || paymentIntentId, {

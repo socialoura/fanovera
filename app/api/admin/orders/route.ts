@@ -90,10 +90,16 @@ export async function GET(req: NextRequest) {
     // de commandes pour cet email. `id` étant un SERIAL strictement croissant,
     // on l'utilise comme clé d'ordre pour rester correct même si plusieurs
     // commandes partagent la même seconde dans created_at.
+    // `needs_action` is a meta-status: the operator's work queue (failed +
+    // partial + account_unavailable) surfaced as one tab instead of three.
     const totalRes = await sql`
       SELECT COUNT(*)::int AS count
       FROM orders
-      WHERE (${status} = 'all' OR status = ${status})
+      WHERE (
+          ${status} = 'all'
+          OR (${status} = 'needs_action' AND status IN ('failed', 'partial', 'account_unavailable'))
+          OR status = ${status}
+        )
         AND (${search} = '' OR email ILIKE ${emailPattern})
         AND (${bfOrderId} = 0 OR smm_orders @> ${bfFilter}::jsonb)
     `;
@@ -102,7 +108,11 @@ export async function GET(req: NextRequest) {
         (SELECT COUNT(*)::int FROM orders o2 WHERE o2.email = o.email AND o2.id <= o.id) AS customer_order_number,
         (SELECT COUNT(*)::int FROM orders o3 WHERE o3.email = o.email) AS customer_total_orders
       FROM orders o
-      WHERE (${status} = 'all' OR o.status = ${status})
+      WHERE (
+          ${status} = 'all'
+          OR (${status} = 'needs_action' AND o.status IN ('failed', 'partial', 'account_unavailable'))
+          OR o.status = ${status}
+        )
         AND (${search} = '' OR o.email ILIKE ${emailPattern})
         AND (${bfOrderId} = 0 OR o.smm_orders @> ${bfFilter}::jsonb)
       ORDER BY o.created_at DESC LIMIT ${limit} OFFSET ${offset}

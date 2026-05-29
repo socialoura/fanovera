@@ -98,7 +98,14 @@
       "PowerShell(Get-ChildItem -Path . -Force -File | Where-Object { $_.Name -match 'vercel|\\\\.env|netlify|railway|fly' } | Select-Object Name; Write-Output \"---packagescripts---\"; if \\(Test-Path package.json\\) { \\(Get-Content package.json -Raw | ConvertFrom-Json\\).scripts | ConvertTo-Json })",
       "PowerShell(Get-Content .env.local | Where-Object { $_ -match 'STRIPE' } | ForEach-Object { $parts = $_ -split '=',2; if \\($parts.Count -eq 2\\) { \"$\\($parts[0]\\)=$\\($parts[1].Substring\\(0,[Math]::Min\\(14,$parts[1].Length\\)\\)\\)...\" } })",
       "PowerShell(Get-ChildItem -Path . -Force -File | Where-Object { $_.Name -match 'next\\\\.config|middleware' } | Select-Object Name; if \\(Test-Path next.config.js\\) { Get-Content next.config.js -Raw }; if \\(Test-Path next.config.mjs\\) { Get-Content next.config.mjs -Raw }; if \\(Test-Path next.config.ts\\) { Get-Content next.config.ts -Raw })",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell($gas = Test-Path \".\\\\node_modules\\\\google-ads-api\"; $envf = Test-Path \".\\\\.env.local\"; \"google-ads-api installed: $gas\"; \"env.local present: $envf\"; if \\($envf\\) { $keys = Get-Content \".\\\\.env.local\" | ForEach-Object { if \\($_ -match \"=\"\\) { \\($_ -split \"=\",2\\)[0].Trim\\(\\) } }; \"Has DATABASE_URL: $\\($keys -contains 'DATABASE_URL'\\)\"; \"Has GOOGLE_ADS_CUSTOMER_ID: $\\($keys -contains 'GOOGLE_ADS_CUSTOMER_ID'\\)\"; \"Has GOOGLE_ADS_REFRESH_TOKEN: $\\($keys -contains 'GOOGLE_ADS_REFRESH_TOKEN'\\)\" })",
+      "PowerShell(node scripts/seed-keyword-costs.mjs 30)",
+      "PowerShell(npx tsx --env-file=.env.local scripts/init-db.ts)",
+      "PowerShell(node -e \"import\\('@neondatabase/serverless'\\).then\\(async \\({neon}\\)=>{const fs=await import\\('node:fs'\\);const env=Object.fromEntries\\(fs.readFileSync\\('.env.local','utf8'\\).split\\('\\\\n'\\).filter\\(l=>l&&!l.startsWith\\('#'\\)&&l.includes\\('='\\)\\).map\\(l=>{const i=l.indexOf\\('='\\);return [l.slice\\(0,i\\).trim\\(\\),l.slice\\(i+1\\).trim\\(\\)]}\\)\\);const sql=neon\\(env.DATABASE_URL\\);const t=await sql`SELECT to_regclass\\('public.ad_costs_by_keyword'\\) AS tbl`;const c=await sql`SELECT column_name FROM information_schema.columns WHERE table_name='checkout_payloads' AND column_name IN \\('keyword','match_type'\\) ORDER BY column_name`;console.log\\('ad_costs_by_keyword:',t[0].tbl\\);console.log\\('checkout_payloads new cols:',c.map\\(r=>r.column_name\\).join\\(', '\\)||'\\(none\\)'\\);}\\)\")",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Test-Path *)"
     ]
   }
 }

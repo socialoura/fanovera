@@ -22,7 +22,7 @@ export const PACKS: Pack[] = [
   { qty: 500000, price: 799.99, old: 2000.99, bonus: 125000 },
 ];
 
-export type InstagramProductType = "followers" | "likes" | "views";
+export type InstagramProductType = "followers" | "likes" | "views" | "reposts";
 
 export const LIKES_PACKS: Pack[] = [
   { qty: 100, price: 1.49, old: 4.99, bonus: 25 },
@@ -50,9 +50,26 @@ export const VIEWS_PACKS: Pack[] = [
   { qty: 5000000, price: 1499.99, old: 3699.99, bonus: 1000000 },
 ];
 
+// Reposts (shares) target a single post, like likes/views. Tiers mirror the
+// likes ladder; prices are fallbacks only — the Neon `pricing` table
+// (service "ig_reposts") is the source of truth and overrides these at runtime.
+export const REPOST_PACKS: Pack[] = [
+  { qty: 100, price: 1.29, old: 4.49, bonus: 25 },
+  { qty: 250, price: 2.49, old: 7.99, bonus: 50 },
+  { qty: 500, price: 3.99, old: 12.99, bonus: 100 },
+  { qty: 1000, price: 6.99, old: 19.99, bonus: 200 },
+  { qty: 2500, price: 13.99, old: 39.99, bonus: 500, popular: true },
+  { qty: 5000, price: 24.99, old: 69.99, bonus: 1000 },
+  { qty: 10000, price: 44.99, old: 119.99, bonus: 2500 },
+  { qty: 25000, price: 99.99, old: 249.99, bonus: 6000 },
+  { qty: 50000, price: 179.99, old: 449.99, bonus: 12500, best: true },
+  { qty: 100000, price: 329.99, old: 799.99, bonus: 25000 },
+];
+
 export function getPacksForProduct(product: InstagramProductType): Pack[] {
   if (product === "likes") return LIKES_PACKS;
   if (product === "views") return VIEWS_PACKS;
+  if (product === "reposts") return REPOST_PACKS;
   return PACKS;
 }
 
@@ -64,6 +81,7 @@ export function defaultPackIndex(product: InstagramProductType): number {
 export function getServiceForProduct(product: InstagramProductType): string {
   if (product === "likes") return "ig_likes";
   if (product === "views") return "ig_views";
+  if (product === "reposts") return "ig_reposts";
   return "ig_followers";
 }
 

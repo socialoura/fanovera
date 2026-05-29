@@ -4,6 +4,7 @@ import {
   fetchAdGroupCosts,
   fetchCampaignCosts,
   fetchClickToCampaignMap,
+  fetchKeywordCosts,
   fetchSearchTermCosts,
   googleAdsConfigured,
 } from "@/app/lib/googleAdsClient";
@@ -106,6 +107,33 @@ async function syncSearchTermCosts(daysBack: number) {
   return { fetched: rows.length, upserted };
 }
 
+async function syncKeywordCosts(daysBack: number) {
+  const rows = await fetchKeywordCosts(daysBack);
+  let upserted = 0;
+  for (const r of rows) {
+    await sql`
+      INSERT INTO ad_costs_by_keyword
+        (date, campaign_id, campaign_name, ad_group_id, ad_group_name, criterion_id, keyword_text, match_type, cost_cents, clicks, impressions, conversions, conversions_value, synced_at)
+      VALUES
+        (${r.date}::date, ${r.campaignId}::bigint, ${r.campaignName}, ${r.adGroupId}::bigint, ${r.adGroupName}, ${r.criterionId}::bigint, ${r.keywordText}, ${r.matchType}, ${r.costCents}, ${r.clicks}, ${r.impressions}, ${r.conversions}, ${r.conversionsValue}, NOW())
+      ON CONFLICT (date, ad_group_id, criterion_id) DO UPDATE SET
+        campaign_id = EXCLUDED.campaign_id,
+        campaign_name = EXCLUDED.campaign_name,
+        ad_group_name = EXCLUDED.ad_group_name,
+        keyword_text = EXCLUDED.keyword_text,
+        match_type = EXCLUDED.match_type,
+        cost_cents = EXCLUDED.cost_cents,
+        clicks = EXCLUDED.clicks,
+        impressions = EXCLUDED.impressions,
+        conversions = EXCLUDED.conversions,
+        conversions_value = EXCLUDED.conversions_value,
+        synced_at = NOW()
+    `;
+    upserted++;
+  }
+  return { fetched: rows.length, upserted };
+}
+
 async function syncGclidMap(daysBack: number) {
   const rows = await fetchClickToCampaignMap(daysBack);
   let inserted = 0;
@@ -147,11 +175,12 @@ async function handle(req: NextRequest) {
     const costs = await syncCampaignCosts(costDays);
     const adGroupCosts = await syncAdGroupCosts(costDays);
     const searchTermCosts = await syncSearchTermCosts(costDays);
+    const keywordCosts = await syncKeywordCosts(costDays);
     const gclids = await syncGclidMap(gclidDays);
     const tookMs = Date.now() - startedAt;
 
-    console.info("[cron/sync-google-ads]", { costs, adGroupCosts, searchTermCosts, gclids, tookMs });
-    return NextResponse.json({ ok: true, costs, adGroupCosts, searchTermCosts, gclids, tookMs });
+    console.info("[cron/sync-google-ads]", { costs, adGroupCosts, searchTermCosts, keywordCosts, gclids, tookMs });
+    return NextResponse.json({ ok: true, costs, adGroupCosts, searchTermCosts, keywordCosts, gclids, tookMs });
   } catch (err) {
     console.error("[cron/sync-google-ads] failed:", err);
     return NextResponse.json({ error: "Sync failed", detail: (err as Error).message }, { status: 500 });

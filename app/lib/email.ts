@@ -2326,6 +2326,231 @@ Fanovera · ${APP_URL}`;
   }
 }
 
+// ── Cross-sell likes (post-purchase, followers-only buyers) ──
+
+export interface CrossSellLikesParams {
+  to: string;
+  platform: string;
+  username: string;
+  /** Concrete likes pack to suggest (from getComplementarySuggestion). */
+  suggestion: {
+    /** Full service key, e.g. "ig_likes" — used in the URL hint param + label. */
+    serviceKey: string;
+    /** Pack size, e.g. 100. */
+    qty: number;
+    /** Base price in cents, BEFORE the discount. */
+    basePriceCents: number;
+    /** Currency for the price display (defaults to "eur"). */
+    currency?: string;
+  };
+  /** Discount %: drives the FANO{N} code + crossed-out price. */
+  discountPct: number;
+  /** Custom subject set in admin (falls back to a default per locale). */
+  customSubject?: string;
+  locale?: string;
+}
+
+const CROSS_SELL_LIKES_COPY: Record<EmailLocale, {
+  defaultSubject: string;
+  hero: string;
+  intro: (handle: string, platformLabel: string) => string;
+  reassure: string;
+  suggestedTag: string;
+  wasLabel: string;
+  codeLabel: string;
+  cta: string;
+}> = {
+  fr: {
+    defaultSubject: "Tes followers méritent des likes 👀",
+    hero: "Et si on ajoutait des likes ?",
+    intro: (h, p) => `Tu as boosté les abonnés de ${h} sur ${p} — top ! Mais un compte avec plein d'abonnés et peu de likes, ça sonne faux. Quelques likes sur tes publications rendent tout ça crédible.`,
+    reassure: "Livraison progressive, 100&nbsp;% naturelle, sans mot de passe.",
+    suggestedTag: "Suggéré pour toi",
+    wasLabel: "au lieu de",
+    codeLabel: "Ton code",
+    cta: "Ajouter des likes -{pct}%",
+  },
+  en: {
+    defaultSubject: "Your followers deserve some likes 👀",
+    hero: "How about adding some likes?",
+    intro: (h, p) => `You boosted ${h}'s followers on ${p} — nice! But an account with lots of followers and few likes looks off. A few likes on your posts make it all believable.`,
+    reassure: "Gradual delivery, 100&nbsp;% natural, no password.",
+    suggestedTag: "Suggested for you",
+    wasLabel: "instead of",
+    codeLabel: "Your code",
+    cta: "Add likes -{pct}%",
+  },
+  es: {
+    defaultSubject: "Tus seguidores merecen likes 👀",
+    hero: "¿Y si añadimos likes?",
+    intro: (h, p) => `Impulsaste los seguidores de ${h} en ${p} — ¡genial! Pero una cuenta con muchos seguidores y pocos likes parece falsa. Unos likes en tus publicaciones lo hacen creíble.`,
+    reassure: "Entrega progresiva, 100&nbsp;% natural, sin contraseña.",
+    suggestedTag: "Sugerido para ti",
+    wasLabel: "en lugar de",
+    codeLabel: "Tu código",
+    cta: "Añadir likes -{pct}%",
+  },
+  pt: {
+    defaultSubject: "Os teus seguidores merecem likes 👀",
+    hero: "E se adicionássemos likes?",
+    intro: (h, p) => `Impulsionaste os seguidores de ${h} em ${p} — boa! Mas uma conta com muitos seguidores e poucos likes parece falsa. Alguns likes nas tuas publicações tornam tudo credível.`,
+    reassure: "Entrega progressiva, 100&nbsp;% natural, sem senha.",
+    suggestedTag: "Sugerido para ti",
+    wasLabel: "em vez de",
+    codeLabel: "O teu código",
+    cta: "Adicionar likes -{pct}%",
+  },
+  de: {
+    defaultSubject: "Deine Follower verdienen Likes 👀",
+    hero: "Wie wäre es mit ein paar Likes?",
+    intro: (h, p) => `Du hast die Follower von ${h} auf ${p} gepusht — top! Aber ein Konto mit vielen Followern und wenigen Likes wirkt unecht. Ein paar Likes auf deinen Beiträgen machen alles glaubwürdig.`,
+    reassure: "Schrittweise Lieferung, 100&nbsp;% natürlich, ohne Passwort.",
+    suggestedTag: "Für dich vorgeschlagen",
+    wasLabel: "statt",
+    codeLabel: "Dein Code",
+    cta: "Likes hinzufügen -{pct}%",
+  },
+  it: {
+    defaultSubject: "I tuoi follower meritano dei like 👀",
+    hero: "Che ne dici di aggiungere dei like?",
+    intro: (h, p) => `Hai potenziato i follower di ${h} su ${p} — ottimo! Ma un account con tanti follower e pochi like sembra finto. Qualche like sui tuoi post rende tutto credibile.`,
+    reassure: "Consegna progressiva, 100&nbsp;% naturale, senza password.",
+    suggestedTag: "Suggerito per te",
+    wasLabel: "invece di",
+    codeLabel: "Il tuo codice",
+    cta: "Aggiungi like -{pct}%",
+  },
+  tr: {
+    defaultSubject: "Takipçilerin biraz beğeniyi hak ediyor 👀",
+    hero: "Birkaç beğeni eklesek mi?",
+    intro: (h, p) => `${h} için ${p}'da takipçilerini artırdın — harika! Ama çok takipçisi olup az beğenisi olan bir hesap sahte görünür. Gönderilerine birkaç beğeni her şeyi inandırıcı yapar.`,
+    reassure: "Kademeli teslimat, %100 doğal, şifre gerekmez.",
+    suggestedTag: "Sana özel öneri",
+    wasLabel: "yerine",
+    codeLabel: "Kodun",
+    cta: "Beğeni ekle -{pct}%",
+  },
+};
+
+/**
+ * Post-purchase cross-sell email aimed at followers-only buyers: nudges them to
+ * add likes to their posts (social proof). Built around a concrete likes pack
+ * (`suggestion`) with a crossed-out base price → discounted price and a FANO{pct}
+ * code. The eligibility gating (followers-only cart, no prior likes purchase)
+ * lives in the cron — this function just renders + sends.
+ */
+export async function sendCrossSellLikesEmail(
+  p: CrossSellLikesParams,
+): Promise<{ ok: boolean; error?: string; id?: string; code?: string }> {
+  const resend = getResend();
+  if (!resend) return { ok: false, error: "Resend not configured" };
+
+  try {
+    const locale = normalizeEmailLocale(p.locale);
+    const copy = CROSS_SELL_LIKES_COPY[locale];
+    const platformLabel = PLATFORM_LABEL[p.platform] || p.platform;
+    const handle = p.username ? `@${p.username.replace(/^@/, "")}` : platformLabel;
+    const promoCode = p.discountPct > 0 ? `FANO${p.discountPct}` : "";
+    const currency = p.suggestion.currency || "eur";
+
+    const discountedCents = Math.round(p.suggestion.basePriceCents * (1 - p.discountPct / 100));
+    const priceNow = fmtPrice(discountedCents, currency, locale);
+    const priceWas = fmtPrice(p.suggestion.basePriceCents, currency, locale);
+    const likesLabel = localizedServiceLabel(p.suggestion.serviceKey, locale);
+    const productLabel = `${fmtQty(p.suggestion.qty)} ${likesLabel} ${platformLabel}`;
+
+    // CTA points at the platform page with the promo + a hint of which pack to
+    // pre-select. buildPlatformUrl already appends `?promo=` when a code exists.
+    const baseUrl = buildPlatformUrl(p.platform, locale, promoCode);
+    const sep = baseUrl.includes("?") ? "&" : "?";
+    const ctaUrl = `${baseUrl}${sep}suggested=${encodeURIComponent(p.suggestion.serviceKey)}`;
+
+    const rawSubject = (p.customSubject || "").trim() || copy.defaultSubject;
+    const subject = applyLifecyclePlaceholders(rawSubject, p.discountPct, promoCode, likesLabel.toLowerCase());
+    const cta = copy.cta.replace(/\{pct\}/g, String(p.discountPct));
+
+    const html = `<!DOCTYPE html>
+<html lang="${locale}">
+<head><meta charset="utf-8" /><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:0;background:#f8f6f1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f6f1;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding-bottom:24px;">
+          <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+            <img src="${APP_URL}/fanovera-logo.png" alt="Fanovera" width="140" height="auto" style="display:block;height:auto;max-height:42px;border:0;outline:none;" />
+          </a>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:18px;border:1px solid #e5e7eb;padding:36px 32px;">
+          <div style="font-size:44px;line-height:1;margin-bottom:12px;text-align:center;">❤️</div>
+          <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#111827;letter-spacing:-0.02em;text-align:center;">${escapeHtml(copy.hero)}</h1>
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.55;">${copy.intro(escapeHtml(handle), escapeHtml(platformLabel))}</p>
+
+          <!-- Likes pack suggestion card -->
+          <div style="background:#5260e6;background:linear-gradient(135deg,#5260e6 0%,#7c3aed 100%);border-radius:18px;padding:28px;color:#ffffff;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-bottom:6px;text-align:center;">
+              ${escapeHtml(copy.suggestedTag)}
+            </div>
+            <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.01em;text-align:center;margin-bottom:18px;line-height:1.25;">
+              ${escapeHtml(productLabel)}
+            </div>
+            <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:18px 20px;text-align:center;">
+              <div style="display:inline-block;text-align:left;">
+                <div style="font-size:13px;color:rgba(255,255,255,0.7);text-decoration:line-through;margin-bottom:2px;">${escapeHtml(copy.wasLabel)} ${escapeHtml(priceWas)}</div>
+                <div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;line-height:1;">${escapeHtml(priceNow)}</div>
+              </div>
+              ${promoCode ? `<div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:0.04em;">${escapeHtml(copy.codeLabel)} <span style="font-family:monospace;font-weight:700;color:#ffffff;letter-spacing:0.1em;">${escapeHtml(promoCode)}</span></div>` : ""}
+            </div>
+            <div style="text-align:center;margin-top:18px;">
+              <a href="${ctaUrl}" style="display:inline-block;background:#ffffff;color:#5260e6;text-decoration:none;font-weight:700;font-size:14px;padding:12px 24px;border-radius:10px;">${escapeHtml(cta)} →</a>
+            </div>
+          </div>
+
+          <p style="margin:18px 0 0;font-size:12px;color:#9ca3af;line-height:1.5;text-align:center;">${copy.reassure}</p>
+        </td></tr>
+        <tr><td style="padding:18px 8px 0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5;">
+          ${escapeHtml(LIFECYCLE_FOOTER[locale])}<br>
+          <a href="${APP_URL}" style="color:#6b7280;text-decoration:underline;">fanovera.com</a> · © Fanovera SAS ${new Date().getFullYear()}
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    const stripHtml = (s: string) => s.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
+    const text = `${copy.hero}
+
+${stripHtml(copy.intro(handle, platformLabel))}
+
+${productLabel}
+${stripHtml(copy.wasLabel)} ${priceWas} → ${priceNow}
+${promoCode ? `${stripHtml(copy.codeLabel)} : ${promoCode}\n` : ""}
+${cta}: ${ctaUrl}
+
+${stripHtml(copy.reassure)}
+
+—
+Fanovera · ${APP_URL}`;
+
+    const result = await resend.emails.send({
+      from: RESEND_FROM,
+      to: p.to,
+      subject,
+      html,
+      text,
+    });
+
+    if (result.error) {
+      console.error("[email] cross-sell likes Resend error:", result.error);
+      return { ok: false, error: result.error.message };
+    }
+    return { ok: true, id: result.data?.id, code: promoCode };
+  } catch (err) {
+    console.error("[email] sendCrossSellLikesEmail error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
 export interface MagicLinkParams {
   to: string;
   link: string;

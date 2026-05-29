@@ -10,7 +10,7 @@ import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import IgFAQ from "./components/IgFAQ";
 import IgFooter from "./components/IgFooter";
-import { PACKS, LIKES_PACKS, VIEWS_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct, defaultPackIndex } from "./data";
+import { PACKS, LIKES_PACKS, VIEWS_PACKS, REPOST_PACKS, type CountryId, type InstagramProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct, defaultPackIndex } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
@@ -56,6 +56,7 @@ export type IgMedia = {
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 const STATIC_LIKES_PACKS = LIKES_PACKS.map((pack) => ({ ...pack }));
 const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
+const STATIC_REPOST_PACKS = REPOST_PACKS.map((pack) => ({ ...pack }));
 
 export default function InstagramPageClient() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -63,7 +64,7 @@ export default function InstagramPageClient() {
   const search = useSearchParams();
   const initialProductType: InstagramProductType = (() => {
     const raw = (search?.get("product") || "").toLowerCase();
-    return raw === "likes" || raw === "views" ? (raw as InstagramProductType) : "followers";
+    return raw === "likes" || raw === "views" || raw === "reposts" ? (raw as InstagramProductType) : "followers";
   })();
   const [pack, setPack] = useState(() => defaultPackIndex(initialProductType));
   const [productType, setProductType] = useState<InstagramProductType>(initialProductType);
@@ -86,7 +87,8 @@ export default function InstagramPageClient() {
   const followersPricing = useApplyCurrencyPricing("ig_followers", PACKS, STATIC_PACKS);
   const likesPricing = useApplyCurrencyPricing("ig_likes", LIKES_PACKS, STATIC_LIKES_PACKS);
   const viewsPricing = useApplyCurrencyPricing("ig_views", VIEWS_PACKS, STATIC_VIEWS_PACKS);
-  const pricing = productType === "likes" ? likesPricing : productType === "views" ? viewsPricing : followersPricing;
+  const repostsPricing = useApplyCurrencyPricing("ig_reposts", REPOST_PACKS, STATIC_REPOST_PACKS);
+  const pricing = productType === "likes" ? likesPricing : productType === "views" ? viewsPricing : productType === "reposts" ? repostsPricing : followersPricing;
   const { canDisplayPricing, currency, experiment } = pricing;
   const activePacks = getPacksForProduct(productType);
 
@@ -117,7 +119,7 @@ export default function InstagramPageClient() {
   const amountCents = Math.round(total * 100);
   const emailValid = isValidCheckoutEmail(email);
   const cleanUsername = username.replace(/^@/, "").trim();
-  const isMediaProduct = productType === "likes" || productType === "views";
+  const isMediaProduct = productType === "likes" || productType === "views" || productType === "reposts";
   // Checkout gate is intentionally loose: any non-empty target lets the user
   // proceed. Strict-format checks still drive the live preview inside Step2
   // but never block payment.

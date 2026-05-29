@@ -20,6 +20,37 @@ async function sumInEur(rows: CurrencyRevenueRow[], field: "revenue" | "cost" = 
   return total;
 }
 
+// Stripe processing fee. We prefer the real fee captured per order
+// (orders.stripe_fee_cents, already in EUR). For orders predating that capture
+// (fee = 0), we fall back to Stripe's blended international card pricing so the
+// net profit isn't overstated. Tune here if the contract changes.
+const STRIPE_EST_PCT = 0.029;
+const STRIPE_EST_FIXED_CENTS = 25; // 0,25 € per transaction (EUR)
+
+type StripeFeeRow = {
+  currency: string | null;
+  fee_real: number; // SUM(stripe_fee_cents) — already EUR cents
+  revenue_no_fee: number; // SUM(total_cents) for orders missing a captured fee
+  count_no_fee: number; // # of orders missing a captured fee
+};
+
+/**
+ * Total Stripe fees in EUR cents for a set of (currency-grouped) rows:
+ * real captured fees + an estimate for orders that don't have one yet.
+ */
+async function sumStripeFeesEur(rows: StripeFeeRow[]): Promise<number> {
+  let total = 0;
+  for (const row of rows) {
+    total += Number(row.fee_real) || 0; // real fees are stored in EUR
+    const count = Number(row.count_no_fee) || 0;
+    if (count > 0) {
+      const revNoFeeEur = await convertCentsToEur(Number(row.revenue_no_fee) || 0, row.currency || "EUR");
+      total += Math.round(revNoFeeEur * STRIPE_EST_PCT) + count * STRIPE_EST_FIXED_CENTS;
+    }
+  }
+  return total;
+}
+
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
@@ -99,6 +130,8 @@ export async function GET(req: NextRequest) {
       peakHoursRes,
       servicePerfRaw,
       ordersPrevPeriodRes,
+      stripeFeesRes,
+      stripeFeesPrevRes,
     ] = await Promise.all([
       // Note: every date/hour aggregation is shifted to Europe/Paris (Fanovera
       // operates from France) so the "today" / "by day" / "peak hours" buckets
@@ -178,7 +211,10 @@ export async function GET(req: NextRequest) {
       sql`
         SELECT d.date::text AS date, o.currency,
           COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.total_cents ELSE 0 END), 0)::int AS revenue,
-          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.cost_cents ELSE 0 END), 0)::int AS cost
+          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.cost_cents ELSE 0 END), 0)::int AS cost,
+          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') THEN o.stripe_fee_cents ELSE 0 END), 0)::int AS fee_real,
+          COALESCE(SUM(CASE WHEN o.status IN ('paid','processing','delivered','partial','canceled') AND o.stripe_fee_cents = 0 THEN o.total_cents ELSE 0 END), 0)::int AS revenue_no_fee,
+          COUNT(*) FILTER (WHERE o.status IN ('paid','processing','delivered','partial','canceled') AND o.stripe_fee_cents = 0)::int AS count_no_fee
         FROM generate_series(${fromDate}::date, ${toDate}::date, '1 day') AS d(date)
         LEFT JOIN orders o ON (o.created_at AT TIME ZONE 'Europe/Paris')::date = d.date
           AND (${platform}::text IS NULL OR o.platform = ${platform})
@@ -256,6 +292,28 @@ export async function GET(req: NextRequest) {
           AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
           AND (${platform}::text IS NULL OR platform = ${platform})
       `,
+      sql`
+        SELECT currency,
+               COALESCE(SUM(stripe_fee_cents), 0)::int AS fee_real,
+               COALESCE(SUM(CASE WHEN stripe_fee_cents = 0 THEN total_cents ELSE 0 END), 0)::int AS revenue_no_fee,
+               COUNT(*) FILTER (WHERE stripe_fee_cents = 0)::int AS count_no_fee
+        FROM orders
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${fromDate}::date AND ${toDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
+        GROUP BY currency
+      `,
+      sql`
+        SELECT currency,
+               COALESCE(SUM(stripe_fee_cents), 0)::int AS fee_real,
+               COALESCE(SUM(CASE WHEN stripe_fee_cents = 0 THEN total_cents ELSE 0 END), 0)::int AS revenue_no_fee,
+               COUNT(*) FILTER (WHERE stripe_fee_cents = 0)::int AS count_no_fee
+        FROM orders
+        WHERE status IN ('paid','processing','delivered','partial','canceled')
+          AND (created_at AT TIME ZONE 'Europe/Paris')::date BETWEEN ${prevFromDate}::date AND ${prevToDate}::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
+        GROUP BY currency
+      `,
     ]);
 
     // Visitor counts depend on the product_page_visits table which is created
@@ -275,6 +333,47 @@ export async function GET(req: NextRequest) {
       console.warn("[analytics] product_page_visits unavailable:", visitErr);
     }
 
+    // Today's cost + refunds + Stripe fees (Europe/Paris), for the
+    // always-visible KPI strip. Sequential + fail-soft: a hiccup here shouldn't
+    // 500 the auth endpoint.
+    let costTodayByCurrency: CurrencyRevenueRow[] = [];
+    let refundsTodayByCurrency: CurrencyRevenueRow[] = [];
+    let stripeFeesTodayRows: StripeFeeRow[] = [];
+    try {
+      costTodayByCurrency = (await sql`
+        SELECT currency, COALESCE(SUM(cost_cents), 0)::int AS cost
+        FROM orders
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+          AND status IN ('paid','processing','delivered','partial','canceled')
+          AND (${platform}::text IS NULL OR platform = ${platform})
+        GROUP BY currency
+      `) as CurrencyRevenueRow[];
+      refundsTodayByCurrency = (await sql`
+        SELECT currency, COALESCE(SUM(refunded_amount_cents), 0)::int AS revenue
+        FROM orders
+        WHERE (refunded_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+          AND (${platform}::text IS NULL OR platform = ${platform})
+        GROUP BY currency
+      `) as CurrencyRevenueRow[];
+      // Same real-fee + estimate-fallback shape as the period query, scoped to today.
+      stripeFeesTodayRows = (await sql`
+        SELECT currency,
+               COALESCE(SUM(stripe_fee_cents), 0)::int AS fee_real,
+               COALESCE(SUM(CASE WHEN stripe_fee_cents = 0 THEN total_cents ELSE 0 END), 0)::int AS revenue_no_fee,
+               COUNT(*) FILTER (WHERE stripe_fee_cents = 0)::int AS count_no_fee
+        FROM orders
+        WHERE (created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+          AND status IN ('paid','processing','delivered','partial','canceled')
+          AND (${platform}::text IS NULL OR platform = ${platform})
+        GROUP BY currency
+      `) as StripeFeeRow[];
+    } catch (todayErr) {
+      console.warn("[analytics] today cost/refunds/fees unavailable:", todayErr);
+    }
+    const costToday = await sumInEur(costTodayByCurrency, "cost");
+    const refundsToday = await sumInEur(refundsTodayByCurrency, "revenue");
+    const stripeFeesToday = await sumStripeFeesEur(stripeFeesTodayRows);
+
     const totalRevenue = await sumInEur(revenueByCurrencyAll as CurrencyRevenueRow[], "revenue");
     const totalCost = await sumInEur(revenueByCurrencyAll as CurrencyRevenueRow[], "cost");
     const revenueToday = await sumInEur(revenueTodayByCurrency as CurrencyRevenueRow[], "revenue");
@@ -284,8 +383,12 @@ export async function GET(req: NextRequest) {
     // is selected we can't honestly attribute spend to it — zero out rather
     // than inflate the platform's cost with the whole network's ad budget.
     const adCosts = platform ? 0 : (Number(adCostsTotalRes[0]?.sum) || 0);
-    const profit = totalRevenue - totalCost - adCosts;
-    const prevProfit = prevRevenue - prevCost; // prior period ad cost not tracked separately by date here
+    // Stripe processing fees: real captured fee per order + estimate fallback
+    // for historical orders that predate fee capture. Subtracted from net profit.
+    const stripeFees = await sumStripeFeesEur(stripeFeesRes as StripeFeeRow[]);
+    const prevStripeFees = await sumStripeFeesEur(stripeFeesPrevRes as StripeFeeRow[]);
+    const profit = totalRevenue - totalCost - adCosts - stripeFees;
+    const prevProfit = prevRevenue - prevCost - prevStripeFees; // prior period ad cost not tracked separately by date here
     const margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
     const prevMargin = prevRevenue > 0 ? (prevProfit / prevRevenue) * 100 : 0;
 
@@ -325,17 +428,21 @@ export async function GET(req: NextRequest) {
     byCurrency.sort((a, b) => b.revenue - a.revenue);
 
     // 30-day series, collapsed to per-day EUR.
-    const dayMap = new Map<string, { date: string; revenue: number; cost: number }>();
-    for (const row of last30daysRaw as Array<{ date: string; currency: string | null; revenue: number; cost: number }>) {
+    const dayMap = new Map<string, { date: string; revenue: number; cost: number; stripeFees: number }>();
+    for (const row of last30daysRaw as Array<{ date: string; currency: string | null; revenue: number; cost: number; fee_real: number; revenue_no_fee: number; count_no_fee: number }>) {
       const cur = row.currency || "EUR";
       const eurRev = await convertCentsToEur(Number(row.revenue) || 0, cur);
       const eurCost = await convertCentsToEur(Number(row.cost) || 0, cur);
+      const eurFees = await sumStripeFeesEur([
+        { currency: cur, fee_real: Number(row.fee_real) || 0, revenue_no_fee: Number(row.revenue_no_fee) || 0, count_no_fee: Number(row.count_no_fee) || 0 },
+      ]);
       const existing = dayMap.get(row.date);
       if (existing) {
         existing.revenue += eurRev;
         existing.cost += eurCost;
+        existing.stripeFees += eurFees;
       } else {
-        dayMap.set(row.date, { date: row.date, revenue: eurRev, cost: eurCost });
+        dayMap.set(row.date, { date: row.date, revenue: eurRev, cost: eurCost, stripeFees: eurFees });
       }
     }
     const last30days = Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
@@ -453,10 +560,14 @@ export async function GET(req: NextRequest) {
       totalRevenue,
       totalCost,
       adCosts,
+      stripeFees,
       profit,
       margin,
       ordersToday: Number(ordersTodayRes[0].count),
       revenueToday,
+      costToday,
+      refundsToday,
+      stripeFeesToday,
       byPlatform: byPlatformWithShare,
       byCurrency,
       byStatus: byStatusRes,

@@ -8,7 +8,7 @@ import CouponField from "../../components/CouponField";
 import CheckoutUpsell, { type CheckoutUpsellItem } from "../../components/CheckoutUpsell";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, getPacksForProduct, getServiceForProduct, formatQty, fmtEuro, type CountryId, type InstagramProductType } from "../data";
+import { COUNTRIES, getPacksForProduct, getServiceForProduct, formatQty, fmtEuro, type CountryId, type InstagramProductType } from "../data";
 import type { IgProfile } from "../InstagramPageClient";
 import { useInstagramCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
@@ -42,7 +42,13 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
 
   const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
-  const subtotal = PACKS[pack].price;
+  // Use the pack ladder for the SELECTED product (followers/likes/views/reposts),
+  // not the hardcoded followers PACKS. Otherwise a likes/views/reposts order would
+  // send followers quantities/prices to the cart — wrong charge AND wrong SMM qty.
+  const packs = getPacksForProduct(productType);
+  const safePack = Math.min(Math.max(0, pack), packs.length - 1);
+  const selected = packs[safePack] ?? packs[0];
+  const subtotal = selected.price;
   const promo = calculatePromoPricing({
     subtotalCents: Math.round(subtotal * 100),
     promoCode: couponApplied ? coupon : "",
@@ -106,7 +112,7 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
                   <div style={{ marginTop: 4, fontSize: 12, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <span style={{ color: "var(--ink-2)" }}>{formatQty(profile.followersCount)}</span>
                     <span style={{ color: "var(--green)", fontWeight: 800 }}>→</span>
-                    <span style={{ color: "var(--green)", fontWeight: 800 }}>{formatQty(profile.followersCount + PACKS[pack].qty + PACKS[pack].bonus)}</span>
+                    <span style={{ color: "var(--green)", fontWeight: 800 }}>{formatQty(profile.followersCount + selected.qty + selected.bonus)}</span>
                     <span style={{ color: "var(--ink-3)" }}>{igCopy.step1.audience}</span>
                   </div>
                 )}
@@ -118,14 +124,14 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
 
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14 }}>
               <div>
-                <div style={{ fontWeight: 600 }}>{formatQty(PACKS[pack].qty)}</div>
+                <div style={{ fontWeight: 600 }}>{formatQty(selected.qty)}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{selectedCountry.name}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{fmtEuro(subtotal)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, color: "var(--green)", borderBottom: "1px dashed var(--line)" }}>
               <div>
-                <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} {t.included}</div>
+                <div style={{ fontWeight: 600 }}>+{formatQty(selected.bonus)} {t.included}</div>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{t.campaignCredit}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{t.free}</div>
@@ -169,11 +175,11 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
             </div>
             <div style={{ textAlign: "right", marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>
-                {fmtEuro(PACKS[pack].old)}
+                {fmtEuro(selected.old)}
               </div>
-              {PACKS[pack].old - total > 0.005 && (
+              {selected.old - total > 0.005 && (
                 <div style={{ fontSize: 13, color: "var(--ig-2)", fontWeight: 700, marginTop: 2 }}>
-                  {paymentCopy.youSaveToday(fmtEuro(PACKS[pack].old - total))}
+                  {paymentCopy.youSaveToday(fmtEuro(selected.old - total))}
                 </div>
               )}
             </div>
@@ -189,8 +195,8 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
                 cart={[
                   {
                     service: getServiceForProduct(productType),
-                    qty: PACKS[pack].qty,
-                    bonus: PACKS[pack].bonus,
+                    qty: selected.qty,
+                    bonus: selected.bonus,
                     country,
                     postUrl: postUrl.trim() || undefined,
                   },

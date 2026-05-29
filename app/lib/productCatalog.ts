@@ -51,6 +51,7 @@ export const ALL_PRICING_SERVICES = [
   "ig_followers",
   "ig_likes",
   "ig_views",
+  "ig_reposts",
   "tt_followers",
   "tt_likes",
   "tt_views",
@@ -63,6 +64,7 @@ export const ALL_PRICING_SERVICES = [
   "fb_likes",
   "li_followers",
   "x_followers",
+  "x_likes",
 ] as const;
 
 // Whitelist of valid (sub-)services per platform. Used to validate the cart's
@@ -70,7 +72,7 @@ export const ALL_PRICING_SERVICES = [
 // Without this, a buyer hand-crafting the request body could pick an arbitrary
 // pricing row (e.g. cheap tt_views row for an expensive tt_followers order).
 export const PLATFORM_SERVICES: Record<PlatformId, readonly string[]> = {
-  instagram: ["ig_followers", "ig_likes", "ig_views"],
+  instagram: ["ig_followers", "ig_likes", "ig_views", "ig_reposts"],
   tiktok: ["tt_followers", "tt_likes", "tt_views"],
   youtube: ["yt_views", "yt_subscribers", "yt_likes"],
   spotify: ["sp_streams", "sp_followers"],

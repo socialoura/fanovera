@@ -41,6 +41,7 @@ const sql = neon(process.env.DATABASE_URL);
 const FLOWS_SEED = [
   { key: "abandoned_cart",         group: "abandoned",     label_fr: "Panier abandonné (H+1)",       label_en: "Abandoned cart (H+1)",          delay: 1,    pct: 5,  subject_fr: "Tu as oublié quelque chose ?",  subject_en: "Did you forget something?",                sort: 10 },
   { key: "post_purchase_7d",       group: "post_purchase", label_fr: "Relance post-achat (J+7)",     label_en: "Post-purchase reminder (D+7)",  delay: 168,  pct: 10, subject_fr: "Tes followers tiennent bien ?", subject_en: "Are your followers still going strong?",   sort: 20 },
+  { key: "cross_sell_likes",       group: "crosssell_likes", label_fr: "Cross-sell likes (J+2)",     label_en: "Likes cross-sell (D+2)",        delay: 48,   pct: 15, subject_fr: "Tes followers méritent des likes 👀", subject_en: "Your followers deserve some likes 👀", sort: 25 },
   { key: "post_purchase_30d",      group: "post_purchase", label_fr: "Relance post-achat (J+30)",    label_en: "Post-purchase reminder (D+30)", delay: 720,  pct: 15, subject_fr: "On te recharge ?",              subject_en: "Time for a top-up?",                       sort: 30 },
   { key: "win_back_60d",           group: "winback",       label_fr: "Win-back (J+60)",              label_en: "Win-back (D+60)",               delay: 1440, pct: 20, subject_fr: "Ça fait un moment...",          subject_en: "It's been a while...",                     sort: 40 },
   { key: "win_back_90d",           group: "winback",       label_fr: "Win-back agressif (J+90)",     label_en: "Aggressive win-back (D+90)",    delay: 2160, pct: 25, subject_fr: "Reviens avec -{pct}%",          subject_en: "Come back with -{pct}%",                   sort: 50 },
@@ -81,7 +82,12 @@ async function main() {
   await sql`CREATE INDEX IF NOT EXISTS idx_email_flow_runs_email ON email_flow_runs(LOWER(email), sent_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_email_flow_runs_sent_at ON email_flow_runs(sent_at DESC)`;
 
-  console.log("→ Seeding 6 default flows (idempotent)...");
+  console.log("→ Adding conversion-tracking columns (idempotent)...");
+  await sql`ALTER TABLE email_flow_runs ADD COLUMN IF NOT EXISTS converted_order_id INTEGER`;
+  await sql`ALTER TABLE email_flow_runs ADD COLUMN IF NOT EXISTS converted_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE email_flow_runs ADD COLUMN IF NOT EXISTS converted_revenue_cents INTEGER`;
+
+  console.log("→ Seeding default flows (idempotent)...");
   for (const f of FLOWS_SEED) {
     await sql`
       INSERT INTO email_flows (key, group_key, label_fr, label_en, delay_hours, discount_pct, subject_fr, subject_en, sort_order)

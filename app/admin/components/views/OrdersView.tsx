@@ -3,6 +3,7 @@
 import { Fragment, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { Ic } from "../icons";
+import AdminModal, { type AdminModalConfig } from "../AdminModal";
 import type { PricingExperiment } from "@/app/lib/pricingExperiments";
 
 interface Order {
@@ -22,6 +23,7 @@ interface Order {
   margin_cents_eur: number;
   currency: string;
   status: string;
+  refunded_amount_cents?: number;
   followers_before: number;
   country: string | null;
   lang: string;
@@ -256,6 +258,7 @@ function OrderDetail({
   onCancelBf,
   onClearBf,
   onDeleteOrder,
+  onRefund,
   onProfileNotFound,
   onPrivateAccount,
   onRefillNotice,
@@ -286,6 +289,7 @@ function OrderDetail({
   onCancelBf: () => void;
   onClearBf: (orderId: number, cartIndex: number) => void;
   onDeleteOrder: (orderId: number) => void;
+  onRefund: (orderId: number) => void;
   onProfileNotFound: (orderId: number) => void;
   onPrivateAccount: (orderId: number) => void;
   onRefillNotice: (orderId: number) => void;
@@ -808,6 +812,27 @@ function OrderDetail({
           >
             {Ic.mail()} {profileNotFoundBusy ? "Envoi..." : "Relance fidélité"}
           </button>
+          {order.stripe_payment_intent_id && order.status !== "refunded" ? (
+            <button
+              type="button"
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); onRefund(order.id); }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.35)",
+                color: "#dc2626",
+                fontWeight: 700,
+                padding: "8px 14px",
+                fontSize: 12,
+              }}
+              title="Rembourse la commande via Stripe (total ou partiel) sans quitter l'admin."
+            >
+              {Ic.refresh()} Rembourser
+            </button>
+          ) : null}
         </div>
         <button
           type="button"
@@ -845,6 +870,7 @@ export default function OrdersView() {
   const [searchInput, setSearchInput] = useState("");
   const [bfSearch, setBfSearch] = useState("");
   const [bfSearchInput, setBfSearchInput] = useState("");
+  const [modal, setModal] = useState<AdminModalConfig | null>(null);
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingStatus, setEditingStatus] = useState<string>("");
@@ -1001,29 +1027,34 @@ export default function OrdersView() {
     );
   };
 
-  const handleRefillSmm = async (orderId: number) => {
-    const raw = window.prompt(
-      `Refill — relancer TOUTE la commande #${orderId} de zéro.\n\n` +
-      `Quel BulkFollows service ID utiliser ?\n` +
-      `(Re-commande chaque ligne du panier à sa quantité complète sur ce service, ` +
-      `en sous-commandes neuves. L'ancienne livraison n'est pas écrasée.)`,
-    );
-    if (raw === null) return; // user canceled
-    const n = Number(raw.trim());
-    if (!Number.isFinite(n) || n <= 0) {
-      setSmmMessage({ kind: "error", text: "Service ID invalide." });
-      return;
-    }
-    await callSmmEndpoint(
-      "/api/admin/orders/refill-smm",
-      { orderId, serviceId: n },
-      (data) => {
-        const summary = (data?.summary || {}) as Record<string, number>;
-        const placed = summary.placed ?? 0;
-        const failed = summary.failed ?? 0;
-        return `Refill lancé sur le service #${n} : ${placed} sous-commande(s) relancée(s), ${failed} en erreur.`;
+  const handleRefillSmm = (orderId: number) => {
+    setModal({
+      title: `Refill — commande #${orderId}`,
+      message:
+        "Relance TOUTE la commande de zéro : re-commande chaque ligne du panier à sa quantité complète sur le service ci-dessous, en sous-commandes neuves. L'ancienne livraison n'est pas écrasée.",
+      input: {
+        label: "BulkFollows service ID",
+        placeholder: "ex. 13667",
+        validate: (v) => {
+          const n = Number(v);
+          return Number.isFinite(n) && n > 0 ? null : "Service ID invalide.";
+        },
       },
-    );
+      confirmLabel: "Lancer le refill",
+      onConfirm: async (v) => {
+        const n = Number(v);
+        await callSmmEndpoint(
+          "/api/admin/orders/refill-smm",
+          { orderId, serviceId: n },
+          (data) => {
+            const summary = (data?.summary || {}) as Record<string, number>;
+            const placed = summary.placed ?? 0;
+            const failed = summary.failed ?? 0;
+            return `Refill lancé sur le service #${n} : ${placed} sous-commande(s) relancée(s), ${failed} en erreur.`;
+          },
+        );
+      },
+    });
   };
 
   const handleRetrySub = async (orderId: number, cartIndex: number, currentServiceId: number) => {
@@ -1153,26 +1184,88 @@ export default function OrdersView() {
     );
   };
 
-  const handleDeleteOrder = async (orderId: number) => {
-    if (!confirm(`Supprimer définitivement la commande #${orderId} ? Cette action est irréversible.`)) return;
-    setSaving(true);
-    const token = localStorage.getItem("admin_pw") || "";
-    try {
-      const res = await fetch(`/api/admin/orders?id=${orderId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-      setExpandedId(null);
-      await fetchOrders();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Erreur lors de la suppression");
-    } finally {
-      setSaving(false);
-    }
+  const handleRefund = (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const total = Number(order.total_cents) || 0;
+    const already = Number(order.refunded_amount_cents) || 0;
+    const remaining = Math.max(0, total - already);
+    const currency = String(order.currency || "EUR").toUpperCase();
+    const remainingMajor = (remaining / 100).toFixed(2);
+    const parse = (v: string) => Number(v.replace(",", ".").trim());
+
+    setModal({
+      title: `Rembourser la commande #${orderId}`,
+      message:
+        `Remboursement via Stripe. Restant remboursable : ${remainingMajor} ${currency}.\n` +
+        `Laisse le montant complet pour un remboursement total, ou réduis-le pour un partiel.`,
+      input: {
+        label: `Montant à rembourser (${currency})`,
+        defaultValue: remainingMajor,
+        validate: (v) => {
+          const n = parse(v);
+          if (!Number.isFinite(n) || n <= 0) return "Montant invalide.";
+          if (Math.round(n * 100) > remaining) return `Maximum ${remainingMajor} ${currency}.`;
+          return null;
+        },
+      },
+      confirmLabel: "Rembourser",
+      danger: true,
+      onConfirm: async (v) => {
+        const amountCents = Math.round(parse(v) * 100);
+        setSaving(true);
+        setSmmMessage(null);
+        const token = localStorage.getItem("admin_pw") || "";
+        try {
+          const res = await fetch("/api/admin/orders/refund", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ orderId, amountCents }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+          const refunded = (Number(data.refundedNow) || 0) / 100;
+          setSmmMessage({
+            kind: "info",
+            text: `Remboursé ${refunded.toFixed(2)} ${currency}${data.fullyRefunded ? " (total)" : " (partiel)"}.`,
+          });
+          await fetchOrders();
+        } catch (err) {
+          setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors du remboursement" });
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  };
+
+  const handleDeleteOrder = (orderId: number) => {
+    setModal({
+      title: `Supprimer la commande #${orderId} ?`,
+      message: "Cette action est irréversible — la commande et ses emails programmés seront définitivement supprimés.",
+      confirmLabel: "Supprimer",
+      danger: true,
+      onConfirm: async () => {
+        setSaving(true);
+        const token = localStorage.getItem("admin_pw") || "";
+        try {
+          const res = await fetch(`/api/admin/orders?id=${orderId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+          setExpandedId(null);
+          await fetchOrders();
+        } catch (err: unknown) {
+          setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de la suppression" });
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
   };
 
   const handlePrivateAccount = async (orderId: number) => {
@@ -1322,6 +1415,7 @@ export default function OrdersView() {
 
   return (
     <div>
+      <AdminModal config={modal} onClose={() => setModal(null)} />
       {actionRequired > 0 && (
         <div
           style={{
@@ -1391,6 +1485,7 @@ export default function OrdersView() {
           {(
             [
               ["all", "Tous"],
+              ["needs_action", "À traiter"],
               ["pending", "Pending"],
               ["paid", "Paid"],
               ["processing", "En cours"],
@@ -1628,6 +1723,7 @@ export default function OrdersView() {
                             onCancelBf={handleCancelBf}
                             onClearBf={handleClearBf}
                             onDeleteOrder={handleDeleteOrder}
+                            onRefund={handleRefund}
                             onProfileNotFound={handleProfileNotFound}
                             onPrivateAccount={handlePrivateAccount}
                             onRefillNotice={handleRefillNotice}

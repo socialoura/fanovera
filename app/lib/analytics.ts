@@ -31,6 +31,10 @@ export function currentAttributionProperties(): AnalyticsProperties {
     msclkid: params.get("msclkid"),
     fbclid: params.get("fbclid"),
     entry_surface: params.get("entry_surface"),
+    // Matched keyword + match type from Google Ads ValueTrack
+    // ({keyword}/{matchtype}) in the ad final-URL suffix → exact keyword LTV.
+    kw: params.get("kw"),
+    mt: params.get("mt"),
   };
 }
 

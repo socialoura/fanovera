@@ -6,6 +6,9 @@ interface Row {
   /** Present only when groupBy = "adgroup" */
   adGroupId?: string;
   adGroupName?: string;
+  /** Present only when groupBy = "keyword" */
+  keyword?: string;
+  matchType?: string;
   campaignId: string;
   campaignName: string;
   costCents: number;
@@ -22,7 +25,7 @@ interface Row {
   cvr: number | null;
 }
 
-type GroupBy = "campaign" | "adgroup";
+type GroupBy = "campaign" | "adgroup" | "keyword";
 
 interface RoasResponse {
   days: number;
@@ -40,9 +43,11 @@ interface RoasResponse {
   };
   diagnostics: {
     checkoutWithGclid: number;
+    checkoutWithKeyword: number;
     gclidMapSize: number;
     lastSyncedAt: string | null;
     lastSyncedAtAdGroup: string | null;
+    lastSyncedAtKeyword: string | null;
   };
 }
 
@@ -141,6 +146,7 @@ export default function AdsROASView() {
 
   const t = data.totals;
   const isAdGroup = data.groupBy === "adgroup";
+  const isKeyword = data.groupBy === "keyword";
 
   const sortBtn = (key: SortKey, label: string) => (
     <button
@@ -192,6 +198,13 @@ export default function AdsROASView() {
         >
           Groupe d&apos;annonces
         </button>
+        <button
+          type="button"
+          className={"ads-gran-btn" + (groupBy === "keyword" ? " active" : "")}
+          onClick={() => setGroupBy("keyword")}
+        >
+          Mot-clé
+        </button>
       </div>
 
       {!data.configured && (
@@ -239,7 +252,7 @@ export default function AdsROASView() {
         <table className="ads-table">
           <thead>
             <tr>
-              <th>{isAdGroup ? "Groupe d'annonces · Campagne" : "Campagne"}</th>
+              <th>{isKeyword ? "Mot-clé · Campagne" : isAdGroup ? "Groupe d'annonces · Campagne" : "Campagne"}</th>
               <th style={{ textAlign: "right" }}>Dépense</th>
               <th style={{ textAlign: "right" }}>Clics</th>
               <th style={{ textAlign: "right" }}>Commandes</th>
@@ -259,13 +272,21 @@ export default function AdsROASView() {
               </tr>
             ) : (
               sorted.map((r) => {
-                const rowId = isAdGroup ? r.adGroupId || r.campaignId : r.campaignId;
-                const primaryName = isAdGroup
-                  ? r.adGroupName || `Ad group ${r.adGroupId}`
-                  : r.campaignName || `Campagne ${r.campaignId}`;
-                const secondary = isAdGroup
-                  ? `${r.campaignName || `Campagne ${r.campaignId}`} · ${r.adGroupId}`
-                  : r.campaignId;
+                const rowId = isKeyword
+                  ? r.keyword || r.campaignId
+                  : isAdGroup
+                    ? r.adGroupId || r.campaignId
+                    : r.campaignId;
+                const primaryName = isKeyword
+                  ? r.keyword || "(mot-clé inconnu)"
+                  : isAdGroup
+                    ? r.adGroupName || `Ad group ${r.adGroupId}`
+                    : r.campaignName || `Campagne ${r.campaignId}`;
+                const secondary = isKeyword
+                  ? `${r.matchType ? `${r.matchType} · ` : ""}${r.campaignName || `Campagne ${r.campaignId}`}`
+                  : isAdGroup
+                    ? `${r.campaignName || `Campagne ${r.campaignId}`} · ${r.adGroupId}`
+                    : r.campaignId;
                 return (
                   <tr key={rowId}>
                     <td>
@@ -340,13 +361,21 @@ export default function AdsROASView() {
 
       <div className="ads-foot">
         <div>
-          Diagnostic : {data.diagnostics.checkoutWithGclid} checkouts avec gclid · {data.diagnostics.gclidMapSize} clics mappés ·
-          {" "}
-          {(isAdGroup ? data.diagnostics.lastSyncedAtAdGroup : data.diagnostics.lastSyncedAt)
-            ? `dernier sync ${new Date(
-                (isAdGroup ? data.diagnostics.lastSyncedAtAdGroup : data.diagnostics.lastSyncedAt) as string,
-              ).toLocaleString("fr-FR")}`
-            : "jamais synchronisé"}
+          Diagnostic :{" "}
+          {isKeyword
+            ? `${data.diagnostics.checkoutWithKeyword} checkouts avec mot-clé`
+            : `${data.diagnostics.checkoutWithGclid} checkouts avec gclid · ${data.diagnostics.gclidMapSize} clics mappés`}
+          {" · "}
+          {(() => {
+            const lastSync = isKeyword
+              ? data.diagnostics.lastSyncedAtKeyword
+              : isAdGroup
+                ? data.diagnostics.lastSyncedAtAdGroup
+                : data.diagnostics.lastSyncedAt;
+            return lastSync
+              ? `dernier sync ${new Date(lastSync).toLocaleString("fr-FR")}`
+              : "jamais synchronisé";
+          })()}
         </div>
         <div>{data.days} jours</div>
       </div>

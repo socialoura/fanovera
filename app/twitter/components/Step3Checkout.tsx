@@ -8,7 +8,7 @@ import CouponField from "../../components/CouponField";
 import CheckoutUpsell, { type CheckoutUpsellItem } from "../../components/CheckoutUpsell";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, PACKS, formatQty, fmtEuro, type CountryId } from "../data";
+import { COUNTRIES, formatQty, fmtEuro, type CountryId, type XProductType, getPacksForProduct, getServiceForProduct } from "../data";
 import type { XProfile } from "./Step2Username";
 import { useXCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
@@ -21,14 +21,16 @@ type Props = {
   country: CountryId;
   pack: number;
   username: string;
+  postUrl?: string;
   email: string;
   profile: XProfile | null;
   clientSecret?: string | null;
   onBack: () => void;
   onBackToPacks: () => void;
+  productType?: XProductType;
 };
 
-export default function Step3Checkout({ country, pack, username, email, profile, clientSecret, onBack, onBackToPacks }: Props) {
+export default function Step3Checkout({ country, pack, username, postUrl = "", email, profile, clientSecret, onBack, onBackToPacks, productType = "followers" }: Props) {
   const t = useXCopy().step3;
   const { locale } = useI18n();
   const { currency } = useCurrencyPreference();
@@ -38,7 +40,12 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
   const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
-  const subtotal = PACKS[pack].price;
+  // Pack ladder for the SELECTED product (followers/likes) — not the hardcoded
+  // followers PACKS, which would send followers qty/price for a likes order.
+  const packs = getPacksForProduct(productType);
+  const safePack = Math.min(Math.max(0, pack), packs.length - 1);
+  const selected = packs[safePack] ?? packs[0];
+  const subtotal = selected.price;
   const promo = calculatePromoPricing({
     subtotalCents: Math.round(subtotal * 100),
     promoCode: couponApplied ? coupon : "",
@@ -52,6 +59,8 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const canUsePrefetchedSecret = promo.discountCents === 0 && upsellCents === 0;
 
   const clean = username.replace(/^@/, "").trim();
+  const isMediaProduct = productType === "likes" || productType === "retweets";
+  const recipientLabel = isMediaProduct ? (postUrl.trim() || "tweet") : (clean ? "@" + clean : "@votrepseudo");
   const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
   return (
@@ -93,7 +102,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: "var(--ink-3)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.recipient}</div>
                 <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {clean ? "@" + clean : "@votrepseudo"}
+                  {recipientLabel}
                 </div>
               </div>
               <button onClick={onBack} style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, background: "white", borderRadius: 999, border: "1px solid var(--line)", cursor: "pointer" }}>
@@ -103,14 +112,14 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14 }}>
               <div>
-                <div style={{ fontWeight: 600 }}>{formatQty(PACKS[pack].qty)}</div>
+                <div style={{ fontWeight: 600 }}>{formatQty(selected.qty)}</div>
                 <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{selectedCountry.flag} {selectedCountry.name}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{fmtEuro(subtotal)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14, color: "var(--green)", borderBottom: "1px dashed var(--line)" }}>
               <div>
-                <div style={{ fontWeight: 600 }}>+{formatQty(PACKS[pack].bonus)} {t.included}</div>
+                <div style={{ fontWeight: 600 }}>+{formatQty(selected.bonus)} {t.included}</div>
                 <div style={{ fontSize: 12, opacity: 0.8 }}>{t.campaignCredit}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{t.free}</div>
@@ -141,7 +150,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
 
             <CheckoutUpsell
               platform="twitter"
-              baseService="followers"
+              baseService={productType}
               locale={locale}
               accentColor="var(--x-ink)"
               currency={currency}
@@ -156,11 +165,11 @@ export default function Step3Checkout({ country, pack, username, email, profile,
             </div>
             <div style={{ textAlign: "right", marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "line-through" }}>
-                {fmtEuro(PACKS[pack].old)}
+                {fmtEuro(selected.old)}
               </div>
-              {PACKS[pack].old - total > 0.005 && (
+              {selected.old - total > 0.005 && (
                 <div style={{ fontSize: 13, color: "var(--x-ink)", fontWeight: 700, marginTop: 2 }}>
-                  {paymentCopy.youSaveToday(fmtEuro(PACKS[pack].old - total))}
+                  {paymentCopy.youSaveToday(fmtEuro(selected.old - total))}
                 </div>
               )}
             </div>
@@ -174,7 +183,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
                 platform="twitter"
                 brandColor="var(--x-ink)"
                 cart={[
-                  { service: "x_followers", qty: PACKS[pack].qty, bonus: PACKS[pack].bonus, country },
+                  { service: getServiceForProduct(productType), qty: selected.qty, bonus: selected.bonus, country, postUrl: postUrl.trim() || undefined },
                   ...(upsell ? [{ service: upsell.service, qty: upsell.qty, upsell: true, upsellId: upsell.id, priceCents: upsell.price_cents }] : []),
                 ]}
                 promoCode={promoCode}

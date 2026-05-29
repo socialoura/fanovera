@@ -54,6 +54,22 @@ export type SearchTermCostRow = {
   conversionsValue: number;
 };
 
+export type KeywordCostRow = {
+  date: string;
+  campaignId: string;
+  campaignName: string;
+  adGroupId: string;
+  adGroupName: string;
+  criterionId: string;
+  keywordText: string;
+  matchType: string;
+  costCents: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+  conversionsValue: number;
+};
+
 type GoogleAdsConfig = {
   developerToken: string;
   clientId: string;
@@ -354,6 +370,90 @@ export async function fetchSearchTermCosts(daysBack: number): Promise<SearchTerm
     return out;
   } catch (err) {
     console.error("[googleAdsClient] fetchSearchTermCosts failed:", describeError(err));
+    return [];
+  }
+}
+
+/**
+ * Pull cost / clicks per (keyword, ad_group, date) from keyword_view. Unlike
+ * search terms, the bidded keyword text is exposed to ValueTrack ({keyword}),
+ * so this cost side can be joined to checkout_payloads.keyword for exact
+ * per-keyword LTV ROAS.
+ *
+ * match_type comes back as an enum number/string (EXACT/PHRASE/BROAD); we
+ * stringify whatever the API returns and normalise downstream.
+ */
+export async function fetchKeywordCosts(daysBack: number): Promise<KeywordCostRow[]> {
+  const config = readConfig();
+  if (!config) {
+    console.warn("[googleAdsClient] env not configured — skipping fetchKeywordCosts");
+    return [];
+  }
+  const customer = (await getCustomer(config)) as
+    | { query: (gaql: string) => Promise<Array<Record<string, unknown>>> }
+    | null;
+  if (!customer) return [];
+
+  const days = Math.max(1, Math.min(90, Math.floor(daysBack)));
+  const gaql = `
+    SELECT
+      campaign.id,
+      campaign.name,
+      ad_group.id,
+      ad_group.name,
+      ad_group_criterion.criterion_id,
+      ad_group_criterion.keyword.text,
+      ad_group_criterion.keyword.match_type,
+      segments.date,
+      metrics.cost_micros,
+      metrics.clicks,
+      metrics.impressions,
+      metrics.conversions,
+      metrics.conversions_value
+    FROM keyword_view
+    WHERE segments.date DURING LAST_${days}_DAYS
+  `;
+
+  try {
+    const rows = await customer.query(gaql);
+    const out: KeywordCostRow[] = [];
+    for (const r of rows) {
+      const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
+      const adGroup = r.ad_group as { id?: string | number; name?: string } | undefined;
+      const criterion = r.ad_group_criterion as
+        | { criterion_id?: string | number; keyword?: { text?: string; match_type?: string | number } }
+        | undefined;
+      const segments = r.segments as { date?: string } | undefined;
+      const metrics = r.metrics as
+        | {
+            cost_micros?: number | string;
+            clicks?: number | string;
+            impressions?: number | string;
+            conversions?: number | string;
+            conversions_value?: number | string;
+          }
+        | undefined;
+      const keywordText = (criterion?.keyword?.text || "").trim().slice(0, 400);
+      if (!campaign?.id || !adGroup?.id || !criterion?.criterion_id || !segments?.date || !keywordText) continue;
+      out.push({
+        date: isoDate(segments.date),
+        campaignId: String(campaign.id),
+        campaignName: campaign.name || "",
+        adGroupId: String(adGroup.id),
+        adGroupName: adGroup.name || "",
+        criterionId: String(criterion.criterion_id),
+        keywordText,
+        matchType: String(criterion?.keyword?.match_type ?? "").slice(0, 20),
+        costCents: microsToCents(metrics?.cost_micros),
+        clicks: Number(metrics?.clicks) || 0,
+        impressions: Number(metrics?.impressions) || 0,
+        conversions: Number(metrics?.conversions) || 0,
+        conversionsValue: Number(metrics?.conversions_value) || 0,
+      });
+    }
+    return out;
+  } catch (err) {
+    console.error("[googleAdsClient] fetchKeywordCosts failed:", describeError(err));
     return [];
   }
 }

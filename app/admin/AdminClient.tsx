@@ -19,11 +19,36 @@ import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PricingExperimentsView from "./components/views/PricingExperimentsView";
 import EmailFlowsView from "./components/views/EmailFlowsView";
+import ViewErrorBoundary from "./components/ViewErrorBoundary";
+
+/** Below this BulkFollows balance (USD) the sidebar flags it red — at 0 every
+ * delivery silently fails, so we want it impossible to miss. */
+const LOW_BALANCE_THRESHOLD = 200;
+
+/** EUR cents → "12,34 €" (FR formatting). */
+function fmtEur(cents: number): string {
+  return ((Number(cents) || 0) / 100).toLocaleString("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  });
+}
 
 type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "combos" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
+  revenueToday?: number;
+  costToday?: number;
+  refundsToday?: number;
+  stripeFeesToday?: number;
+};
+
+type TodayKpis = {
+  orders: number;
+  revenue: number;
+  cost: number;
+  refunds: number;
+  stripeFees: number;
 };
 
 const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string }[] = [
@@ -54,8 +79,12 @@ export default function AdminClient() {
   const [authError, setAuthError] = useState("");
   const [ordersToday, setOrdersToday] = useState(0);
   const [pendingSupport, setPendingSupport] = useState(0);
+  const [bfBalance, setBfBalance] = useState<number | null>(null);
+  const [today, setToday] = useState<TodayKpis | null>(null);
   const meta = NAV.find((n) => n.id === view)!;
 
+  // Poll support inbox count. Deps are [authorized] only — keying on `view`
+  // would tear down and recreate the interval on every tab switch.
   useEffect(() => {
     if (!authorized) return;
     let cancelled = false;
@@ -72,7 +101,44 @@ export default function AdminClient() {
     load();
     const id = window.setInterval(load, 30_000);
     return () => { cancelled = true; window.clearInterval(id); };
-  }, [authorized, view]);
+  }, [authorized]);
+
+  // Keep the orders-today badge (B3) and the BulkFollows balance (U1) fresh —
+  // both go stale otherwise (ordersToday was only set at login).
+  useEffect(() => {
+    if (!authorized) return;
+    let cancelled = false;
+    const token = () => localStorage.getItem("admin_pw") || "";
+    const load = async () => {
+      try {
+        const [analyticsRes, smmRes] = await Promise.all([
+          fetch("/api/admin/analytics", { headers: { Authorization: `Bearer ${token()}` } }),
+          fetch("/api/admin/smm", { headers: { Authorization: `Bearer ${token()}` } }),
+        ]);
+        if (analyticsRes.ok) {
+          const data = (await analyticsRes.json()) as AdminAnalyticsSummary;
+          if (!cancelled) {
+            setOrdersToday(Number(data.ordersToday) || 0);
+            setToday({
+              orders: Number(data.ordersToday) || 0,
+              revenue: Number(data.revenueToday) || 0,
+              cost: Number(data.costToday) || 0,
+              refunds: Number(data.refundsToday) || 0,
+              stripeFees: Number(data.stripeFeesToday) || 0,
+            });
+          }
+        }
+        if (smmRes.ok) {
+          const data = (await smmRes.json()) as { balance?: string | number | null };
+          const bal = data?.balance == null ? null : Number(data.balance);
+          if (!cancelled) setBfBalance(Number.isFinite(bal as number) ? (bal as number) : null);
+        }
+      } catch { /* ignore */ }
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [authorized]);
 
   useEffect(() => {
     const saved = localStorage.getItem("admin_pw") || "";
@@ -214,6 +280,27 @@ export default function AdminClient() {
           </button>
         ))}
 
+        {bfBalance !== null ? (
+          <button
+            type="button"
+            className="nav-item"
+            onClick={() => setView("smm")}
+            title="Solde BulkFollows — clique pour ouvrir l'onglet SMM. Sous le seuil, tes livraisons risquent d'échouer."
+            style={{
+              marginTop: "auto",
+              justifyContent: "space-between",
+              color: bfBalance < LOW_BALANCE_THRESHOLD ? "#fca5a5" : undefined,
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              {Ic.zap()} Solde BF
+            </span>
+            <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
+              {bfBalance < LOW_BALANCE_THRESHOLD ? "⚠️ " : ""}${bfBalance.toFixed(2)}
+            </span>
+          </button>
+        ) : null}
+
         <div className="sidebar-foot">
           <div className="avatar">SK</div>
           <div className="who">
@@ -262,23 +349,62 @@ export default function AdminClient() {
         </header>
 
         <div className="page">
-          {view === "analytics" && <AnalyticsView />}
-          {view === "cohorts" && <CohortsView />}
-          {view === "sources" && <SourcesView />}
-          {view === "adsRoas" && <AdsROASView />}
-          {view === "searchTerms" && <SearchTermsView />}
-          {view === "adsCohorts" && <AdsCohortsView />}
-          {view === "orders" && <OrdersView />}
-          {view === "recovery" && <RecoveryView />}
-          {view === "pricing" && <PricingView />}
-          {view === "abPricing" && <PricingExperimentsView />}
-          {view === "combos" && <CombosView />}
-          {view === "upsells" && <UpsellsView />}
-          {view === "smm" && <SmmView />}
-          {view === "i18n" && <I18nSyncView />}
-          {view === "marketing" && <MarketingModeView />}
-          {view === "emails" && <EmailFlowsView />}
-          {view === "support" && <SupportView />}
+          {today ? (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              {([
+                ["Aujourd'hui", `${today.orders}`, "cmd", false],
+                ["CA", fmtEur(today.revenue), "", false],
+                ["Coût BF", fmtEur(today.cost), "", false],
+                ["Frais Stripe", fmtEur(today.stripeFees), "", false],
+                ["Marge", fmtEur(today.revenue - today.cost - today.stripeFees - today.refunds), "", today.revenue - today.cost - today.stripeFees - today.refunds < 0],
+                ["Remboursé", fmtEur(today.refunds), "", today.refunds > 0],
+              ] as const).map(([label, value, suffix, warn]) => (
+                <div
+                  key={label}
+                  style={{
+                    flex: "1 1 120px",
+                    background: "var(--a-surface, #fff)",
+                    border: "1px solid var(--a-line, #e5e7eb)",
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                  }}
+                >
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--a-ink-3, #9ca3af)" }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: warn ? "#dc2626" : "var(--a-ink, #111827)", fontVariantNumeric: "tabular-nums" }}>
+                    {value}{suffix ? <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-ink-3, #9ca3af)", marginLeft: 4 }}>{suffix}</span> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <ViewErrorBoundary key={view}>
+            {view === "analytics" && <AnalyticsView />}
+            {view === "cohorts" && <CohortsView />}
+            {view === "sources" && <SourcesView />}
+            {view === "adsRoas" && <AdsROASView />}
+            {view === "searchTerms" && <SearchTermsView />}
+            {view === "adsCohorts" && <AdsCohortsView />}
+            {view === "orders" && <OrdersView />}
+            {view === "recovery" && <RecoveryView />}
+            {view === "pricing" && <PricingView />}
+            {view === "abPricing" && <PricingExperimentsView />}
+            {view === "combos" && <CombosView />}
+            {view === "upsells" && <UpsellsView />}
+            {view === "smm" && <SmmView />}
+            {view === "i18n" && <I18nSyncView />}
+            {view === "marketing" && <MarketingModeView />}
+            {view === "emails" && <EmailFlowsView />}
+            {view === "support" && <SupportView />}
+          </ViewErrorBoundary>
         </div>
       </main>
     </div>

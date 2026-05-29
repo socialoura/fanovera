@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Ic } from "../icons";
+import NetIcon from "../../../components/NetIcon";
+import type { NetworkId } from "../../../lib/networks";
 
 interface Upsell {
   id: number;
@@ -23,6 +25,13 @@ interface Upsell {
   price_cents_chf: number | null;
   price_cents_mxn: number | null;
   price_cents_sek: number | null;
+}
+
+interface UpsellStat {
+  eligible: number;
+  taken: number;
+  attachRate: number | null;
+  revenueCents: number;
 }
 
 // USD-based fallback rates (mirror of fxRates.ts FALLBACK_USD_RATES). Used
@@ -49,11 +58,11 @@ const PLATFORM_CATALOG: Record<
   string,
   { emoji: string; label: string; accent: string; kinds: string[] }
 > = {
-  instagram: { emoji: "📷", label: "Instagram", accent: "#d6296e", kinds: ["followers", "likes", "views"] },
+  instagram: { emoji: "📷", label: "Instagram", accent: "#d6296e", kinds: ["followers", "likes", "views", "reposts"] },
   tiktok:    { emoji: "🎵", label: "TikTok",    accent: "#fe2c55", kinds: ["followers", "likes", "views"] },
   youtube:   { emoji: "▶️", label: "YouTube",   accent: "#ff0000", kinds: ["views", "subscribers"] },
   spotify:   { emoji: "🎧", label: "Spotify",   accent: "#1db954", kinds: ["streams", "followers"] },
-  twitter:   { emoji: "𝕏",  label: "Twitter / X", accent: "#000000", kinds: ["followers"] },
+  twitter:   { emoji: "𝕏",  label: "Twitter / X", accent: "#000000", kinds: ["followers", "likes", "retweets"] },
   twitch:    { emoji: "🎮", label: "Twitch",    accent: "#9146ff", kinds: ["followers", "ai_viewers"] },
   linkedin:  { emoji: "💼", label: "LinkedIn",  accent: "#0a66c2", kinds: ["followers"] },
   facebook:  { emoji: "👍", label: "Facebook",  accent: "#1877f2", kinds: ["followers"] },
@@ -67,15 +76,17 @@ const KIND_LABEL: Record<string, string> = {
   subscribers: "Abonnés",
   streams: "Streams",
   ai_viewers: "Live viewers (AI)",
+  retweets: "Retweets",
+  reposts: "Reposts",
 };
 
 // Maps (platform + kind) → canonical SMM service code stored in DB.
 const SERVICE_CODE: Record<string, Record<string, string>> = {
-  instagram: { followers: "ig_followers", likes: "ig_likes", views: "ig_views" },
+  instagram: { followers: "ig_followers", likes: "ig_likes", views: "ig_views", reposts: "ig_reposts" },
   tiktok:    { followers: "tt_followers", likes: "tt_likes", views: "tt_views" },
   youtube:   { views: "yt_views", subscribers: "yt_subscribers" },
   spotify:   { streams: "sp_streams", followers: "sp_followers" },
-  twitter:   { followers: "x_followers" },
+  twitter:   { followers: "x_followers", likes: "x_likes", retweets: "x_retweets" },
   twitch:    { followers: "tw_followers", ai_viewers: "tw_live_viewers" },
   linkedin:  { followers: "li_followers" },
   facebook:  { followers: "fb_likes" }, // Facebook "page like" = follower equivalent
@@ -103,6 +114,8 @@ function suggestLabel(kind: string, qty: number, locale: "fr" | "en") {
     subscribers: "abonnés",
     streams: "streams",
     ai_viewers: "viewers en live",
+    retweets: "retweets",
+    reposts: "reposts",
   };
   const kindEn: Record<string, string> = {
     followers: "followers",
@@ -111,6 +124,8 @@ function suggestLabel(kind: string, qty: number, locale: "fr" | "en") {
     subscribers: "subscribers",
     streams: "streams",
     ai_viewers: "live viewers",
+    retweets: "retweets",
+    reposts: "reposts",
   };
   if (locale === "fr") return `Ajouter +${formatQty(qty)} ${kindFr[kind] || kind}`;
   return `Add +${qty.toLocaleString("en-US")} ${kindEn[kind] || kind}`;
@@ -205,8 +220,16 @@ function formToPayload(f: FormState) {
   };
 }
 
+function attachColor(rate: number | null): string {
+  if (rate == null) return "var(--a-ink-3)";
+  if (rate >= 0.25) return "#16a34a";
+  if (rate >= 0.1) return "#eab308";
+  return "#E14444";
+}
+
 export default function UpsellsView() {
   const [upsells, setUpsells] = useState<Upsell[]>([]);
+  const [stats, setStats] = useState<Record<number, UpsellStat>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -232,6 +255,7 @@ export default function UpsellsView() {
       }
       const data = await res.json();
       setUpsells(data.upsells);
+      setStats(data.stats || {});
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -268,6 +292,27 @@ export default function UpsellsView() {
     const cfg = PLATFORM_CATALOG[form.triggerPlatform];
     return cfg ? cfg.kinds : [];
   }, [form.triggerPlatform]);
+
+  // Group upsells by trigger network, in PLATFORM_CATALOG order, so the admin
+  // gets a per-réseau view. Upsells with an unknown/empty platform fall into a
+  // trailing "_other" bucket. Within a group the API order (sort_order, id) is
+  // preserved.
+  const groupedByPlatform = useMemo(() => {
+    const byPlat = new Map<string, Upsell[]>();
+    for (const u of upsells) {
+      const key = u.trigger_platform && PLATFORM_CATALOG[u.trigger_platform] ? u.trigger_platform : "_other";
+      if (!byPlat.has(key)) byPlat.set(key, []);
+      byPlat.get(key)!.push(u);
+    }
+    const groups: Array<{ key: string; emoji: string; label: string; items: Upsell[] }> = [];
+    for (const key of Object.keys(PLATFORM_CATALOG)) {
+      const items = byPlat.get(key);
+      if (items && items.length) groups.push({ key, emoji: PLATFORM_CATALOG[key].emoji, label: PLATFORM_CATALOG[key].label, items });
+    }
+    const other = byPlat.get("_other");
+    if (other && other.length) groups.push({ key: "_other", emoji: "·", label: "Non assigné", items: other });
+    return groups;
+  }, [upsells]);
 
   // Live label suggestions — only auto-fill if user hasn't typed yet
   useEffect(() => {
@@ -629,6 +674,92 @@ export default function UpsellsView() {
     </div>
   );
 
+  const renderCard = (u: Upsell) => {
+    const cfg = PLATFORM_CATALOG[u.trigger_platform || ""];
+    const accent = cfg?.accent || "#5260e6";
+    const triggerLabel = u.trigger_service ? (KIND_LABEL[u.trigger_service] || u.trigger_service) : "—";
+    const kind = CODE_TO_KIND[u.service];
+    const kindLabel = kind ? (KIND_LABEL[kind] || kind) : u.service;
+    const st = stats[u.id];
+    return (
+      <div
+        key={u.id}
+        className="card"
+        style={{
+          padding: 14,
+          display: "grid",
+          gridTemplateColumns: "auto 1fr auto auto auto auto auto",
+          gap: 14,
+          alignItems: "center",
+          opacity: u.active ? 1 : 0.55,
+          borderLeft: `3px solid ${accent}`,
+        }}
+      >
+        <div style={{ display: "grid", placeItems: "center", width: 24, height: 24 }}>
+          {cfg ? (
+            <NetIcon kind={u.trigger_platform as NetworkId} color={accent} size={22} />
+          ) : (
+            <span style={{ fontSize: 22, lineHeight: 1 }}>·</span>
+          )}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {u.label || `+${formatQty(u.qty)} ${kindLabel}`}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--a-ink-3)", marginTop: 3 }}>
+            Sur <strong>{cfg?.label || u.trigger_platform || "—"}</strong> · quand achat <strong>{triggerLabel}</strong> · livre <strong>{formatQty(u.qty)} {kindLabel}</strong>
+          </div>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: "var(--a-ink)", whiteSpace: "nowrap" }}>
+          {((u.price_cents || 0) / 100).toFixed(2)} €
+        </div>
+        <div
+          style={{ textAlign: "right", whiteSpace: "nowrap", minWidth: 92 }}
+          title={
+            st
+              ? `${st.taken} pris sur ${st.eligible} commandes éligibles · ${(st.revenueCents / 100).toFixed(2)} € de revenu upsell (LTV, EUR)`
+              : "Pas encore de données"
+          }
+        >
+          {st && st.eligible > 0 ? (
+            <>
+              <div style={{ fontSize: 14, fontWeight: 800, color: attachColor(st.attachRate) }}>
+                {((st.attachRate || 0) * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: 10, color: "var(--a-ink-3)", marginTop: 2 }}>
+                {st.taken}/{st.eligible} · {(st.revenueCents / 100).toFixed(0)} €
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 11, color: "var(--a-ink-3)" }}>—</div>
+          )}
+        </div>
+        <div
+          className={"toggle " + (u.active ? "on" : "")}
+          onClick={() => handleToggleActive(u)}
+          style={{ cursor: "pointer" }}
+          title={u.active ? "Actif" : "Inactif"}
+        />
+        <button
+          className="icon-btn"
+          style={{ width: 30, height: 30, borderRadius: 7 }}
+          onClick={() => openEdit(u)}
+          title="Modifier"
+        >
+          {Ic.edit()}
+        </button>
+        <button
+          className="icon-btn"
+          style={{ width: 30, height: 30, borderRadius: 7, color: "#E14444" }}
+          onClick={() => handleDelete(u.id)}
+          title="Supprimer"
+        >
+          {Ic.trash()}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -654,7 +785,7 @@ export default function UpsellsView() {
 
       {editing !== null && renderEditor()}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         {loading ? (
           <div className="card" style={{ padding: 40, textAlign: "center", color: "var(--a-ink-3)" }}>Chargement…</div>
         ) : upsells.length === 0 ? (
@@ -663,60 +794,50 @@ export default function UpsellsView() {
             <div style={{ fontSize: 12 }}>Crée ton premier upsell pour booster le panier moyen.</div>
           </div>
         ) : (
-          upsells.map((u) => {
-            const cfg = PLATFORM_CATALOG[u.trigger_platform || ""];
-            const accent = cfg?.accent || "#5260e6";
-            const triggerLabel = u.trigger_service ? (KIND_LABEL[u.trigger_service] || u.trigger_service) : "—";
-            const kind = CODE_TO_KIND[u.service];
-            const kindLabel = kind ? (KIND_LABEL[kind] || kind) : u.service;
+          groupedByPlatform.map((group) => {
+            const activeCount = group.items.filter((i) => i.active).length;
+            const agg = group.items.reduce(
+              (a, u) => {
+                const s = stats[u.id];
+                if (s) { a.taken += s.taken; a.eligible += s.eligible; a.rev += s.revenueCents; }
+                return a;
+              },
+              { taken: 0, eligible: 0, rev: 0 },
+            );
+            const blended = agg.eligible > 0 ? agg.taken / agg.eligible : null;
             return (
-              <div
-                key={u.id}
-                className="card"
-                style={{
-                  padding: 14,
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr auto auto auto auto",
-                  gap: 14,
-                  alignItems: "center",
-                  opacity: u.active ? 1 : 0.55,
-                  borderLeft: `3px solid ${accent}`,
-                }}
-              >
-                <div style={{ fontSize: 22, lineHeight: 1 }}>{cfg?.emoji || "·"}</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {u.label || `+${formatQty(u.qty)} ${kindLabel}`}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--a-ink-3)", marginTop: 3 }}>
-                    Sur <strong>{cfg?.label || u.trigger_platform || "—"}</strong> · quand achat <strong>{triggerLabel}</strong> · livre <strong>{formatQty(u.qty)} {kindLabel}</strong>
-                  </div>
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: "var(--a-ink)", whiteSpace: "nowrap" }}>
-                  {((u.price_cents || 0) / 100).toFixed(2)} €
-                </div>
+              <div key={group.key}>
                 <div
-                  className={"toggle " + (u.active ? "on" : "")}
-                  onClick={() => handleToggleActive(u)}
-                  style={{ cursor: "pointer" }}
-                  title={u.active ? "Actif" : "Inactif"}
-                />
-                <button
-                  className="icon-btn"
-                  style={{ width: 30, height: 30, borderRadius: 7 }}
-                  onClick={() => openEdit(u)}
-                  title="Modifier"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    paddingBottom: 8,
+                    marginBottom: 10,
+                    borderBottom: "1px solid var(--a-line)",
+                  }}
                 >
-                  {Ic.edit()}
-                </button>
-                <button
-                  className="icon-btn"
-                  style={{ width: 30, height: 30, borderRadius: 7, color: "#E14444" }}
-                  onClick={() => handleDelete(u.id)}
-                  title="Supprimer"
-                >
-                  {Ic.trash()}
-                </button>
+                  {group.key !== "_other" ? (
+                    <NetIcon kind={group.key as NetworkId} color={PLATFORM_CATALOG[group.key]?.accent || "#5260e6"} size={20} />
+                  ) : (
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>{group.emoji}</span>
+                  )}
+                  <span style={{ fontWeight: 800, fontSize: 14, color: "var(--a-ink)" }}>{group.label}</span>
+                  <span style={{ fontSize: 11, color: "var(--a-ink-3)", fontWeight: 600 }}>
+                    {group.items.length} upsell{group.items.length > 1 ? "s" : ""} · {activeCount} actif{activeCount > 1 ? "s" : ""}
+                  </span>
+                  {blended != null && (
+                    <span
+                      style={{ marginLeft: "auto", fontSize: 11, color: "var(--a-ink-3)" }}
+                      title="Taux d'attache et revenu upsell cumulés du réseau"
+                    >
+                      Attache <strong style={{ color: attachColor(blended) }}>{(blended * 100).toFixed(0)}%</strong> · {(agg.rev / 100).toFixed(0)} €
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {group.items.map(renderCard)}
+                </div>
               </div>
             );
           })

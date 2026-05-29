@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
         f.min_order_cents, f.sort_order, f.updated_at,
         COALESCE(stats.sent_30d, 0)::int AS sent_30d,
         COALESCE(stats.sent_total, 0)::int AS sent_total,
+        COALESCE(stats.converted_30d, 0)::int AS converted_30d,
+        COALESCE(stats.converted_total, 0)::int AS converted_total,
+        COALESCE(stats.conv_revenue_cents, 0)::int AS conv_revenue_cents,
         stats.last_sent_at
       FROM email_flows f
       LEFT JOIN (
@@ -41,6 +44,9 @@ export async function GET(req: NextRequest) {
           flow_key,
           COUNT(*) FILTER (WHERE sent_at > NOW() - INTERVAL '30 days') AS sent_30d,
           COUNT(*) AS sent_total,
+          COUNT(*) FILTER (WHERE converted_order_id IS NOT NULL AND sent_at > NOW() - INTERVAL '30 days') AS converted_30d,
+          COUNT(*) FILTER (WHERE converted_order_id IS NOT NULL) AS converted_total,
+          COALESCE(SUM(converted_revenue_cents), 0) AS conv_revenue_cents,
           MAX(sent_at) AS last_sent_at
         FROM email_flow_runs
         GROUP BY flow_key

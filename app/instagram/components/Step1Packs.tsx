@@ -24,7 +24,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   const safePack = Math.min(pack, packs.length - 1);
   const selectedPack = packs[safePack];
   const savings = selectedPack.old - selectedPack.price;
-  const audienceLabel = productType === "likes" ? t.audienceLikes : productType === "views" ? t.audienceViews : t.audience;
+  const audienceLabel = productType === "likes" ? t.audienceLikes : productType === "views" ? t.audienceViews : productType === "reposts" ? t.audienceReposts : t.audience;
   const orderCardRef = useRef<HTMLDivElement | null>(null);
 
   const handlePackClick = (index: number) => {
@@ -106,6 +106,10 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
             <button className={productType === "views" ? "active" : ""} onClick={() => switchProduct("views")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               {t.productViews}
+            </button>
+            <button className={productType === "reposts" ? "active" : ""} onClick={() => switchProduct("reposts")}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, verticalAlign: -2 }}><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              {t.productReposts}
             </button>
           </div>
         </div>
