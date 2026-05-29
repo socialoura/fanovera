@@ -22,6 +22,21 @@ export type XProfile = {
   verified: boolean;
 };
 
+export type XTweet = {
+  id: string;
+  text: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  lang: string;
+  author: {
+    name: string;
+    screenName: string;
+    avatarUrl: string;
+    verified: boolean;
+  };
+};
+
 type Props = {
   country: CountryId;
   pack: number;
@@ -49,6 +64,8 @@ export default function Step2Username({
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [emailBlurred, setEmailBlurred] = useState(false);
+  const [tweet, setTweet] = useState<XTweet | null>(null);
+  const [tweetLoading, setTweetLoading] = useState(false);
 
   const clean = username.replace(/^@/, "").trim().toLowerCase();
   // X handles: 4-15 chars, letters/digits/underscore
@@ -107,6 +124,33 @@ export default function Step2Username({
 
     return () => { clearTimeout(debounce); controller.abort(); setVerifying(false); };
   }, [clean, valid, setProfile, isMediaMode]);
+
+  // Media mode (likes/retweets): live tweet preview from the pasted status URL.
+  // Like the profile preview, this is reassurance only — never a payment gate.
+  useEffect(() => {
+    if (!isMediaMode) return;
+    setTweet(null);
+    if (!postValid) return;
+
+    const controller = new AbortController();
+    const debounce = setTimeout(async () => {
+      setTweetLoading(true);
+      try {
+        const res = await fetch(`/api/twitter/tweet?url=${encodeURIComponent(postUrl.trim())}`, { signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (res.ok) {
+          const json = await res.json();
+          setTweet(json as XTweet);
+        }
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setTweet(null);
+      } finally {
+        if (!controller.signal.aborted) setTweetLoading(false);
+      }
+    }, 500);
+
+    return () => { clearTimeout(debounce); controller.abort(); setTweetLoading(false); };
+  }, [postUrl, postValid, isMediaMode]);
 
   void country;
   void touched;
@@ -271,24 +315,56 @@ export default function Step2Username({
               </div>
               <div className="x-card-body">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(29,155,240,0.18)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d9bf0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                  </div>
+                  {tweet?.author.avatarUrl ? (
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+                      <Image src={tweet.author.avatarUrl} alt={tweet.author.screenName} width={48} height={48} unoptimized style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(29,155,240,0.18)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1d9bf0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </div>
+                  )}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: 16, color: "white" }}>{t.media.targetTitle}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ fontWeight: 800, fontSize: 16, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>
+                        {tweet?.author.name || t.media.targetTitle}
+                      </div>
+                      {tweet?.author.verified && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                          <path fill="#1d9bf0" d="M22.25 12l-2.18-2.5.3-3.3-3.24-.73-1.7-2.85L12 3.86 8.56 2.62 6.87 5.47l-3.24.73.3 3.3L1.75 12l2.18 2.5-.3 3.3 3.24.73 1.7 2.85L12 20.14l3.44 1.24 1.7-2.85 3.23-.73-.3-3.3zM9.88 16.5L6.38 13l1.42-1.42 2.08 2.08 5.85-5.85L17.15 9z" />
+                        </svg>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: "#71767b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
-                      {postUrl.trim() ? postUrl.trim() : t.media.postPlaceholder}
+                      {tweet?.author.screenName ? "@" + tweet.author.screenName : (postUrl.trim() || t.media.postPlaceholder)}
                     </div>
                   </div>
                 </div>
+                {tweet?.text && (
+                  <div style={{ fontSize: 13, color: "white", marginTop: 12, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {tweet.text}
+                  </div>
+                )}
                 <div className="x-stats-row" style={{ marginTop: 14 }}>
                   <div>
-                    <span style={{ fontWeight: 800, color: postValid ? "#1d9bf0" : "white" }}>+{formatQty(bonusVolume)}</span>
+                    <span style={{ fontWeight: 800, color: postValid ? "#1d9bf0" : "white" }}>
+                      {tweet ? (
+                        <>
+                          {formatQty(productType === "retweets" ? tweet.retweets : tweet.likes)}
+                          <span style={{ fontSize: 12, color: "var(--green)" }}>
+                            {" -> "}
+                            {formatQty((productType === "retweets" ? tweet.retweets : tweet.likes) + bonusVolume)}
+                          </span>
+                        </>
+                      ) : (
+                        <>+{formatQty(bonusVolume)}</>
+                      )}
+                    </span>
                     <span style={{ color: "#71767b", fontSize: 13, marginLeft: 4 }}>{productType === "retweets" ? t.media.retweetsUnit : t.media.likesUnit}</span>
                   </div>
                 </div>
                 <div style={{ marginTop: 10, fontSize: 11, color: "#71767b" }}>
-                  {postValid ? t.media.foundPost : t.media.waitingPost}
+                  {tweetLoading ? t.loading : postValid ? t.media.foundPost : t.media.waitingPost}
                 </div>
               </div>
             </div>
