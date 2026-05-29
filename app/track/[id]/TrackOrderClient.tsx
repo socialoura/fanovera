@@ -225,6 +225,8 @@ export default function TrackOrderClient() {
 
   const platformLabel = data ? PLATFORM_LABEL[data.platform] || data.platform : "";
   const platformHref = data ? `/${data.platform}` : "/";
+  // Only show the progress bar once the order is fully delivered.
+  const isDelivered = !!data && ["delivered", "completed"].includes(data.status.toLowerCase());
 
   return (
     <main className="track-main">
@@ -258,9 +260,11 @@ export default function TrackOrderClient() {
                   <div className="track-stat-label">{e.target}</div>
                 </div>
               </div>
-              <div className="track-hero-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={aggregate.pct}>
-                <div className="track-hero-bar-fill" style={{ width: `${aggregate.pct}%` }} />
-              </div>
+              {isDelivered && (
+                <div className="track-hero-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={aggregate.pct}>
+                  <div className="track-hero-bar-fill" style={{ width: `${aggregate.pct}%` }} />
+                </div>
+              )}
               <div className="track-hero-footer">
                 <span>
                   <strong>{formatQty(Math.max(0, aggregate.current - aggregate.before))}</strong> / {formatQty(Math.max(0, aggregate.target - aggregate.before))} {e.delivered}
