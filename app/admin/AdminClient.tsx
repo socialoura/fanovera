@@ -210,6 +210,7 @@ export default function AdminClient() {
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
+            {n.id === "support" && pendingSupport > 0 ? <span className="badge">{pendingSupport}</span> : null}
           </button>
         ))}
 
