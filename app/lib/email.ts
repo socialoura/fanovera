@@ -1238,8 +1238,61 @@ type AskVariant = {
   hero: string;
   intro: (orderId: number, platformLabel: string, handle: string) => string;
   ask: (platformLabel: string) => string;
-  reasons: [string, string, string];
+  /**
+   * Either a fixed list (profile / post / live) or a function of the order's
+   * platform — used by the `private` variant to surface the right "make it
+   * public" path (Instagram vs TikTok vs X have different settings menus).
+   */
+  reasons: string[] | ((platform: string) => string[]);
 };
+
+/**
+ * Per-locale, per-platform "how to switch the account to public" instruction
+ * for the `private` variant. Falls back to the Instagram line for any platform
+ * not listed (e.g. if the private button is ever enabled for a new network).
+ */
+const PRIVATE_HOWTO: Record<EmailLocale, Record<string, string>> = {
+  fr: {
+    instagram: "Sur Instagram : Paramètres → Confidentialité du compte → désactive « Compte privé »",
+    tiktok: "Sur TikTok : Profil → Menu → Paramètres et confidentialité → Confidentialité → désactive « Compte privé »",
+    twitter: "Sur X : Paramètres → Confidentialité et sécurité → Audience et identification → désactive « Protéger tes posts »",
+  },
+  en: {
+    instagram: "On Instagram: Settings → Account privacy → turn off \"Private account\"",
+    tiktok: "On TikTok: Profile → Menu → Settings and privacy → Privacy → turn off \"Private account\"",
+    twitter: "On X: Settings → Privacy and safety → Audience and tagging → turn off \"Protect your posts\"",
+  },
+  es: {
+    instagram: "En Instagram: Configuración → Privacidad de la cuenta → desactiva \"Cuenta privada\"",
+    tiktok: "En TikTok: Perfil → Menú → Configuración y privacidad → Privacidad → desactiva \"Cuenta privada\"",
+    twitter: "En X: Configuración → Privacidad y seguridad → Audiencia y etiquetado → desactiva \"Proteger tus posts\"",
+  },
+  pt: {
+    instagram: "No Instagram: Definições → Privacidade da conta → desativar \"Conta privada\"",
+    tiktok: "No TikTok: Perfil → Menu → Definições e privacidade → Privacidade → desativar \"Conta privada\"",
+    twitter: "No X: Definições → Privacidade e segurança → Público e etiquetagem → desativar \"Proteger as tuas publicações\"",
+  },
+  de: {
+    instagram: "Auf Instagram: Einstellungen → Konto-Privatsphäre → \"Privates Konto\" deaktivieren",
+    tiktok: "Auf TikTok: Profil → Menü → Einstellungen und Datenschutz → Datenschutz → \"Privates Konto\" deaktivieren",
+    twitter: "Auf X: Einstellungen → Datenschutz und Sicherheit → Zielgruppe und Markierungen → \"Beiträge schützen\" deaktivieren",
+  },
+  it: {
+    instagram: "Su Instagram: Impostazioni → Privacy dell'account → disattiva \"Account privato\"",
+    tiktok: "Su TikTok: Profilo → Menu → Impostazioni e privacy → Privacy → disattiva \"Account privato\"",
+    twitter: "Su X: Impostazioni → Privacy e sicurezza → Pubblico e tag → disattiva \"Proteggi i tuoi post\"",
+  },
+  tr: {
+    instagram: "Instagram'da: Ayarlar → Hesap gizliliği → \"Gizli hesap\" seçeneğini kapat",
+    tiktok: "TikTok'ta: Profil → Menü → Ayarlar ve gizlilik → Gizlilik → \"Gizli hesap\" seçeneğini kapat",
+    twitter: "X'te: Ayarlar → Gizlilik ve güvenlik → Hedef kitle ve etiketleme → \"Gönderilerini koru\" seçeneğini kapat",
+  },
+};
+
+function privateHowto(locale: EmailLocale, platform: string): string {
+  const byPlatform = PRIVATE_HOWTO[locale] || PRIVATE_HOWTO.en;
+  return byPlatform[platform] || byPlatform.instagram;
+}
 
 type MissingInfoCopy = {
   subject: (orderId: number) => string;
@@ -1290,9 +1343,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Ton compte est en privé",
         intro: (id, p, h) => `On a essayé de livrer ta commande <strong>#${id}</strong>, mais ton compte ${p} <strong>${h}</strong> est en privé — on ne peut pas envoyer les abonnés / likes / vues tant qu'il est verrouillé.`,
         ask: (p) => `Peux-tu passer ton compte ${p} en public le temps de la livraison, puis répondre à cet email pour confirmer ? Une fois la commande terminée, tu peux le remettre en privé.`,
-        reasons: [
-          "Sur Instagram : Paramètres → Confidentialité du compte → désactive « Compte privé »",
-          "Sur TikTok : Profil → Menu → Paramètres et confidentialité → Confidentialité → désactive « Compte privé »",
+        reasons: (platform) => [
+          privateHowto("fr", platform),
           "Vérifie aussi qu'aucune restriction de pays / âge n'est active",
         ],
       },
@@ -1338,9 +1390,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Your account is set to private",
         intro: (id, p, h) => `We tried to deliver your order <strong>#${id}</strong>, but your ${p} account <strong>${h}</strong> is private — we can't push followers / likes / views while it's locked.`,
         ask: (p) => `Could you switch your ${p} account to public until delivery is complete, then reply to this email to confirm? Once the order is delivered you can switch it back.`,
-        reasons: [
-          "On Instagram: Settings → Account privacy → turn off \"Private account\"",
-          "On TikTok: Profile → Menu → Settings and privacy → Privacy → turn off \"Private account\"",
+        reasons: (platform) => [
+          privateHowto("en", platform),
           "Also check that no country / age restriction is active on the account",
         ],
       },
@@ -1386,9 +1437,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Tu cuenta está en privado",
         intro: (id, p, h) => `Intentamos entregar tu pedido <strong>#${id}</strong>, pero tu cuenta de ${p} <strong>${h}</strong> es privada — no podemos enviar seguidores / likes / vistas mientras esté bloqueada.`,
         ask: (p) => `¿Puedes poner tu cuenta de ${p} en público hasta que se complete la entrega y luego responder a este correo para confirmar? Cuando termine el pedido puedes volver a ponerla en privado.`,
-        reasons: [
-          "En Instagram: Configuración → Privacidad de la cuenta → desactiva \"Cuenta privada\"",
-          "En TikTok: Perfil → Menú → Configuración y privacidad → Privacidad → desactiva \"Cuenta privada\"",
+        reasons: (platform) => [
+          privateHowto("es", platform),
           "Verifica también que no haya restricciones de país / edad activas",
         ],
       },
@@ -1434,9 +1484,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "A sua conta está privada",
         intro: (id, p, h) => `Tentámos entregar o seu pedido <strong>#${id}</strong>, mas a sua conta de ${p} <strong>${h}</strong> está privada — não conseguimos enviar seguidores / gostos / visualizações enquanto estiver bloqueada.`,
         ask: (p) => `Pode tornar a sua conta de ${p} pública até a entrega ser concluída e depois responder a este e-mail para confirmar? Quando o pedido terminar, pode voltar a torná-la privada.`,
-        reasons: [
-          "No Instagram: Definições → Privacidade da conta → desativar \"Conta privada\"",
-          "No TikTok: Perfil → Menu → Definições e privacidade → Privacidade → desativar \"Conta privada\"",
+        reasons: (platform) => [
+          privateHowto("pt", platform),
           "Verifique também que não existem restrições de país / idade ativas",
         ],
       },
@@ -1482,9 +1531,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Dein Konto ist auf privat gestellt",
         intro: (id, p, h) => `Wir haben versucht, deine Bestellung <strong>#${id}</strong> auszuliefern, aber dein ${p}-Konto <strong>${h}</strong> ist privat — wir können Follower / Likes / Views nicht pushen, solange es gesperrt ist.`,
         ask: (p) => `Kannst du dein ${p}-Konto bis zum Abschluss der Lieferung auf öffentlich umstellen und dann auf diese E-Mail antworten, um zu bestätigen? Sobald die Bestellung abgeschlossen ist, kannst du es wieder auf privat stellen.`,
-        reasons: [
-          "Auf Instagram: Einstellungen → Konto-Privatsphäre → \"Privates Konto\" deaktivieren",
-          "Auf TikTok: Profil → Menü → Einstellungen und Datenschutz → Datenschutz → \"Privates Konto\" deaktivieren",
+        reasons: (platform) => [
+          privateHowto("de", platform),
           "Prüfe auch, dass keine Länder- oder Altersbeschränkung aktiv ist",
         ],
       },
@@ -1530,9 +1578,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Il tuo account è privato",
         intro: (id, p, h) => `Abbiamo provato a consegnare il tuo ordine <strong>#${id}</strong>, ma il tuo account ${p} <strong>${h}</strong> è privato — non possiamo inviare follower / like / visualizzazioni mentre è bloccato.`,
         ask: (p) => `Puoi rendere pubblico il tuo account ${p} fino al completamento della consegna e poi rispondere a questa email per confermare? A consegna avvenuta puoi rimetterlo in privato.`,
-        reasons: [
-          "Su Instagram: Impostazioni → Privacy dell'account → disattiva \"Account privato\"",
-          "Su TikTok: Profilo → Menu → Impostazioni e privacy → Privacy → disattiva \"Account privato\"",
+        reasons: (platform) => [
+          privateHowto("it", platform),
           "Verifica anche che non siano attive restrizioni per paese / età",
         ],
       },
@@ -1578,9 +1625,8 @@ const MISSING_INFO_COPY: Record<EmailLocale, MissingInfoCopy> = {
         hero: "Hesabın gizli",
         intro: (id, p, h) => `<strong>#${id}</strong> numaralı siparişini teslim etmeye çalıştık, ancak ${p} hesabın <strong>${h}</strong> gizli — kilitliyken takipçi / beğeni / görüntülenme gönderemeyiz.`,
         ask: (p) => `Teslimat tamamlanana kadar ${p} hesabını herkese açık yapıp ardından onaylamak için bu e-postayı yanıtlayabilir misin? Sipariş tamamlandığında tekrar gizli yapabilirsin.`,
-        reasons: [
-          "Instagram'da: Ayarlar → Hesap gizliliği → \"Gizli hesap\" seçeneğini kapat",
-          "TikTok'ta: Profil → Menü → Ayarlar ve gizlilik → Gizlilik → \"Gizli hesap\" seçeneğini kapat",
+        reasons: (platform) => [
+          privateHowto("tr", platform),
           "Ayrıca aktif bir ülke / yaş kısıtlaması olmadığını kontrol et",
         ],
       },
@@ -1615,6 +1661,10 @@ export async function sendOrderMissingInfoEmail(
       ? "🔒"
       : "🔍";
 
+    const reasons = typeof variant.reasons === "function"
+      ? variant.reasons(p.platform)
+      : variant.reasons;
+
     const html = `<!DOCTYPE html>
 <html lang="${locale}">
 <head><meta charset="utf-8" /><title>${escapeHtml(copy.subject(p.orderId))}</title></head>
@@ -1643,9 +1693,7 @@ export async function sendOrderMissingInfoEmail(
               ${escapeHtml(copy.reasonsLabel)}
             </div>
             <ul style="margin:0;padding-left:18px;font-size:14px;color:#374151;line-height:1.6;">
-              <li>${escapeHtml(variant.reasons[0])}</li>
-              <li>${escapeHtml(variant.reasons[1])}</li>
-              <li>${escapeHtml(variant.reasons[2])}</li>
+              ${reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}
             </ul>
           </div>
           <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.55;">${escapeHtml(copy.cta)}</p>
@@ -1669,9 +1717,7 @@ ${variant.intro(p.orderId, platformLabel, handle).replace(/<[^>]+>/g, "")}
 ${variant.ask(platformLabel)}
 
 ${copy.reasonsLabel} :
-  • ${variant.reasons[0]}
-  • ${variant.reasons[1]}
-  • ${variant.reasons[2]}
+${reasons.map((r) => `  • ${r}`).join("\n")}
 
 ${copy.cta}
 

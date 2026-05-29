@@ -739,6 +739,9 @@ function OrderDetail({
             onClick={(e) => { e.stopPropagation(); onProfileNotFound(order.id); }}
             disabled={profileNotFoundBusy || !order.email}
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               background: "rgba(198,138,25,0.10)",
               border: "1px solid rgba(198,138,25,0.35)",
               color: "#b45309",
@@ -748,15 +751,18 @@ function OrderDetail({
             }}
             title={`Envoie au client un email (langue : ${(order.lang || "fr").toUpperCase()}) pour réclamer les infos manquantes. Le contenu s'adapte au produit acheté (username / lien du post / URL du live). Sa réponse arrivera dans Support.`}
           >
-            {profileNotFoundBusy ? "Envoi..." : "Demander les infos au client"}
+            {Ic.mail()} {profileNotFoundBusy ? "Envoi..." : "Demander les infos au client"}
           </button>
-          {(order.platform === "instagram" || order.platform === "tiktok") && (
+          {(order.platform === "instagram" || order.platform === "tiktok" || order.platform === "twitter") && (
             <button
               type="button"
               className="btn"
               onClick={(e) => { e.stopPropagation(); onPrivateAccount(order.id); }}
               disabled={profileNotFoundBusy || !order.email}
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
                 background: "rgba(82,96,230,0.10)",
                 border: "1px solid rgba(82,96,230,0.35)",
                 color: "#5260e6",
@@ -764,9 +770,9 @@ function OrderDetail({
                 padding: "8px 14px",
                 fontSize: 12,
               }}
-              title={`Envoie au client un email (langue : ${(order.lang || "fr").toUpperCase()}) lui demandant de passer son compte ${order.platform} en public. Sa réponse arrivera dans Support.`}
+              title={`Envoie au client un email (langue : ${(order.lang || "fr").toUpperCase()}) lui demandant de rendre son compte ${order.platform === "twitter" ? "X" : order.platform} public. Sa réponse arrivera dans Support.`}
             >
-              {profileNotFoundBusy ? "Envoi..." : `Compte ${order.platform} en privé`}
+              {Ic.mail()} {profileNotFoundBusy ? "Envoi..." : order.platform === "twitter" ? "Compte X protégé" : `Compte ${order.platform} en privé`}
             </button>
           )}
         </div>

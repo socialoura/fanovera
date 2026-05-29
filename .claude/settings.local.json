@@ -97,7 +97,8 @@
       "Bash(git stash *)",
       "PowerShell(Get-ChildItem -Path . -Force -File | Where-Object { $_.Name -match 'vercel|\\\\.env|netlify|railway|fly' } | Select-Object Name; Write-Output \"---packagescripts---\"; if \\(Test-Path package.json\\) { \\(Get-Content package.json -Raw | ConvertFrom-Json\\).scripts | ConvertTo-Json })",
       "PowerShell(Get-Content .env.local | Where-Object { $_ -match 'STRIPE' } | ForEach-Object { $parts = $_ -split '=',2; if \\($parts.Count -eq 2\\) { \"$\\($parts[0]\\)=$\\($parts[1].Substring\\(0,[Math]::Min\\(14,$parts[1].Length\\)\\)\\)...\" } })",
-      "PowerShell(Get-ChildItem -Path . -Force -File | Where-Object { $_.Name -match 'next\\\\.config|middleware' } | Select-Object Name; if \\(Test-Path next.config.js\\) { Get-Content next.config.js -Raw }; if \\(Test-Path next.config.mjs\\) { Get-Content next.config.mjs -Raw }; if \\(Test-Path next.config.ts\\) { Get-Content next.config.ts -Raw })"
+      "PowerShell(Get-ChildItem -Path . -Force -File | Where-Object { $_.Name -match 'next\\\\.config|middleware' } | Select-Object Name; if \\(Test-Path next.config.js\\) { Get-Content next.config.js -Raw }; if \\(Test-Path next.config.mjs\\) { Get-Content next.config.mjs -Raw }; if \\(Test-Path next.config.ts\\) { Get-Content next.config.ts -Raw })",
+      "PowerShell(npm run *)"
     ]
   }
 }
