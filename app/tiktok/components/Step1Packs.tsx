@@ -35,11 +35,6 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
     <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 0", position: "relative" }}>
       <TtSprinkle count={6} seed={0} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <div className="show-md-only" style={{ alignItems: "center", gap: 8, padding: "6px 14px", background: "linear-gradient(135deg, rgba(37,244,238,0.12), rgba(254,44,85,0.12))", color: "var(--tt-red)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", borderRadius: 999, textTransform: "uppercase" }}>
-            <NetIcon kind="tiktok" color="var(--tt-red)" size={14} /> TikTok
-          </div>
-        </div>
         <Stepper step={1} />
         <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>
           <div className="hide-md" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "linear-gradient(135deg, rgba(37,244,238,0.12), rgba(254,44,85,0.12))", color: "var(--tt-red)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", borderRadius: 999, marginBottom: 16, textTransform: "uppercase" }}>

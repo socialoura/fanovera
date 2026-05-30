@@ -25,11 +25,6 @@ export default function Step1Packs({ country, pack, setPack, onNext }: Props) {
     <section className="slide-in" data-i18n-skip style={{ padding: "40px 0 0", position: "relative" }}>
       <LiSprinkle count={6} seed={0} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <div className="show-md-only" style={{ alignItems: "center", gap: 8, padding: "6px 14px", background: "linear-gradient(135deg, rgba(10,102,194,0.10), rgba(8,77,146,0.10))", color: "var(--li-blue)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", borderRadius: 999, textTransform: "uppercase" }}>
-            <NetIcon kind="linkedin" color="var(--li-blue)" size={14} /> LinkedIn
-          </div>
-        </div>
         <Stepper step={1} />
 
         <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>

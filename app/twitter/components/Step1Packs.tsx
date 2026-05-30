@@ -43,11 +43,6 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
     <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 0", position: "relative" }}>
       <XSprinkle count={6} seed={0} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <div className="show-md-only" style={{ alignItems: "center", gap: 8, padding: "6px 14px", background: "linear-gradient(135deg, rgba(0,0,0,0.08), rgba(29,155,240,0.10))", color: "var(--x-ink)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", borderRadius: 999, textTransform: "uppercase" }}>
-            <NetIcon kind="twitter" color="var(--x-ink)" size={14} /> X
-          </div>
-        </div>
         <Stepper step={1} />
 
         <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>

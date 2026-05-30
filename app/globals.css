@@ -2690,7 +2690,7 @@ input { font: inherit; color: inherit; }
 
 @media (max-width: 640px) {
   .x-mode-toggle { display: flex; width: 100%; }
-  .x-mode-toggle button { flex: 1; padding: 0 10px; font-size: 13px; }
+  .x-mode-toggle button { flex: 1; padding: 11px 8px; font-size: 14px; }
 }
 
 /* Spotify track preview card */
