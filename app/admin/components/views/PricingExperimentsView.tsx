@@ -134,6 +134,20 @@ export default function PricingExperimentsView() {
     );
   };
 
+  // Per-pack EUR price overrides ("ig_followers:1000": 5.99). Edited as rows of
+  // {service, qty, price} and rebuilt into the keyed object. Malformed/empty
+  // rows are tolerated while editing and cleaned server-side on save (see
+  // normalizePricingExperiments). Overrides win over the multiplier, EUR only.
+  const updateOverrides = (
+    experimentIndex: number,
+    variantIndex: number,
+    rows: Array<{ service: string; qty: string; price: number }>,
+  ) => {
+    const obj: Record<string, number> = {};
+    for (const r of rows) obj[`${r.service.trim()}:${String(r.qty).trim()}`] = Number(r.price) || 0;
+    updateVariant(experimentIndex, variantIndex, { priceOverrides: rows.length ? obj : undefined });
+  };
+
   const save = async () => {
     setSaving(true);
     setError("");
@@ -345,35 +359,71 @@ export default function PricingExperimentsView() {
                   {Ic.plus()} Variante
                 </button>
               </div>
-              {experiment.variants.map((variant, variantIndex) => (
-                <div
-                  className="ab-variant-row"
-                  key={`${variant.id}-${variantIndex}`}
-                  style={variant.paused ? { opacity: 0.55 } : undefined}
-                >
-                  <input className="input" value={variant.id} onChange={(event) => updateVariant(experimentIndex, variantIndex, { id: event.target.value })} placeholder="id" />
-                  <input className="input" value={variant.label} onChange={(event) => updateVariant(experimentIndex, variantIndex, { label: event.target.value })} placeholder="Label" />
-                  <label>Trafic <input className="input" type="number" min={0} max={100} value={variant.traffic} onChange={(event) => updateVariant(experimentIndex, variantIndex, { traffic: Number(event.target.value) })} /></label>
-                  <label>Prix x <input className="input" type="number" step="0.01" value={variant.priceMultiplier} onChange={(event) => updateVariant(experimentIndex, variantIndex, { priceMultiplier: Number(event.target.value) })} /></label>
-                  <input className="input" value={variant.pricingStrategy} onChange={(event) => updateVariant(experimentIndex, variantIndex, { pricingStrategy: event.target.value })} placeholder="strategy" />
-                  <button
-                    type="button"
-                    className={"toggle " + (variant.paused ? "" : "on")}
-                    onClick={() => updateVariant(experimentIndex, variantIndex, { paused: !variant.paused })}
-                    aria-label={variant.paused ? "Reprendre la variante" : "Mettre en pause la variante"}
-                    title={variant.paused ? "Reprendre — les utilisateurs de ce bucket reverront cette variante" : "Mettre en pause — les utilisateurs de ce bucket retombent sur le contrôle"}
-                  />
-                  <button
-                    className="icon-btn"
-                    type="button"
-                    onClick={() => updateExperiment(experimentIndex, { variants: experiment.variants.filter((_, i) => i !== variantIndex) })}
-                    aria-label="Supprimer la variante"
-                    disabled={experiment.variants.length <= 1}
+              {experiment.variants.map((variant, variantIndex) => {
+                const overrideRows = Object.entries(variant.priceOverrides || {}).map(([key, price]) => {
+                  const sep = key.indexOf(":");
+                  return {
+                    service: sep >= 0 ? key.slice(0, sep) : key,
+                    qty: sep >= 0 ? key.slice(sep + 1) : "",
+                    price: price as number,
+                  };
+                });
+                const setRows = (rows: Array<{ service: string; qty: string; price: number }>) =>
+                  updateOverrides(experimentIndex, variantIndex, rows);
+                return (
+                  <div
+                    key={`${variant.id}-${variantIndex}`}
+                    style={variant.paused ? { opacity: 0.55 } : undefined}
                   >
-                    {Ic.trash()}
-                  </button>
-                </div>
-              ))}
+                    <div className="ab-variant-row">
+                      <input className="input" value={variant.id} onChange={(event) => updateVariant(experimentIndex, variantIndex, { id: event.target.value })} placeholder="id" />
+                      <input className="input" value={variant.label} onChange={(event) => updateVariant(experimentIndex, variantIndex, { label: event.target.value })} placeholder="Label" />
+                      <label>Trafic <input className="input" type="number" min={0} max={100} value={variant.traffic} onChange={(event) => updateVariant(experimentIndex, variantIndex, { traffic: Number(event.target.value) })} /></label>
+                      <label>Prix x <input className="input" type="number" step="0.01" value={variant.priceMultiplier} onChange={(event) => updateVariant(experimentIndex, variantIndex, { priceMultiplier: Number(event.target.value) })} /></label>
+                      <input className="input" value={variant.pricingStrategy} onChange={(event) => updateVariant(experimentIndex, variantIndex, { pricingStrategy: event.target.value })} placeholder="strategy" />
+                      <button
+                        type="button"
+                        className={"toggle " + (variant.paused ? "" : "on")}
+                        onClick={() => updateVariant(experimentIndex, variantIndex, { paused: !variant.paused })}
+                        aria-label={variant.paused ? "Reprendre la variante" : "Mettre en pause la variante"}
+                        title={variant.paused ? "Reprendre — les utilisateurs de ce bucket reverront cette variante" : "Mettre en pause — les utilisateurs de ce bucket retombent sur le contrôle"}
+                      />
+                      <button
+                        className="icon-btn"
+                        type="button"
+                        onClick={() => updateExperiment(experimentIndex, { variants: experiment.variants.filter((_, i) => i !== variantIndex) })}
+                        aria-label="Supprimer la variante"
+                        disabled={experiment.variants.length <= 1}
+                      >
+                        {Ic.trash()}
+                      </button>
+                    </div>
+
+                    <div style={{ margin: "2px 0 14px", paddingLeft: 12, borderLeft: "2px solid var(--a-line, #2a2a3a)", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <span className="card-sub">Prix par palier (EUR) — prioritaire sur « Prix x », EUR uniquement</span>
+                        <button className="btn" type="button" onClick={() => setRows([...overrideRows, { service: "ig_followers", qty: "", price: 0 }])}>
+                          {Ic.plus()} Palier
+                        </button>
+                      </div>
+                      {overrideRows.length === 0 ? (
+                        <span className="card-sub" style={{ opacity: 0.7 }}>Aucun override — la variante utilise « Prix x ».</span>
+                      ) : (
+                        overrideRows.map((row, rowIndex) => (
+                          <div key={rowIndex} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <input className="input" style={{ flex: 2 }} value={row.service} placeholder="service (ex: ig_followers)" onChange={(event) => setRows(overrideRows.map((r, i) => i === rowIndex ? { ...r, service: event.target.value } : r))} />
+                            <input className="input" style={{ flex: 1 }} type="number" value={row.qty} placeholder="qté" onChange={(event) => setRows(overrideRows.map((r, i) => i === rowIndex ? { ...r, qty: event.target.value } : r))} />
+                            <label style={{ display: "flex", alignItems: "center", gap: 4 }}>€ <input className="input" style={{ width: 90 }} type="number" step="0.01" value={row.price} onChange={(event) => setRows(overrideRows.map((r, i) => i === rowIndex ? { ...r, price: Number(event.target.value) } : r))} /></label>
+                            <button className="icon-btn" type="button" onClick={() => setRows(overrideRows.filter((_, i) => i !== rowIndex))} aria-label="Supprimer le palier">
+                              {Ic.trash()}
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         );
