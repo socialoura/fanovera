@@ -2654,7 +2654,7 @@ input { font: inherit; color: inherit; }
   .ig-mode-toggle button,
   .tt-mode-toggle button,
   .yt-mode-toggle button,
-  .tw-mode-toggle button { flex: 1; padding: 0 10px; font-size: 13px; }
+  .tw-mode-toggle button { flex: 1; padding: 0 8px; font-size: 11px; }
 }
 
 /* X (Twitter) product toggle — same base as the brand toggles above. */
