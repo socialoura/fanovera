@@ -339,8 +339,8 @@ export function useCurrencyPricing(service: string) {
     const basePrice = typeof fromDb === "number" && Number.isFinite(fromDb) && fromDb >= 0
       ? fromDb
       : fallback;
-    return applyPricingAssignment(basePrice, experiment.assignment);
-  }, [experiment.assignment, priceByQty]);
+    return applyPricingAssignment(basePrice, experiment.assignment, { service, qty, currency });
+  }, [experiment.assignment, priceByQty, service, currency]);
 
   const resolvePacks = useCallback(<T extends PackLike>(fallbackPacks: readonly T[]): T[] => {
     if (dbPacks.length === 0) {
@@ -368,21 +368,29 @@ export function useCurrencyPricing(service: string) {
     return dbPacks.map((dbPack, index) => {
       const matchedFallback = fallbackByQty.get(dbPack.qty);
       const fallback = matchedFallback ?? fallbackPacks[index] ?? fallbackPacks[0];
+      // Resolve the live price FIRST (it may be raised by a per-pack override),
+      // then derive the struck-through anchor from it so the anchor always sits
+      // above the displayed price instead of below a raised override.
+      const price = applyPricingAssignment(dbPack.price, experiment.assignment, {
+        service,
+        qty: dbPack.qty,
+        currency,
+      });
       const old = fallback
-        ? Math.max(fallback.old, roundPrice(dbPack.price * 1.35))
-        : roundPrice(dbPack.price * 2.5);
+        ? Math.max(fallback.old, roundPrice(price * 1.35))
+        : roundPrice(price * 2.5);
 
       return {
         ...(fallback ?? {}),
         qty: dbPack.qty,
-        price: applyPricingAssignment(dbPack.price, experiment.assignment),
+        price,
         old,
         bonus: fallback?.bonus ?? derivedBonus(dbPack.qty, fallbackPacks),
         popular: dbPack.qty === popularQty,
         best: dbPack.qty === bestQty,
       } as T;
     });
-  }, [dbPacks, experiment.assignment, resolvePrice]);
+  }, [dbPacks, experiment.assignment, resolvePrice, service, currency]);
 
   const hasDatabasePricing = pricingStatus === "ready" && dbPacks.length > 0;
   const canDisplayPricing = experiment.ready && (hasDatabasePricing || pricingStatus === "error");

@@ -10,6 +10,46 @@ import {
 
 const ANONYMOUS_ID_KEY = "fanovera_anonymous_id";
 
+// Shared, deduped cache for the global experiments list. The endpoint returns
+// ALL experiments (assignment filters by product area client-side), so every
+// variant hook on a page can share a single fetch. This makes the experiment
+// gate ready for all variants at once → switching product variant never shows
+// a loading skeleton.
+const EXPERIMENTS_TTL = 5 * 60 * 1000;
+let experimentsCache: { data: PricingExperiment[]; ts: number } | null = null;
+let experimentsPromise: Promise<PricingExperiment[]> | null = null;
+
+function getCachedExperiments(): PricingExperiment[] | null {
+  if (experimentsCache && Date.now() - experimentsCache.ts <= EXPERIMENTS_TTL) {
+    return experimentsCache.data;
+  }
+  return null;
+}
+
+function fetchExperimentsShared(): Promise<PricingExperiment[]> {
+  const cached = getCachedExperiments();
+  if (cached) return Promise.resolve(cached);
+  if (experimentsPromise) return experimentsPromise;
+
+  experimentsPromise = fetch("/api/pricing-experiments")
+    .then(async (res) => {
+      if (!res.ok) throw new Error("pricing_experiments_unavailable");
+      const data = await res.json().catch(() => ({}));
+      const list = Array.isArray(data.experiments) ? (data.experiments as PricingExperiment[]) : [];
+      experimentsCache = { data: list, ts: Date.now() };
+      return list;
+    })
+    .catch(() => {
+      experimentsCache = { data: [], ts: Date.now() };
+      return [];
+    })
+    .finally(() => {
+      experimentsPromise = null;
+    });
+
+  return experimentsPromise;
+}
+
 function createAnonymousId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -53,7 +93,7 @@ function markExposureSent(key: string) {
 
 export function usePricingExperiment(productArea: string, segment: PricingSegment = {}) {
   const [anonymousId, setAnonymousId] = useState<string | null>(null);
-  const [experiments, setExperiments] = useState<PricingExperiment[] | null>(null);
+  const [experiments, setExperiments] = useState<PricingExperiment[] | null>(() => getCachedExperiments());
   const segmentKey = JSON.stringify(segment);
 
   useEffect(() => {
@@ -61,20 +101,15 @@ export function usePricingExperiment(productArea: string, segment: PricingSegmen
   }, []);
 
   useEffect(() => {
+    if (experiments !== null) return;
     let cancelled = false;
-    fetch("/api/pricing-experiments")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("pricing_experiments_unavailable");
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled && Array.isArray(data.experiments)) setExperiments(data.experiments);
-      })
-      .catch(() => {
-        if (!cancelled) setExperiments([]);
-      });
+    fetchExperimentsShared().then((list) => {
+      if (!cancelled) setExperiments(list);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [experiments]);
 
   const assignment = useMemo<PricingAssignment>(() => {
     return assignPricingVariant({

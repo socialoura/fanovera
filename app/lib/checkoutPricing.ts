@@ -156,7 +156,9 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
     }
     if (basePrice === null) throw new Error("Unknown pricing pack");
 
-    const adjustedPrice = input.assignment ? applyPricingAssignment(basePrice, input.assignment) : basePrice;
+    const adjustedPrice = input.assignment
+      ? applyPricingAssignment(basePrice, input.assignment, { service: serviceForItem, qty, currency })
+      : basePrice;
     subtotalCents += Math.round(adjustedPrice * 100);
 
     sanitizedCart.push({

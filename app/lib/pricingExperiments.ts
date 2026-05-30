@@ -16,6 +16,14 @@ export type PricingVariant = {
   pricingStrategy: string;
   paused?: boolean;
   stripePriceIds?: Record<string, string>;
+  // Explicit per-pack price overrides in EUR, keyed by `${service}:${qty}`
+  // (e.g. "ig_followers:1000": 5.99). When a pack matches an override, that
+  // absolute EUR price wins over priceMultiplier — this is what lets a variant
+  // express a non-uniform grid (different % change per tier) instead of a flat
+  // multiplier. Overrides are EUR-only and ignored for other currencies
+  // (see applyPricingAssignment), so an experiment using them effectively
+  // targets EUR buyers only.
+  priceOverrides?: Record<string, number>;
 };
 
 export type PricingExperiment = {
@@ -35,6 +43,7 @@ export type PricingAssignment = {
   variantId: string;
   pricingStrategy: string;
   priceMultiplier: number;
+  priceOverrides?: Record<string, number>;
   reason: "assigned" | "disabled" | "not_eligible" | "fallback";
 };
 
@@ -61,6 +70,18 @@ export const DEFAULT_EXPERIMENTS: PricingExperiment[] = [
   },
 ];
 
+function normalizePriceOverrides(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    // Key must look like "<service>:<qty>"; value a non-negative EUR price.
+    if (!/^[a-z0-9_]+:\d+$/i.test(key)) continue;
+    const price = typeof raw === "number" ? raw : Number(raw);
+    if (Number.isFinite(price) && price >= 0) out[key] = Math.round(price * 100) / 100;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 export function normalizePricingExperiments(value: unknown): PricingExperiment[] {
   if (!Array.isArray(value)) return DEFAULT_EXPERIMENTS;
 
@@ -80,6 +101,7 @@ export function normalizePricingExperiments(value: unknown): PricingExperiment[]
             pricingStrategy: String(v.pricingStrategy),
             paused: Boolean(v.paused),
             stripePriceIds: v.stripePriceIds,
+            priceOverrides: normalizePriceOverrides(v.priceOverrides),
           }];
         })
       : [];
@@ -194,6 +216,7 @@ export function assignPricingVariant(input: {
           variantId: variant.id,
           pricingStrategy: variant.pricingStrategy,
           priceMultiplier: variant.priceMultiplier,
+          priceOverrides: variant.priceOverrides,
           reason: "assigned",
         };
       }
@@ -209,6 +232,7 @@ export function assignPricingVariant(input: {
         variantId: fallbackVariant.id,
         pricingStrategy: fallbackVariant.pricingStrategy,
         priceMultiplier: fallbackVariant.priceMultiplier,
+        priceOverrides: fallbackVariant.priceOverrides,
         reason: "fallback",
       };
     }
@@ -217,7 +241,33 @@ export function assignPricingVariant(input: {
   return { ...CONTROL_ASSIGNMENT, reason: "disabled" };
 }
 
-export function applyPricingAssignment(amount: number, assignment: PricingAssignment) {
+export type PricingContext = {
+  service?: string;
+  qty?: number;
+  /** Display/charge currency. Per-pack overrides only apply when this is EUR. */
+  currency?: string;
+};
+
+export function applyPricingAssignment(
+  amount: number,
+  assignment: PricingAssignment,
+  context?: PricingContext,
+) {
+  // Explicit per-pack EUR override wins over the multiplier — but only for EUR
+  // (overrides are absolute EUR prices; applying them to USD/GBP/… would be
+  // wrong). Non-EUR currencies fall through to the multiplier path unchanged.
+  const overrides = assignment.priceOverrides;
+  if (
+    overrides &&
+    context?.service &&
+    Number.isFinite(context.qty) &&
+    (context.currency === undefined || context.currency.toUpperCase() === "EUR")
+  ) {
+    const override = overrides[`${context.service}:${context.qty}`];
+    if (Number.isFinite(override) && override >= 0) {
+      return Math.round(override * 100) / 100;
+    }
+  }
   const multiplier = Number.isFinite(assignment.priceMultiplier) ? assignment.priceMultiplier : 1;
   return Math.round(amount * multiplier * 100) / 100;
 }

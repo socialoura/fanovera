@@ -107,7 +107,12 @@
       "PowerShell(Remove-Item *)",
       "PowerShell(Test-Path *)",
       "Bash(env)",
-      "PowerShell(node scripts/shot-x-likes.mjs)"
+      "PowerShell(node scripts/shot-x-likes.mjs)",
+      "PowerShell(node scripts/test-x-switch.mjs)",
+      "PowerShell(npx vitest run 2>&1 | Select-Object -Last 30)",
+      "Bash(git check-ignore *)",
+      "PowerShell(npx next lint --file app/lib/usePricingExperiment.ts --file app/twitter/TwitterPageClient.tsx --file app/twitter/components/Step2Username.tsx --file app/api/twitter/tweet/route.ts 2>&1 | Select-Object -Last 30)",
+      "Bash(npx vercel *)"
     ]
   }
 }

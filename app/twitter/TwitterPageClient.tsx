@@ -14,7 +14,7 @@ import type { XProfile } from "./components/Step2Username";
 import { PACKS, LIKES_PACKS, RETWEET_PACKS, type CountryId, type XProductType, formatPrice, formatQty, getPacksForProduct, getServiceForProduct, defaultPackIndex } from "./data";
 import PricingPacksLoading from "../components/PricingPacksLoading";
 import { usePaymentIntent } from "../components/StripePayment";
-import { useApplyCurrencyPricing } from "../lib/useCurrencyPricing";
+import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
 import { trackEvent } from "../lib/analytics";
@@ -55,6 +55,9 @@ export default function TwitterPageClient() {
   const likesPricing = useApplyCurrencyPricing("x_likes", LIKES_PACKS, STATIC_LIKES_PACKS);
   const retweetsPricing = useApplyCurrencyPricing("x_retweets", RETWEET_PACKS, STATIC_RETWEET_PACKS);
   const { canDisplayPricing, currency, experiment } = productType === "likes" ? likesPricing : productType === "retweets" ? retweetsPricing : followersPricing;
+  // Warm every service's pricing on arrival (single batched call) so switching
+  // product variant never shows a loading skeleton — matches the other pages.
+  usePrefetchProductPricing();
   useTrackPageVisit("twitter");
 
   const activePacks = getPacksForProduct(productType);

@@ -39,6 +39,34 @@ describe("pricing experiments", () => {
     expect(applyPricingAssignment(10, { experimentId: "x", variantId: "v", pricingStrategy: "test", priceMultiplier: 0.9, reason: "assigned" })).toBe(9);
   });
 
+  it("applies per-pack EUR overrides over the multiplier, EUR-only", () => {
+    const assignment = {
+      experimentId: "x", variantId: "grid", pricingStrategy: "grid", priceMultiplier: 1,
+      priceOverrides: { "ig_followers:1000": 5.99 }, reason: "assigned" as const,
+    };
+    // EUR + matching pack → override wins (base price ignored)
+    expect(applyPricingAssignment(3.99, assignment, { service: "ig_followers", qty: 1000, currency: "EUR" })).toBe(5.99);
+    // non-EUR → override ignored, multiplier path
+    expect(applyPricingAssignment(3.99, assignment, { service: "ig_followers", qty: 1000, currency: "USD" })).toBe(3.99);
+    // no matching pack → multiplier path
+    expect(applyPricingAssignment(2.49, assignment, { service: "ig_followers", qty: 500, currency: "EUR" })).toBe(2.49);
+    // no context → multiplier path (back-compat)
+    expect(applyPricingAssignment(3.99, assignment)).toBe(3.99);
+  });
+
+  it("normalizes and rejects malformed price overrides", () => {
+    const [exp] = normalizePricingExperiments([
+      {
+        id: "grid", enabled: true, traffic: 100, seed: "s", productAreas: ["instagram"],
+        variants: [{
+          id: "b", label: "B", traffic: 100, priceMultiplier: 1, pricingStrategy: "grid",
+          priceOverrides: { "ig_followers:1000": "5.99", "bad-key": 10, "ig_likes:100": -1 },
+        }],
+      },
+    ]);
+    expect(exp.variants[0].priceOverrides).toEqual({ "ig_followers:1000": 5.99 });
+  });
+
   it("normalizes admin-managed experiments", () => {
     const normalized = normalizePricingExperiments([
       {
@@ -86,6 +114,22 @@ describe("checkout pricing", () => {
     });
     expect(result.currency).toBe("USD");
     expect(result.amountCents).toBe(213);
+  });
+
+  it("charges the per-pack override amount when the variant defines one (EUR)", () => {
+    const assignment = {
+      experimentId: "ig", variantId: "grid", pricingStrategy: "grid", priceMultiplier: 1,
+      priceOverrides: { "ig_followers:1000": 5.99 }, reason: "assigned" as const,
+    };
+    const result = calculateCheckoutPricing({
+      platform: "instagram",
+      currency: "EUR",
+      cart: [{ qty: 1000, service: "ig_followers" }],
+      pricingRows: [{ service: "ig_followers", qty: 1000, price: "3.99", active: true }],
+      assignment,
+    });
+    // 5.99 override → 599 cents (no promo applied here)
+    expect(result.amountCents).toBe(599);
   });
 
   it("supports the gated fixed-total test promo code", () => {

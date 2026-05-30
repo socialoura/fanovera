@@ -134,6 +134,34 @@ async function syncKeywordCosts(daysBack: number) {
   return { fetched: rows.length, upserted };
 }
 
+// Marker note for rows written by this cron. Lets us distinguish auto rows
+// from manual admin entries so we never clobber a hand-typed cost.
+const AUTO_NOTE = "auto: google ads sync";
+
+/**
+ * Roll the per-campaign costs up into a single daily total in `ad_costs`,
+ * which is the table the main analytics dashboard reads. Single EUR account,
+ * so SUM(cost_cents) is directly correct.
+ *
+ * Conflict policy: only ever overwrite a row we wrote ourselves (note =
+ * AUTO_NOTE). A manually-entered cost for a date is left untouched, while
+ * auto rows still get refreshed across the 14-day retroactive window.
+ */
+async function rollupToAdCosts(daysBack: number) {
+  const result = await sql`
+    INSERT INTO ad_costs (date, cost_cents, note)
+    SELECT date, SUM(cost_cents)::int, ${AUTO_NOTE}
+    FROM ad_costs_by_campaign
+    WHERE date >= CURRENT_DATE - (${daysBack}::int * INTERVAL '1 day')
+    GROUP BY date
+    ON CONFLICT (date) DO UPDATE
+      SET cost_cents = EXCLUDED.cost_cents, note = EXCLUDED.note
+      WHERE ad_costs.note = ${AUTO_NOTE}
+    RETURNING date
+  `;
+  return { written: result.length };
+}
+
 async function syncGclidMap(daysBack: number) {
   const rows = await fetchClickToCampaignMap(daysBack);
   let inserted = 0;
@@ -176,11 +204,12 @@ async function handle(req: NextRequest) {
     const adGroupCosts = await syncAdGroupCosts(costDays);
     const searchTermCosts = await syncSearchTermCosts(costDays);
     const keywordCosts = await syncKeywordCosts(costDays);
+    const adCostsRollup = await rollupToAdCosts(costDays);
     const gclids = await syncGclidMap(gclidDays);
     const tookMs = Date.now() - startedAt;
 
-    console.info("[cron/sync-google-ads]", { costs, adGroupCosts, searchTermCosts, keywordCosts, gclids, tookMs });
-    return NextResponse.json({ ok: true, costs, adGroupCosts, searchTermCosts, keywordCosts, gclids, tookMs });
+    console.info("[cron/sync-google-ads]", { costs, adGroupCosts, searchTermCosts, keywordCosts, adCostsRollup, gclids, tookMs });
+    return NextResponse.json({ ok: true, costs, adGroupCosts, searchTermCosts, keywordCosts, adCostsRollup, gclids, tookMs });
   } catch (err) {
     console.error("[cron/sync-google-ads] failed:", err);
     return NextResponse.json({ error: "Sync failed", detail: (err as Error).message }, { status: 500 });
