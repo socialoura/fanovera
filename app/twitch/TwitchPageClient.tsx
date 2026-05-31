@@ -22,7 +22,7 @@ import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
 import StickyMobileCTA from "../components/StickyMobileCTA";
-import { useTwitchCopy } from "./i18n";
+import { useTwitchCopy, TwitchProductProvider } from "./i18n";
 
 const STATIC_PACKS = PACKS.map((pack) => ({ ...pack }));
 const STATIC_AI_VIEWERS_PACKS = AI_VIEWERS_PACKS.map((pack) => ({ ...pack }));
@@ -125,6 +125,7 @@ export default function TwitchPageClient() {
   };
 
   return (
+    <TwitchProductProvider value={productType}>
     <div data-i18n-skip>
       <div className="paper-frame with-tw-halo" data-step-main>
         <TwHeader />

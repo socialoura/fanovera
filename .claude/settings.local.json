@@ -112,7 +112,14 @@
       "PowerShell(npx vitest run 2>&1 | Select-Object -Last 30)",
       "Bash(git check-ignore *)",
       "PowerShell(npx next lint --file app/lib/usePricingExperiment.ts --file app/twitter/TwitterPageClient.tsx --file app/twitter/components/Step2Username.tsx --file app/api/twitter/tweet/route.ts 2>&1 | Select-Object -Last 30)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(Select-String -Pattern \"SITELINK\",\"PRICE\",\"→\",\"- \" -SimpleMatch)",
+      "Bash(git commit *)",
+      "Bash(npx esbuild *)",
+      "Bash(BASE=http://localhost:3138 node *)",
+      "PowerShell($pids = Get-NetTCPConnection -LocalPort 3137,3138 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; foreach\\($p in $pids\\){ try { Stop-Process -Id $p -Force -ErrorAction Stop; Write-Output \"killed $p\" } catch {} }; Write-Output \"done\")",
+      "Bash(BASE=http://localhost:3139 node *)",
+      "Bash(BASE=http://localhost:3140 node *)"
     ]
   }
 }

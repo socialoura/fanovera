@@ -7,6 +7,8 @@ type ProductOverrides = {
   mode: MarketingMode;
   product: string;
   audience: string;
+  /** Locale-correct audience label override (e.g. Twitch "Abonnés" vs "Viewers"). */
+  audienceLabel?: string;
 };
 
 type Pair = readonly [string, string];
@@ -204,7 +206,7 @@ export function applyPerformancePublicCopy<T extends Record<string, unknown>>(
 
 export function applyPerformanceProductCopy<T>(
   base: T,
-  { locale, mode, product, audience }: ProductOverrides,
+  { locale, mode, product, audience, audienceLabel: audienceLabelOverride }: ProductOverrides,
 ): T {
   if (getEffectiveMarketingMode(locale, mode) !== "performance") return base;
 
@@ -217,7 +219,7 @@ export function applyPerformanceProductCopy<T>(
   const footer = objectSection(source.footer);
   const reviews = objectSection(source.reviews);
 
-  const audienceLabel = getAudienceLabel(product, locale, audience);
+  const audienceLabel = audienceLabelOverride || getAudienceLabel(product, locale, audience);
   const lowerAudience = audienceLabel.toLowerCase();
 
   return {
@@ -581,6 +583,10 @@ type BlackhatProductOverrides = {
   locale: SupportedLocale;
   product: string;
   audience: string;
+  /** Full locale-correct audience phrase override, e.g. "abonnés Twitch" / "viewers Twitch". */
+  bhAudience?: string;
+  /** Short locale-correct noun for the "X 100% réels" bullet, e.g. "Abonnés" / "Viewers". */
+  audienceNoun?: string;
 };
 
 const BH_AUDIENCES: Record<string, Record<SupportedLocale, string>> = {
@@ -602,7 +608,7 @@ function loc<T>(locale: SupportedLocale, table: Record<SupportedLocale, T>): T {
 export function applyBlackhatProductCopy<T>(
   base: T,
   surfaceMode: SurfaceMarketingMode,
-  { locale, product, audience }: BlackhatProductOverrides,
+  { locale, product, audience, bhAudience: bhAudienceOverride, audienceNoun }: BlackhatProductOverrides,
 ): T {
   if (surfaceMode !== "blackhat") return base;
 
@@ -615,21 +621,41 @@ export function applyBlackhatProductCopy<T>(
   const footer = objectSection(source.footer);
   const reviews = objectSection(source.reviews);
 
-  const bhAudience = BH_AUDIENCES[product]?.[locale] || audience.toLowerCase();
+  const bhAudience = bhAudienceOverride || BH_AUDIENCES[product]?.[locale] || audience.toLowerCase();
   const isSpotify = product === "Spotify";
   const isYouTube = product === "YouTube";
 
   // why.items[0]: "Real followers/streams" + description that differs for Spotify and YouTube
-  const realsFirstTitle = loc(locale, {
-    fr: isSpotify ? "Streams & followers réels" : "Abonnés 100% réels",
-    en: isSpotify ? "Real streams & followers" : "100% real followers",
-    es: isSpotify ? "Streams y seguidores reales" : "Seguidores 100% reales",
-    pt: isSpotify ? "Streams e seguidores reais" : "Seguidores 100% reais",
-    de: isSpotify ? "Echte Streams & Follower" : "100% echte Follower",
-    it: isSpotify ? "Stream e follower reali" : "Follower 100% reali",
-    tr: isSpotify ? "Gerçek stream ve takipçiler" : "%100 gerçek takipçiler",
-  });
-  const realsFirstBody = loc(locale, {
+  const realsFirstTitle = audienceNoun
+    ? ({
+        fr: `${audienceNoun} 100% réels`,
+        en: `100% real ${audienceNoun.toLowerCase()}`,
+        es: `${audienceNoun} 100% reales`,
+        pt: `${audienceNoun} 100% reais`,
+        de: `100% echte ${audienceNoun}`,
+        it: `${audienceNoun} 100% reali`,
+        tr: `%100 gerçek ${audienceNoun.toLowerCase()}`,
+      }[locale] ?? `100% real ${audienceNoun.toLowerCase()}`)
+    : loc(locale, {
+        fr: isSpotify ? "Streams & followers réels" : "Abonnés 100% réels",
+        en: isSpotify ? "Real streams & followers" : "100% real followers",
+        es: isSpotify ? "Streams y seguidores reales" : "Seguidores 100% reales",
+        pt: isSpotify ? "Streams e seguidores reais" : "Seguidores 100% reais",
+        de: isSpotify ? "Echte Streams & Follower" : "100% echte Follower",
+        it: isSpotify ? "Stream e follower reali" : "Follower 100% reali",
+        tr: isSpotify ? "Gerçek stream ve takipçiler" : "%100 gerçek takipçiler",
+      });
+  const realsFirstBody = audienceNoun
+    ? ({
+        fr: "Chaque profil livré est réel, avec photo, bio et activité récente.",
+        en: "Every delivered profile is real, with a photo, bio and recent activity.",
+        es: "Cada perfil entregado es real, con foto, biografía y actividad reciente.",
+        pt: "Cada perfil entregue é real, com foto, bio e atividade recente.",
+        de: "Jedes gelieferte Profil ist echt — mit Foto, Bio und aktueller Aktivität.",
+        it: "Ogni profilo consegnato è reale, con foto, bio e attività recente.",
+        tr: "Teslim edilen her profil gerçek; fotoğraf, biyografi ve güncel aktiviteyle.",
+      }[locale] ?? "Every delivered profile is real, with a photo, bio and recent activity.")
+    : loc(locale, {
     fr: isSpotify
       ? "Chaque écoute et chaque follower provient d'un compte réel avec activité récente."
       : `Chaque ${isYouTube ? "vue" : "abonné"} est un profil réel avec photo, bio et activité récente.`,
@@ -712,7 +738,17 @@ export function applyBlackhatProductCopy<T>(
       selectedPack: loc(locale, { fr: "Pack choisi", en: "Chosen pack", es: "Pack elegido", pt: "Pack escolhido", de: "Gewähltes Paket", it: "Pacchetto scelto", tr: "Seçilen paket" }),
       visibilityPack: bhAudience,
       continue: loc(locale, { fr: "Commander maintenant", en: "Order now", es: "Pedir ahora", pt: "Pedir agora", de: "Jetzt bestellen", it: "Ordina ora", tr: "Şimdi sipariş ver" }),
-      reassurance: loc(locale, {
+      reassurance: audienceNoun
+        ? ({
+            fr: `Livraison express · ${audienceNoun} réels actifs · Garantie relivraison 30j`,
+            en: `Express delivery · Real active ${audienceNoun.toLowerCase()} · 30-day redelivery guarantee`,
+            es: `Entrega rápida · ${audienceNoun} reales activos · Garantía de reposición 30 días`,
+            pt: `Entrega rápida · ${audienceNoun} reais ativos · Garantia de reposição 30 dias`,
+            de: `Express-Lieferung · Echte aktive ${audienceNoun} · 30-Tage-Nachlieferungsgarantie`,
+            it: `Consegna rapida · ${audienceNoun} reali attivi · Garanzia rifornimento 30 giorni`,
+            tr: `Hızlı teslimat · Gerçek aktif ${audienceNoun.toLowerCase()} · 30 gün yeniden teslim garantisi`,
+          }[locale] ?? `Express delivery · Real active ${audienceNoun.toLowerCase()} · 30-day redelivery guarantee`)
+        : loc(locale, {
         fr: isSpotify ? "Livraison express · Streams & followers réels · Garantie relivraison 30j" : "Livraison express · Abonnés réels actifs · Garantie relivraison 30j",
         en: isSpotify ? "Express delivery · Real streams & followers · 30-day redelivery guarantee" : "Express delivery · Real active followers · 30-day redelivery guarantee",
         es: isSpotify ? "Entrega rápida · Streams y seguidores reales · Garantía de reposición 30 días" : "Entrega rápida · Seguidores reales activos · Garantía de reposición 30 días",

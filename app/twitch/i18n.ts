@@ -1,7 +1,19 @@
+"use client";
+
+import { createContext, useContext } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import type { SupportedLocale } from "../i18n/types";
 import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
+import type { TwitchProductType } from "./data";
+
+/**
+ * Exposes the currently-selected Twitch product (followers vs AI viewers) to
+ * useTwitchCopy, so greyhat/blackhat copy uses the right audience wording
+ * ("abonnés Twitch" vs "viewers Twitch") for the product the visitor is viewing.
+ */
+const TwitchProductContext = createContext<TwitchProductType>("followers");
+export const TwitchProductProvider = TwitchProductContext.Provider;
 
 const copy = {
   fr: {
@@ -102,14 +114,35 @@ const localized: Record<SupportedLocale, TwitchCopy> = {
   tr: copy.tr,
 };
 
+// Locale-correct audience wording per Twitch product.
+const TW_LABEL: Record<TwitchProductType, Record<SupportedLocale, string>> = {
+  followers: { fr: "Abonnés", en: "Followers", es: "Seguidores", pt: "Seguidores", de: "Follower", it: "Follower", tr: "Takipçi" },
+  ai_viewers: { fr: "Viewers", en: "Viewers", es: "Espectadores", pt: "Espectadores", de: "Zuschauer", it: "Spettatori", tr: "İzleyici" },
+};
+const TW_BH_AUDIENCE: Record<TwitchProductType, Record<SupportedLocale, string>> = {
+  followers: { fr: "abonnés Twitch", en: "Twitch followers", es: "seguidores de Twitch", pt: "seguidores Twitch", de: "Twitch-Follower", it: "follower Twitch", tr: "Twitch takipçisi" },
+  ai_viewers: { fr: "viewers Twitch", en: "Twitch viewers", es: "espectadores de Twitch", pt: "espectadores Twitch", de: "Twitch-Zuschauer", it: "spettatori Twitch", tr: "Twitch izleyicisi" },
+};
+
 export function useTwitchCopy() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  const productType = useContext(TwitchProductContext);
+  const audienceLabel = TW_LABEL[productType][locale] ?? TW_LABEL[productType].en;
+  const bhAudience = TW_BH_AUDIENCE[productType][locale] ?? TW_BH_AUDIENCE[productType].en;
+
   const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "Twitch",
-    audience: "Audience",
+    audience: audienceLabel,
+    audienceLabel,
   });
-  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "Twitch", audience: "Viewers" });
+  return applyBlackhatProductCopy(base, surfaceMode, {
+    locale,
+    product: "Twitch",
+    audience: audienceLabel,
+    bhAudience,
+    audienceNoun: audienceLabel,
+  });
 }
