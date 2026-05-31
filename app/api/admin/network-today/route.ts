@@ -58,6 +58,32 @@ function platformFromAdGroupName(name: string | null | undefined): string {
   return OTHER;
 }
 
+/**
+ * Extract the geo/locale tag from a campaign name. Campaigns are named like
+ * "[FR] Fanovera" / "[UK] Fanovera" / "[EN] Fanovera", so the bracketed code is
+ * our per-country dimension. We use the CAMPAIGN tag (not the buyer's country)
+ * because both cost and first-touch ads revenue derive from the campaign, which
+ * keeps the two sides consistent for a per-country ROAS. Untagged campaigns
+ * (e.g. "Google Shopping") fall under `other`.
+ */
+function countryFromCampaignName(name: string | null | undefined): string {
+  const m = (name || "").match(/\[([a-z]{2,3})\]/i);
+  return m ? m[1].toUpperCase() : OTHER;
+}
+
+// One cell of the network × country grid (ads side only — cost + first-touch
+// revenue). "CA total" (organic) is deliberately excluded: it can't be tied to
+// a campaign country, so it only exists in the all-countries rollup.
+type GeoCell = {
+  platform: string;
+  country: string;
+  costCents: number;
+  clicks: number;
+  impressions: number;
+  ordersAds: number;
+  revenueAdsCents: number;
+};
+
 type Bucket = {
   platform: string;
   costCents: number;
@@ -96,16 +122,35 @@ export async function GET(req: NextRequest) {
       return b;
     };
 
+    // Network × country grid (keyed "platform__country"), powering the country
+    // filter on the client without an extra round-trip.
+    const geoCells = new Map<string, GeoCell>();
+    const geoCell = (platform: string, country: string): GeoCell => {
+      const key = `${platform}__${country}`;
+      let c = geoCells.get(key);
+      if (!c) {
+        c = { platform, country, costCents: 0, clicks: 0, impressions: 0, ordersAds: 0, revenueAdsCents: 0 };
+        geoCells.set(key, c);
+      }
+      return c;
+    };
+
     // --- COST (live) -------------------------------------------------------
     const configured = googleAdsConfigured();
     const costRows = configured ? await fetchAdGroupCostsToday() : [];
     // configured but zero rows can mean "no spend yet today" OR a transient API
     // error (fetch fails soft to []). We surface `configured` so the UI can hint.
     for (const r of costRows) {
-      const b = bucket(platformFromAdGroupName(r.adGroupName));
+      const platform = platformFromAdGroupName(r.adGroupName);
+      const country = countryFromCampaignName(r.campaignName);
+      const b = bucket(platform);
       b.costCents += r.costCents;
       b.clicks += r.clicks;
       b.impressions += r.impressions;
+      const g = geoCell(platform, country);
+      g.costCents += r.costCents;
+      g.clicks += r.clicks;
+      g.impressions += r.impressions;
     }
 
     // --- REVENUE: total per platform (today, Paris) ------------------------
@@ -131,7 +176,8 @@ export async function GET(req: NextRequest) {
       WITH customer_acquisitions AS (
         SELECT DISTINCT ON (LOWER(TRIM(o.email)))
           LOWER(TRIM(o.email)) AS email_key,
-          gcm.ad_group_id
+          gcm.ad_group_id,
+          gcm.campaign_name AS acq_campaign_name
         FROM orders o
         JOIN checkout_payloads cp ON cp.payment_intent_id = o.stripe_payment_intent_id
         JOIN gclid_campaign_map gcm ON gcm.gclid = cp.gclid
@@ -148,6 +194,7 @@ export async function GET(req: NextRequest) {
       )
       SELECT
         an.ad_group_name,
+        ca.acq_campaign_name,
         o2.currency,
         COUNT(DISTINCT o2.id)::int AS orders,
         COALESCE(SUM(GREATEST(0, o2.total_cents - o2.refunded_amount_cents)), 0)::bigint AS revenue
@@ -156,13 +203,20 @@ export async function GET(req: NextRequest) {
       LEFT JOIN ag_names an ON an.ad_group_id = ca.ad_group_id
       WHERE o2.status = ANY(${PAID_STATUSES})
         AND (o2.created_at AT TIME ZONE 'Europe/Paris')::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
-      GROUP BY an.ad_group_name, o2.currency
-    `) as Array<{ ad_group_name: string | null; currency: string | null; orders: number; revenue: number }>;
+      GROUP BY an.ad_group_name, ca.acq_campaign_name, o2.currency
+    `) as Array<{ ad_group_name: string | null; acq_campaign_name: string | null; currency: string | null; orders: number; revenue: number }>;
 
     for (const row of adsRevRows) {
-      const b = bucket(platformFromAdGroupName(row.ad_group_name));
-      b.ordersAds += Number(row.orders) || 0;
-      b.revenueAdsCents += await convertCentsToEur(Number(row.revenue) || 0, row.currency || "EUR");
+      const platform = platformFromAdGroupName(row.ad_group_name);
+      const country = countryFromCampaignName(row.acq_campaign_name);
+      const orders = Number(row.orders) || 0;
+      const revenue = await convertCentsToEur(Number(row.revenue) || 0, row.currency || "EUR");
+      const b = bucket(platform);
+      b.ordersAds += orders;
+      b.revenueAdsCents += revenue;
+      const g = geoCell(platform, country);
+      g.ordersAds += orders;
+      g.revenueAdsCents += revenue;
     }
 
     // --- Assemble rows + ROAS ---------------------------------------------
@@ -196,6 +250,17 @@ export async function GET(req: NextRequest) {
       },
     );
 
+    // Country tags ordered by spend desc (biggest first), `other` always last.
+    const countryCost = new Map<string, number>();
+    for (const g of geoCells.values()) {
+      countryCost.set(g.country, (countryCost.get(g.country) ?? 0) + g.costCents);
+    }
+    const countries = Array.from(countryCost.keys()).sort((a, b) => {
+      if (a === OTHER) return 1;
+      if (b === OTHER) return -1;
+      return (countryCost.get(b) ?? 0) - (countryCost.get(a) ?? 0);
+    });
+
     const todayParis = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Paris",
       year: "numeric", month: "2-digit", day: "2-digit",
@@ -209,6 +274,8 @@ export async function GET(req: NextRequest) {
       // "no spend yet" from "couldn't reach the API".
       costLive: costRows.length > 0,
       rows,
+      countries,
+      networkCountry: Array.from(geoCells.values()),
       totals: {
         ...totals,
         roasTotal: totals.costCents > 0 ? totals.revenueTotalCents / totals.costCents : null,

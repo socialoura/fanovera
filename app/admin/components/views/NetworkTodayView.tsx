@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import NetIcon from "../../../components/NetIcon";
+import { NETWORKS, type NetworkId } from "../../../lib/networks";
 
 interface Row {
   platform: string;
@@ -51,17 +53,23 @@ const PLATFORM_LABEL: Record<string, string> = {
   other: "Autre (Brand / générique)",
 };
 
-const PLATFORM_EMOJI: Record<string, string> = {
-  instagram: "📸",
-  tiktok: "🎵",
-  youtube: "▶️",
-  twitch: "🟣",
-  twitter: "✖️",
-  facebook: "👍",
-  spotify: "🎧",
-  linkedin: "💼",
-  other: "•",
-};
+// Real brand colors keyed by platform (from the shared network catalog), used
+// to tint the NetIcon SVG logos. "other" has no brand — it falls back to a dot.
+const PLATFORM_COLOR: Record<string, string> = Object.fromEntries(
+  NETWORKS.map((n) => [n.id, n.color]),
+);
+
+function PlatformIcon({ platform }: { platform: string }) {
+  const color = PLATFORM_COLOR[platform];
+  if (!color) {
+    return (
+      <span style={{ display: "inline-flex", width: 18, justifyContent: "center", color: "var(--a-ink-3)" }}>
+        •
+      </span>
+    );
+  }
+  return <NetIcon kind={platform as NetworkId} color={color} size={18} />;
+}
 
 function roasColor(roas: number | null): string {
   if (roas == null) return "var(--a-ink-3)";
@@ -211,8 +219,10 @@ export default function NetworkTodayView() {
               data.rows.map((r) => (
                 <tr key={r.platform}>
                   <td>
-                    <span style={{ marginRight: 8 }}>{PLATFORM_EMOJI[r.platform] ?? "•"}</span>
-                    <span style={{ fontWeight: 700 }}>{PLATFORM_LABEL[r.platform] ?? r.platform}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      <PlatformIcon platform={r.platform} />
+                      <span style={{ fontWeight: 700 }}>{PLATFORM_LABEL[r.platform] ?? r.platform}</span>
+                    </span>
                   </td>
                   <td style={{ textAlign: "right", fontWeight: 600 }}>{eur2(r.costCents)}</td>
                   <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>{r.clicks.toLocaleString("fr-FR")}</td>
