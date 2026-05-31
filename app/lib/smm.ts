@@ -9,6 +9,7 @@ import { sql } from "./db";
 import { bulkFollowsCostCents, estimateBulkFollowsCharge, resolveBulkFollowsCharge } from "./smmCost";
 import { getUsdToCurrencyRate } from "./fxRates";
 import { captureServerEvent } from "./analytics.server";
+import { extractHandleFromUrl, type ExtractPlatform } from "./extractHandle";
 
 const BF_URL = "https://bulkfollows.com/api/v2";
 
@@ -345,6 +346,62 @@ function buildLink(platform: string, username: string, postUrl?: string): string
   }
 }
 
+const HANDLE_RECOVERABLE_PLATFORMS = new Set<string>([
+  "instagram", "tiktok", "x", "twitter", "twitch", "facebook", "linkedin",
+]);
+
+// TikTok "Share → Copy link" produces short links that don't embed the @handle
+// (e.g. https://www.tiktok.com/t/ZTBh4dK13/ or https://vm.tiktok.com/ZMabc/).
+// They must be followed to the canonical .../@handle/... URL.
+const TIKTOK_SHORT_LINK = /^https?:\/\/(?:vm\.tiktok\.com\/|(?:www\.)?tiktok\.com\/t\/)/i;
+
+/** Follow redirects to the final URL (6s timeout). Returns the input on failure. */
+async function expandUrl(url: string): Promise<string> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: ctrl.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15" },
+    });
+    clearTimeout(timer);
+    return res.url || url;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * Resolve the profile handle for an order. Normally `order.username` holds it,
+ * but for media orders (TikTok views/likes, etc.) the handle can be empty when
+ * the live media preview failed to resolve at checkout — the customer only
+ * pasted a video link. A profile-targeted line (e.g. a "+followers" upsell on a
+ * views order) would then build `https://www.tiktok.com/@` and fail on
+ * BulkFollows. Recover the handle from any cart item's postUrl, which embeds it
+ * (https://www.tiktok.com/@handle/video/123) — expanding short links if needed.
+ */
+async function resolveOrderUsername(
+  rawUsername: string,
+  platform: string,
+  cart: Array<{ postUrl?: string }>,
+): Promise<string> {
+  const direct = (rawUsername || "").trim();
+  if (direct) return direct;
+  if (!HANDLE_RECOVERABLE_PLATFORMS.has(platform)) return "";
+  for (const item of cart) {
+    const postUrl = typeof item?.postUrl === "string" ? item.postUrl : "";
+    if (!postUrl) continue;
+    let handle = extractHandleFromUrl(platform as ExtractPlatform, postUrl);
+    if (!handle && platform === "tiktok" && TIKTOK_SHORT_LINK.test(postUrl)) {
+      handle = extractHandleFromUrl(platform as ExtractPlatform, await expandUrl(postUrl));
+    }
+    if (handle) return handle;
+  }
+  return "";
+}
+
 /**
  * For a given order, read its cart and place all corresponding BulkFollows
  * sub-orders. Updates the DB row with smm_orders + cost_cents.
@@ -372,7 +429,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
   }> = Array.isArray(order.cart) ? order.cart : JSON.parse(order.cart || "[]");
 
   const platform = order.platform || "instagram";
-  const username = order.username || "";
+  const username = await resolveOrderUsername(order.username, platform, cart);
 
   // Fetch active SMM config mappings
   const configs = await sql`SELECT * FROM smm_config WHERE enabled = true`;
@@ -568,7 +625,7 @@ export async function refillOrderFromScratch(
     : JSON.parse(order.smm_orders || "[]");
 
   const platform = order.platform || "instagram";
-  const username = order.username || "";
+  const username = await resolveOrderUsername(order.username, platform, cart);
 
   const newSubs: SmmSubOrder[] = [];
   let synthetic = 1000 + existing.filter((s) => s.cartIndex >= 1000).length;
@@ -695,10 +752,10 @@ export async function retrySmmSubOrder(
     ratePer1k = Number(config.rate_per_1k) || 0;
   }
 
-  const username = order.username || "";
   const cart: Array<{ postUrl?: string }> = Array.isArray(order.cart)
     ? order.cart
     : JSON.parse(order.cart || "[]");
+  const username = await resolveOrderUsername(order.username, sub.platform, cart);
   const link = buildLink(sub.platform, username, cart[sub.cartIndex]?.postUrl);
 
   if (!(await isUrlReachable(link))) {
