@@ -6,6 +6,7 @@ import AnalyticsView from "./components/views/AnalyticsView";
 import CohortsView from "./components/views/CohortsView";
 import SourcesView from "./components/views/SourcesView";
 import AdsROASView from "./components/views/AdsROASView";
+import NetworkTodayView from "./components/views/NetworkTodayView";
 import SearchTermsView from "./components/views/SearchTermsView";
 import AdsCohortsView from "./components/views/AdsCohortsView";
 import OrdersView from "./components/views/OrdersView";
@@ -34,7 +35,7 @@ function fmtEur(cents: number): string {
   });
 }
 
-type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "networkToday" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -57,6 +58,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "cohorts", label: "Cohortes", icon: () => Ic.layers(), sub: "Rétention D7/D30/D90" },
   { id: "sources", label: "Sources", icon: () => Ic.filter(), sub: "LTV par acquisition" },
   { id: "adsRoas", label: "Ads ROAS", icon: () => Ic.zap(), sub: "ROAS réel Google Ads" },
+  { id: "networkToday", label: "Réseaux jour", icon: () => Ic.zap(), sub: "Dépense vs CA par réseau (jour)" },
   { id: "searchTerms", label: "Search Terms", icon: () => Ic.filter(), sub: "Termes recherchés payants" },
   { id: "adsCohorts", label: "Ads Cohortes", icon: () => Ic.layers(), sub: "ROAS D7/D30/D90" },
   { id: "orders", label: "Commandes", icon: () => Ic.cart(), sub: "Gestion clients" },
@@ -249,7 +251,7 @@ export default function AdminClient() {
         </div>
 
         <div className="nav-section-label">Pilotage</div>
-        {NAV.slice(0, 4).map((n) => (
+        {NAV.slice(0, 5).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -258,7 +260,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Catalogue</div>
-        {NAV.slice(4, 8).map((n) => (
+        {NAV.slice(5, 9).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -266,7 +268,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Système</div>
-        {NAV.slice(8, 12).map((n) => (
+        {NAV.slice(9, 13).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -274,7 +276,7 @@ export default function AdminClient() {
         ))}
 
         <div className="nav-section-label">Support</div>
-        {NAV.slice(12).map((n) => (
+        {NAV.slice(13).map((n) => (
           <button key={n.id} className={"nav-item " + (view === n.id ? "active" : "")} onClick={() => setView(n.id)}>
             {n.icon()}
             {n.label}
@@ -393,6 +395,7 @@ export default function AdminClient() {
             {view === "cohorts" && <CohortsView />}
             {view === "sources" && <SourcesView />}
             {view === "adsRoas" && <AdsROASView />}
+            {view === "networkToday" && <NetworkTodayView />}
             {view === "searchTerms" && <SearchTermsView />}
             {view === "adsCohorts" && <AdsCohortsView />}
             {view === "orders" && <OrdersView />}

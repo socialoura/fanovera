@@ -121,7 +121,11 @@
       "Bash(BASE=http://localhost:3139 node *)",
       "Bash(BASE=http://localhost:3140 node *)",
       "PowerShell(node scripts/create-twitter-es-it-ag.mjs)",
-      "PowerShell(node scripts/create-twitter-es-it-ag.mjs --live)"
+      "PowerShell(node scripts/create-twitter-es-it-ag.mjs --live)",
+      "PowerShell(node scripts/create-spotify-es-it-ag.mjs)",
+      "PowerShell(node scripts/create-spotify-es-it-ag.mjs --live)",
+      "PowerShell(node scripts/create-youtube-es-it-ag.mjs)",
+      "PowerShell(node scripts/create-youtube-es-it-ag.mjs --live)"
     ]
   }
 }

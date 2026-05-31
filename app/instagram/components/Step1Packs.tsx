@@ -5,7 +5,7 @@ import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type InstagramProductType, getPacksForProduct } from "../data";
-import { findEquivalentPackIndex } from "../../lib/packEquivalence";
+import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
 import { useInstagramCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -38,7 +38,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   // a 5 000-followers selection becomes the closest-to-5 000 likes/views pack
   // instead of snapping back to the popular default.
   const switchProduct = (newType: InstagramProductType) => {
-    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    const newIdx = resolveSwitchedPackIndex(selectedPack, getPacksForProduct(newType));
     setProductType(newType);
     setPack(newIdx);
   };

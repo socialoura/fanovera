@@ -27,3 +27,25 @@ export function findEquivalentPackIndex<P extends PackLike>(
   }
   return bestIdx;
 }
+
+// Resolve which pack to select when the visitor switches product type.
+//
+// If they were sitting on the popular default — i.e. they never deviated from
+// the highlighted pack — we move them to the NEW product's popular pack so the
+// glowing "selected" tile stays on the one wearing the "POPULAIRE" badge.
+// Quantity-mapping a popular default (e.g. 1 000 followers) lands on a non-
+// popular tier (1 000 likes when likes' popular is 2 500), which makes the
+// highlight ring drift onto the wrong tile.
+//
+// Only once the visitor has actively picked a non-popular tier do we preserve
+// their quantity intent across the switch.
+export function resolveSwitchedPackIndex<P extends PackLike & { popular?: boolean }>(
+  currentPack: { qty: number; popular?: boolean },
+  newPacks: readonly P[],
+): number {
+  if (currentPack.popular) {
+    const popularIdx = newPacks.findIndex((p) => p.popular);
+    if (popularIdx >= 0) return popularIdx;
+  }
+  return findEquivalentPackIndex(currentPack.qty, newPacks);
+}

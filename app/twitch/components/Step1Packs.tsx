@@ -3,7 +3,7 @@ import NetIcon from "../../components/NetIcon";
 import TwSprinkle from "./TwSprinkle";
 import Stepper from "./Stepper";
 import { formatPrice, formatOld, formatQty, fmtEuro, getPacksForProduct, type CountryId, type TwitchProductType } from "../data";
-import { findEquivalentPackIndex } from "../../lib/packEquivalence";
+import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
 import { useTwitchCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -33,7 +33,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   };
 
   const switchProduct = (newType: TwitchProductType) => {
-    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    const newIdx = resolveSwitchedPackIndex(selectedPack, getPacksForProduct(newType));
     setProductType(newType);
     setPack(newIdx);
   };

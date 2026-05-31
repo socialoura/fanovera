@@ -3,7 +3,7 @@ import NetIcon from "../../components/NetIcon";
 import SpoSprinkle from "./SpoSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type SpotifyProductType, getPacksForProduct } from "../data";
-import { findEquivalentPackIndex } from "../../lib/packEquivalence";
+import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
 import { useSpotifyCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -25,7 +25,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   };
 
   const switchProduct = (newType: SpotifyProductType) => {
-    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    const newIdx = resolveSwitchedPackIndex(selectedPack, getPacksForProduct(newType));
     setProductType(newType);
     setPack(newIdx);
   };

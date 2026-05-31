@@ -299,6 +299,72 @@ export async function fetchAdGroupCosts(daysBack: number): Promise<AdGroupCostRo
 }
 
 /**
+ * Live, un-cached pull of TODAY's ad-group cost / clicks (account timezone,
+ * which is Europe/Paris for Cartoonova). Unlike fetchAdGroupCosts(daysBack)
+ * — which uses LAST_N_DAYS and therefore *excludes* the current day — this
+ * uses the `DURING TODAY` literal so the admin can see spend as it accrues
+ * without waiting for the nightly cron.
+ *
+ * Returns an empty array (never throws) on misconfiguration or API error so
+ * callers can fail soft and still render the revenue side.
+ */
+export async function fetchAdGroupCostsToday(): Promise<AdGroupCostRow[]> {
+  const config = readConfig();
+  if (!config) {
+    console.warn("[googleAdsClient] env not configured — skipping fetchAdGroupCostsToday");
+    return [];
+  }
+  const customer = (await getCustomer(config)) as
+    | { query: (gaql: string) => Promise<Array<Record<string, unknown>>> }
+    | null;
+  if (!customer) return [];
+
+  const gaql = `
+    SELECT
+      campaign.id,
+      campaign.name,
+      ad_group.id,
+      ad_group.name,
+      segments.date,
+      metrics.cost_micros,
+      metrics.clicks,
+      metrics.impressions,
+      metrics.conversions
+    FROM ad_group
+    WHERE segments.date DURING TODAY
+  `;
+
+  try {
+    const rows = await customer.query(gaql);
+    const out: AdGroupCostRow[] = [];
+    for (const r of rows) {
+      const campaign = r.campaign as { id?: string | number; name?: string } | undefined;
+      const adGroup = r.ad_group as { id?: string | number; name?: string } | undefined;
+      const segments = r.segments as { date?: string } | undefined;
+      const metrics = r.metrics as
+        | { cost_micros?: number | string; clicks?: number | string; impressions?: number | string; conversions?: number | string }
+        | undefined;
+      if (!campaign?.id || !adGroup?.id) continue;
+      out.push({
+        date: isoDate(segments?.date),
+        campaignId: String(campaign.id),
+        campaignName: campaign.name || "",
+        adGroupId: String(adGroup.id),
+        adGroupName: adGroup.name || "",
+        costCents: microsToCents(metrics?.cost_micros),
+        clicks: Number(metrics?.clicks) || 0,
+        impressions: Number(metrics?.impressions) || 0,
+        conversions: Number(metrics?.conversions) || 0,
+      });
+    }
+    return out;
+  } catch (err) {
+    console.error("[googleAdsClient] fetchAdGroupCostsToday failed:", describeError(err));
+    return [];
+  }
+}
+
+/**
  * Pull cost / clicks per (search_term, ad_group, date). Lets us see which
  * actual user queries are paying off vs. which ones are bleeding budget.
  *

@@ -3,7 +3,7 @@ import NetIcon from "../../components/NetIcon";
 import XSprinkle from "./XSprinkle";
 import Stepper from "./Stepper";
 import { formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type XProductType, getPacksForProduct } from "../data";
-import { findEquivalentPackIndex } from "../../lib/packEquivalence";
+import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
 import { useXCopy } from "../i18n";
 import ValueFraming from "../../components/ValueFraming";
 
@@ -34,7 +34,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
 
   // Preserve the visitor's quantity intent across the product toggle.
   const switchProduct = (newType: XProductType) => {
-    const newIdx = findEquivalentPackIndex(selectedPack.qty, getPacksForProduct(newType));
+    const newIdx = resolveSwitchedPackIndex(selectedPack, getPacksForProduct(newType));
     setProductType(newType);
     setPack(newIdx);
   };
