@@ -28,6 +28,7 @@ const es: LocaleDictionary = {
     bestValue: "✓ MEJOR VALOR"},
   exact: {
     ...en.exact,
+    "Paiement sécurisé · SSL · via Stripe": "Pago seguro · SSL · vía Stripe",
     Suivi: "Seguimiento",
     Commencer: "Empezar",
     Devise: "Divisa",

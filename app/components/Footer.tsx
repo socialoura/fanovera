@@ -14,7 +14,7 @@ import { getPublicCopy } from "./publicCopy";
  * the brand marks look exactly like every other checkout footer the visitor
  * has seen elsewhere.
  */
-function TrustStrip() {
+function TrustStrip({ label }: { label: string }) {
   return (
     <div
       className="trust-strip"
@@ -36,7 +36,7 @@ function TrustStrip() {
           <rect x="3" y="6.5" width="8" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.4" />
           <path d="M5 6.5V4.5a2 2 0 0 1 4 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
         </svg>
-        <span>Paiement sécurisé · SSL · via Stripe</span>
+        <span>{label}</span>
       </div>
       <img
         src="/badges_paiement.png"
@@ -94,7 +94,7 @@ function FootCol({
 }
 
 export default function Footer() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
   const copy = getPublicCopy(locale, mode, surfaceMode).footer;
 
@@ -166,7 +166,7 @@ export default function Footer() {
             ]}
           />
         </div>
-        <TrustStrip />
+        <TrustStrip label={t("Paiement sécurisé · SSL · via Stripe")} />
         <div className="footer-bottom">
           <div>© Fanovera SAS 2026 · {copy.madeIn}</div>
           <div>17 rue de Paradis · 75010 Paris · support@fanovera.com</div>

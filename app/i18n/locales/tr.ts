@@ -26,7 +26,7 @@ const tr: LocaleDictionary = {
   css: {
     popular: "★ POPÜLER",
     bestValue: "✓ EN İYİ DEĞER"},
-  exact: { ...en.exact, Suivi: "Takip", Commencer: "Başla", Produit: "Ürün", "Fonctionnement": "Nasıl çalışır", "Témoignages": "Yorumlar", "Société": "Şirket", Confidentialité: "Gizlilik", Continuer: "Devam et", Retour: "Geri", Payer: "Öde", "Commande confirmée": "Sipariş onaylandı", "Suivi de commande": "Sipariş takibi", "Retour à l'accueil": "Ana sayfaya dön", "Voir la solution": "Çözümü gör" },
+  exact: { ...en.exact, "Paiement sécurisé · SSL · via Stripe": "Güvenli ödeme · SSL · Stripe ile", Suivi: "Takip", Commencer: "Başla", Produit: "Ürün", "Fonctionnement": "Nasıl çalışır", "Témoignages": "Yorumlar", "Société": "Şirket", Confidentialité: "Gizlilik", Continuer: "Devam et", Retour: "Geri", Payer: "Öde", "Commande confirmée": "Sipariş onaylandı", "Suivi de commande": "Sipariş takibi", "Retour à l'accueil": "Ana sayfaya dön", "Voir la solution": "Çözümü gör" },
   fragments: [
     ["Une presence en ligne", "Daha net bir çevrimiçi varlık"],
     ["Une présence en ligne", "Daha net bir çevrimiçi varlık"],

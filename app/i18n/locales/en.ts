@@ -25,6 +25,7 @@ const en: LocaleDictionary = {
     popular: "★ POPULAR",
     bestValue: "✓ BEST VALUE"},
   exact: {
+    "Paiement sécurisé · SSL · via Stripe": "Secure payment · SSL · via Stripe",
     Suivi: "Tracking",
     Contact: "Contact",
     Commencer: "Start",

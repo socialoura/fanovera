@@ -26,7 +26,7 @@ const pt: LocaleDictionary = {
   css: {
     popular: "★ POPULAR",
     bestValue: "✓ MELHOR VALOR"},
-  exact: { ...en.exact, Suivi: "Acompanhamento", Commencer: "Começar", Produit: "Produto", "Fonctionnement": "Como funciona", "Témoignages": "Avaliações", "Société": "Empresa", Confidentialité: "Privacidade", Continuer: "Continuar", Retour: "Voltar", Payer: "Pagar", "Commande confirmée": "Pedido confirmado", "Suivi de commande": "Acompanhamento do pedido", "Retour à l'accueil": "Voltar ao início", "Voir la solution": "Ver a solução" },
+  exact: { ...en.exact, "Paiement sécurisé · SSL · via Stripe": "Pagamento seguro · SSL · via Stripe", Suivi: "Acompanhamento", Commencer: "Começar", Produit: "Produto", "Fonctionnement": "Como funciona", "Témoignages": "Avaliações", "Société": "Empresa", Confidentialité: "Privacidade", Continuer: "Continuar", Retour: "Voltar", Payer: "Pagar", "Commande confirmée": "Pedido confirmado", "Suivi de commande": "Acompanhamento do pedido", "Retour à l'accueil": "Voltar ao início", "Voir la solution": "Ver a solução" },
   fragments: [
     ["Une presence en ligne", "Uma presença online"],
     ["Une présence en ligne", "Uma presença online"],
