@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { unstable_cache } from "next/cache";
 import { sql } from "./db";
-import { isMarketingMode, type MarketingMode } from "./marketingModeTypes";
+import { isMarketingMode, isModeEligibleLocale, type MarketingMode } from "./marketingModeTypes";
 import {
   isSurfaceMarketingMode,
   type MarketingSurface,
@@ -141,13 +141,13 @@ export function getCachedSurfaceMarketingMode(
 
 /**
  * getEffectiveMarketingModeForSurface(surface, locale)
- * - If locale ≠ fr && ≠ en → always "whitehat"
+ * - If locale is not mode-eligible (fr/en/es/it) → always "whitehat"
  * - Otherwise → DB lookup (cached)
  */
 export async function getEffectiveMarketingModeForSurface(
   surface: MarketingSurface,
   locale: SupportedLocale,
 ): Promise<SurfaceMarketingMode> {
-  if (locale !== "fr" && locale !== "en") return "whitehat";
+  if (!isModeEligibleLocale(locale)) return "whitehat";
   return getCachedSurfaceMarketingMode(surface);
 }

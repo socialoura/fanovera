@@ -8,9 +8,22 @@ export function isMarketingMode(value: unknown): value is MarketingMode {
   return typeof value === "string" && MARKETING_MODES.includes(value as MarketingMode);
 }
 
+/**
+ * Locales allowed to render non-whitehat marketing copy (performance/promo and
+ * the per-surface greyhat/blackhat modes). Every other locale is always forced
+ * to whitehat. The greyhat/blackhat copy exists for these locales in
+ * performanceCopy.ts.
+ */
+export const MODE_ELIGIBLE_LOCALES: readonly SupportedLocale[] = ["fr", "en", "es", "it"];
+
+export function isModeEligibleLocale(locale: SupportedLocale): boolean {
+  return MODE_ELIGIBLE_LOCALES.includes(locale);
+}
+
 export function getEffectiveMarketingMode(locale: SupportedLocale, mode: MarketingMode): MarketingMode {
-  if (mode === "promo" && (locale === "fr" || locale === "en")) return "promo";
-  return mode === "performance" && (locale === "fr" || locale === "en") ? "performance" : "clean";
+  const eligible = isModeEligibleLocale(locale);
+  if (mode === "promo" && eligible) return "promo";
+  return mode === "performance" && eligible ? "performance" : "clean";
 }
 
 // ── Per-surface marketing modes (whitehat / greyhat / blackhat) ──
