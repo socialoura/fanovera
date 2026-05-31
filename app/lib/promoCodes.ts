@@ -4,11 +4,60 @@ export const TEST_PROMO_AMOUNT_CENTS = 50;
 
 export type PromoPricing = {
   code: string;
-  type: "none" | "percent" | "test_fixed_total";
+  type: "none" | "percent" | "fixed" | "test_fixed_total";
   amountCents: number;
   discountCents: number;
   isTestPromo: boolean;
 };
+
+export type PromoDiscountType = "percent" | "fixed";
+
+/**
+ * Applies an admin-managed promo code's discount to a subtotal. Pure + sync so
+ * it can run both client-side (display) and server-side (authoritative amount).
+ *
+ *  - "percent": `discountValue` is a percentage (1..100). Capped at 100 %.
+ *  - "fixed":   `discountValue` is a flat amount in EUR cents, capped at the
+ *               subtotal so the discount never exceeds the order.
+ *
+ * The charged amount is floored at `minimumAmountCents` (Stripe minimum), and
+ * `discountCents` is reported as the *effective* reduction after that floor.
+ */
+export function applyResolvedDiscount({
+  subtotalCents,
+  code,
+  discountType,
+  discountValue,
+  minimumAmountCents = 100,
+}: {
+  subtotalCents: number;
+  code: string;
+  discountType: PromoDiscountType;
+  discountValue: number;
+  minimumAmountCents?: number;
+}): PromoPricing {
+  const subtotal = Math.max(0, Math.round(subtotalCents));
+  const normalizedCode = normalizePromoCode(code);
+
+  let rawDiscount: number;
+  if (discountType === "percent") {
+    const pct = Math.max(0, Math.min(100, Math.round(discountValue)));
+    rawDiscount = Math.round(subtotal * (pct / 100));
+  } else {
+    rawDiscount = Math.max(0, Math.round(discountValue));
+  }
+  rawDiscount = Math.min(rawDiscount, subtotal);
+
+  const amountCents = Math.max(minimumAmountCents, subtotal - rawDiscount);
+  return {
+    code: normalizedCode,
+    type: discountType === "percent" ? "percent" : "fixed",
+    amountCents,
+    // Effective reduction after the Stripe floor (never negative).
+    discountCents: Math.max(0, subtotal - amountCents),
+    isTestPromo: false,
+  };
+}
 
 export class TestPromoDisabledError extends Error {
   constructor() {

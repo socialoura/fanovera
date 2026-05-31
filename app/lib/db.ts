@@ -2,6 +2,81 @@ import { neon } from "@neondatabase/serverless";
 
 export const sql = neon(process.env.DATABASE_URL!);
 
+// Default tag catalog seeded the first time the table is created. The admin can
+// add/remove/recolor these from the Orders view afterwards. `color` is one of
+// the admin pill variants (amber/violet/red/green/blue/ink).
+const ORDER_TAG_SEED: Array<{ label: string; color: string; sort: number }> = [
+  { label: "Compte indispo", color: "amber", sort: 10 },
+  { label: "Compte privé", color: "violet", sort: 20 },
+  { label: "Compte introuvable", color: "red", sort: 30 },
+  { label: "Username erroné", color: "red", sort: 40 },
+  { label: "Client relancé", color: "blue", sort: 50 },
+  { label: "À surveiller", color: "amber", sort: 60 },
+];
+
+// In-memory guard so a warm serverless instance doesn't re-run the DDL + seed
+// check on every request. Reset on cold start, which is exactly when we want it
+// to run again.
+let orderTagsSchemaReady = false;
+
+// Creates the admin-tags schema on demand so the feature works without a manual
+// initDb()/`/api/init-db` run (initDb isn't invoked per-request in this app).
+// Idempotent: CREATE/ALTER ... IF NOT EXISTS + a seed that only fires when the
+// catalog is empty, so it never re-inserts or clobbers operator edits.
+export async function ensureOrderTagsSchema() {
+  if (orderTagsSchemaReady) return;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_tags JSONB NOT NULL DEFAULT '[]'`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS order_tags (
+      id SERIAL PRIMARY KEY,
+      label VARCHAR(80) NOT NULL UNIQUE,
+      color VARCHAR(20) NOT NULL DEFAULT 'amber',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  const existing = await sql`SELECT COUNT(*)::int AS c FROM order_tags`;
+  if (Number(existing[0]?.c) === 0) {
+    for (const t of ORDER_TAG_SEED) {
+      await sql`
+        INSERT INTO order_tags (label, color, sort_order)
+        VALUES (${t.label}, ${t.color}, ${t.sort})
+        ON CONFLICT (label) DO NOTHING
+      `;
+    }
+  }
+  orderTagsSchemaReady = true;
+}
+
+// In-memory guard mirroring orderTagsSchemaReady — avoids re-running the DDL on
+// every request for a warm serverless instance.
+let promoCodesSchemaReady = false;
+
+// Admin-managed promo codes (separate from the hardcoded FANO5/FANO10-30/FANOTEST50
+// codes in promoCodes.ts). Each code carries a discount (percent or fixed EUR
+// cents), an optional global usage cap (max_uses) + a used_count incremented once
+// per paid order, an optional expiry, and an active flag. Created on demand so the
+// feature works without a manual initDb()/`/api/init-db` run.
+export async function ensurePromoCodesSchema() {
+  if (promoCodesSchemaReady) return;
+  await sql`
+    CREATE TABLE IF NOT EXISTS promo_codes (
+      id SERIAL PRIMARY KEY,
+      code VARCHAR(40) NOT NULL UNIQUE,
+      discount_type VARCHAR(10) NOT NULL DEFAULT 'percent',
+      discount_value INTEGER NOT NULL,
+      max_uses INTEGER,
+      used_count INTEGER NOT NULL DEFAULT 0,
+      active BOOLEAN NOT NULL DEFAULT true,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  // Per-order attribution of the applied code (for reporting / refund context).
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code VARCHAR(40) DEFAULT ''`;
+  promoCodesSchemaReady = true;
+}
+
 export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS pricing (
@@ -182,6 +257,14 @@ export async function initDb() {
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_experiment_variant ON orders(experiment_id, variant_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_refunded ON orders(refunded_at) WHERE refunded_amount_cents > 0`;
+
+  // Internal admin tags (e.g. "Compte privé", "Compte indispo") — operator-only
+  // notes attached to an order. The label catalog lives in `order_tags`; each
+  // order stores the active label strings as a JSONB array. Never customer-facing.
+  await ensureOrderTagsSchema();
+
+  // Admin-managed promo codes (code catalog + usage caps). See ensurePromoCodesSchema.
+  await ensurePromoCodesSchema();
 
   await sql`
     CREATE TABLE IF NOT EXISTS smm_config (
@@ -575,6 +658,8 @@ export async function createOrder(params: {
   pricingStrategy?: string | null;
   sourcePage?: string | null;
   plan?: string | null;
+  /** Promo code applied to this order (admin-managed or hardcoded). "" if none. */
+  promoCode?: string | null;
 }) {
   try {
     // ON CONFLICT DO NOTHING is critical for idempotency: when both the
@@ -584,7 +669,7 @@ export async function createOrder(params: {
     // used to fetch the already-existing id without firing side effects
     // (email, Discord, SMM) twice.
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan, promo_code)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -603,7 +688,8 @@ export async function createOrder(params: {
         ${params.variantId || ""},
         ${params.pricingStrategy || ""},
         ${params.sourcePage || ""},
-        ${params.plan || ""}
+        ${params.plan || ""},
+        ${params.promoCode || ""}
       )
       ON CONFLICT (stripe_payment_intent_id) DO NOTHING
       RETURNING id
@@ -632,7 +718,7 @@ export async function createOrder(params: {
     // We can't tell new vs. existing here — assume new to be safe (caller will
     // de-dupe via getOrderByPaymentIntent on next request anyway).
     const result = await sql`
-      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan)
+      INSERT INTO orders (stripe_payment_intent_id, email, username, platform, cart, post_assignments, total_cents, stripe_fee_cents, status, followers_before, currency, country, lang, experiment_id, variant_id, pricing_strategy, source_page, plan, promo_code)
       VALUES (
         ${params.stripePaymentIntentId},
         ${params.email},
@@ -651,7 +737,8 @@ export async function createOrder(params: {
         ${params.variantId || ""},
         ${params.pricingStrategy || ""},
         ${params.sourcePage || ""},
-        ${params.plan || ""}
+        ${params.plan || ""},
+        ${params.promoCode || ""}
       )
       RETURNING id
     `;
@@ -954,4 +1041,57 @@ export async function getCheckoutPayload(paymentIntentId: string) {
     LIMIT 1
   `;
   return rows[0] || null;
+}
+
+// ── Promo codes (admin-managed) ──
+
+export type PromoCodeRow = {
+  id: number;
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  max_uses: number | null;
+  used_count: number;
+  active: boolean;
+  expires_at: string | Date | null;
+  created_at: string | Date;
+};
+
+/**
+ * Returns an admin-managed promo code row only if it is currently redeemable:
+ * active, not expired, and under its usage cap. Returns null otherwise (unknown,
+ * inactive, expired, or exhausted) so callers treat it as "no discount".
+ * `code` must already be normalized (uppercase, no spaces).
+ */
+export async function getActivePromoCode(code: string): Promise<PromoCodeRow | null> {
+  if (!code) return null;
+  await ensurePromoCodesSchema();
+  const rows = await sql`
+    SELECT * FROM promo_codes
+    WHERE code = ${code}
+      AND active = true
+      AND (expires_at IS NULL OR expires_at > NOW())
+      AND (max_uses IS NULL OR used_count < max_uses)
+    LIMIT 1
+  `;
+  return (rows[0] as PromoCodeRow) || null;
+}
+
+/**
+ * Atomically records one redemption of a promo code. The WHERE guard keeps it
+ * from exceeding max_uses under concurrency. No-op (0 rows) for codes that don't
+ * exist in the table (e.g. hardcoded FANO codes) or are already exhausted.
+ * Returns true if a use was actually consumed.
+ */
+export async function consumePromoCode(code: string): Promise<boolean> {
+  if (!code) return false;
+  await ensurePromoCodesSchema();
+  const result = await sql`
+    UPDATE promo_codes
+    SET used_count = used_count + 1
+    WHERE code = ${code}
+      AND (max_uses IS NULL OR used_count < max_uses)
+    RETURNING id
+  `;
+  return result.length > 0;
 }

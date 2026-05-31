@@ -119,7 +119,9 @@
       "Bash(BASE=http://localhost:3138 node *)",
       "PowerShell($pids = Get-NetTCPConnection -LocalPort 3137,3138 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; foreach\\($p in $pids\\){ try { Stop-Process -Id $p -Force -ErrorAction Stop; Write-Output \"killed $p\" } catch {} }; Write-Output \"done\")",
       "Bash(BASE=http://localhost:3139 node *)",
-      "Bash(BASE=http://localhost:3140 node *)"
+      "Bash(BASE=http://localhost:3140 node *)",
+      "PowerShell(node scripts/create-twitter-es-it-ag.mjs)",
+      "PowerShell(node scripts/create-twitter-es-it-ag.mjs --live)"
     ]
   }
 }

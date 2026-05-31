@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/app/lib/db";
+import { sql, ensureOrderTagsSchema } from "@/app/lib/db";
 import { convertCentsToEur } from "@/app/lib/fxRates";
 import { refreshSmmStatus } from "@/app/lib/smm";
 
@@ -72,6 +72,10 @@ export async function GET(req: NextRequest) {
     const bfOrderId = Number.isFinite(bfOrderIdRaw) && bfOrderIdRaw > 0 ? bfOrderIdRaw : 0;
     const offset = (page - 1) * limit;
 
+    // Make sure the admin_tags column exists before SELECT o.* so the listing
+    // carries operator tags even on a DB that never ran initDb().
+    await ensureOrderTagsSchema();
+
     // Opt-out via ?refresh=0 (used by the refresh button to avoid double work).
     if (searchParams.get("refresh") !== "0") {
       await autoRefreshPendingOrders();
@@ -142,10 +146,28 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, cost_cents } = body;
+    const { id, status, cost_cents, admin_tags } = body;
 
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    // Internal operator tags ("Compte privé"…). Accepted independently of the
+    // status/cost update so a tag toggle is a standalone PUT. Stored as a
+    // de-duplicated array of trimmed strings.
+    if (admin_tags !== undefined) {
+      if (!Array.isArray(admin_tags)) {
+        return NextResponse.json({ error: "admin_tags must be an array" }, { status: 400 });
+      }
+      await ensureOrderTagsSchema();
+      const clean = Array.from(
+        new Set(
+          admin_tags
+            .map((t: unknown) => String(t || "").trim())
+            .filter((t: string) => t.length > 0 && t.length <= 80),
+        ),
+      );
+      await sql`UPDATE orders SET admin_tags = ${JSON.stringify(clean)}::jsonb WHERE id = ${id}`;
     }
 
     if (status && cost_cents !== undefined) {

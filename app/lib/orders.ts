@@ -1,5 +1,6 @@
 import Stripe from "stripe";
-import { createOrder, getCheckoutPayload, getOrderByPaymentIntent, normalizeCountryCode, sql } from "./db";
+import { consumePromoCode, createOrder, ensurePromoCodesSchema, getCheckoutPayload, getOrderByPaymentIntent, normalizeCountryCode, sql } from "./db";
+import { normalizePromoCode } from "./promoCodes";
 import { runSmmForOrder } from "./smm";
 import { sendOrderConfirmation } from "./email";
 import { captureServerEvent } from "./analytics.server";
@@ -48,6 +49,11 @@ export async function ensureOrderForPaymentIntent(
 ): Promise<EnsureOrderResult> {
   const overrides = options.overrides;
   try {
+    // Guarantees the promo_codes table + orders.promo_code column exist before
+    // createOrder inserts into promo_code (the schema is otherwise only created
+    // on demand by the promo paths, which may not have run on a cold instance).
+    await ensurePromoCodesSchema();
+
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
       expand: [
         "latest_charge.payment_method_details",
@@ -160,6 +166,7 @@ export async function ensureOrderForPaymentIntent(
       pricingStrategy: persisted?.pricing_strategy || meta.pricing_strategy || "",
       sourcePage: persisted?.source_page || meta.source_page || "",
       plan: persisted?.plan || meta.plan || "",
+      promoCode: normalizePromoCode(meta.promo_code),
     });
     const orderId = created.id;
 
@@ -168,6 +175,19 @@ export async function ensureOrderForPaymentIntent(
     // here so we never double-send / double-charge BulkFollows.
     if (!created.isNew) {
       return { ok: true, orderId, duplicate: true, smmPlaced: false, platform: platformForReturn, service: serviceForReturn, plan: planForReturn, totalCents: pi.amount, currency: pi.currency || "eur" };
+    }
+
+    // Consume one use of the admin-managed promo code, exactly once per paid
+    // order (we're in the created.isNew branch). No-op for hardcoded FANO codes
+    // / unknown codes — consumePromoCode only matches rows in promo_codes.
+    // Best-effort: a failure here must never block order confirmation.
+    const appliedPromo = normalizePromoCode(meta.promo_code);
+    if (appliedPromo) {
+      try {
+        await consumePromoCode(appliedPromo);
+      } catch (promoErr) {
+        console.error(`[ensureOrder] promo consume failed for order #${orderId} (${appliedPromo}):`, promoErr);
+      }
     }
 
     // Lifecycle-email conversion attribution (best-effort, never blocks): tie

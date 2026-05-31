@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { sql, upsertCheckoutPayload, getUpsellById } from "@/app/lib/db";
+import { sql, upsertCheckoutPayload, getUpsellById, getActivePromoCode } from "@/app/lib/db";
 import { resolveUpsellPriceCents } from "@/app/lib/fxRates";
 import { calculateCheckoutPricing, type PricingRow } from "@/app/lib/checkoutPricing";
-import { TestPromoDisabledError } from "@/app/lib/promoCodes";
+import { TestPromoDisabledError, normalizePromoCode } from "@/app/lib/promoCodes";
 import { assignPricingVariant } from "@/app/lib/pricingExperiments";
 import { getActivePricingExperiments } from "@/app/lib/pricingExperiments.server";
 import { getProductConfig, normalizePlatform, PLATFORM_SERVICES } from "@/app/lib/productCatalog";
@@ -139,6 +139,22 @@ export async function POST(req: NextRequest) {
     // intents (where the prefetch call doesn't include promoCode), which
     // makes Apple Pay charge less than what Step3Checkout displays.
     const promoCode = typeof body.promoCode === "string" ? body.promoCode : "";
+
+    // Admin-managed promo codes live in the promo_codes table (distinct from the
+    // hardcoded FANO5/FANO10-30/FANOTEST50 codes). getActivePromoCode returns a
+    // row only if the code is active, not expired, and under its usage cap — so
+    // exhausted/expired/unknown codes resolve to null and the order is charged
+    // full price (same behavior as any unrecognized code). Reserved codes can't
+    // be created in the table, so a DB hit never shadows a hardcoded code.
+    const dbPromo = await getActivePromoCode(normalizePromoCode(promoCode));
+    const customPromo = dbPromo
+      ? {
+          code: dbPromo.code,
+          discountType: dbPromo.discount_type,
+          discountValue: dbPromo.discount_value,
+        }
+      : undefined;
+
     const pricing = calculateCheckoutPricing({
       platform: normalizedPlatform,
       currency,
@@ -147,6 +163,7 @@ export async function POST(req: NextRequest) {
       assignment,
       promoCode,
       allowTestPromo: isTestPromoEnabled(),
+      customPromo,
     });
     const finalAmountCents = pricing.amountCents + upsellAddCents;
     const effectivePricingStrategy = pricing.promo.isTestPromo

@@ -13,8 +13,7 @@ import type { XProfile } from "./Step2Username";
 import { useXCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
 import { getPublicCopy } from "../../components/publicCopy";
-import { calculatePromoPricing, isDefaultPromoCode } from "../../lib/promoCodes";
-import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
+import { useCoupon } from "../../lib/useCoupon";
 import { useCurrencyPreference } from "../../lib/useCurrencyPricing";
 
 type Props = {
@@ -35,9 +34,6 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
   const { locale } = useI18n();
   const { currency } = useCurrencyPreference();
   const paymentCopy = getPublicCopy(locale).payment;
-  const initialPromo = usePromoFromUrl();
-  const [coupon, setCoupon] = useState(initialPromo.code);
-  const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
   const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
   // Pack ladder for the SELECTED product (followers/likes) — not the hardcoded
@@ -46,11 +42,8 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
   const safePack = Math.min(Math.max(0, pack), packs.length - 1);
   const selected = packs[safePack] ?? packs[0];
   const subtotal = selected.price;
-  const promo = calculatePromoPricing({
-    subtotalCents: Math.round(subtotal * 100),
-    promoCode: couponApplied ? coupon : "",
-    allowTestPromo: true,
-  });
+  const { coupon, setCoupon, couponApplied, setCouponApplied, promo, initiallyExpanded } =
+    useCoupon(Math.round(subtotal * 100));
   const discount = promo.discountCents / 100;
   const upsellCents = upsell?.price_cents ?? 0;
   const finalAmountCents = promo.amountCents + upsellCents;
@@ -130,7 +123,7 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
               setCoupon={setCoupon}
               couponApplied={couponApplied}
               setCouponApplied={setCouponApplied}
-              initiallyExpanded={initialPromo.applied}
+              initiallyExpanded={initiallyExpanded}
               accentColor="var(--x-ink)"
               labels={{
                 haveCoupon: paymentCopy.haveCoupon,

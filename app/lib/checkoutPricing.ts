@@ -1,5 +1,5 @@
 import { SUPPORTED_CURRENCIES, currencyDbColumn, type SupportedCurrency } from "./pricingCurrency";
-import { calculatePromoPricing, type PromoPricing } from "./promoCodes";
+import { applyResolvedDiscount, calculatePromoPricing, type PromoDiscountType, type PromoPricing } from "./promoCodes";
 import { applyPricingAssignment, type PricingAssignment } from "./pricingExperiments";
 import { findFallbackPack, getProductConfig, normalizePlatform, PLATFORM_SERVICES, type PlatformId } from "./productCatalog";
 import { AI_VIEWERS_PACKS as TWITCH_AI_VIEWERS_PACKS } from "@/app/twitch/data";
@@ -28,6 +28,12 @@ export type CheckoutPricingInput = {
   assignment?: PricingAssignment;
   promoCode?: unknown;
   allowTestPromo?: boolean;
+  /**
+   * Resolved admin-managed promo code (from the promo_codes table). When set, it
+   * takes precedence over the hardcoded `promoCode` resolution — the caller has
+   * already validated it (active, not expired, under its usage cap).
+   */
+  customPromo?: { code: string; discountType: PromoDiscountType; discountValue: number };
 };
 
 export type SanitizedCheckoutItem = {
@@ -178,11 +184,18 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
     });
   }
 
-  const promo = calculatePromoPricing({
-    subtotalCents,
-    promoCode: input.promoCode,
-    allowTestPromo: input.allowTestPromo,
-  });
+  const promo = input.customPromo
+    ? applyResolvedDiscount({
+        subtotalCents,
+        code: input.customPromo.code,
+        discountType: input.customPromo.discountType,
+        discountValue: input.customPromo.discountValue,
+      })
+    : calculatePromoPricing({
+        subtotalCents,
+        promoCode: input.promoCode,
+        allowTestPromo: input.allowTestPromo,
+      });
 
   return {
     amountCents: promo.amountCents,

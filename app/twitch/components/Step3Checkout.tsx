@@ -13,8 +13,7 @@ import type { TwProfile } from "./Step2Username";
 import { useTwitchCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
 import { getPublicCopy } from "../../components/publicCopy";
-import { calculatePromoPricing } from "../../lib/promoCodes";
-import { usePromoFromUrl } from "../../lib/usePromoFromUrl";
+import { useCoupon } from "../../lib/useCoupon";
 import { useCurrencyPreference } from "../../lib/useCurrencyPricing";
 
 type Props = {
@@ -35,9 +34,6 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const { locale } = useI18n();
   const { currency } = useCurrencyPreference();
   const paymentCopy = getPublicCopy(locale).payment;
-  const initialPromo = usePromoFromUrl();
-  const [coupon, setCoupon] = useState(initialPromo.code);
-  const [couponApplied, setCouponApplied] = useState(initialPromo.applied);
   const [upsell, setUpsell] = useState<CheckoutUpsellItem | null>(null);
 
   const packs = getPacksForProduct(productType);
@@ -45,11 +41,8 @@ export default function Step3Checkout({ country, pack, username, email, profile,
   const selectedPack = packs[safePack];
   const isLive = productType === "ai_viewers";
   const subtotal = selectedPack.price;
-  const promo = calculatePromoPricing({
-    subtotalCents: Math.round(subtotal * 100),
-    promoCode: couponApplied ? coupon : "",
-    allowTestPromo: true,
-  });
+  const { coupon, setCoupon, couponApplied, setCouponApplied, promo, initiallyExpanded } =
+    useCoupon(Math.round(subtotal * 100));
   const discount = promo.discountCents / 100;
   const upsellCents = upsell?.price_cents ?? 0;
   const finalAmountCents = promo.amountCents + upsellCents;
@@ -130,7 +123,7 @@ export default function Step3Checkout({ country, pack, username, email, profile,
               setCoupon={setCoupon}
               couponApplied={couponApplied}
               setCouponApplied={setCouponApplied}
-              initiallyExpanded={initialPromo.applied}
+              initiallyExpanded={initiallyExpanded}
               accentColor="var(--tw-purple)"
               labels={{
                 haveCoupon: paymentCopy.haveCoupon,

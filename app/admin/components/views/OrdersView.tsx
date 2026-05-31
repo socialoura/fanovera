@@ -35,7 +35,18 @@ interface Order {
   pricing_strategy?: string | null;
   customer_order_number?: number;
   customer_total_orders?: number;
+  admin_tags?: string[];
 }
+
+// Predefined internal tag catalog (operator-only). Editable from the Orders view.
+interface OrderTag {
+  id: number;
+  label: string;
+  color: string;
+  sort_order: number;
+}
+
+const TAG_COLORS = ["amber", "violet", "red", "green", "blue", "ink"] as const;
 
 type AbInfo = { experimentLabel: string; variantLabel: string; pricingStrategy: string } | null;
 
@@ -138,6 +149,13 @@ function asArray<T>(value: unknown): T[] {
     }
   }
   return [];
+}
+
+// admin_tags arrives as a JSONB array (already parsed) but stay defensive in
+// case it comes back as a JSON string from some code paths.
+function asTags(value: unknown): string[] {
+  const arr = asArray<unknown>(value);
+  return arr.map((t) => String(t || "").trim()).filter(Boolean);
 }
 
 function formatMoney(cents: number, currency = "EUR") {
@@ -263,6 +281,9 @@ function OrderDetail({
   onPrivateAccount,
   onRefillNotice,
   profileNotFoundBusy,
+  tagCatalog,
+  onToggleTag,
+  tagBusy,
 }: {
   order: Order;
   ab: AbInfo;
@@ -294,8 +315,12 @@ function OrderDetail({
   onPrivateAccount: (orderId: number) => void;
   onRefillNotice: (orderId: number) => void;
   profileNotFoundBusy: boolean;
+  tagCatalog: OrderTag[];
+  onToggleTag: (orderId: number, label: string) => void;
+  tagBusy: boolean;
 }) {
   const cart = asArray<CartItem>(order.cart);
+  const activeTags = asTags(order.admin_tags);
   const smmOrders = asArray<SmmOrderItem>(order.smm_orders);
   const firstItem = cart[0] ? asRecord(cart[0]) : {};
   const paidAt = formatDate(order.created_at);
@@ -536,6 +561,57 @@ function OrderDetail({
           </div>
         </aside>
       </div>
+
+      <section className="order-panel">
+        <div className="order-panel-head">
+          <div>
+            <h3>Commentaires internes</h3>
+            <p>Tags privés (jamais visibles par le client). Clique pour activer/désactiver.</p>
+          </div>
+        </div>
+        {(() => {
+          const colorByLabel = new Map(tagCatalog.map((t) => [t.label, t.color]));
+          // Show catalog labels + any tag the order still carries that has since
+          // been removed from the catalog (so the operator can untoggle it).
+          const orphanTags = activeTags.filter((t) => !colorByLabel.has(t));
+          const allLabels = [...tagCatalog.map((t) => t.label), ...orphanTags];
+          if (allLabels.length === 0) {
+            return (
+              <div className="order-empty">
+                Aucun libellé défini. Ajoute-en via « Gérer les libellés » en haut de la liste.
+              </div>
+            );
+          }
+          return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {allLabels.map((label) => {
+                const isActive = activeTags.includes(label);
+                const color = colorByLabel.get(label) || "ink";
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    className={isActive ? "pill " + color : "pill"}
+                    onClick={(e) => { e.stopPropagation(); onToggleTag(order.id, label); }}
+                    disabled={tagBusy}
+                    title={isActive ? "Cliquer pour retirer ce tag" : "Cliquer pour ajouter ce tag"}
+                    style={{
+                      cursor: tagBusy ? "wait" : "pointer",
+                      border: isActive ? undefined : "1px dashed var(--a-line)",
+                      background: isActive ? undefined : "transparent",
+                      color: isActive ? undefined : "var(--a-ink-3)",
+                      opacity: tagBusy ? 0.6 : 1,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {isActive ? "✓ " : "+ "}{label}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </section>
 
       <section className="order-panel">
         <div className="order-panel-head">
@@ -855,6 +931,145 @@ function OrderDetail({
   );
 }
 
+// Inline editor for the predefined tag catalog (add / recolor / delete).
+// Mutates server-side then asks the parent to refetch via onChanged.
+function TagManager({
+  tags,
+  onChanged,
+  onClose,
+}: {
+  tags: OrderTag[];
+  onChanged: () => void;
+  onClose: () => void;
+}) {
+  const [newLabel, setNewLabel] = useState("");
+  const [newColor, setNewColor] = useState<string>("amber");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const authed = (path: string, init: RequestInit) => {
+    const token = localStorage.getItem("admin_pw") || "";
+    return fetch(path, {
+      ...init,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(init.headers || {}) },
+    });
+  };
+
+  const runMutation = async (fn: () => Promise<Response>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fn();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      onChanged();
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    const label = newLabel.trim();
+    if (!label) return;
+    const ok = await runMutation(() =>
+      authed("/api/admin/order-tags", {
+        method: "POST",
+        body: JSON.stringify({ label, color: newColor, sort_order: (tags.length + 1) * 10 }),
+      }),
+    );
+    if (ok) setNewLabel("");
+  };
+
+  const handleRecolor = (id: number, color: string) =>
+    runMutation(() => authed("/api/admin/order-tags", { method: "PUT", body: JSON.stringify({ id, color }) }));
+
+  const handleDelete = (id: number) =>
+    runMutation(() => authed(`/api/admin/order-tags?id=${id}`, { method: "DELETE" }));
+
+  return (
+    <div className="card" style={{ padding: 16, marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ fontWeight: 800, fontSize: 14 }}>Libellés de commentaires</div>
+        <button className="btn ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={onClose}>
+          {Ic.x()} Fermer
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ padding: "8px 12px", marginBottom: 10, borderRadius: 8, background: "rgba(225,68,68,0.1)", border: "1px solid rgba(225,68,68,0.3)", color: "#E14444", fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+        {tags.length === 0 ? (
+          <div style={{ fontSize: 12, color: "var(--a-ink-3)" }}>Aucun libellé pour l&apos;instant.</div>
+        ) : (
+          tags.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className={"pill " + t.color} style={{ fontWeight: 700 }}>{t.label}</span>
+              <select
+                className="input"
+                value={t.color}
+                onChange={(e) => handleRecolor(t.id, e.target.value)}
+                disabled={busy}
+                style={{ width: 110, padding: "4px 8px", fontSize: 12 }}
+                aria-label={`Couleur de ${t.label}`}
+              >
+                {TAG_COLORS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => handleDelete(t.id)}
+                disabled={busy}
+                title="Supprimer ce libellé du catalogue"
+                style={{ width: 28, height: 28, borderRadius: 6, marginLeft: "auto" }}
+              >
+                {Ic.x()}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", borderTop: "1px solid var(--a-line)", paddingTop: 12 }}>
+        <input
+          className="input"
+          placeholder="Nouveau libellé (ex. Compte suspendu)"
+          value={newLabel}
+          maxLength={80}
+          onChange={(e) => setNewLabel(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+          style={{ flex: 1, minWidth: 200, padding: "6px 10px", fontSize: 13 }}
+        />
+        <select
+          className="input"
+          value={newColor}
+          onChange={(e) => setNewColor(e.target.value)}
+          style={{ width: 110, padding: "6px 10px", fontSize: 13 }}
+          aria-label="Couleur du nouveau libellé"
+        >
+          {TAG_COLORS.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <button className="btn primary" onClick={handleAdd} disabled={busy || !newLabel.trim()}>
+          {busy ? "..." : "Ajouter"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function OrdersView() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [experiments, setExperiments] = useState<PricingExperiment[]>([]);
@@ -880,6 +1095,10 @@ export default function OrdersView() {
   const [smmMessage, setSmmMessage] = useState<{ kind: "info" | "error"; text: string } | null>(null);
   const [editingBf, setEditingBf] = useState<BfEditState>(null);
   const [profileNotFoundBusy, setProfileNotFoundBusy] = useState(false);
+
+  const [tagCatalog, setTagCatalog] = useState<OrderTag[]>([]);
+  const [tagBusy, setTagBusy] = useState(false);
+  const [tagManagerOpen, setTagManagerOpen] = useState(false);
 
   const limit = 20;
 
@@ -926,6 +1145,24 @@ export default function OrdersView() {
       })
       .catch(() => {});
   }, []);
+
+  const fetchTagCatalog = useCallback(async () => {
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/order-tags", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data?.tags)) setTagCatalog(data.tags as OrderTag[]);
+    } catch {
+      /* non-blocking — the orders list still works without the catalog */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTagCatalog();
+  }, [fetchTagCatalog]);
 
   useEffect(() => {
     setPage(1);
@@ -1394,6 +1631,35 @@ export default function OrdersView() {
     }
   };
 
+  const handleToggleTag = async (orderId: number, label: string) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const current = asTags(order.admin_tags);
+    const next = current.includes(label)
+      ? current.filter((t) => t !== label)
+      : [...current, label];
+
+    setTagBusy(true);
+    const token = localStorage.getItem("admin_pw") || "";
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: orderId, admin_tags: next }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      // Patch locally so the expanded panel stays open (no full refetch).
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, admin_tags: next } : o)));
+    } catch (err) {
+      setSmmMessage({ kind: "error", text: err instanceof Error ? err.message : "Erreur lors de la mise à jour des tags" });
+    } finally {
+      setTagBusy(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString("fr-FR", {
@@ -1412,6 +1678,7 @@ export default function OrdersView() {
 
   const startItem = (page - 1) * limit + 1;
   const endItem = Math.min(page * limit, total);
+  const tagColorByLabel = new Map(tagCatalog.map((t) => [t.label, t.color]));
 
   return (
     <div>
@@ -1506,12 +1773,23 @@ export default function OrdersView() {
             </button>
           ))}
         </div>
-        <div style={{ marginLeft: "auto" }}>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          <button
+            className={"btn " + (tagManagerOpen ? "primary" : "")}
+            onClick={() => setTagManagerOpen((v) => !v)}
+            title="Ajouter / modifier les libellés de commentaires prédéfinis"
+          >
+            {Ic.edit()} Gérer les libellés
+          </button>
           <button className="btn" onClick={fetchOrders}>
             {Ic.refresh()} Rafraîchir
           </button>
         </div>
       </div>
+
+      {tagManagerOpen && (
+        <TagManager tags={tagCatalog} onChanged={fetchTagCatalog} onClose={() => setTagManagerOpen(false)} />
+      )}
 
       {error && (
         <div
@@ -1670,6 +1948,23 @@ export default function OrdersView() {
                           <span className="dot" />
                           {st.label}
                         </span>
+                        {(() => {
+                          const tags = asTags(o.admin_tags);
+                          if (tags.length === 0) return null;
+                          return (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                              {tags.map((label) => (
+                                <span
+                                  key={label}
+                                  className={"pill " + (tagColorByLabel.get(label) || "ink")}
+                                  style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px" }}
+                                >
+                                  {label}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td>
                         {ab ? (
@@ -1728,6 +2023,9 @@ export default function OrdersView() {
                             onPrivateAccount={handlePrivateAccount}
                             onRefillNotice={handleRefillNotice}
                             profileNotFoundBusy={profileNotFoundBusy}
+                            tagCatalog={tagCatalog}
+                            onToggleTag={handleToggleTag}
+                            tagBusy={tagBusy}
                           />
                         </td>
                       </tr>
