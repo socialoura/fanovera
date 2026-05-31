@@ -180,5 +180,6 @@ export default function TwitchPageClient() {
         onClick={next}
       />
     </div>
+    </TwitchProductProvider>
   );
 }
