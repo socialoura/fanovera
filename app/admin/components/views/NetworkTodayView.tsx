@@ -29,6 +29,16 @@ interface Totals {
   roasAds: number | null;
 }
 
+interface GeoCell {
+  platform: string;
+  country: string;
+  costCents: number;
+  clicks: number;
+  impressions: number;
+  ordersAds: number;
+  revenueAdsCents: number;
+}
+
 interface NetworkTodayResponse {
   dateParis: string;
   timeZone: string;
@@ -36,10 +46,25 @@ interface NetworkTodayResponse {
   costLive: boolean;
   rows: Row[];
   totals: Totals;
+  countries: string[];
+  networkCountry: GeoCell[];
 }
+
+const OTHER = "other";
 
 const eur2 = (cents: number) =>
   (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+
+const COUNTRY_FLAG: Record<string, string> = {
+  FR: "🇫🇷", UK: "🇬🇧", GB: "🇬🇧", US: "🇺🇸", ES: "🇪🇸",
+  IT: "🇮🇹", CH: "🇨🇭", DE: "🇩🇪", EN: "🌐",
+};
+
+function countryLabel(code: string): string {
+  if (code === "all") return "Tous";
+  if (code === OTHER) return "🌐 Autre";
+  return `${COUNTRY_FLAG[code] ?? "🌐"} ${code}`;
+}
 
 const PLATFORM_LABEL: Record<string, string> = {
   instagram: "Instagram",
@@ -108,6 +133,7 @@ export default function NetworkTodayView() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
+  const [country, setCountry] = useState<string>("all");
 
   const load = useCallback(async () => {
     const pw = localStorage.getItem("admin_pw") ?? "";
@@ -144,6 +170,85 @@ export default function NetworkTodayView() {
 
   const t = data.totals;
 
+  // A unified row shape so one table renders both the all-countries rollup
+  // (CA total present) and a single-country view (CA total = null, because
+  // organic revenue isn't attributable to a campaign country).
+  type DisplayRow = {
+    platform: string;
+    costCents: number;
+    clicks: number;
+    revenueTotalCents: number | null;
+    roasTotal: number | null;
+    ordersTotal: number | null;
+    revenueAdsCents: number;
+    roasAds: number | null;
+    ordersAds: number;
+  };
+
+  const isAll = country === "all";
+  const safeCountry = isAll || data.countries.includes(country) ? country : "all";
+  const geoCells = safeCountry === "all" ? [] : data.networkCountry.filter((c) => c.country === safeCountry);
+
+  const displayRows: DisplayRow[] = safeCountry === "all"
+    ? data.rows.map((r) => ({
+        platform: r.platform,
+        costCents: r.costCents,
+        clicks: r.clicks,
+        revenueTotalCents: r.revenueTotalCents,
+        roasTotal: r.roasTotal,
+        ordersTotal: r.ordersTotal,
+        revenueAdsCents: r.revenueAdsCents,
+        roasAds: r.roasAds,
+        ordersAds: r.ordersAds,
+      }))
+    : geoCells
+        .map((c) => ({
+          platform: c.platform,
+          costCents: c.costCents,
+          clicks: c.clicks,
+          revenueTotalCents: null,
+          roasTotal: null,
+          ordersTotal: null,
+          revenueAdsCents: c.revenueAdsCents,
+          roasAds: c.costCents > 0 ? c.revenueAdsCents / c.costCents : null,
+          ordersAds: c.ordersAds,
+        }))
+        .sort((a, b) => b.costCents - a.costCents || b.revenueAdsCents - a.revenueAdsCents);
+
+  const dispTotals = safeCountry === "all"
+    ? {
+        costCents: t.costCents,
+        clicks: t.clicks,
+        revenueTotalCents: t.revenueTotalCents as number | null,
+        roasTotal: t.roasTotal,
+        ordersTotal: t.ordersTotal as number | null,
+        revenueAdsCents: t.revenueAdsCents,
+        roasAds: t.roasAds,
+        ordersAds: t.ordersAds,
+      }
+    : displayRows.reduce(
+        (acc, r) => {
+          acc.costCents += r.costCents;
+          acc.clicks += r.clicks;
+          acc.revenueAdsCents += r.revenueAdsCents;
+          acc.ordersAds += r.ordersAds;
+          return acc;
+        },
+        {
+          costCents: 0,
+          clicks: 0,
+          revenueTotalCents: null as number | null,
+          roasTotal: null as number | null,
+          ordersTotal: null as number | null,
+          revenueAdsCents: 0,
+          roasAds: null as number | null,
+          ordersAds: 0,
+        },
+      );
+  if (safeCountry !== "all") {
+    dispTotals.roasAds = dispTotals.costCents > 0 ? dispTotals.revenueAdsCents / dispTotals.costCents : null;
+  }
+
   return (
     <div className="net-view">
       <div className="net-header">
@@ -173,23 +278,47 @@ export default function NetworkTodayView() {
         </div>
       )}
 
+      {data.countries.length > 0 && (
+        <div className="net-geo">
+          <button
+            type="button"
+            className={`net-geo-pill ${safeCountry === "all" ? "active" : ""}`}
+            onClick={() => setCountry("all")}
+          >
+            {countryLabel("all")}
+          </button>
+          {data.countries.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`net-geo-pill ${safeCountry === c ? "active" : ""}`}
+              onClick={() => setCountry(c)}
+            >
+              {countryLabel(c)}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="net-totals">
         <div className="net-stat">
           <div className="net-stat-label">Dépense pub (jour)</div>
-          <div className="net-stat-value">{eur2(t.costCents)}</div>
+          <div className="net-stat-value">{eur2(dispTotals.costCents)}</div>
         </div>
         <div className="net-stat">
           <div className="net-stat-label">CA total (jour)</div>
-          <div className="net-stat-value">{eur2(t.revenueTotalCents)}</div>
+          <div className="net-stat-value">
+            {dispTotals.revenueTotalCents == null ? "—" : eur2(dispTotals.revenueTotalCents)}
+          </div>
         </div>
         <div className="net-stat">
           <div className="net-stat-label">CA ads (jour)</div>
-          <div className="net-stat-value">{eur2(t.revenueAdsCents)}</div>
+          <div className="net-stat-value">{eur2(dispTotals.revenueAdsCents)}</div>
         </div>
         <div className="net-stat">
           <div className="net-stat-label">ROAS ads</div>
-          <div className="net-stat-value" style={{ color: roasColor(t.roasAds) }}>
-            {t.roasAds == null ? "—" : `${t.roasAds.toFixed(2)}×`}
+          <div className="net-stat-value" style={{ color: roasColor(dispTotals.roasAds) }}>
+            {dispTotals.roasAds == null ? "—" : `${dispTotals.roasAds.toFixed(2)}×`}
           </div>
         </div>
       </div>
@@ -209,14 +338,14 @@ export default function NetworkTodayView() {
             </tr>
           </thead>
           <tbody>
-            {data.rows.length === 0 ? (
+            {displayRows.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: "center", padding: 32, color: "var(--a-ink-3)" }}>
                   Aucune donnée aujourd&apos;hui.
                 </td>
               </tr>
             ) : (
-              data.rows.map((r) => (
+              displayRows.map((r) => (
                 <tr key={r.platform}>
                   <td>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -226,37 +355,41 @@ export default function NetworkTodayView() {
                   </td>
                   <td style={{ textAlign: "right", fontWeight: 600 }}>{eur2(r.costCents)}</td>
                   <td style={{ textAlign: "right", color: "var(--a-ink-2)" }}>{r.clicks.toLocaleString("fr-FR")}</td>
-                  <td style={{ textAlign: "right", fontWeight: 700 }}>{eur2(r.revenueTotalCents)}</td>
+                  <td style={{ textAlign: "right", fontWeight: 700 }}>
+                    {r.revenueTotalCents == null ? "—" : eur2(r.revenueTotalCents)}
+                  </td>
                   <td style={{ textAlign: "right" }}>
-                    <RoasPill roas={r.roasTotal} />
+                    {r.revenueTotalCents == null ? <span style={{ color: "var(--a-ink-3)" }}>—</span> : <RoasPill roas={r.roasTotal} />}
                   </td>
                   <td style={{ textAlign: "right", fontWeight: 700 }}>{eur2(r.revenueAdsCents)}</td>
                   <td style={{ textAlign: "right" }}>
                     <RoasPill roas={r.roasAds} />
                   </td>
                   <td style={{ textAlign: "right", color: "var(--a-ink-2)", fontVariantNumeric: "tabular-nums" }}>
-                    {r.ordersTotal} / {r.ordersAds}
+                    {r.ordersTotal == null ? "—" : r.ordersTotal} / {r.ordersAds}
                   </td>
                 </tr>
               ))
             )}
           </tbody>
-          {data.rows.length > 0 && (
+          {displayRows.length > 0 && (
             <tfoot>
               <tr>
                 <td style={{ fontWeight: 800 }}>Total</td>
-                <td style={{ textAlign: "right", fontWeight: 800 }}>{eur2(t.costCents)}</td>
-                <td style={{ textAlign: "right", fontWeight: 700 }}>{t.clicks.toLocaleString("fr-FR")}</td>
-                <td style={{ textAlign: "right", fontWeight: 800 }}>{eur2(t.revenueTotalCents)}</td>
-                <td style={{ textAlign: "right" }}>
-                  <RoasPill roas={t.roasTotal} />
+                <td style={{ textAlign: "right", fontWeight: 800 }}>{eur2(dispTotals.costCents)}</td>
+                <td style={{ textAlign: "right", fontWeight: 700 }}>{dispTotals.clicks.toLocaleString("fr-FR")}</td>
+                <td style={{ textAlign: "right", fontWeight: 800 }}>
+                  {dispTotals.revenueTotalCents == null ? "—" : eur2(dispTotals.revenueTotalCents)}
                 </td>
-                <td style={{ textAlign: "right", fontWeight: 800 }}>{eur2(t.revenueAdsCents)}</td>
                 <td style={{ textAlign: "right" }}>
-                  <RoasPill roas={t.roasAds} />
+                  {dispTotals.revenueTotalCents == null ? <span style={{ color: "var(--a-ink-3)" }}>—</span> : <RoasPill roas={dispTotals.roasTotal} />}
+                </td>
+                <td style={{ textAlign: "right", fontWeight: 800 }}>{eur2(dispTotals.revenueAdsCents)}</td>
+                <td style={{ textAlign: "right" }}>
+                  <RoasPill roas={dispTotals.roasAds} />
                 </td>
                 <td style={{ textAlign: "right", fontWeight: 700 }}>
-                  {t.ordersTotal} / {t.ordersAds}
+                  {dispTotals.ordersTotal == null ? "—" : dispTotals.ordersTotal} / {dispTotals.ordersAds}
                 </td>
               </tr>
             </tfoot>
@@ -268,6 +401,13 @@ export default function NetworkTodayView() {
         <div>
           Le découpage par réseau se fait au niveau du groupe d&apos;annonces (les campagnes Ads sont par pays). « CA total »
           inclut l&apos;organique — le « ROAS tot. » est donc plus flatteur que le réel ; « ROAS ads » est le vrai retour pub.
+          {safeCountry !== "all" && (
+            <>
+              {" "}
+              <strong>Vue {countryLabel(safeCountry)}</strong> : filtrée sur le tag de campagne ([FR], [UK]…). Le CA total
+              (organique inclus) n&apos;est pas rattachable à un pays de campagne — il n&apos;apparaît qu&apos;en vue « Tous ».
+            </>
+          )}
         </div>
         <div>
           {data.dateParis}
@@ -294,6 +434,20 @@ export default function NetworkTodayView() {
         }
         .net-refresh:hover:not(:disabled) { background: rgba(82, 96, 230, 0.2); }
         .net-refresh:disabled { opacity: 0.5; cursor: default; }
+        .net-geo {
+          display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+        }
+        .net-geo-pill {
+          padding: 6px 12px; font-size: 12px; font-weight: 700;
+          background: var(--a-paper); border: 1px solid var(--a-line);
+          color: var(--a-ink-2); border-radius: 999px; cursor: pointer;
+          transition: all 0.18s; white-space: nowrap;
+        }
+        .net-geo-pill:hover { border-color: rgba(82, 96, 230, 0.5); color: var(--a-ink); }
+        .net-geo-pill.active {
+          background: rgba(82, 96, 230, 0.12); border-color: rgba(82, 96, 230, 0.5);
+          color: #5260e6;
+        }
         .net-warn {
           padding: 12px 16px; margin-bottom: 16px;
           background: rgba(234, 179, 8, 0.10); border: 1px solid rgba(234, 179, 8, 0.3);

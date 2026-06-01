@@ -85,6 +85,9 @@ export default function AdminClient() {
   const [pendingSupport, setPendingSupport] = useState(0);
   const [bfBalance, setBfBalance] = useState<number | null>(null);
   const [today, setToday] = useState<TodayKpis | null>(null);
+  // Live Google Ads spend today (EUR), pulled from the network-today endpoint
+  // (which queries the Ads API live). null = not yet loaded / unreachable.
+  const [adsCostToday, setAdsCostToday] = useState<number | null>(null);
   const meta = NAV.find((n) => n.id === view)!;
 
   // Poll support inbox count. Deps are [authorized] only — keying on `view`
@@ -141,6 +144,30 @@ export default function AdminClient() {
     };
     load();
     const id = window.setInterval(load, 60_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [authorized]);
+
+  // Live Google Ads spend today. Separate from the 60s KPI poll because it hits
+  // the Ads API (heavier, can take a few seconds) — refreshed every 5 min, which
+  // is plenty for a running daily total.
+  useEffect(() => {
+    if (!authorized) return;
+    let cancelled = false;
+    const token = () => localStorage.getItem("admin_pw") || "";
+    const load = async () => {
+      try {
+        const res = await fetch("/api/admin/network-today", {
+          headers: { Authorization: `Bearer ${token()}` },
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { totals?: { costCents?: number } };
+        const cents = Number(data?.totals?.costCents);
+        if (!cancelled) setAdsCostToday(Number.isFinite(cents) ? cents / 100 : null);
+      } catch { /* ignore */ }
+    };
+    load();
+    const id = window.setInterval(load, 300_000);
     return () => { cancelled = true; window.clearInterval(id); };
   }, [authorized]);
 
@@ -367,7 +394,8 @@ export default function AdminClient() {
                 ["CA", fmtEur(today.revenue), "", false],
                 ["Coût BF", fmtEur(today.cost), "", false],
                 ["Frais Stripe", fmtEur(today.stripeFees), "", false],
-                ["Marge", fmtEur(today.revenue - today.cost - today.stripeFees - today.refunds), "", today.revenue - today.cost - today.stripeFees - today.refunds < 0],
+                ["Coût Ads", adsCostToday == null ? "—" : fmtEur(adsCostToday), "", false],
+                ["Marge", fmtEur(today.revenue - today.cost - today.stripeFees - today.refunds - (adsCostToday ?? 0)), "", today.revenue - today.cost - today.stripeFees - today.refunds - (adsCostToday ?? 0) < 0],
                 ["Remboursé", fmtEur(today.refunds), "", today.refunds > 0],
               ] as const).map(([label, value, suffix, warn]) => (
                 <div
