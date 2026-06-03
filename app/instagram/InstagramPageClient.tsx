@@ -88,6 +88,12 @@ export default function InstagramPageClient() {
   })();
   const hasHandoff = handoffUsername.length > 0 && initialProductType === "followers";
   const [handoffProfile, setHandoffProfile] = useState<IgProfile | null>(null);
+  // True while the handoff profile is being fetched, so the packs step can show
+  // a skeleton instead of a blank gap (the lookup can take 1–2s, and fast
+  // clickers would otherwise land on packs with no preview at all). Initialised
+  // false (not from `hasHandoff`) to avoid an SSR/client hydration mismatch —
+  // it's flipped on inside the effect right after mount.
+  const [handoffLoading, setHandoffLoading] = useState(false);
   const handoffAppliedRef = useRef(false);
 
   // Reset target input when switching product type — username/profile applies to
@@ -131,8 +137,9 @@ export default function InstagramPageClient() {
     const cleanHandle = handoffUsername.replace(/^@+/, "").trim().toLowerCase();
     // Invalid format → keep the seeded username (order still proceeds, loose
     // gate) but skip the lookup: no preview, no API cost.
-    if (!/^[a-zA-Z0-9._]{2,30}$/.test(cleanHandle)) return;
+    if (!/^[a-zA-Z0-9._]{2,30}$/.test(cleanHandle)) return; // loading stays false
 
+    setHandoffLoading(true);
     const controller = new AbortController();
     (async () => {
       try {
@@ -147,6 +154,8 @@ export default function InstagramPageClient() {
         if (idx >= 0) setPack(idx);
       } catch {
         /* network error → no preview; order still proceeds */
+      } finally {
+        if (!controller.signal.aborted) setHandoffLoading(false);
       }
     })();
     return () => controller.abort();
@@ -211,44 +220,106 @@ export default function InstagramPageClient() {
     <div data-i18n-skip>
       <div className="paper-frame with-ig-halo" data-step-main>
         <IgHeader />
+        {step === 1 && productType === "followers" && handoffLoading && !handoffProfile && (
+          // Skeleton placeholder while the @ from /promo is being looked up, so
+          // fast clickers don't land on a blank packs page. Reserves the card's
+          // height to avoid layout shift when the real profile pops in.
+          <div className="container" style={{ paddingTop: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                maxWidth: 520,
+                margin: "0 auto",
+                padding: "18px 20px",
+                background: "linear-gradient(135deg, rgba(214,41,118,0.06), rgba(254,68,85,0.04))",
+                border: "1px solid rgba(214,41,118,0.18)",
+                borderRadius: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(90deg, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.09) 50%, rgba(0,0,0,0.05) 75%)", backgroundSize: "200% 100%", animation: "yt-shimmer 1.6s infinite" }} />
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>
+                    @{handoffUsername.replace(/^@+/, "")}
+                  </div>
+                  {[60, 80].map((w) => (
+                    <div key={w} style={{ height: 11, width: `${w}%`, borderRadius: 6, background: "linear-gradient(90deg, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.09) 50%, rgba(0,0,0,0.05) 75%)", backgroundSize: "200% 100%", animation: "yt-shimmer 1.6s infinite" }} />
+                  ))}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "var(--ink-3)", paddingTop: 12, borderTop: "1px solid rgba(214,41,118,0.12)" }}>
+                {locale?.toLowerCase().startsWith("fr") ? "Chargement de votre profil…" : "Loading your profile…"}
+              </div>
+            </div>
+          </div>
+        )}
         {step === 1 && handoffProfile && productType === "followers" && (
           <div className="container" style={{ paddingTop: 24 }}>
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
                 gap: 14,
                 maxWidth: 520,
                 margin: "0 auto",
-                padding: "14px 18px",
+                padding: "18px 20px",
                 background: "linear-gradient(135deg, rgba(214,41,118,0.06), rgba(254,68,85,0.04))",
                 border: "1px solid rgba(214,41,118,0.25)",
                 borderRadius: 16,
               }}
             >
-              <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--paper-2)" }}>
-                {handoffProfile.avatarUrl ? (
-                  <Image src={handoffProfile.avatarUrl} alt={handoffProfile.username} width={52} height={52} unoptimized style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--ig-2)" }}>
-                    {handoffProfile.username.charAt(0).toUpperCase()}
+              {/* Real IG profile header — photo, name, stats, bio. Seeing their
+                  own account while picking a pack makes the purchase concrete. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--paper-2)", border: "2px solid rgba(214,41,118,0.35)" }}>
+                  {handoffProfile.avatarUrl ? (
+                    <Image src={handoffProfile.avatarUrl} alt={handoffProfile.username} width={64} height={64} unoptimized style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 24, color: "var(--ig-2)" }}>
+                      {handoffProfile.username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {handoffProfile.fullName && handoffProfile.fullName.toLowerCase() !== handoffProfile.username.toLowerCase() ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontWeight: 800, fontSize: 16, overflow: "hidden" }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{handoffProfile.fullName}</span>
+                      {handoffProfile.verified && (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="#3897f0" style={{ flexShrink: 0 }} aria-label="verified">
+                          <path d="M12 2l2.4 1.8 3 .1 1 2.8 2.4 1.8-.9 2.9.9 2.9-2.4 1.8-1 2.8-3 .1L12 22l-2.4-1.8-3-.1-1-2.8L3.2 15.5l.9-2.9-.9-2.9 2.4-1.8 1-2.8 3-.1z" />
+                          <path d="M10.6 14.6l-2.2-2.2 1.1-1.1 1.1 1.1 3.3-3.3 1.1 1.1z" fill="#fff" />
+                        </svg>
+                      )}
+                    </div>
+                  ) : null}
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    @{handoffProfile.username}
                   </div>
-                )}
+                  <div style={{ display: "flex", gap: 16, marginTop: 6, fontSize: 13 }}>
+                    <span><strong style={{ fontWeight: 800 }}>{formatQty(handoffProfile.mediaCount)}</strong> <span style={{ color: "var(--ink-3)" }}>{locale?.toLowerCase().startsWith("fr") ? "posts" : "posts"}</span></span>
+                    <span><strong style={{ fontWeight: 800 }}>{formatQty(handoffProfile.followersCount)}</strong> <span style={{ color: "var(--ink-3)" }}>{locale?.toLowerCase().startsWith("fr") ? "abonnés" : "followers"}</span></span>
+                    <span><strong style={{ fontWeight: 800 }}>{formatQty(handoffProfile.followingCount)}</strong> <span style={{ color: "var(--ink-3)" }}>{locale?.toLowerCase().startsWith("fr") ? "suivi(e)s" : "following"}</span></span>
+                  </div>
+                </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  @{handoffProfile.username}
+
+              {handoffProfile.bio ? (
+                <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink-2)", whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {handoffProfile.bio}
                 </div>
-                <div style={{ fontSize: 14, marginTop: 2 }}>
-                  <span style={{ color: "var(--ink-2)" }}>{formatQty(handoffProfile.followersCount)} {locale?.toLowerCase().startsWith("fr") ? "abonnés" : "followers"}</span>
-                  <span style={{ color: "var(--ink-3)", margin: "0 6px" }}>→</span>
-                  <span style={{ fontWeight: 800, color: "var(--green)" }}>
-                    {formatQty(handoffProfile.followersCount + selectedPack.qty + selectedPack.bonus)}
-                  </span>
-                  <span style={{ color: "var(--ink-3)", marginLeft: 6 }}>
-                    {locale?.toLowerCase().startsWith("fr") ? "avec ce pack" : "with this pack"}
-                  </span>
-                </div>
+              ) : null}
+
+              <div style={{ fontSize: 14, paddingTop: 12, borderTop: "1px solid rgba(214,41,118,0.18)" }}>
+                <span style={{ color: "var(--ink-2)" }}>{formatQty(handoffProfile.followersCount)} {locale?.toLowerCase().startsWith("fr") ? "abonnés" : "followers"}</span>
+                <span style={{ color: "var(--ink-3)", margin: "0 6px" }}>→</span>
+                <span style={{ fontWeight: 800, color: "var(--green)" }}>
+                  {formatQty(handoffProfile.followersCount + selectedPack.qty + selectedPack.bonus)}
+                </span>
+                <span style={{ color: "var(--ink-3)", marginLeft: 6 }}>
+                  {locale?.toLowerCase().startsWith("fr") ? "avec ce pack" : "with this pack"}
+                </span>
               </div>
             </div>
           </div>

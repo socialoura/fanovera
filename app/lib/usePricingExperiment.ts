@@ -50,6 +50,14 @@ function fetchExperimentsShared(): Promise<PricingExperiment[]> {
   return experimentsPromise;
 }
 
+// Warm the shared experiments cache ahead of time (e.g. from /promo) so the
+// product page we soft-navigate to can compute `experiment.ready === true` on
+// its very first paint — otherwise its packs flash a loading spinner while
+// /api/pricing-experiments resolves, which reads as a page "refresh".
+export function prefetchPricingExperiments() {
+  return fetchExperimentsShared();
+}
+
 function createAnonymousId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();

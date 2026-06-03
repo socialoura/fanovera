@@ -9,6 +9,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import { NETWORKS, NET_META, type Network, type NetworkId } from "../lib/networks";
 import { getCachedPricingPacks, prefetchProductPricing, useCurrencyPreference } from "../lib/useCurrencyPricing";
+import { prefetchPricingExperiments } from "../lib/usePricingExperiment";
 import { buildCurrencyFormatter } from "../lib/pricingCurrency";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
@@ -709,6 +710,11 @@ export default function Hero({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [promoHandle, setPromoHandle] = useState("");
+  // Username-first arm collapses the 8-network grid to keep the page single-
+  // intent (the visitor came for Instagram). This reveals it on demand for the
+  // off-intent minority via a discreet "autre réseau ?" link — cheap escape
+  // hatch, no distraction for the 90% who want IG.
+  const [showAllNetworks, setShowAllNetworks] = useState(false);
   const promoNetworkPriceLabels = usePromoNetworkPriceLabels();
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
   const isPromo = mode === "promo";
@@ -795,6 +801,16 @@ export default function Hero({
       locale,
     });
   }, [isPromo, promoFlowVariant, targetedNetwork, locale]);
+
+  // Pre-warm the pricing-experiments cache while the visitor is still on /promo
+  // so the product page we soft-navigate to (username capture submit OR a
+  // network-card click) renders its packs on first paint instead of flashing
+  // PricingPacksLoading. The pricing packs themselves are already pre-warmed by
+  // usePromoNetworkPriceLabels → prefetchProductPricing.
+  useEffect(() => {
+    if (!isPromo) return;
+    void prefetchPricingExperiments();
+  }, [isPromo]);
 
   const submitUsernameCapture = (e: React.FormEvent) => {
     e.preventDefault();
@@ -971,39 +987,51 @@ export default function Hero({
 
         {/* Username-first capture (A/B variant). Asks the @ before showing
             packs: a micro-commitment that also lets the product page greet the
-            visitor with their real profile + a personalised projection. The
-            network grid still renders below so off-intent visitors can pick
-            another platform — and so we can compare promo→product clickthrough
-            against control. */}
+            visitor with their real profile + a personalised projection. In this
+            arm the 8-network grid below is collapsed (single-intent) behind an
+            "autre réseau ?" link — see the #networks block. */}
         {showUsernameCapture && (
-          <form
-            onSubmit={submitUsernameCapture}
-            style={{
-              maxWidth: 520,
-              margin: "0 auto 8px",
-              background: "white",
-              border: "1px solid var(--line)",
-              borderRadius: 18,
-              padding: 20,
-              boxShadow: "0 18px 44px -26px rgba(20,22,50,0.22)",
-            }}
-          >
-            <label
-              htmlFor="promo-ig-handle"
-              style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10, textAlign: "center" }}
-            >
-              {locale?.toLowerCase().startsWith("fr")
-                ? "Entrez votre @ Instagram pour voir votre offre"
-                : "Enter your Instagram @ to see your offer"}
-            </label>
-            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-              <div className="input-shell" style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+          // Progressive enhancement: `action`/`method` + name="u" mean that even
+          // BEFORE React hydrates (slow networks, dev mode), clicking Continue
+          // does a native GET to /instagram?u=…&<attribution> instead of
+          // reloading /promo. Once hydrated, onSubmit takes over with tracking +
+          // a soft SPA navigation (submitUsernameCapture calls preventDefault).
+          <form onSubmit={submitUsernameCapture} action="/instagram" method="get" className="promo-ig-capture">
+            {/* Carry attribution (utm/gclid/kw/mt) + promo surface markers on the
+                un-hydrated native-submit path so nothing is lost. */}
+            {(searchParams ? Array.from(searchParams.entries()) : [])
+              .filter(([k]) => !["u", "handle", "entry_surface", "from"].includes(k))
+              .map(([k, v]) => (
+                <input key={k} type="hidden" name={k} value={v} />
+              ))}
+            <input type="hidden" name="entry_surface" value="promo" />
+            <input type="hidden" name="from" value="promo_instagram" />
+            <div className="promo-ig-capture-card">
+              <div className="promo-ig-capture-head">
+                <span className="promo-ig-capture-logo">
+                  <NetIcon kind="instagram" color="white" size={24} />
+                </span>
+                <div>
+                  <div className="promo-ig-capture-title">
+                    {locale?.toLowerCase().startsWith("fr")
+                      ? "Voir votre offre Instagram"
+                      : "See your Instagram offer"}
+                  </div>
+                  <div className="promo-ig-capture-sub">
+                    {locale?.toLowerCase().startsWith("fr")
+                      ? "Entrez votre @ — personnalisé en 2 secondes"
+                      : "Enter your @ — personalised in 2 seconds"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="input-shell">
                 <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
                 <input
                   id="promo-ig-handle"
                   data-testid="promo-username-capture"
                   type="text"
-                  name="handle"
+                  name="u"
                   enterKeyHint="go"
                   placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
                   value={promoHandle}
@@ -1012,16 +1040,16 @@ export default function Hero({
                   autoCapitalize="none"
                   autoComplete="off"
                   autoCorrect="off"
-                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 16 }}
                 />
               </div>
+
               <button
                 type="submit"
-                className="btn-primary"
-                style={{ padding: "12px 22px", fontSize: 15, whiteSpace: "nowrap", background: NET_META.instagram.brand2 }}
+                className="btn-primary btn-ig"
+                style={{ width: "100%", marginTop: 14, justifyContent: "center" }}
               >
                 {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginLeft: 6 }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -1039,7 +1067,42 @@ export default function Hero({
             button — landing on the network picker, not the CTABlock at the
             bottom of the page (which was wasted scroll). */}
         <div id="networks">
-        {(() => {
+        {showUsernameCapture && !showAllNetworks ? (
+          // Single-intent collapse for the username-first arm: the @ capture is
+          // the only path forward; the grid is one tap away for the rare
+          // off-intent visitor. Keeps /promo substantial (mock, badges, rest of
+          // page stay) so it reads whitehat rather than a bare input.
+          <div style={{ textAlign: "center", margin: "20px auto 8px" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAllNetworks(true);
+                trackEvent("cta_clicked", {
+                  page_type: "promo",
+                  entry_surface: "promo",
+                  product_area: "promo",
+                  feature_name: "promo_other_networks_reveal",
+                  cta_location: "hero_username_capture",
+                });
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--ink-3)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              {locale?.toLowerCase().startsWith("fr")
+                ? "Vous cherchez un autre réseau ?"
+                : "Looking for another network?"}
+            </button>
+          </div>
+        ) : (
+        (() => {
           const featured = targetedNetwork ? NETWORKS.find((n) => n.id === targetedNetwork) : null;
           const ordered = featured
             ? [featured, ...NETWORKS.filter((n) => n.id !== featured.id)]
@@ -1074,7 +1137,8 @@ export default function Hero({
               })}
             </div>
           );
-        })()}
+        })()
+        )}
         </div>
 
 
@@ -1084,8 +1148,10 @@ export default function Hero({
             - Targeted visitor (utm_term matches a network): platform-themed
               visual mockup + only the matched network's sticker + the rating
               sticker (off-network stickers removed for clearer message-match).
-            Both variants stay whitehat — no SMM product nouns or quantities. */}
-        {!targetedNetwork ? (
+            Both variants stay whitehat — no SMM product nouns or quantities.
+            Hidden entirely in the username-first arm: the @ capture card is the
+            single focal point, so the decorative mockup would only add noise. */}
+        {!showUsernameCapture && (!targetedNetwork ? (
           <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <MockDashboard copy={copy} />
@@ -1256,7 +1322,7 @@ export default function Hero({
               </div>
             );
           })()
-        )}
+        ))}
 
         {/* Payment badges — trust signal under the hero. Grayscale + reduced
             opacity so it reads as reassurance, not a primary visual element.

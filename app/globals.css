@@ -287,6 +287,57 @@ input { font: inherit; color: inherit; }
 .btn-ig:disabled::before,
 .btn-ig:disabled::after { display: none; }
 
+/* /promo username-first capture — Instagram-branded entry card.
+   Reuses the IG gradient + .input-shell focus theme so the capture reads
+   as Instagram instead of a generic form. Stays whitehat: no product noun,
+   no quantity in the copy. */
+.promo-ig-capture {
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto 8px;
+}
+.promo-ig-capture-card {
+  position: relative;
+  background: white;
+  border-radius: 24px;
+  padding: 24px 22px 22px;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px -30px rgba(214, 41, 118, 0.45);
+  overflow: hidden;
+}
+/* Soft IG gradient wash in the top-right corner */
+.promo-ig-capture-card::before {
+  content: '';
+  position: absolute;
+  top: -70px; right: -70px;
+  width: 190px; height: 190px;
+  background: radial-gradient(circle, rgba(214, 41, 118, 0.16), transparent 70%);
+  pointer-events: none;
+}
+.promo-ig-capture-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  position: relative;
+}
+.promo-ig-capture-logo {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--ig-1) 0%, var(--ig-2) 45%, var(--ig-3) 80%, var(--ig-4) 100%);
+  display: grid; place-items: center;
+  box-shadow: 0 8px 20px -8px rgba(214, 41, 118, 0.6);
+}
+.promo-ig-capture-title {
+  font-size: 16px; font-weight: 800;
+  letter-spacing: -0.01em; color: var(--ink);
+  line-height: 1.25;
+}
+.promo-ig-capture-sub {
+  font-size: 13px; color: var(--ink-3); margin-top: 2px;
+}
+
 /* btn-tt — TikTok signature button (black with cyan + red glow) */
 .btn-tt {
   background: var(--tt-ink);
