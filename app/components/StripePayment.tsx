@@ -25,6 +25,17 @@ function paymentIntentIdFromClientSecret(clientSecret: string): string {
   return clientSecret.split("_secret_")[0] || "";
 }
 
+// Furthest point the user reached inside the checkout view. Reported up from the
+// child payment components so `checkout_abandoned` can carry the last step and
+// we can tell silent abandoners (saw the form, never tried) apart from users who
+// attempted and failed. "paid" is terminal and suppresses the abandon event.
+type CheckoutStep =
+  | "checkout_viewed"
+  | "payment_form_shown"
+  | "payment_attempted"
+  | "payment_failed"
+  | "paid";
+
 export type StripeCheckoutProps = {
   amount: number; // in cents
   currency?: string;
@@ -157,13 +168,19 @@ export function usePaymentIntent(args: {
 
 function ExpressCheckout({
   platform,
+  amount,
+  currency,
   clientSecret,
   onSuccess,
+  onCheckoutStep,
   checkoutContext,
 }: {
   platform: string;
+  amount: number;
+  currency: string;
   clientSecret: string;
   onSuccess?: () => void;
+  onCheckoutStep?: (step: CheckoutStep) => void;
   checkoutContext: { email: string; username: string; followersBefore?: number };
 }) {
   const stripe = useStripe();
@@ -182,7 +199,8 @@ function ExpressCheckout({
           buttonTheme: { applePay: "black", googlePay: "black", paypal: "gold" },
         }}
         onConfirm={async () => {
-          trackEvent("pricing_cta_clicked", { platform, feature_name: "express_checkout" });
+          onCheckoutStep?.("payment_attempted");
+          trackEvent("pricing_cta_clicked", { platform, amount, currency, feature_name: "express_checkout" });
           const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
@@ -191,6 +209,7 @@ function ExpressCheckout({
             redirect: "if_required",
           });
           if (error) {
+            onCheckoutStep?.("payment_failed");
             setErr(humanizeStripeError(error, locale));
             trackEvent("checkout_failed", { platform, reason: error.code || error.message || "express_checkout_error" });
           }
@@ -205,8 +224,9 @@ function ExpressCheckout({
                 });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data?.orderId) {
-                  trackEvent("payment_succeeded", { platform, product_area: platform, orderId: String(data.orderId), method: "express_checkout" });
-                  trackEvent("checkout_completed", { platform, orderId: String(data.orderId), feature_name: "express_checkout" });
+                  onCheckoutStep?.("paid");
+                  trackEvent("payment_succeeded", { platform, product_area: platform, amount, currency, orderId: String(data.orderId), method: "express_checkout" });
+                  trackEvent("checkout_completed", { platform, amount, currency, orderId: String(data.orderId), feature_name: "express_checkout" });
                   window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
                   return;
                 }
@@ -232,6 +252,7 @@ function CardPayment({
   clientSecret,
   brandColor,
   onSuccess,
+  onCheckoutStep,
   checkoutContext,
 }: {
   email: string;
@@ -241,6 +262,7 @@ function CardPayment({
   clientSecret: string;
   brandColor?: string;
   onSuccess?: () => void;
+  onCheckoutStep?: (step: CheckoutStep) => void;
   checkoutContext: { email: string; username: string; followersBefore?: number };
 }) {
   const stripe = useStripe();
@@ -249,6 +271,19 @@ function CardPayment({
   const paymentCopy = getPublicCopy(locale).payment;
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Brief lock after a failed attempt. Re-enabling the pay button instantly lets
+  // anxious users hammer it, which trips Stripe.js's client-side "Too many
+  // requests" throttle and surfaces a confusing extra error (observed: a few
+  // users firing 5 confirmPayment calls in ~6s). A short cooldown prevents that
+  // and reinforces the "wait a moment, then retry" guidance.
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const t = setTimeout(() => forceTick((n) => n + 1), cooldownUntil - Date.now());
+    return () => clearTimeout(t);
+  }, [cooldownUntil]);
+  const inCooldown = cooldownUntil > Date.now();
 
   const upperCurrency = (currency || "eur").toUpperCase();
   const safeCurrency: SupportedCurrency = (SUPPORTED_CURRENCIES as readonly string[]).includes(upperCurrency)
@@ -260,6 +295,8 @@ function CardPayment({
 
   const submit = async () => {
     if (!stripe || !elements) return;
+    if (submitting || Date.now() < cooldownUntil) return;
+    onCheckoutStep?.("payment_attempted");
     setSubmitting(true);
     setErr(null);
     trackEvent("pricing_cta_clicked", { platform, amount, currency, feature_name: "card_checkout" });
@@ -274,8 +311,10 @@ function CardPayment({
       redirect: "if_required",
     });
     if (error) {
+      onCheckoutStep?.("payment_failed");
       setErr(humanizeStripeError(error, locale));
       trackEvent("checkout_failed", { platform, amount, currency, reason: error.code || error.message || "card_checkout_error" });
+      setCooldownUntil(Date.now() + 3000);
     }
     else {
       const paymentIntentId = paymentIntentIdFromClientSecret(clientSecret);
@@ -288,6 +327,7 @@ function CardPayment({
           });
           const data = await res.json().catch(() => ({}));
           if (res.ok && data?.orderId) {
+            onCheckoutStep?.("paid");
             trackEvent("payment_succeeded", { platform, product_area: platform, amount, currency, orderId: String(data.orderId), method: "card_checkout" });
             trackEvent("checkout_completed", { platform, amount, currency, orderId: String(data.orderId), feature_name: "card_checkout" });
             window.location.href = `/order-success?platform=${encodeURIComponent(platform)}&orderId=${encodeURIComponent(String(data.orderId))}`;
@@ -318,11 +358,25 @@ function CardPayment({
         />
       </div>
       {err && (
-        <div style={{ marginTop: 10, fontSize: 13, color: "var(--ig-2)" }}>{err}</div>
+        <div
+          role="alert"
+          style={{
+            marginTop: 12,
+            padding: "10px 12px",
+            fontSize: 13,
+            lineHeight: 1.45,
+            color: "#b42318",
+            background: "rgba(180, 35, 24, 0.08)",
+            border: "1px solid rgba(180, 35, 24, 0.25)",
+            borderRadius: 10,
+          }}
+        >
+          {err}
+        </div>
       )}
       <button
         onClick={submit}
-        disabled={submitting}
+        disabled={submitting || inCooldown}
         data-testid="stripe-card-submit"
         className="stripe-pay-btn"
         style={{ ["--brand" as string]: brandColor || "#5260e6" } as React.CSSProperties}
@@ -398,14 +452,96 @@ export default function StripeCheckout({
   const clientSecret = usesPrefetchedSecret ? prefetchedSecret : fetchedSecret;
   const error = usesPrefetchedSecret ? null : fetchError;
 
+  // Funnel measurement (client-side, keyed by PostHog person_id):
+  //  - `checkout_started`: fired exactly once when the user reaches this
+  //    checkout view. Replaces the noisy server-side intent event as the
+  //    funnel-grade "reached checkout" step (1 per view, not ~3.4 per intent).
+  //  - `checkout_abandoned`: fired once on leave (SPA unmount or tab/page hide)
+  //    when no payment succeeded, carrying the furthest `last_step` reached.
+  // Live props are mirrored into a ref so both events carry current amount /
+  // currency without putting them in the mount effect's deps (which would
+  // re-run the effect — and fire a false abandon — on every currency switch).
+  const funnelMetaRef = useRef({ platform, amount, currency: effectiveCurrency });
+  funnelMetaRef.current = { platform, amount, currency: effectiveCurrency };
+  const checkoutStartedRef = useRef(false);
+  const paidRef = useRef(false);
+  const abandonReportedRef = useRef(false);
+  // True while a confirmPayment() call is in flight. Redirect-based methods
+  // (3DS, iDEAL…) navigate away mid-attempt, which would otherwise fire a false
+  // `checkout_abandoned` on pagehide even though the payment may still succeed
+  // on /order-success. We suppress abandon while an attempt is pending; an
+  // inline failure clears it so a later tab-close is still counted.
+  const attemptInFlightRef = useRef(false);
+  const lastStepRef = useRef<CheckoutStep>("checkout_viewed");
+
+  const stepOrder: Record<CheckoutStep, number> = {
+    checkout_viewed: 0,
+    payment_form_shown: 1,
+    payment_attempted: 2,
+    payment_failed: 3,
+    paid: 4,
+  };
+  const reportCheckoutStep = (step: CheckoutStep) => {
+    if (step === "paid") {
+      paidRef.current = true;
+      attemptInFlightRef.current = false;
+      return;
+    }
+    if (step === "payment_attempted") attemptInFlightRef.current = true;
+    if (step === "payment_failed") attemptInFlightRef.current = false;
+    // Only ever advance forward, so a late re-render can't rewind the funnel.
+    if (stepOrder[step] > stepOrder[lastStepRef.current]) lastStepRef.current = step;
+  };
+  const reportAbandon = () => {
+    if (
+      !checkoutStartedRef.current
+      || paidRef.current
+      || abandonReportedRef.current
+      || attemptInFlightRef.current
+    ) return;
+    abandonReportedRef.current = true;
+    const { platform: p, amount: a, currency: c } = funnelMetaRef.current;
+    trackEvent("checkout_abandoned", {
+      platform: p,
+      product_area: p,
+      amount: a,
+      currency: c,
+      last_step: lastStepRef.current,
+    });
+  };
+
+  useEffect(() => {
+    if (!checkoutStartedRef.current) {
+      checkoutStartedRef.current = true;
+      const { platform: p, amount: a, currency: c } = funnelMetaRef.current;
+      trackEvent("checkout_started", { platform: p, product_area: p, amount: a, currency: c });
+    }
+    // pagehide covers tab close / hard navigation (e.g. the redirect to
+    // /order-success on success — guarded by paidRef); the cleanup covers
+    // in-app (SPA) unmount when the user navigates back or changes step.
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") reportAbandon();
+    };
+    window.addEventListener("pagehide", reportAbandon);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", reportAbandon);
+      document.removeEventListener("visibilitychange", onVisibility);
+      reportAbandon();
+    };
+    // Fire once on mount / clean up once on unmount only — live values come
+    // from refs, so amount/currency/platform must NOT be deps here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fire `payment_initiated` exactly once per checkout session — when the
   // Stripe Elements wrapper is about to render with a usable clientSecret.
-  // This is the moment the user actually sees the payment form, distinct
-  // from `checkout_started` (intent created server-side).
+  // This is the moment the user actually sees the payment form.
   const paymentInitiatedRef = useRef(false);
   useEffect(() => {
     if (!clientSecret || paymentInitiatedRef.current) return;
     paymentInitiatedRef.current = true;
+    reportCheckoutStep("payment_form_shown");
     trackEvent("payment_initiated", {
       platform,
       product_area: platform,
@@ -417,6 +553,8 @@ export default function StripeCheckout({
       currency: effectiveCurrency,
       platform,
     });
+    // reportCheckoutStep only mutates refs; intentionally not a dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, clientSecret, effectiveCurrency, platform]);
 
   if (error) {
@@ -517,8 +655,11 @@ export default function StripeCheckout({
     >
       <ExpressCheckout
         platform={platform}
+        amount={amount}
+        currency={effectiveCurrency}
         clientSecret={clientSecret}
         onSuccess={onSuccess}
+        onCheckoutStep={reportCheckoutStep}
         checkoutContext={{ email, username, followersBefore }}
       />
       <div
@@ -557,6 +698,7 @@ export default function StripeCheckout({
         clientSecret={clientSecret}
         brandColor={brandColor}
         onSuccess={onSuccess}
+        onCheckoutStep={reportCheckoutStep}
         checkoutContext={{ email, username, followersBefore }}
       />
     </Elements>

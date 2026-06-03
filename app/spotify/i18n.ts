@@ -1,6 +1,6 @@
 import { useI18n } from "../i18n/I18nProvider";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy, appendNoCommitmentFaq } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
@@ -241,5 +241,5 @@ export function useSpotifyCopy() {
     product: "Spotify",
     audience: "Streams",
   });
-  return applyBlackhatProductCopy(base, surfaceMode, { locale: activeLocale, product: "Spotify", audience: "Streams" });
+  return appendNoCommitmentFaq(applyBlackhatProductCopy(base, surfaceMode, { locale: activeLocale, product: "Spotify", audience: "Streams" }), activeLocale);
 }

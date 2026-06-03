@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import { useI18n } from "../i18n/I18nProvider";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy, appendNoCommitmentFaq } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 import type { TwitchProductType } from "./data";
 
@@ -138,11 +138,11 @@ export function useTwitchCopy() {
     audience: audienceLabel,
     audienceLabel,
   });
-  return applyBlackhatProductCopy(base, surfaceMode, {
+  return appendNoCommitmentFaq(applyBlackhatProductCopy(base, surfaceMode, {
     locale,
     product: "Twitch",
     audience: audienceLabel,
     bhAudience,
     audienceNoun: audienceLabel,
-  });
+  }), locale);
 }

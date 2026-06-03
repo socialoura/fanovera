@@ -1,6 +1,6 @@
 import { useI18n } from "../i18n/I18nProvider";
 import type { SupportedLocale } from "../i18n/types";
-import { applyPerformanceProductCopy, applyBlackhatProductCopy } from "../lib/performanceCopy";
+import { applyPerformanceProductCopy, applyBlackhatProductCopy, appendNoCommitmentFaq } from "../lib/performanceCopy";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
 const copy = {
@@ -12,7 +12,7 @@ const copy = {
       titleFocus: "ciblée",
       titleAfter: "pour votre page Facebook.",
       volume: "Quel volume ?",
-      audience: "Abonnés",
+      audience: "J'aime",
       included: "inclus",
       campaign: "Votre campagne",
       selectedPack: "Pack sélectionné",
@@ -144,7 +144,7 @@ const copy = {
       titleFocus: "focused",
       titleAfter: "for your Facebook page.",
       volume: "Which volume?",
-      audience: "Followers",
+      audience: "Likes",
       included: "included",
       campaign: "Your campaign",
       selectedPack: "Selected pack",
@@ -268,7 +268,7 @@ const copy = {
       titleFocus: "dirigida",
       titleAfter: "para tu página Facebook.",
       volume: "¿Qué volumen?",
-      audience: "Seguidores",
+      audience: "Me gusta",
       included: "incluido",
       campaign: "Tu campaña",
       selectedPack: "Pack seleccionado",
@@ -392,7 +392,7 @@ const copy = {
       titleFocus: "direcionada",
       titleAfter: "para sua página Facebook.",
       volume: "Qual volume?",
-      audience: "Seguidores",
+      audience: "Curtidas",
       included: "incluído",
       campaign: "Sua campanha",
       selectedPack: "Pack selecionado",
@@ -516,7 +516,7 @@ const copy = {
       titleFocus: "fokussiert",
       titleAfter: "für deine Facebook-Seite.",
       volume: "Welches Volumen?",
-      audience: "Follower",
+      audience: "Gefällt mir",
       included: "inklusive",
       campaign: "Deine Kampagne",
       selectedPack: "Ausgewähltes Paket",
@@ -640,7 +640,7 @@ const copy = {
       titleFocus: "mirata",
       titleAfter: "per la tua pagina Facebook.",
       volume: "Quale volume?",
-      audience: "Follower",
+      audience: "Mi piace",
       included: "incluso",
       campaign: "La tua campagna",
       selectedPack: "Pacchetto selezionato",
@@ -764,7 +764,7 @@ const copy = {
       titleFocus: "odaklı",
       titleAfter: "Facebook sayfanız için.",
       volume: "Hangi hacim?",
-      audience: "Takipçiler",
+      audience: "Beğeni",
       included: "dahil",
       campaign: "Kampanyanız",
       selectedPack: "Seçili paket",
@@ -897,11 +897,16 @@ const localized: Record<SupportedLocale, FacebookCopy> = {
 export function useFacebookCopy() {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
+  // Facebook sells page likes ("J'aime"), not followers — the audience label
+  // must read "likes" across every marketing mode (clean / performance / blackhat).
+  const likesLabel =
+    ({ fr: "J'aime", en: "Likes", es: "Me gusta", pt: "Curtidas", de: "Gefällt mir", it: "Mi piace", tr: "Beğeni" } as Record<SupportedLocale, string>)[locale] ?? "Likes";
   const base = applyPerformanceProductCopy(localized[locale] || copy.fr, {
     locale,
     mode,
     product: "Facebook",
-    audience: "Followers",
+    audience: likesLabel,
+    audienceLabel: likesLabel,
   });
-  return applyBlackhatProductCopy(base, surfaceMode, { locale, product: "Facebook", audience: "Followers" });
+  return appendNoCommitmentFaq(applyBlackhatProductCopy(base, surfaceMode, { locale, product: "Facebook", audience: likesLabel, audienceNoun: likesLabel }), locale);
 }

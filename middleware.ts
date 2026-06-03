@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "./app/i18n/types";
 import { LOCALE_KEY, LOCALE_MODE_KEY, normalizeLocale } from "./app/i18n/locale";
+import { PROMO_FLOW_COOKIE } from "./app/lib/promoFlow";
+
+// Assign a sticky 50/50 A/B bucket cookie on /promo so the SSR page can render
+// the matching layout with no post-hydration flash. The cookie is just a stable
+// bucket — whether it's honoured is decided by the admin-controlled mode (DB)
+// read on the page (off → control, ab → this bucket, force_username → variant).
+// Assigning it always (even when the experiment is off) keeps buckets stable so
+// flipping the admin toggle to "ab" doesn't re-randomise existing visitors.
+function maybeAssignPromoFlow(req: NextRequest, res: NextResponse, effectivePath: string) {
+  if (effectivePath !== "/promo") return;
+  if (req.cookies.get(PROMO_FLOW_COOKIE)) return;
+  const variant = Math.random() < 0.5 ? "username_first" : "control";
+  res.cookies.set(PROMO_FLOW_COOKIE, variant, {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 180,
+  });
+}
 
 function localeFromPath(pathname: string): { locale: SupportedLocale | null; rest: string } {
   const [, firstSegment, ...rest] = pathname.split("/");
@@ -31,6 +49,7 @@ export function middleware(req: NextRequest) {
     });
     response.cookies.set(LOCALE_KEY, locale, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 180 });
     response.cookies.set(LOCALE_MODE_KEY, "manual", { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 180 });
+    maybeAssignPromoFlow(req, response, rest);
     return response;
   }
 
@@ -40,6 +59,7 @@ export function middleware(req: NextRequest) {
   requestHeaders.set("x-fanovera-locale", resolvedLocale);
   requestHeaders.set("x-fanovera-pathname", pathname);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  maybeAssignPromoFlow(req, response, pathname);
 
   if (queryLocale) {
     response.cookies.set(LOCALE_KEY, queryLocale, { path: "/", sameSite: "lax", maxAge: 60 * 60 * 24 * 180 });

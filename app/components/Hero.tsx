@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
@@ -12,8 +12,9 @@ import { getCachedPricingPacks, prefetchProductPricing, useCurrencyPreference } 
 import { buildCurrencyFormatter } from "../lib/pricingCurrency";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
-import { trackEvent } from "../lib/analytics";
+import { trackEvent, registerSuperProperties } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
+import type { PromoFlowVariant } from "../lib/promoFlow";
 import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
 
@@ -692,6 +693,7 @@ function NetCard({
 
 export default function Hero({
   initialTargetedNetwork = null,
+  promoFlowVariant = "control",
 }: {
   // Server-detected UTM target (from /promo/page.tsx). Used as the source
   // of truth on the very first render so the SSR HTML already contains the
@@ -699,11 +701,14 @@ export default function Hero({
   // rendering of nested client components, which previously produced a
   // hydration flash when the layout swapped to the featured-card variant.
   initialTargetedNetwork?: NetworkId | null;
+  // /promo username-first A/B variant (assigned SSR via cookie → no flash).
+  promoFlowVariant?: PromoFlowVariant;
 } = {}) {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [promoHandle, setPromoHandle] = useState("");
   const promoNetworkPriceLabels = usePromoNetworkPriceLabels();
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
   const isPromo = mode === "promo";
@@ -766,6 +771,52 @@ export default function Hero({
       /* prefetch is best-effort; ignore stale-router edge cases */
     }
   }, [isPromo, targetedNetwork, locale, router]);
+
+  // Username-first A/B: capture the @ on /promo and hand it off to the product
+  // page. Only shown for the Instagram-targeted campaign (where the handoff +
+  // personalization is wired). For any other network the variant degrades to
+  // control (no capture), so it's safe to ship before other platforms exist.
+  const showUsernameCapture =
+    isPromo && promoFlowVariant === "username_first" && targetedNetwork === "instagram";
+
+  // Exposure + variant super property: fired once per /promo view for BOTH arms
+  // so the experiment is measurable (per-arm funnel) and the variant rides along
+  // to checkout/payment events via the registered super property.
+  const promoFlowExposedRef = useRef(false);
+  useEffect(() => {
+    if (!isPromo || promoFlowExposedRef.current) return;
+    promoFlowExposedRef.current = true;
+    registerSuperProperties({ promo_flow_variant: promoFlowVariant });
+    trackEvent("promo_flow_exposed", {
+      page_type: "promo",
+      entry_surface: "promo",
+      variant: promoFlowVariant,
+      product_area: targetedNetwork || "promo",
+      locale,
+    });
+  }, [isPromo, promoFlowVariant, targetedNetwork, locale]);
+
+  const submitUsernameCapture = (e: React.FormEvent) => {
+    e.preventDefault();
+    const handle = promoHandle.replace(/^@/, "").trim();
+    // Guardrail: this is the promo→product clickthrough for the username arm.
+    // Compared against the control card's `cta_clicked` (same step) to catch a
+    // top-of-funnel drop if asking the @ first scares off intent-to-buy traffic.
+    trackEvent("cta_clicked", {
+      page_type: "promo",
+      entry_surface: "promo",
+      product_area: "instagram",
+      destination_network: "instagram",
+      destination_path: "/instagram",
+      feature_name: "promo_username_capture",
+      cta_location: "hero_username_capture",
+      has_username: handle.length > 0,
+    });
+    // Preserve gclid/utm/kw/mt (keyword LTV) and append the captured handle.
+    const base = hrefWithPromoAttribution("/instagram", searchParams, "instagram");
+    const sep = base.includes("?") ? "&" : "?";
+    router.push(handle ? `${base}${sep}u=${encodeURIComponent(handle)}` : base);
+  };
 
   const networkHref = (network: Network) =>
     isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams, network.id) : `/${network.id}`;
@@ -932,6 +983,66 @@ export default function Hero({
         >
           {heroTitle.titleBefore}<span className={squiggleClass(targetedNetwork)}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
         </h1>
+
+        {/* Username-first capture (A/B variant). Asks the @ before showing
+            packs: a micro-commitment that also lets the product page greet the
+            visitor with their real profile + a personalised projection. The
+            network grid still renders below so off-intent visitors can pick
+            another platform — and so we can compare promo→product clickthrough
+            against control. */}
+        {showUsernameCapture && (
+          <form
+            onSubmit={submitUsernameCapture}
+            style={{
+              maxWidth: 520,
+              margin: "0 auto 8px",
+              background: "white",
+              border: "1px solid var(--line)",
+              borderRadius: 18,
+              padding: 20,
+              boxShadow: "0 18px 44px -26px rgba(20,22,50,0.22)",
+            }}
+          >
+            <label
+              htmlFor="promo-ig-handle"
+              style={{ display: "block", fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 10, textAlign: "center" }}
+            >
+              {locale?.toLowerCase().startsWith("fr")
+                ? "Entrez votre @ Instagram pour voir votre offre"
+                : "Enter your Instagram @ to see your offer"}
+            </label>
+            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+              <div className="input-shell" style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
+                <input
+                  id="promo-ig-handle"
+                  data-testid="promo-username-capture"
+                  type="text"
+                  name="handle"
+                  enterKeyHint="go"
+                  placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
+                  value={promoHandle}
+                  onChange={(e) => setPromoHandle(e.target.value.replace(/^@+/, ""))}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 16 }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ padding: "12px 22px", fontSize: 15, whiteSpace: "nowrap", background: NET_META.instagram.brand2 }}
+              >
+                {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginLeft: 6 }}>
+                  <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* When a network is targeted via UTM, the matching card sits at
             position 1 of the unified grid (top-left) — highlighted with a

@@ -605,6 +605,29 @@ function loc<T>(locale: SupportedLocale, table: Record<SupportedLocale, T>): T {
   return table[locale] ?? table.en;
 }
 
+/* ─── Universal "no commitment / no subscription" FAQ entry ───
+ * Appended to every product's FAQ in every marketing mode (clean / greyhat /
+ * blackhat) via appendNoCommitmentFaq(), called at the end of each product hook
+ * so it post-processes the final copy whatever mode produced it. */
+const NO_COMMITMENT_FAQ: Record<SupportedLocale, readonly [string, string]> = {
+  fr: ["Y a-t-il un engagement ou un abonnement ?", "Non, aucun. C'est un paiement unique, sans engagement ni abonnement caché : vous payez une seule fois, c'est tout."],
+  en: ["Is there any commitment or subscription?", "None at all. It's a one-time payment — no commitment and no hidden subscription. You pay once, that's it."],
+  es: ["¿Hay algún compromiso o suscripción?", "Ninguno. Es un pago único, sin compromiso ni suscripción oculta: pagas una sola vez y listo."],
+  pt: ["Existe algum compromisso ou assinatura?", "Nenhum. É um pagamento único, sem compromisso nem assinatura oculta: você paga uma vez e pronto."],
+  de: ["Gibt es eine Verpflichtung oder ein Abo?", "Nein, keine. Es ist eine einmalige Zahlung – keine Verpflichtung, kein verstecktes Abo. Du zahlst einmal, fertig."],
+  it: ["C'è un impegno o un abbonamento?", "Nessuno. È un pagamento unico, senza impegno né abbonamento nascosto: paghi una volta e basta."],
+  tr: ["Herhangi bir taahhüt veya abonelik var mı?", "Hayır, hiç yok. Tek seferlik bir ödeme — taahhüt yok, gizli abonelik yok. Bir kez ödersin, o kadar."],
+};
+
+export function appendNoCommitmentFaq<T>(copy: T, locale: SupportedLocale): T {
+  const source = objectSection(copy);
+  const faq = objectSection(source.faq);
+  const items = Array.isArray(faq.items) ? (faq.items as unknown[]) : [];
+  const qa = NO_COMMITMENT_FAQ[locale] || NO_COMMITMENT_FAQ.en;
+  if (items.some((it) => Array.isArray(it) && it[0] === qa[0])) return copy; // idempotent
+  return { ...source, faq: { ...faq, items: [...items, qa] } } as T;
+}
+
 export function applyBlackhatProductCopy<T>(
   base: T,
   surfaceMode: SurfaceMarketingMode,
@@ -734,7 +757,7 @@ export function applyBlackhatProductCopy<T>(
       titleFocus: loc(locale, { fr: "livraison express", en: "express delivery", es: "entrega rápida", pt: "entrega rápida", de: "Express-Lieferung", it: "consegna rapida", tr: "hızlı teslimat" }),
       titleAfter: loc(locale, { fr: " garantie.", en: " guaranteed.", es: " garantizada.", pt: " garantida.", de: " garantiert.", it: " garantita.", tr: " garantili." }),
       volume: loc(locale, { fr: "Combien voulez-vous acheter ?", en: "How many do you want to buy?", es: "¿Cuántos quieres comprar?", pt: "Quantos você quer comprar?", de: "Wie viele möchtest du kaufen?", it: "Quanti vuoi comprare?", tr: "Kaç tane satın almak istiyorsun?" }),
-      audience: audience,
+      audience: audienceNoun || audience,
       selectedPack: loc(locale, { fr: "Pack choisi", en: "Chosen pack", es: "Pack elegido", pt: "Pack escolhido", de: "Gewähltes Paket", it: "Pacchetto scelto", tr: "Seçilen paket" }),
       visibilityPack: bhAudience,
       continue: loc(locale, { fr: "Commander maintenant", en: "Order now", es: "Pedir ahora", pt: "Pedir agora", de: "Jetzt bestellen", it: "Ordina ora", tr: "Şimdi sipariş ver" }),

@@ -252,7 +252,14 @@ export async function POST(req: NextRequest) {
       console.error("[create-payment-intent] checkout payload persist failed:", payloadErr);
     }
 
-    void captureServerEvent("checkout_started", anonymousId || email || paymentIntent.id, {
+    // NB: this server-side event fires once per PaymentIntent (re)creation
+    // (cart edit, currency switch, retry) and is keyed by anonymousId, so it is
+    // NOT a clean per-user funnel step — it previously inflated `checkout_started`
+    // to ~3.4 events/person and broke identity stitching. The funnel-grade
+    // "reached checkout" signal is now the client-side `checkout_started` fired
+    // once per checkout view in StripeCheckout. Keep this for intent-level /
+    // pricing-experiment / keyword-LTV analysis under its own name.
+    void captureServerEvent("payment_intent_created", anonymousId || email || paymentIntent.id, {
       product_area: config.productArea,
       platform: pricing.platform,
       plan: pricing.plan,

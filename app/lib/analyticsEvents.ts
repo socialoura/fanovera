@@ -31,6 +31,10 @@ export const ANALYTICS_EVENTS = [
   "pricing_comparison_viewed",
   "pricing_faq_opened",
   "pricing_variant_exposed",
+  // /promo username-first A/B: fired once on /promo with `variant`. The variant
+  // is also registered as a PostHog super property so downstream funnel events
+  // (checkout_started → payment_succeeded) carry it for per-arm analysis.
+  "promo_flow_exposed",
   "pricing_toggle_changed",
   "pricing_cta_clicked",
   "checkout_started",
@@ -39,6 +43,11 @@ export const ANALYTICS_EVENTS = [
   "checkout_abandoned",
   // Funnel — fine-grained user journey events (Batch 3 funnel completion)
   "username_validated",
+  // Server-side: PaymentIntent successfully created in /api/create-payment-intent.
+  // Fires once per intent (re)creation, keyed by anonymousId — NOT a clean
+  // per-user funnel step. The funnel-grade "reached checkout" event is the
+  // client-side `checkout_started` fired once per checkout view.
+  "payment_intent_created",
   "payment_initiated",
   "payment_succeeded",
   "order_delivered",

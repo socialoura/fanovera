@@ -66,6 +66,18 @@ export function trackPageView(properties: AnalyticsProperties = {}) {
   trackEvent("page_view", properties);
 }
 
+// Register persistent super properties: PostHog attaches them to EVERY
+// subsequent event for this device. Used to ride an experiment variant (e.g.
+// promo_flow_variant) across the page → checkout → payment funnel so each arm
+// can be segmented without threading the variant through every trackEvent call.
+export function registerSuperProperties(properties: AnalyticsProperties) {
+  if (!analyticsConfigured()) return;
+  try {
+    posthog.register(properties);
+  } catch {
+  }
+}
+
 export function identifyUser(userId: string, properties: AnalyticsProperties = {}) {
   if (!analyticsConfigured() || !userId) return;
   try {

@@ -1,6 +1,9 @@
+import { cookies } from "next/headers";
 import PromoLanding from "./PromoLanding";
 import { generateSurfaceMetadata } from "../lib/metadata";
 import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
+import { PROMO_FLOW_COOKIE, resolvePromoFlowVariant } from "../lib/promoFlow";
+import { getCachedPromoFlowMode } from "../lib/promoFlow.server";
 
 export const generateMetadata = () => generateSurfaceMetadata("home", "promo");
 
@@ -21,5 +24,17 @@ export default async function PromoPage({
     else if (Array.isArray(v) && typeof v[0] === "string") urlParams.set(k, v[0]);
   }
   const initialTargetedNetwork = detectTargetNetworkFromParams(urlParams);
-  return <PromoLanding initialTargetedNetwork={initialTargetedNetwork} />;
+
+  // Resolve the effective variant SSR (zero hydration flash) from the
+  // admin-controlled mode (DB) + the visitor's sticky bucket cookie (middleware).
+  const cookieStore = await cookies();
+  const mode = await getCachedPromoFlowMode();
+  const promoFlowVariant = resolvePromoFlowVariant(mode, cookieStore.get(PROMO_FLOW_COOKIE)?.value);
+
+  return (
+    <PromoLanding
+      initialTargetedNetwork={initialTargetedNetwork}
+      promoFlowVariant={promoFlowVariant}
+    />
+  );
 }

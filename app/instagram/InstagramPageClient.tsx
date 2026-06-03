@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { useI18n } from "../i18n/I18nProvider";
+import { pickPackIndexByFollowers } from "../lib/promoFlow";
 import IgHeader from "./components/IgHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Username from "./components/Step2Username";
@@ -74,6 +77,19 @@ export default function InstagramPageClient() {
   const [postUrl, setPostUrl] = useState("");
   const [media, setMedia] = useState<IgMedia | null>(null);
 
+  // Handoff from the /promo username-first variant: the @ arrives in `?u=`.
+  // We seed the username and fetch the profile at page level so the packs step
+  // can greet the visitor with their real profile + a personalised projection,
+  // and so we can pre-select a pack sized to their audience.
+  const { locale } = useI18n();
+  const handoffUsername = (() => {
+    const u = search?.get("u") || "";
+    return u ? u.replace(/^@+/, "").trim() : "";
+  })();
+  const hasHandoff = handoffUsername.length > 0 && initialProductType === "followers";
+  const [handoffProfile, setHandoffProfile] = useState<IgProfile | null>(null);
+  const handoffAppliedRef = useRef(false);
+
   // Reset target input when switching product type — username/profile applies to
   // followers, postUrl/media applies to likes/views.
   useEffect(() => {
@@ -100,7 +116,42 @@ export default function InstagramPageClient() {
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const t = useInstagramCopy();
   const hydration = useFunnelPersistence("instagram", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
-  useAutoSelectPopularPack(canDisplayPricing, activePacks, setPack, hydration);
+  // Skip the "popular" auto-select for handoff visitors — the smart default
+  // (sized to their follower count) owns the pack instead.
+  useAutoSelectPopularPack(canDisplayPricing && !hasHandoff, activePacks, setPack, hydration);
+
+  // Apply the /promo handoff once on mount. Declared AFTER useFunnelPersistence
+  // so seeding the username wins over both the productType reset and the
+  // persistence restore (both run earlier in mount order).
+  useEffect(() => {
+    if (handoffAppliedRef.current || !hasHandoff) return;
+    handoffAppliedRef.current = true;
+    setUsername(handoffUsername);
+
+    const cleanHandle = handoffUsername.replace(/^@+/, "").trim().toLowerCase();
+    // Invalid format → keep the seeded username (order still proceeds, loose
+    // gate) but skip the lookup: no preview, no API cost.
+    if (!/^[a-zA-Z0-9._]{2,30}$/.test(cleanHandle)) return;
+
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/instagram/profile?username=${encodeURIComponent(cleanHandle)}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) return; // not found / private → no preview, order still allowed
+        const json = (await res.json()) as IgProfile;
+        if (controller.signal.aborted) return;
+        setHandoffProfile(json);
+        const idx = pickPackIndexByFollowers(getPacksForProduct("followers"), Number(json?.followersCount) || 0);
+        if (idx >= 0) setPack(idx);
+      } catch {
+        /* network error → no preview; order still proceeds */
+      }
+    })();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHandoff, handoffUsername]);
   useProductAnalytics({
     productArea: "instagram",
     step,
@@ -160,6 +211,48 @@ export default function InstagramPageClient() {
     <div data-i18n-skip>
       <div className="paper-frame with-ig-halo" data-step-main>
         <IgHeader />
+        {step === 1 && handoffProfile && productType === "followers" && (
+          <div className="container" style={{ paddingTop: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                maxWidth: 520,
+                margin: "0 auto",
+                padding: "14px 18px",
+                background: "linear-gradient(135deg, rgba(214,41,118,0.06), rgba(254,68,85,0.04))",
+                border: "1px solid rgba(214,41,118,0.25)",
+                borderRadius: 16,
+              }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--paper-2)" }}>
+                {handoffProfile.avatarUrl ? (
+                  <Image src={handoffProfile.avatarUrl} alt={handoffProfile.username} width={52} height={52} unoptimized style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--ig-2)" }}>
+                    {handoffProfile.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  @{handoffProfile.username}
+                </div>
+                <div style={{ fontSize: 14, marginTop: 2 }}>
+                  <span style={{ color: "var(--ink-2)" }}>{formatQty(handoffProfile.followersCount)} {locale?.toLowerCase().startsWith("fr") ? "abonnés" : "followers"}</span>
+                  <span style={{ color: "var(--ink-3)", margin: "0 6px" }}>→</span>
+                  <span style={{ fontWeight: 800, color: "var(--green)" }}>
+                    {formatQty(handoffProfile.followersCount + selectedPack.qty + selectedPack.bonus)}
+                  </span>
+                  <span style={{ color: "var(--ink-3)", marginLeft: 6 }}>
+                    {locale?.toLowerCase().startsWith("fr") ? "avec ce pack" : "with this pack"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {step === 1 && (readyOnce ? (
           <Step1Packs
             country={country}

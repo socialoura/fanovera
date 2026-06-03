@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useI18n } from "../i18n/I18nProvider";
 import { getPublicCopy } from "../components/publicCopy";
 import { gtagPurchase } from "../lib/gtag";
+import { trackEvent } from "../lib/analytics";
 import NetIcon from "../components/NetIcon";
 import type { NetworkId } from "../lib/networks";
 import { buildCurrencyFormatter, SUPPORTED_CURRENCIES, type SupportedCurrency } from "../lib/pricingCurrency";
@@ -193,6 +194,7 @@ function OrderSuccessContent() {
   const [totalCents, setTotalCents] = useState<number>(0);
   const [orderCurrency, setOrderCurrency] = useState<string>("eur");
   const purchaseTrackedRef = useRef(false);
+  const posthogPurchaseTrackedRef = useRef(false);
 
   const paymentIntentId = useMemo(() => search.get("payment_intent") || "", [search]);
   const platform = purchasedPlatform || search.get("platform") || "";
@@ -288,6 +290,29 @@ function OrderSuccessContent() {
       currency: orderCurrency,
     });
   }, [orderId, totalCents, orderCurrency]);
+
+  // PostHog purchase tracking for the Stripe redirect flow only. Redirect-based
+  // payment methods (iDEAL, Bancontact, some 3DS cards) return here via Stripe's
+  // return_url with ?payment_intent=... and never re-run the in-page checkout
+  // code that fires payment_succeeded — so without this they're invisible in
+  // PostHog's funnel/revenue while still counting in Google Ads (gtagPurchase
+  // above). The in-page card/express flow lands here WITHOUT payment_intent, so
+  // gating on paymentIntentId prevents double-counting events it already sent.
+  useEffect(() => {
+    if (!paymentIntentId) return;
+    if (!orderId || totalCents <= 0 || posthogPurchaseTrackedRef.current) return;
+    posthogPurchaseTrackedRef.current = true;
+    const props = {
+      platform,
+      product_area: platform,
+      amount: totalCents,
+      currency: orderCurrency,
+      orderId: String(orderId),
+      method: "redirect",
+    };
+    trackEvent("payment_succeeded", props);
+    trackEvent("checkout_completed", props);
+  }, [paymentIntentId, orderId, totalCents, orderCurrency, platform]);
 
   const done = !!orderId;
   const isLoading = !done && state !== "error";
