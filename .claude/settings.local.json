@@ -125,7 +125,21 @@
       "PowerShell(node scripts/create-spotify-es-it-ag.mjs)",
       "PowerShell(node scripts/create-spotify-es-it-ag.mjs --live)",
       "PowerShell(node scripts/create-youtube-es-it-ag.mjs)",
-      "PowerShell(node scripts/create-youtube-es-it-ag.mjs --live)"
+      "PowerShell(node scripts/create-youtube-es-it-ag.mjs --live)",
+      "PowerShell(node scripts/check-negative-conflicts.mjs)",
+      "PowerShell(node scripts/clean-negative-conflicts.mjs)",
+      "PowerShell(node scripts/clean-negative-conflicts.mjs --live)",
+      "PowerShell(node scripts/check-rsa-status.mjs)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)",
+      "PowerShell(claude mcp *)",
+      "mcp__posthog__exec",
+      "Bash(claude mcp)",
+      "mcp__stripe__retrieve_balance",
+      "mcp__stripe__stripe_api_details",
+      "mcp__stripe__stripe_api_execute",
+      "mcp__stripe__stripe_api_search",
+      "mcp__stripe__search_stripe_resources",
+      "mcp__stripe__fetch_stripe_resources"
     ]
   }
 }

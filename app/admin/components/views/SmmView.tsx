@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Ic } from "../icons";
+import { PLATFORM_SERVICES } from "@/app/lib/productCatalog";
 
 interface SmmMapping {
   id: number;
@@ -40,6 +41,8 @@ export default function SmmView() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [toggling, setToggling] = useState(false);
+  const [addInputs, setAddInputs] = useState<Record<string, string>>({});
+  const [addingKey, setAddingKey] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -110,6 +113,31 @@ export default function SmmView() {
     }
   };
 
+  const handleAddMapping = async (catalogPlatform: string, service: string) => {
+    const key = `${catalogPlatform}:${service}`;
+    const raw = (addInputs[key] || "").trim();
+    setAddingKey(key);
+    try {
+      const res = await fetch("/api/admin/smm", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          action: "add_mapping",
+          platform: catalogPlatform,
+          service,
+          bulkfollows_service_id: raw === "" ? 0 : Number(raw),
+        }),
+      });
+      if (!res.ok) throw new Error("Erreur " + res.status);
+      setAddInputs((s) => ({ ...s, [key]: "" }));
+      await fetchData();
+    } catch {
+      // silent — consistent with the rest of this view
+    } finally {
+      setAddingKey(null);
+    }
+  };
+
   const formatBalance = (bal: string | number | null | undefined) => {
     if (bal == null) return "—";
     const n = typeof bal === "string" ? parseFloat(bal) : bal;
@@ -131,6 +159,18 @@ export default function SmmView() {
         {error}
       </div>
     );
+  }
+
+  // Services offered in the catalog but not yet mapped in smm_config. Twitter
+  // is stored as "x" in the DB, so normalize before comparing to the catalog.
+  const mappedKeys = new Set(
+    (data?.mappings ?? []).map((m) => `${m.platform === "x" ? "twitter" : m.platform}:${m.service}`),
+  );
+  const missing: { catalogPlatform: string; service: string }[] = [];
+  for (const [platform, services] of Object.entries(PLATFORM_SERVICES)) {
+    for (const service of services) {
+      if (!mappedKeys.has(`${platform}:${service}`)) missing.push({ catalogPlatform: platform, service });
+    }
   }
 
   return (
@@ -238,6 +278,80 @@ export default function SmmView() {
           </div>
         </div>
       </div>
+
+      {/* Missing services — offered in the catalog but not mapped yet */}
+      {missing.length > 0 && (
+        <div
+          style={{
+            background: "var(--a-card)",
+            border: "1px solid rgba(234,179,8,0.4)",
+            borderRadius: 12,
+            overflow: "hidden",
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--a-line)" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-ink)", display: "flex", alignItems: "center", gap: 8 }}>
+              <span>⚠️</span> Services manquants ({missing.length})
+            </div>
+            <div style={{ fontSize: 12, color: "var(--a-ink-3)", marginTop: 2 }}>
+              Offerts au catalogue mais sans mapping BulkFollows — ces commandes ne se routent pas.
+              Renseigne l&apos;ID BF puis Ajouter (laisse vide pour créer la ligne désactivée et la compléter ensuite).
+            </div>
+          </div>
+          <table className="table" style={{ width: "100%" }}>
+            <thead>
+              <tr>
+                <th style={{ color: "var(--a-ink-3)" }}>Platform</th>
+                <th style={{ color: "var(--a-ink-3)" }}>Service</th>
+                <th style={{ color: "var(--a-ink-3)" }}>BulkFollows Service ID</th>
+                <th style={{ color: "var(--a-ink-3)" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {missing.map(({ catalogPlatform, service }) => {
+                const key = `${catalogPlatform}:${service}`;
+                return (
+                  <tr key={key}>
+                    <td style={{ fontWeight: 700, color: "var(--a-ink)" }}>{catalogPlatform}</td>
+                    <td style={{ color: "var(--a-ink)" }}>{service}</td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="ex. 14827"
+                        value={addInputs[key] || ""}
+                        onChange={(e) =>
+                          setAddInputs((s) => ({ ...s, [key]: e.target.value.replace(/[^0-9]/g, "") }))
+                        }
+                        style={{
+                          width: 100,
+                          padding: "4px 8px",
+                          borderRadius: 6,
+                          border: "1px solid var(--a-line)",
+                          background: "var(--a-card)",
+                          color: "var(--a-ink)",
+                          fontSize: 13,
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        className="btn"
+                        disabled={addingKey === key}
+                        onClick={() => handleAddMapping(catalogPlatform, service)}
+                        style={{ padding: "4px 10px", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 6, opacity: addingKey === key ? 0.5 : 1 }}
+                      >
+                        {Ic.check()} Ajouter
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Mappings table */}
       <div
