@@ -287,31 +287,36 @@ input { font: inherit; color: inherit; }
 .btn-ig:disabled::before,
 .btn-ig:disabled::after { display: none; }
 
-/* /promo username-first capture — Instagram-branded entry card.
-   Reuses the IG gradient + .input-shell focus theme so the capture reads
-   as Instagram instead of a generic form. Stays whitehat: no product noun,
-   no quantity in the copy. */
+/* /promo username-first capture — Claude Design "V2 · Instagram gradient
+   forward". An IG-gradient frame wraps a white inner card with a soft pink
+   glow; an "Instagram" eyebrow sits over a big "Followers" title, a pink-
+   bordered field carries a gradient @, and a full-width IG-gradient CTA shows
+   the min price. Whitehat: no quantities, no reassurance badges. */
 .promo-ig-capture {
   position: relative;
   max-width: 480px;
   margin: 0 auto 8px;
 }
-.promo-ig-capture-card {
+.promo-ig-capture-card { /* gradient frame */
+  position: relative;
+  border-radius: 26px;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 45%, var(--ig-3) 75%, var(--ig-4));
+  box-shadow: 0 26px 50px -26px rgba(214, 41, 118, 0.5);
+}
+.promo-ig-capture-inner {
   position: relative;
   background: white;
-  border-radius: 24px;
-  padding: 24px 22px 22px;
-  border: 1px solid var(--line);
-  box-shadow: 0 24px 60px -30px rgba(214, 41, 118, 0.45);
+  border-radius: 23px;
+  padding: 28px;
   overflow: hidden;
 }
-/* Soft IG gradient wash in the top-right corner */
-.promo-ig-capture-card::before {
-  content: '';
+.promo-ig-capture-glow {
   position: absolute;
-  top: -70px; right: -70px;
-  width: 190px; height: 190px;
-  background: radial-gradient(circle, rgba(214, 41, 118, 0.16), transparent 70%);
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 41, 118, 0.18), transparent 70%);
   pointer-events: none;
 }
 .promo-ig-capture-head {
@@ -322,21 +327,74 @@ input { font: inherit; color: inherit; }
   position: relative;
 }
 .promo-ig-capture-logo {
-  width: 44px; height: 44px;
+  width: 46px; height: 46px;
   flex-shrink: 0;
-  border-radius: 13px;
-  background: linear-gradient(135deg, var(--ig-1) 0%, var(--ig-2) 45%, var(--ig-3) 80%, var(--ig-4) 100%);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 50%, var(--ig-3));
   display: grid; place-items: center;
-  box-shadow: 0 8px 20px -8px rgba(214, 41, 118, 0.6);
+  box-shadow: 0 8px 18px -6px rgba(214, 41, 118, 0.5);
+}
+.promo-ig-capture-eyebrow {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ig-2);
 }
 .promo-ig-capture-title {
-  font-size: 16px; font-weight: 800;
-  letter-spacing: -0.01em; color: var(--ink);
-  line-height: 1.25;
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--ink);
+  margin-top: 2px; line-height: 1.1;
 }
 .promo-ig-capture-sub {
-  font-size: 13px; color: var(--ink-3); margin-top: 2px;
+  font-size: 14px; color: var(--ink-2); font-weight: 500;
+  margin: 0 0 18px;
+  position: relative;
 }
+.promo-ig-capture-field {
+  display: flex; align-items: center;
+  background: white;
+  border: 2px solid #f1d9e4;
+  border-radius: 14px;
+  padding: 4px 6px 4px 16px;
+  margin-bottom: 16px;
+  position: relative;
+  transition: border-color .2s, box-shadow .2s;
+}
+.promo-ig-capture-field:focus-within {
+  border-color: var(--ig-2);
+  box-shadow: 0 8px 22px -10px rgba(214, 41, 118, 0.35);
+}
+.promo-ig-capture-at {
+  font-weight: 800; font-size: 17px; margin-right: 2px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.promo-ig-capture-field input {
+  flex: 1; border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 16px; font-weight: 500;
+  padding: 12px 4px; color: var(--ink);
+}
+.promo-ig-capture-field input::placeholder { color: var(--ink-3); }
+.promo-ig-capture-btn {
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 16px;
+  border: 0; border-radius: 14px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 55%, var(--ig-3));
+  color: white;
+  font: inherit; font-size: 16px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 26px -10px rgba(214, 41, 118, 0.6);
+  transition: transform .2s, box-shadow .2s, filter .2s;
+  position: relative;
+}
+.promo-ig-capture-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 18px 34px -12px rgba(214, 41, 118, 0.7);
+}
+.promo-ig-capture-btn:hover .promo-ig-capture-arrow { transform: translateX(4px); }
+.promo-ig-capture-price { opacity: 0.85; font-weight: 600; }
+.promo-ig-capture-arrow { display: inline-flex; transition: transform .25s ease; }
 
 /* btn-tt — TikTok signature button (black with cyan + red glow) */
 .btn-tt {

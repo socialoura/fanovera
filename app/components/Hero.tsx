@@ -1006,53 +1006,59 @@ export default function Hero({
               ))}
             <input type="hidden" name="entry_surface" value="promo" />
             <input type="hidden" name="from" value="promo_instagram" />
+            {/* Claude Design "V2 — Instagram gradient forward": gradient frame →
+                white inner with soft glow, IG eyebrow + big title, gradient-@
+                field, IG-gradient CTA. Reassurance row intentionally omitted. */}
             <div className="promo-ig-capture-card">
-              <div className="promo-ig-capture-head">
-                <span className="promo-ig-capture-logo">
-                  <NetIcon kind="instagram" color="white" size={24} />
-                </span>
-                <div>
-                  <div className="promo-ig-capture-title">
-                    {locale?.toLowerCase().startsWith("fr")
-                      ? "Voir votre offre Instagram"
-                      : "See your Instagram offer"}
-                  </div>
-                  <div className="promo-ig-capture-sub">
-                    {locale?.toLowerCase().startsWith("fr")
-                      ? "Entrez votre @ — personnalisé en 2 secondes"
-                      : "Enter your @ — personalised in 2 seconds"}
+              <div className="promo-ig-capture-inner">
+                <div className="promo-ig-capture-glow" />
+                <div className="promo-ig-capture-head">
+                  <span className="promo-ig-capture-logo">
+                    <NetIcon kind="instagram" color="white" size={24} />
+                  </span>
+                  <div>
+                    <div className="promo-ig-capture-eyebrow">Instagram</div>
+                    <div className="promo-ig-capture-title">Followers</div>
                   </div>
                 </div>
-              </div>
 
-              <div className="input-shell">
-                <span style={{ color: "var(--ink-3)", fontWeight: 700, fontSize: 16 }}>@</span>
-                <input
-                  id="promo-ig-handle"
-                  data-testid="promo-username-capture"
-                  type="text"
-                  name="u"
-                  enterKeyHint="go"
-                  placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
-                  value={promoHandle}
-                  onChange={(e) => setPromoHandle(e.target.value.replace(/^@+/, ""))}
-                  spellCheck={false}
-                  autoCapitalize="none"
-                  autoComplete="off"
-                  autoCorrect="off"
-                />
-              </div>
+                <div className="promo-ig-capture-sub">
+                  {locale?.toLowerCase().startsWith("fr")
+                    ? "Entrez votre nom d'utilisateur"
+                    : "Enter your username"}
+                </div>
 
-              <button
-                type="submit"
-                className="btn-primary btn-ig"
-                style={{ width: "100%", marginTop: 14, justifyContent: "center" }}
-              >
-                {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+                <label className="promo-ig-capture-field">
+                  <span className="promo-ig-capture-at">@</span>
+                  <input
+                    id="promo-ig-handle"
+                    data-testid="promo-username-capture"
+                    type="text"
+                    name="u"
+                    enterKeyHint="go"
+                    placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
+                    value={promoHandle}
+                    onChange={(e) => setPromoHandle(e.target.value.replace(/^@+/, ""))}
+                    spellCheck={false}
+                    autoCapitalize="none"
+                    autoComplete="off"
+                    autoCorrect="off"
+                  />
+                </label>
+
+                <button type="submit" className="promo-ig-capture-btn">
+                  {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
+                  <span className="promo-ig-capture-price">
+                    {locale?.toLowerCase().startsWith("fr") ? "· dès " : "· from "}
+                    {promoNetworkPriceLabels.instagram}
+                  </span>
+                  <span className="promo-ig-capture-arrow">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M3 8h9M8 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
           </form>
         )}

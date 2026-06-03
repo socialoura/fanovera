@@ -139,7 +139,14 @@
       "mcp__stripe__stripe_api_execute",
       "mcp__stripe__stripe_api_search",
       "mcp__stripe__search_stripe_resources",
-      "mcp__stripe__fetch_stripe_resources"
+      "mcp__stripe__fetch_stripe_resources",
+      "Bash(cp \"C:/Users/ilyee/.claude/projects/C--Users-ilyee-Fanovera/16639b7a-1732-41a2-a459-856860171e53/tool-results/webfetch-1780505784555-kvety3.bin\" design.gz)",
+      "Bash(gzip -t design.gz)",
+      "Bash(xxd design.gz)",
+      "Bash(gunzip -c design.gz)",
+      "Bash(tar -tf design.tar)",
+      "Bash(mkdir -p design_extract)",
+      "Bash(tar -xf design.tar -C design_extract)"
     ]
   }
 }
