@@ -955,21 +955,6 @@ export default function Hero({
             >
               <StatusBadge />
             </div>
-            {/* Desktop: keep the original platform eyebrow. */}
-            <div
-              className="hide-md"
-              style={{
-                textAlign: "center",
-                margin: "0 auto 12px",
-                fontSize: 16,
-                fontWeight: 800,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: targetedNetwork ? NET_META[targetedNetwork].brand2 : "var(--ink-3)",
-              }}
-            >
-              {targetedTitle.eyebrow}
-            </div>
           </>
         )}
         <h1
