@@ -191,6 +191,10 @@ export async function POST(req: NextRequest) {
       amount: finalAmountCents,
       currency: pricing.currency.toLowerCase(),
       metadata: {
+        // Ownership marker — this Stripe account is shared with another property
+        // (Fanovaly). The webhook + recovery paths use this to refuse
+        // materializing the other site's payments as Fanovera orders.
+        site: "fanovera",
         email: email || "",
         username: username || "",
         platform: pricing.platform,

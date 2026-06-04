@@ -19,7 +19,7 @@ function countryFlag(code: string): string {
 
 export type EnsureOrderResult =
   | { ok: true; orderId: number; duplicate?: boolean; smmPlaced: boolean; platform: string; service: string; plan: string; totalCents?: number; currency?: string }
-  | { ok: false; reason: "payment_not_succeeded" | "internal_error"; status?: string };
+  | { ok: false; reason: "payment_not_succeeded" | "foreign_payment" | "internal_error"; status?: string };
 
 /**
  * Idempotently materializes the database row for a successful Stripe PaymentIntent,
@@ -76,11 +76,32 @@ export async function ensureOrderForPaymentIntent(
     }
 
     const meta = pi.metadata || {};
+
+    // ── Shared-Stripe-account guard ──
+    // This Stripe account is also used by another property (Fanovaly). Stripe
+    // broadcasts payment_intent.succeeded to EVERY webhook endpoint registered
+    // on the account, so this handler receives Fanovaly's payments too. Without
+    // this check we'd materialize them as Fanovera orders — polluting customer
+    // tracking, firing bogus confirmation emails, even auto-placing SMM.
+    //
+    // A PaymentIntent is ours iff it carries our `site` marker (set in
+    // /api/create-payment-intent) OR — for PIs created before that marker
+    // shipped — we have a checkout_payloads row for it (only Fanovera writes
+    // one, keyed by its own PI id). Foreign PIs have neither → skipped.
+    const persisted = await getCheckoutPayload(paymentIntentId);
+    const isOurs = meta.site === "fanovera" || !!persisted;
+    if (!isOurs) {
+      console.warn(
+        `[ensureOrder] Skipping foreign-site PaymentIntent ${paymentIntentId} ` +
+          `(source=${options.source}): no "fanovera" site marker and no checkout_payload.`,
+      );
+      return { ok: false, reason: "foreign_payment" };
+    }
+
     const checkoutE2E = process.env.ALLOW_CHECKOUT_E2E === "1" && meta.e2e === "true";
     const testPromo = meta.test_promo === "true";
     const skipSideEffects = checkoutE2E || testPromo;
     const skipEmail = checkoutE2E;
-    const persisted = await getCheckoutPayload(paymentIntentId);
 
     const latestCharge =
       pi.latest_charge && typeof pi.latest_charge === "object"

@@ -146,7 +146,9 @@
       "Bash(gunzip -c design.gz)",
       "Bash(tar -tf design.tar)",
       "Bash(mkdir -p design_extract)",
-      "Bash(tar -xf design.tar -C design_extract)"
+      "Bash(tar -xf design.tar -C design_extract)",
+      "Bash(git -c core.quotepath=false status --short)",
+      "Bash(Select-Object -First 30)"
     ]
   }
 }

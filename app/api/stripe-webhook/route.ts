@@ -52,11 +52,13 @@ export async function POST(req: NextRequest) {
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
         const result = await ensureOrderForPaymentIntent(pi.id, { source: "webhook" });
-        if (!result.ok) {
+        if (!result.ok && result.reason !== "foreign_payment") {
           console.error("[stripe-webhook] ensureOrder failed:", pi.id, result.reason);
           // Return 200 anyway: avoid Stripe retries on transient app errors.
           // Stripe retries on 5xx; here we already logged and the cron can recover.
         }
+        // foreign_payment = a payment from the other site sharing this Stripe
+        // account; ensureOrder already logged + skipped it. Not an error.
         break;
       }
       case "payment_intent.payment_failed": {
