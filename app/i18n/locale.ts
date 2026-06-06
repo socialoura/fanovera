@@ -34,7 +34,9 @@ const COUNTRY_TO_LOCALE: Record<string, SupportedLocale> = {
   IE: "en",
   NZ: "en",
   PT: "pt",
-  BR: "pt",
+  // Brazil: serve the UI in English, not Portuguese. (BRL price formatting
+  // still uses pt-BR via pricingCurrency.mapCountryToLocale — unaffected.)
+  BR: "en",
   DE: "de",
   AT: "de",
   IT: "it",
