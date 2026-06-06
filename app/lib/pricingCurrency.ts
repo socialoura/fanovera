@@ -87,18 +87,34 @@ export function currencyDbColumn(currency: string): string {
   return `price_${c.toLowerCase()}`;
 }
 
+// Unmapped countries that should still see EUR rather than the USD global
+// default: the eurozone (EUR is literally their money) plus nearby European
+// markets that are euro-familiar. Everything NOT listed here and not explicitly
+// mapped above falls back to USD — the global default that reads far better than
+// EUR for non-European visitors (e.g. NZ, the Gulf, Asia).
+const EUR_FALLBACK_COUNTRIES = new Set([
+  // Eurozone
+  "AT", "BE", "HR", "CY", "EE", "FI", "FR", "DE", "GR", "IE", "IT",
+  "LV", "LT", "LU", "MT", "NL", "PT", "SK", "SI", "ES",
+  // European, non-euro but euro-adjacent (familiar with the euro)
+  "NO", "DK", "PL", "CZ", "HU", "RO", "BG", "IS", "LI",
+  // Euro-using microstates
+  "MC", "SM", "VA", "AD",
+]);
+
 export function mapCountryToCurrency(countryCode?: string): SupportedCurrency {
   const cc = (countryCode || "").toUpperCase();
-  if (["US"].includes(cc)) return "USD";
-  if (["GB"].includes(cc)) return "GBP";
-  if (["BR"].includes(cc)) return "BRL";
-  if (["TR"].includes(cc)) return "TRY";
-  if (["CA"].includes(cc)) return "CAD";
-  if (["AU"].includes(cc)) return "AUD";
-  if (["CH"].includes(cc)) return "CHF";
-  if (["MX"].includes(cc)) return "MXN";
-  if (["SE"].includes(cc)) return "SEK";
-  return "EUR";
+  if (cc === "US") return "USD";
+  if (cc === "GB") return "GBP";
+  if (cc === "BR") return "BRL";
+  if (cc === "TR") return "TRY";
+  if (cc === "CA") return "CAD";
+  if (cc === "AU") return "AUD";
+  if (cc === "CH") return "CHF";
+  if (cc === "MX") return "MXN";
+  if (cc === "SE") return "SEK";
+  if (EUR_FALLBACK_COUNTRIES.has(cc)) return "EUR";
+  return "USD";
 }
 
 export function mapCountryToLocale(countryCode?: string): string {
@@ -112,7 +128,8 @@ export function mapCountryToLocale(countryCode?: string): string {
   if (cc === "CH") return "de-CH";
   if (cc === "MX") return "es-MX";
   if (cc === "SE") return "sv-SE";
-  return "fr-FR";
+  if (EUR_FALLBACK_COUNTRIES.has(cc)) return "fr-FR";
+  return "en-US";
 }
 
 export function mapCurrencyToLocale(currency?: string): string {

@@ -93,5 +93,10 @@ export function resolveLocale(input: {
     return { locale: browserLocale, source: "browser" as const };
   }
 
-  return { locale: "fr" as SupportedLocale, source: "fallback" as const };
+  // International visitor: neither a known country nor a supported browser
+  // language. Default to English rather than French — these are almost always
+  // foreign-language users (e.g. PL/HU/RO/GR/AR), for whom English is a far
+  // better default than French. FR organic traffic is already caught upstream
+  // by country/cookie, so it is unaffected by this fallback.
+  return { locale: "en" as SupportedLocale, source: "fallback" as const };
 }
