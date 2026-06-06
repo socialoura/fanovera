@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
@@ -43,12 +43,9 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
   const COLLAPSED_COUNT = 6;
   const hasMore = packs.length > COLLAPSED_COUNT;
   const [showAll, setShowAll] = useState(false);
-  // Auto-expand when the selected pack lives in the collapsed tail (e.g. a
-  // /promo handoff sized to a big follower count, or a restored selection) so
-  // the highlighted tile is never hidden.
-  useEffect(() => {
-    if (safePack >= COLLAPSED_COUNT) setShowAll(true);
-  }, [safePack]);
+  // Always show the 6 smallest tiers by default — the tail (incl. a selected
+  // pack beyond #6) stays behind "show more"; the order card below always
+  // reflects the current selection regardless of what's visible in the grid.
   const visiblePacks = showAll ? packs : packs.slice(0, COLLAPSED_COUNT);
 
   const handlePackClick = (index: number) => {

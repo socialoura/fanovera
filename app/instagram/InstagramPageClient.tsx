@@ -25,7 +25,6 @@ import { type CheckoutFlowVariant } from "../lib/checkoutFlow";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
-import StickyMobileCTA from "../components/StickyMobileCTA";
 import { useInstagramCopy } from "./i18n";
 
 export type IgProfile = {
@@ -404,17 +403,6 @@ export default function InstagramPageClient({ checkoutFlowVariant = "control" }:
         <IgFAQ />
       </div>
       <IgFooter />
-      <StickyMobileCTA
-        visible={(step === 1 || (step === 2 && !isMerged)) && canDisplayPricing}
-        label={t.step1.continue}
-        priceLabel={formatPrice(selectedPack, country)}
-        subLabel={step === 2 && (profile || media)
-          ? `+${formatQty(selectedPack.qty + selectedPack.bonus)} → @${cleanUsername || profile?.username || media?.user.username || ""}`
-          : `${formatQty(selectedPack.qty)} + ${formatQty(selectedPack.bonus)}`}
-        disabled={step === 2 && !(targetReady && emailValid)}
-        accent="var(--ig-2)"
-        onClick={next}
-      />
     </div>
   );
 }
