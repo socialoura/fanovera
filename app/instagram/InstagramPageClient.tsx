@@ -9,6 +9,7 @@ import IgHeader from "./components/IgHeader";
 import Step1Packs from "./components/Step1Packs";
 import Step2Username from "./components/Step2Username";
 import Step3Checkout from "./components/Step3Checkout";
+import StepMergedCheckout from "./components/StepMergedCheckout";
 import WhyUs from "./components/WhyUs";
 import Reviews from "./components/Reviews";
 import IgFAQ from "./components/IgFAQ";
@@ -19,7 +20,8 @@ import { usePaymentIntent } from "../components/StripePayment";
 import { useApplyCurrencyPricing, usePrefetchProductPricing } from "../lib/useCurrencyPricing";
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { useProductAnalytics } from "../lib/useProductAnalytics";
-import { trackEvent } from "../lib/analytics";
+import { trackEvent, registerSuperProperties } from "../lib/analytics";
+import { type CheckoutFlowVariant } from "../lib/checkoutFlow";
 import { isValidCheckoutEmail } from "../lib/checkoutTargetValidation";
 import { useFunnelPersistence, useAutoSelectPopularPack } from "../lib/useFunnelPersistence";
 import { scrollToStepMain } from "../lib/stepScroll";
@@ -61,7 +63,8 @@ const STATIC_LIKES_PACKS = LIKES_PACKS.map((pack) => ({ ...pack }));
 const STATIC_VIEWS_PACKS = VIEWS_PACKS.map((pack) => ({ ...pack }));
 const STATIC_REPOST_PACKS = REPOST_PACKS.map((pack) => ({ ...pack }));
 
-export default function InstagramPageClient() {
+export default function InstagramPageClient({ checkoutFlowVariant = "control" }: { checkoutFlowVariant?: CheckoutFlowVariant } = {}) {
+  const isMerged = checkoutFlowVariant === "merged";
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const country: CountryId = "fr";
   const search = useSearchParams();
@@ -121,6 +124,22 @@ export default function InstagramPageClient() {
   const [readyOnce, setReadyOnce] = useState(canDisplayPricing);
   useEffect(() => { if (canDisplayPricing) setReadyOnce(true); }, [canDisplayPricing]);
   const t = useInstagramCopy();
+  const stepperLabels = isMerged ? [t.stepper[0], t.stepperMergedStep2] : undefined;
+  // Fire the merged-checkout A/B exposure once per IG page view (both arms) and
+  // register the variant super property so checkout/payment events carry it for
+  // the admin results query.
+  const checkoutFlowExposedRef = useRef(false);
+  useEffect(() => {
+    if (checkoutFlowExposedRef.current) return;
+    checkoutFlowExposedRef.current = true;
+    registerSuperProperties({ checkout_flow_variant: checkoutFlowVariant });
+    trackEvent("checkout_flow_exposed", {
+      product_area: "instagram",
+      platform: "instagram",
+      variant: checkoutFlowVariant,
+      locale,
+    });
+  }, [checkoutFlowVariant, locale]);
   const hydration = useFunnelPersistence("instagram", { pack: safePack, username, email }, { setPack, setUsername, setEmail });
   // Skip the "popular" auto-select for handoff visitors — the smart default
   // (sized to their follower count) owns the pack instead.
@@ -332,28 +351,50 @@ export default function InstagramPageClient() {
             onNext={next}
             productType={productType}
             setProductType={setProductType}
+            stepperLabels={stepperLabels}
           />
         ) : <PricingPacksLoading accent="var(--ig-2)" />)}
         {step === 2 && (
-          <Step2Username
-            country={country}
-            pack={safePack}
-            productType={productType}
-            username={username}
-            setUsername={setUsername}
-            postUrl={postUrl}
-            setPostUrl={setPostUrl}
-            email={email}
-            setEmail={setEmail}
-            profile={profile}
-            setProfile={setProfile}
-            media={media}
-            setMedia={setMedia}
-            onNext={next}
-            onBack={back}
-          />
+          isMerged ? (
+            <StepMergedCheckout
+              country={country}
+              pack={safePack}
+              productType={productType}
+              username={username}
+              setUsername={setUsername}
+              postUrl={postUrl}
+              setPostUrl={setPostUrl}
+              email={email}
+              setEmail={setEmail}
+              profile={profile}
+              setProfile={setProfile}
+              media={media}
+              setMedia={setMedia}
+              clientSecret={clientSecret}
+              onBackToPacks={backToPacks}
+              stepperLabels={stepperLabels}
+            />
+          ) : (
+            <Step2Username
+              country={country}
+              pack={safePack}
+              productType={productType}
+              username={username}
+              setUsername={setUsername}
+              postUrl={postUrl}
+              setPostUrl={setPostUrl}
+              email={email}
+              setEmail={setEmail}
+              profile={profile}
+              setProfile={setProfile}
+              media={media}
+              setMedia={setMedia}
+              onNext={next}
+              onBack={back}
+            />
+          )
         )}
-        {step === 3 && (
+        {step === 3 && !isMerged && (
           <Step3Checkout country={country} pack={safePack} username={username} postUrl={postUrl} email={email} profile={profile} clientSecret={clientSecret} onBack={back} onBackToPacks={backToPacks} productType={productType} />
         )}
       </div>
@@ -364,7 +405,7 @@ export default function InstagramPageClient() {
       </div>
       <IgFooter />
       <StickyMobileCTA
-        visible={(step === 1 || step === 2) && canDisplayPricing}
+        visible={(step === 1 || (step === 2 && !isMerged)) && canDisplayPricing}
         label={t.step1.continue}
         priceLabel={formatPrice(selectedPack, country)}
         subLabel={step === 2 && (profile || media)

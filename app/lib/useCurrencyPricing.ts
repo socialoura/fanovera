@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   SUPPORTED_CURRENCIES,
   buildCurrencyFormatter,
@@ -227,9 +227,14 @@ export function setAutoCurrency() {
   emitCurrencyChange();
 }
 
-export function useCurrencyPreference() {
-  const [currency, setCurrency] = useState<SupportedCurrency>("EUR");
-  const [locale, setLocale] = useState("fr-FR");
+export function useCurrencyPreference(initial?: { currency?: SupportedCurrency; locale?: string }) {
+  // `initial` seeds the first render (SSR-resolved currency/locale) so prices
+  // paint in the right currency immediately instead of flashing EUR/fr-FR
+  // until the async /api/geo-currency refresh below resolves. Read once on
+  // mount via a ref so a re-render with a new object identity can't reset state.
+  const initialRef = useRef(initial);
+  const [currency, setCurrency] = useState<SupportedCurrency>(initialRef.current?.currency ?? "EUR");
+  const [locale, setLocale] = useState(initialRef.current?.locale ?? "fr-FR");
   const [mode, setMode] = useState<CurrencyMode>("auto");
   const [country, setCountry] = useState<string | null>(null);
 

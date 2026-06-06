@@ -4,6 +4,8 @@ import { generateSurfaceMetadata } from "../lib/metadata";
 import { detectTargetNetworkFromParams } from "../lib/detectTargetNetwork";
 import { PROMO_FLOW_COOKIE, resolvePromoFlowVariant } from "../lib/promoFlow";
 import { getCachedPromoFlowMode } from "../lib/promoFlow.server";
+import { resolveInitialCurrency } from "../lib/serverCurrency";
+import { loadPromoNetworkMinPriceLabels } from "../lib/promoPricing.server";
 
 export const generateMetadata = () => generateSurfaceMetadata("home", "promo");
 
@@ -31,10 +33,21 @@ export default async function PromoPage({
   const mode = await getCachedPromoFlowMode();
   const promoFlowVariant = resolvePromoFlowVariant(mode, cookieStore.get(PROMO_FLOW_COOKIE)?.value);
 
+  // Seed the visitor's currency from the geo header so /promo prices paint in
+  // their currency on first render (no EUR→£ flash for UK Google Ads traffic).
+  const { currency: initialCurrency, locale: initialLocale } = await resolveInitialCurrency();
+
+  // SSR the real "from £X" anchors so prices paint correctly on first load
+  // (no EUR-fallback → real-price flicker on the CTA / network cards).
+  const initialPriceLabels = await loadPromoNetworkMinPriceLabels(initialCurrency, initialLocale);
+
   return (
     <PromoLanding
       initialTargetedNetwork={initialTargetedNetwork}
       promoFlowVariant={promoFlowVariant}
+      initialCurrency={initialCurrency}
+      initialLocale={initialLocale}
+      initialPriceLabels={initialPriceLabels}
     />
   );
 }

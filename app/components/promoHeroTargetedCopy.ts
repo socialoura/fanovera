@@ -84,7 +84,7 @@ export const PROMO_HERO_TARGETED_COPY: Partial<Record<string, Partial<Record<Net
       eyebrow: "Instagram · Progressive visibility",
       titleBefore: "Grow your ",
       titleHighlight: "Instagram",
-      titleAfter: " in just a few clicks.",
+      titleAfter: " Followers in just a few clicks.",
     },
     tiktok: {
       eyebrow: "TikTok · Targeted presence",

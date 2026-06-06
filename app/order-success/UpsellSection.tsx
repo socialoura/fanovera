@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getDisplayLocale } from "../lib/pricingCurrency";
 import { PACKS as IG_FOLLOWERS, LIKES_PACKS as IG_LIKES, VIEWS_PACKS as IG_VIEWS } from "../instagram/data";
 import { PACKS as TT_FOLLOWERS, LIKES_PACKS as TT_LIKES, VIEWS_PACKS as TT_VIEWS } from "../tiktok/data";
 import { PACKS as YT_VIEWS, SUBSCRIBERS_PACKS as YT_SUBS } from "../youtube/data";
@@ -62,7 +63,9 @@ const TITLE_COPY: Record<string, { eyebrow: string; title: string; sub: string; 
 };
 
 function formatQty(value: number) {
-  return value.toLocaleString("fr-FR");
+  // Active region locale (e.g. "10,000" en-GB) instead of always French —
+  // mirrors the per-platform formatQty so post-purchase upsell quantities match.
+  return value.toLocaleString(getDisplayLocale());
 }
 
 export default function UpsellSection({

@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import NetIcon from "../../components/NetIcon";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
 import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type InstagramProductType, getPacksForProduct } from "../data";
 import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
 import { useInstagramCopy } from "../i18n";
+import { useI18n } from "../../i18n/I18nProvider";
+import { useMarketingMode } from "../../marketing/MarketingModeProvider";
+import { getEffectiveMarketingMode } from "../../lib/marketingModeTypes";
 import ValueFraming from "../../components/ValueFraming";
 
 type Props = {
@@ -16,16 +19,37 @@ type Props = {
   onNext: () => void;
   productType: InstagramProductType;
   setProductType: (t: InstagramProductType) => void;
+  stepperLabels?: string[];
 };
 
-export default function Step1Packs({ country, pack, setPack, onNext, productType, setProductType }: Props) {
+export default function Step1Packs({ country, pack, setPack, onNext, productType, setProductType, stepperLabels }: Props) {
   const t = useInstagramCopy().step1;
+  // In performance mode the title is "{platform} {audience}" (e.g. "Instagram
+  // Followers"); make the audience noun follow the product toggle so switching
+  // to Likes/Views/Reposts updates it. Other modes keep their static sentence.
+  const { locale } = useI18n();
+  const { mode } = useMarketingMode();
+  const isPerformanceTitle = getEffectiveMarketingMode(locale, mode) === "performance";
   const packs = getPacksForProduct(productType);
   const safePack = Math.min(pack, packs.length - 1);
   const selectedPack = packs[safePack];
   const savings = selectedPack.old - selectedPack.price;
   const audienceLabel = productType === "likes" ? t.audienceLikes : productType === "views" ? t.audienceViews : productType === "reposts" ? t.audienceReposts : t.audience;
   const orderCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Choice-overload guard: show the 6 smallest tiers by default and tuck the
+  // high-volume tail behind a "show more" toggle. Nothing is removed — the
+  // tail is one tap away for the rare large buyer.
+  const COLLAPSED_COUNT = 6;
+  const hasMore = packs.length > COLLAPSED_COUNT;
+  const [showAll, setShowAll] = useState(false);
+  // Auto-expand when the selected pack lives in the collapsed tail (e.g. a
+  // /promo handoff sized to a big follower count, or a restored selection) so
+  // the highlighted tile is never hidden.
+  useEffect(() => {
+    if (safePack >= COLLAPSED_COUNT) setShowAll(true);
+  }, [safePack]);
+  const visiblePacks = showAll ? packs : packs.slice(0, COLLAPSED_COUNT);
 
   const handlePackClick = (index: number) => {
     setPack(index);
@@ -47,7 +71,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
     <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 0", position: "relative" }}>
       <IgSprinkle count={6} seed={0} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
-        <Stepper step={1} />
+        <Stepper step={1} labels={stepperLabels} />
 
         <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 24px" }}>
           <div
@@ -71,7 +95,11 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
             Instagram
           </div>
           <h1 className="display" style={{ margin: 0, fontSize: "clamp(26px, 4.4vw, 48px)" }}>
-            {t.titleBefore} <span className="squiggle ig">{t.titleFocus}</span> {t.titleAfter}
+            {isPerformanceTitle ? (
+              <>{t.titleBefore} <span className="squiggle ig">{audienceLabel}</span></>
+            ) : (
+              <>{t.titleBefore} <span className="squiggle ig">{t.titleFocus}</span> {t.titleAfter}</>
+            )}
           </h1>
 
           <div className="ig-mode-toggle" style={{ marginTop: 20, marginBottom: 0 }}>
@@ -94,7 +122,7 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
           </div>
         </div>
 
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div
             style={{
               fontSize: 13,
@@ -107,8 +135,8 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
           >
             {t.volume}
           </div>
-          <div className="pack-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 32 }}>
-            {packs.map((p, i) => (
+          <div className="pack-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: hasMore ? 16 : 32 }}>
+            {visiblePacks.map((p, i) => (
               <button
                 key={i}
                 onClick={() => handlePackClick(i)}
@@ -136,6 +164,33 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               </button>
             ))}
           </div>
+          {hasMore && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                aria-expanded={showAll}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "white",
+                  border: "1px solid var(--line)",
+                  borderRadius: 999,
+                  padding: "9px 18px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "var(--ink-2)",
+                  cursor: "pointer",
+                }}
+              >
+                {showAll ? t.showLess : `${t.showMore} (+${packs.length - COLLAPSED_COUNT})`}
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden style={{ transform: showAll ? "rotate(180deg)" : "none", transition: "transform .2s" }}>
+                  <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
@@ -198,9 +253,6 @@ export default function Step1Packs({ country, pack, setPack, onNext, productType
               </svg>
               <span>{formatPrice(selectedPack, country)}</span>
             </button>
-            <div style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "var(--ink-3)" }}>
-              ✓ {t.reassurance}
-            </div>
             <ValueFraming priceEur={selectedPack.price} qty={selectedPack.qty + selectedPack.bonus} />
           </div>
         </div>

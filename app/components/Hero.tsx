@@ -7,10 +7,10 @@ import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-import { NETWORKS, NET_META, type Network, type NetworkId } from "../lib/networks";
+import { NETWORKS, NET_META, PROMO_NETWORK_SERVICES, type Network, type NetworkId } from "../lib/networks";
 import { getCachedPricingPacks, prefetchProductPricing, useCurrencyPreference } from "../lib/useCurrencyPricing";
 import { prefetchPricingExperiments } from "../lib/usePricingExperiment";
-import { buildCurrencyFormatter } from "../lib/pricingCurrency";
+import { buildCurrencyFormatter, type SupportedCurrency } from "../lib/pricingCurrency";
 import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
 import { trackEvent, registerSuperProperties } from "../lib/analytics";
@@ -18,18 +18,6 @@ import { hrefWithPromoAttribution } from "../lib/promoAttribution";
 import type { PromoFlowVariant } from "../lib/promoFlow";
 import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
-
-const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
-  instagram: ["ig_followers", "ig_likes", "ig_views"],
-  tiktok: ["tt_followers", "tt_likes", "tt_views"],
-  youtube: ["yt_views", "yt_subscribers"],
-  spotify: ["sp_streams", "sp_followers"],
-  twitter: ["x_followers"],
-  facebook: ["fb_likes"],
-  linkedin: ["li_followers"],
-  twitch: ["tw_followers", "tw_live_viewers"],
-};
-
 
 function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
   const prices = PROMO_NETWORK_SERVICES[networkId].flatMap((service) =>
@@ -41,8 +29,11 @@ function getCachedNetworkMinPrice(networkId: NetworkId, currency: string) {
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 
-function usePromoNetworkPriceLabels() {
-  const { currency, locale } = useCurrencyPreference();
+function usePromoNetworkPriceLabels(
+  initial?: { currency?: SupportedCurrency; locale?: string },
+  initialLabels?: Record<NetworkId, string>,
+) {
+  const { currency, locale } = useCurrencyPreference(initial);
   const [pricingVersion, setPricingVersion] = useState(0);
   // Cached pricing lives in sessionStorage and is only reachable client-side.
   // Reading it during the first render produces SSR/CSR divergence — gate it
@@ -75,11 +66,15 @@ function usePromoNetworkPriceLabels() {
     return Object.fromEntries(
       NETWORKS.map((network) => {
         const cachedMinPrice = mounted ? getCachedNetworkMinPrice(network.id, currency) : null;
-        const fallbackPrice = NET_META[network.id].minPriceEur;
-        return [network.id, formatter.format(cachedMinPrice ?? fallbackPrice)];
+        // Real client price once loaded → SSR-seeded real price (no flicker) →
+        // hardcoded NET_META fallback only as a last resort.
+        if (cachedMinPrice != null) return [network.id, formatter.format(cachedMinPrice)];
+        const ssrLabel = initialLabels?.[network.id];
+        if (ssrLabel) return [network.id, ssrLabel];
+        return [network.id, formatter.format(NET_META[network.id].minPriceEur)];
       }),
     ) as Record<NetworkId, string>;
-  }, [currency, formatter, pricingVersion, mounted]);
+  }, [currency, formatter, pricingVersion, mounted, initialLabels]);
 }
 
 /**
@@ -139,7 +134,7 @@ function StarsRow({ items }: { items: { q: string; a: string }[] }) {
  * page" signal without exposing SMM-panel product specifics to Google's
  * landing-page policy scan.
  */
-function ThemedMockup({ network, copy }: { network: Network; copy: ReturnType<typeof getPublicCopy>["hero"] }) {
+function ThemedMockup({ network, copy, receiptAmount }: { network: Network; copy: ReturnType<typeof getPublicCopy>["hero"]; receiptAmount: string }) {
   const meta = NET_META[network.id];
   const brandStyle = {
     "--brand": meta.brand,
@@ -273,7 +268,7 @@ function ThemedMockup({ network, copy }: { network: Network; copy: ReturnType<ty
             </div>
           </div>
           <div style={{ fontSize: 11, fontWeight: 800, color: meta.brand, letterSpacing: "-0.01em" }}>
-            4,90€
+            {receiptAmount}
           </div>
         </div>
       </div>
@@ -281,7 +276,7 @@ function ThemedMockup({ network, copy }: { network: Network; copy: ReturnType<ty
   );
 }
 
-function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"] }) {
+function MockDashboard({ copy, receiptAmount }: { copy: ReturnType<typeof getPublicCopy>["hero"]; receiptAmount: string }) {
   return (
     <div className="mock-window" style={{ width: "100%", maxWidth: 700 }}>
       <div className="mock-titlebar">
@@ -535,7 +530,9 @@ function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"
 
           {/* Receipt strip — transactional proof.
               Stays whitehat: shows that an order was delivered, never says
-              what product or quantity. The amount is generic (4,90€). */}
+              what product or quantity. The amount is a real min-price label
+              in the visitor's active currency (receiptAmount), so a UK visitor
+              sees £ — not a hardcoded EUR figure. */}
           <div
             style={{
               marginTop: 10,
@@ -572,7 +569,7 @@ function MockDashboard({ copy }: { copy: ReturnType<typeof getPublicCopy>["hero"
               </div>
             </div>
             <div style={{ fontSize: 11, fontWeight: 800, color: "var(--green)", letterSpacing: "-0.01em" }}>
-              4,90€
+              {receiptAmount}
             </div>
           </div>
         </div>
@@ -695,6 +692,9 @@ function NetCard({
 export default function Hero({
   initialTargetedNetwork = null,
   promoFlowVariant = "control",
+  initialCurrency,
+  initialLocale,
+  initialPriceLabels,
 }: {
   // Server-detected UTM target (from /promo/page.tsx). Used as the source
   // of truth on the very first render so the SSR HTML already contains the
@@ -704,6 +704,13 @@ export default function Hero({
   initialTargetedNetwork?: NetworkId | null;
   // /promo username-first A/B variant (assigned SSR via cookie → no flash).
   promoFlowVariant?: PromoFlowVariant;
+  // SSR-resolved currency/locale (from the geo header) that seed the price
+  // formatter so /promo card prices + receipt paint in the visitor's currency
+  // (e.g. £ for a UK visitor) instead of flashing EUR until geo resolves.
+  initialCurrency?: SupportedCurrency;
+  initialLocale?: string;
+  // SSR real per-network "from £X" anchors → no EUR-fallback price flicker.
+  initialPriceLabels?: Record<NetworkId, string>;
 } = {}) {
   const { locale } = useI18n();
   const { mode, surfaceMode } = useMarketingMode();
@@ -715,7 +722,10 @@ export default function Hero({
   // off-intent minority via a discreet "autre réseau ?" link — cheap escape
   // hatch, no distraction for the 90% who want IG.
   const [showAllNetworks, setShowAllNetworks] = useState(false);
-  const promoNetworkPriceLabels = usePromoNetworkPriceLabels();
+  const promoNetworkPriceLabels = usePromoNetworkPriceLabels(
+    initialCurrency ? { currency: initialCurrency, locale: initialLocale } : undefined,
+    initialPriceLabels,
+  );
   const copy = getPublicCopy(locale, mode, surfaceMode).hero;
   const isPromo = mode === "promo";
 
@@ -1160,7 +1170,7 @@ export default function Hero({
         {!showUsernameCapture && (!targetedNetwork ? (
           <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <MockDashboard copy={copy} />
+              <MockDashboard copy={copy} receiptAmount={promoNetworkPriceLabels.instagram} />
             </div>
 
             {/* Floating left icons */}
@@ -1276,7 +1286,7 @@ export default function Hero({
             return (
               <div className="mock-dashboard-wrapper" style={{ position: "relative", marginTop: 20, marginBottom: -40, paddingBottom: 60 }}>
                 <div style={{ display: "flex", justifyContent: "center" }}>
-                  <ThemedMockup network={themedNetwork} copy={copy} />
+                  <ThemedMockup network={themedNetwork} copy={copy} receiptAmount={promoNetworkPriceLabels[themedNetwork.id]} />
                 </div>
 
                 {/* Left floating: only the matched network icon. */}

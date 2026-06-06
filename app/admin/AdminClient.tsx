@@ -20,6 +20,7 @@ import SupportView from "./components/views/SupportView";
 import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PromoFlowView from "./components/views/PromoFlowView";
+import CheckoutFlowView from "./components/views/CheckoutFlowView";
 import PricingExperimentsView from "./components/views/PricingExperimentsView";
 import EmailFlowsView from "./components/views/EmailFlowsView";
 import ViewErrorBoundary from "./components/ViewErrorBoundary";
@@ -36,7 +37,7 @@ function fmtEur(cents: number): string {
   });
 }
 
-type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "networkToday" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "promoFlow" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "networkToday" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "promoFlow" | "checkoutFlow" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -67,6 +68,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "pricing", label: "Prix", icon: () => Ic.tag(), sub: "Packs multi-devises" },
   { id: "abPricing", label: "A/B Prix", icon: () => Ic.filter(), sub: "Tests pricing" },
   { id: "promoFlow", label: "A/B Promo", icon: () => Ic.filter(), sub: "Flow username-first" },
+  { id: "checkoutFlow", label: "A/B Checkout", icon: () => Ic.filter(), sub: "Page unique IG" },
   { id: "combos", label: "Combos", icon: () => Ic.layers(), sub: "Packs combinés" },
   { id: "promo", label: "Codes promo", icon: () => Ic.tag(), sub: "Réductions + utilisations" },
   { id: "upsells", label: "Upsells", icon: () => Ic.zap(), sub: "Ventes additionnelles" },
@@ -433,6 +435,7 @@ export default function AdminClient() {
             {view === "pricing" && <PricingView />}
             {view === "abPricing" && <PricingExperimentsView />}
             {view === "promoFlow" && <PromoFlowView />}
+            {view === "checkoutFlow" && <CheckoutFlowView />}
             {view === "combos" && <CombosView />}
             {view === "promo" && <PromoCodesView />}
             {view === "upsells" && <UpsellsView />}

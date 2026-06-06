@@ -35,6 +35,10 @@ export const ANALYTICS_EVENTS = [
   // is also registered as a PostHog super property so downstream funnel events
   // (checkout_started → payment_succeeded) carry it for per-arm analysis.
   "promo_flow_exposed",
+  // Instagram merged-checkout A/B: fired once on /instagram with `variant`. Also
+  // registered as a PostHog super property so checkout_started → payment_succeeded
+  // carry `checkout_flow_variant` for the admin per-arm results query.
+  "checkout_flow_exposed",
   "pricing_toggle_changed",
   "pricing_cta_clicked",
   "checkout_started",

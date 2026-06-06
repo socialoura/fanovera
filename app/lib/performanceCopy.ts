@@ -226,9 +226,12 @@ export function applyPerformanceProductCopy<T>(
     ...source,
     step1: {
       ...step1,
-      titleBefore: `Boost ${product}`,
-      titleFocus: loc(locale, { fr: "rapide", en: "fast", es: "rápido", pt: "rápido", de: "schnell", it: "rapido", tr: "hızlı" }),
-      titleAfter: loc(locale, { fr: "et suivi.", en: "and tracked.", es: "y supervisado.", pt: "e acompanhado.", de: "und überwacht.", it: "e monitorato.", tr: "ve takipli." }),
+      // Product + its localized, platform-correct audience noun → "Instagram
+      // Followers" (en), "Instagram Abonnés" (fr), "YouTube Subscribers", etc.
+      // The audience noun is the squiggle-highlighted focus.
+      titleBefore: product,
+      titleFocus: audienceLabel,
+      titleAfter: "",
       volume: loc(locale, { fr: "Combien voulez-vous ajouter ?", en: "How much do you want to add?", es: "¿Cuánto quieres añadir?", pt: "Quanto você quer adicionar?", de: "Wie viel möchtest du hinzufügen?", it: "Quanto vuoi aggiungere?", tr: "Ne kadar eklemek istiyorsun?" }),
       audience: audienceLabel,
       selectedPack: loc(locale, { fr: "Pack choisi", en: "Chosen pack", es: "Pack elegido", pt: "Pack escolhido", de: "Gewähltes Paket", it: "Pacchetto scelto", tr: "Seçilen paket" }),
@@ -241,7 +244,7 @@ export function applyPerformanceProductCopy<T>(
         it: `Pacchetto ${product}`,
         tr: `${product} paketi`,
       }),
-      continue: loc(locale, { fr: "Lancer la campagne", en: "Launch campaign", es: "Lanzar la campaña", pt: "Lançar campanha", de: "Kampagne starten", it: "Avvia campagna", tr: "Kampanyayı başlat" }),
+      continue: loc(locale, { fr: "Commander maintenant", en: "Order now", es: "Pedir ahora", pt: "Pedir agora", de: "Jetzt bestellen", it: "Ordina ora", tr: "Şimdi sipariş ver" }),
       reassurance: loc(locale, { fr: "Sans mot de passe - Livraison progressive - Support inclus", en: "No password - Progressive delivery - Support included", es: "Sin contraseña - Entrega progresiva - Soporte incluido", pt: "Sem senha - Entrega progressiva - Suporte incluído", de: "Kein Passwort - Progressive Lieferung - Support inklusive", it: "Senza password - Consegna progressiva - Supporto incluso", tr: "Şifresiz - Aşamalı teslimat - Destek dahil" }),
     },
     step2: {

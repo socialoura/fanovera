@@ -1,4 +1,4 @@
-import { formatMoney } from "../lib/pricingCurrency";
+import { formatMoney, getDisplayLocale } from "../lib/pricingCurrency";
 
 export type Pack = {
   qty: number;
@@ -106,7 +106,9 @@ export const COUNTRIES: Country[] = [
   },
 ];
 
-export const formatQty = (q: number) => q.toLocaleString("fr-FR");
+// Group digits in the visitor's active region locale (e.g. "10,000" for en-GB,
+// "10 000" for fr-FR). Reads the same global locale as formatMoney/fmtEuro.
+export const formatQty = (q: number) => q.toLocaleString(getDisplayLocale());
 export const fmtEuro = (n: number) => formatMoney(n);
 export const formatPrice = (p: Pack, country?: CountryId) => {
   void country;

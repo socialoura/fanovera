@@ -8,7 +8,7 @@ import CouponField from "../../components/CouponField";
 import CheckoutUpsell, { type CheckoutUpsellItem } from "../../components/CheckoutUpsell";
 import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
-import { COUNTRIES, getPacksForProduct, getServiceForProduct, formatQty, fmtEuro, type CountryId, type InstagramProductType } from "../data";
+import { getPacksForProduct, getServiceForProduct, formatQty, fmtEuro, type CountryId, type InstagramProductType } from "../data";
 import type { IgProfile } from "../InstagramPageClient";
 import { useInstagramCopy } from "../i18n";
 import { useI18n } from "../../i18n/I18nProvider";
@@ -54,7 +54,6 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
   const canUsePrefetchedSecret = promo.discountCents === 0 && upsellCents === 0;
   const clean = username.replace(/^@/, "").trim();
   const recipientLabel = clean ? "@" + clean : (postUrl.trim() || "@yourusername");
-  const selectedCountry = COUNTRIES.find((c) => c.id === country)!;
 
   return (
     <section data-i18n-skip className="slide-in" style={{ padding: "40px 0 56px", position: "relative" }}>
@@ -117,7 +116,7 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
             <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", fontSize: 14 }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{formatQty(selected.qty)}</div>
-                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{selectedCountry.name}</div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>{t.audienceLabel}</div>
               </div>
               <div style={{ fontWeight: 700 }}>{fmtEuro(subtotal)}</div>
             </div>
@@ -178,6 +177,21 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
 
             <div style={{ borderTop: "1px dashed var(--line)", paddingTop: 20, marginTop: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 14 }}>{t.securePayment}</div>
+              {/* Reassurance at the point of maximum doubt — just above the pay
+                  button. Guarantee + no-password directly counter the two top
+                  fears on an SMM purchase (won't deliver / account safety). */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {[t.guarantee, t.noPassword].map((txt) => (
+                  <div key={txt} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-2)" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(77,191,138,0.15)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden>
+                        <path d="M3 7l3 3 5-6" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span>{txt}</span>
+                  </div>
+                ))}
+              </div>
               <StripeCheckout
                 amount={finalAmountCents}
                 email={email}
@@ -208,7 +222,7 @@ export default function Step3Checkout({ country, pack, username, postUrl = "", e
             </div>
 
             <div style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}>
-              {t.legalBefore} <a href="/cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>CGV</a>. {t.legalAfter}
+              {t.legalBefore} <a href="/cgv" style={{ color: "var(--ink-2)", textDecoration: "underline" }}>{t.terms}</a>. {t.legalAfter}
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--line)" }}>

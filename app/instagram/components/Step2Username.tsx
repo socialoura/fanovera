@@ -498,7 +498,7 @@ export default function Step2Username({
   );
 }
 
-function ProfilePreviewCard({
+export function ProfilePreviewCard({
   profile,
   clean,
   verified,
@@ -572,7 +572,7 @@ function ProfilePreviewCard({
   );
 }
 
-function MediaPreviewCard({
+export function MediaPreviewCard({
   media,
   verified,
   verifying,

@@ -47,3 +47,17 @@ export const NET_META: Record<NetworkId, NetMeta> = {
   linkedin: { stat: "Presence B2B", badge: null, brand: "#1d6dc1", brand2: "#3a8de0", minPriceEur: 9.99 },
   twitch: { stat: "Planning stream", badge: "NOUVEAU", brand: "#9146ff", brand2: "#b56cff", minPriceEur: 4.99 },
 };
+
+// Services whose cheapest pack feeds each network's "from £X" promo anchor.
+// Shared by the client Hero (cached-pricing min) and the server promo page
+// (SSR min price), so both compute the same anchor and the price never flickers.
+export const PROMO_NETWORK_SERVICES: Record<NetworkId, string[]> = {
+  instagram: ["ig_followers", "ig_likes", "ig_views"],
+  tiktok: ["tt_followers", "tt_likes", "tt_views"],
+  youtube: ["yt_views", "yt_subscribers"],
+  spotify: ["sp_streams", "sp_followers"],
+  twitter: ["x_followers"],
+  facebook: ["fb_likes"],
+  linkedin: ["li_followers"],
+  twitch: ["tw_followers", "tw_live_viewers"],
+};

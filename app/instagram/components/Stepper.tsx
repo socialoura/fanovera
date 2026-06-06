@@ -3,10 +3,12 @@
 import { Fragment } from "react";
 import { useInstagramCopy } from "../i18n";
 
-export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
+export default function Stepper({ step, labels }: { step: number; labels?: string[] }) {
   const t = useInstagramCopy();
-  const steps = t.stepper.map((label, index) => ({
-    n: (index + 1) as 1 | 2 | 3,
+  // `labels` overrides the default 3-step labels — e.g. the merged-checkout A/B
+  // variant passes a 2-step set (packs → profile & payment).
+  const steps = (labels ?? t.stepper).map((label, index) => ({
+    n: index + 1,
     label,
   }));
 
