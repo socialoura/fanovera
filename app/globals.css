@@ -2763,7 +2763,25 @@ input { font: inherit; color: inherit; }
   .ig-mode-toggle button,
   .tt-mode-toggle button,
   .yt-mode-toggle button,
-  .tw-mode-toggle button { flex: 1; padding: 0 8px; font-size: 11px; }
+  .tw-mode-toggle button {
+    flex: 1;
+    /* Allow the flex items to shrink below their content width so the four
+       buttons share the row evenly instead of one long label pushing wider. */
+    min-width: 0;
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 1.1;
+    /* Long localized labels (e.g. "Reproducciones", "Visualizzazioni") are a
+       single unbreakable word — let them wrap inside the pill rather than
+       spill past it. */
+    overflow-wrap: anywhere;
+  }
+  /* The icon is decorative; on narrow screens drop it so the full pill width
+     goes to the (much longer in some locales) label. */
+  .ig-mode-toggle button svg,
+  .tt-mode-toggle button svg,
+  .yt-mode-toggle button svg,
+  .tw-mode-toggle button svg { display: none; }
 }
 
 /* X (Twitter) product toggle — same base as the brand toggles above. */
@@ -2799,7 +2817,15 @@ input { font: inherit; color: inherit; }
 
 @media (max-width: 640px) {
   .x-mode-toggle { display: flex; width: 100%; }
-  .x-mode-toggle button { flex: 1; padding: 11px 8px; font-size: 14px; }
+  .x-mode-toggle button {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 6px;
+    font-size: 12px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .x-mode-toggle button svg { display: none; }
 }
 
 /* Spotify track preview card */

@@ -149,7 +149,25 @@
       "Bash(tar -xf design.tar -C design_extract)",
       "Bash(git -c core.quotepath=false status --short)",
       "Bash(Select-Object -First 30)",
-      "Bash(echo \"started pid $!\")"
+      "Bash(echo \"started pid $!\")",
+      "Bash(Select-Object -First 5)",
+      "Bash(Out-File -FilePath data\\\\ig-global-st-90d.txt -Encoding utf8)",
+      "Bash(Write-Output \"--- saved ---\")",
+      "PowerShell(node scripts/ig-global-reconcile.mjs)",
+      "PowerShell(Out-Null *)",
+      "PowerShell(node scripts/ig-global-orders.mjs)",
+      "PowerShell(node scripts/add-ig-global-negatives.mjs)",
+      "PowerShell(node scripts/add-ig-global-negatives.mjs --apply)",
+      "PowerShell(node scripts/inspect-ig-global-bidding.mjs)",
+      "PowerShell(node scripts/add-ig-global-exact-kw.mjs --apply)",
+      "PowerShell(node scripts/set-ig-global-cpc-ceiling.mjs)",
+      "PowerShell(node scripts/analyze-yt-global.mjs 30)",
+      "PowerShell(node scripts/yt-global-diag.mjs)",
+      "PowerShell(node scripts/yt-global-geo-ads.mjs)",
+      "PowerShell(node scripts/read-pricing-experiments.mjs)",
+      "PowerShell(node scripts/create-price-split-tests.mjs)",
+      "PowerShell(node scripts/create-price-split-tests.mjs --apply)",
+      "PowerShell(node scripts/add-x2-variant.mjs --apply)"
     ]
   }
 }

@@ -1,0 +1,34 @@
+﻿Campaigns matching '%nstagram%':
+  id=23920353991  status=2  "[GLOBAL] Instagram Followers"
+
+>>> Analyzing campaign id=23920353991 "[GLOBAL] Instagram Followers" — last 90d (2026-03-09 → 2026-06-07)
+
+✅ CONVERTERS — lock as EXACT (0):
+
+⛔ BLEEDING — 0 conv, ≥1.00€ — NEGATE (3):
+    2.36€  clk= 7  impr=  59  conv=0  val=0.00€  [Instagram · PHRASE] "recently followed" (already excluded)
+    1.26€  clk= 3  impr=  12  conv=0  val=0.00€  [Instagram · PHRASE] "see who recently followed on instagram" (already excluded)
+    1.17€  clk= 3  impr=   4  conv=0  val=0.00€  [Instagram · PHRASE] "recently followed ınstagram" (already excluded)
+
+🟡 WATCH — 0 conv, 0.40–1.00€ (16):
+    0.88€  clk= 2  impr=   6  conv=0  val=0.00€  [Instagram · PHRASE] "turbo followers for instagram" (already excluded)
+    0.83€  clk= 2  impr=   3  conv=0  val=0.00€  [Instagram · PHRASE] "cómo comprar seguidores en instagram" (already excluded)
+    0.68€  clk= 2  impr=  61  conv=0  val=0.00€  [Instagram · PHRASE] "recent follow" (already excluded)
+    0.52€  clk= 2  impr=   2  conv=0  val=0.00€  [Instagram · PHRASE] "freer services instagram" (already excluded)
+    0.48€  clk= 1  impr=   2  conv=0  val=0.00€  [Instagram · PHRASE] "instagram cheap followers" (already excluded)
+    0.48€  clk= 1  impr=   3  conv=0  val=0.00€  [Instagram · PHRASE] "instagram followers increase" (already excluded)
+    0.48€  clk= 1  impr=   2  conv=0  val=0.00€  [Instagram · PHRASE] "nakrutka instagram followers com" (already excluded)
+    0.48€  clk= 1  impr=   1  conv=0  val=0.00€  [Instagram · PHRASE] "recent following instagram" (already excluded)
+    0.48€  clk= 1  impr=   2  conv=0  val=0.00€  [Instagram · PHRASE] "seguidores para instagram" (already excluded)
+    0.48€  clk= 1  impr=   2  conv=0  val=0.00€  [Instagram · PHRASE] "ig obserwacje" (already excluded)
+    0.48€  clk= 1  impr=  30  conv=0  val=0.00€  [Instagram · PHRASE] "seguidores en instagram" (already excluded)
+    0.47€  clk= 1  impr=   1  conv=0  val=0.00€  [Instagram · PHRASE] "licznik obserwacji na instagramie" (already excluded)
+    0.47€  clk= 1  impr=   1  conv=0  val=0.00€  [Instagram · PHRASE] "instagram followers"
+    0.45€  clk= 1  impr=   8  conv=0  val=0.00€  [Instagram · PHRASE] "recent followers instagram" (already excluded)
+    0.45€  clk= 1  impr=   5  conv=0  val=0.00€  [Instagram · PHRASE] "see who recently followed on instagram instantly" (already excluded)
+    0.40€  clk= 1  impr=   5  conv=0  val=0.00€  [Instagram · PHRASE] "see who recently followed" (already excluded)
+
+… 200 terms below 0.40€ / 0 conv (ignored).
+
+TOTAL: 17.53€ spend · 47 clicks · 0.0 conv · 0.00€ value
+CPA —€ · ROAS 0.00 · wasted(0-conv) 13.30€
