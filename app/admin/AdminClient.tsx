@@ -17,6 +17,7 @@ import UpsellsView from "./components/views/UpsellsView";
 import PromoCodesView from "./components/views/PromoCodesView";
 import SmmView from "./components/views/SmmView";
 import SupportView from "./components/views/SupportView";
+import OutreachView from "./components/views/OutreachView";
 import I18nSyncView from "./components/views/I18nSyncView";
 import MarketingModeView from "./components/views/MarketingModeView";
 import PromoFlowView from "./components/views/PromoFlowView";
@@ -37,7 +38,7 @@ function fmtEur(cents: number): string {
   });
 }
 
-type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "networkToday" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "promoFlow" | "checkoutFlow" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "support";
+type ViewId = "analytics" | "cohorts" | "sources" | "adsRoas" | "networkToday" | "searchTerms" | "adsCohorts" | "orders" | "recovery" | "pricing" | "abPricing" | "promoFlow" | "checkoutFlow" | "combos" | "promo" | "upsells" | "smm" | "i18n" | "marketing" | "emails" | "outreach" | "support";
 
 type AdminAnalyticsSummary = {
   ordersToday?: number;
@@ -76,6 +77,7 @@ const NAV: { id: ViewId; label: string; icon: () => React.ReactNode; sub: string
   { id: "i18n", label: "i18n", icon: () => Ic.edit(), sub: "Traductions" },
   { id: "marketing", label: "Mode site", icon: () => Ic.zap(), sub: "Copy FR/EN" },
   { id: "emails", label: "Emails", icon: () => Ic.bell(), sub: "Relances automatiques" },
+  { id: "outreach", label: "Outreach", icon: () => Ic.mail(), sub: "Emailing + réponses" },
   { id: "support", label: "Support", icon: () => Ic.chat(), sub: "Messages clients" },
 ];
 
@@ -443,6 +445,7 @@ export default function AdminClient() {
             {view === "i18n" && <I18nSyncView />}
             {view === "marketing" && <MarketingModeView />}
             {view === "emails" && <EmailFlowsView />}
+            {view === "outreach" && <OutreachView />}
             {view === "support" && <SupportView />}
           </ViewErrorBoundary>
         </div>

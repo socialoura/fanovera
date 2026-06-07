@@ -921,6 +921,148 @@ export async function markThreadReplied(rootId: number, replyText: string) {
   `;
 }
 
+// ── Outreach (cold email + reply tracking) ─────────────────────────────────
+// A lightweight bulk-email tool for the admin: send one message to a list of
+// addresses (suppliers, partners, networking…) and have their replies surface
+// inline. Replies are matched back via a hidden `[fanovera-outreach:<rid>]`
+// token carried in the email body — the same mechanism the support inbox uses,
+// drained by the shared IMAP poller (see inboundMailPoll.ts).
+let outreachSchemaReady = false;
+
+export async function ensureOutreachSchema() {
+  if (outreachSchemaReady) return;
+  await sql`
+    CREATE TABLE IF NOT EXISTS outreach_campaigns (
+      id SERIAL PRIMARY KEY,
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS outreach_recipients (
+      id SERIAL PRIMARY KEY,
+      campaign_id INTEGER NOT NULL REFERENCES outreach_campaigns(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      send_error TEXT,
+      sent_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS outreach_replies (
+      id SERIAL PRIMARY KEY,
+      recipient_id INTEGER NOT NULL REFERENCES outreach_recipients(id) ON DELETE CASCADE,
+      from_email TEXT,
+      message TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_outreach_recipients_campaign ON outreach_recipients(campaign_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_outreach_replies_recipient ON outreach_replies(recipient_id)`;
+  outreachSchemaReady = true;
+}
+
+export async function createOutreachCampaign(params: {
+  subject: string;
+  body: string;
+}): Promise<number> {
+  const rows = await sql`
+    INSERT INTO outreach_campaigns (subject, body)
+    VALUES (${params.subject}, ${params.body})
+    RETURNING id
+  `;
+  return rows[0].id;
+}
+
+export async function addOutreachRecipient(params: {
+  campaignId: number;
+  email: string;
+}): Promise<number> {
+  const rows = await sql`
+    INSERT INTO outreach_recipients (campaign_id, email)
+    VALUES (${params.campaignId}, ${params.email})
+    RETURNING id
+  `;
+  return rows[0].id;
+}
+
+export async function markOutreachRecipientSent(id: number) {
+  await sql`
+    UPDATE outreach_recipients
+    SET status = 'sent', sent_at = NOW(), send_error = NULL
+    WHERE id = ${id}
+  `;
+}
+
+export async function markOutreachRecipientError(id: number, error: string) {
+  await sql`
+    UPDATE outreach_recipients
+    SET status = 'error', send_error = ${error}
+    WHERE id = ${id}
+  `;
+}
+
+export async function getOutreachRecipientById(id: number) {
+  const rows = await sql`SELECT * FROM outreach_recipients WHERE id = ${id} LIMIT 1`;
+  return rows[0] || null;
+}
+
+export async function insertOutreachReply(params: {
+  recipientId: number;
+  fromEmail: string;
+  message: string;
+}): Promise<number> {
+  const rows = await sql`
+    INSERT INTO outreach_replies (recipient_id, from_email, message)
+    VALUES (${params.recipientId}, ${params.fromEmail}, ${params.message})
+    RETURNING id
+  `;
+  return rows[0].id;
+}
+
+export async function getOutreachCampaigns() {
+  const campaigns = await sql`
+    SELECT * FROM outreach_campaigns ORDER BY created_at DESC LIMIT 100
+  `;
+  if (campaigns.length === 0) return [];
+
+  const campaignIds = campaigns.map((c) => c.id);
+  const recipients = await sql`
+    SELECT * FROM outreach_recipients
+    WHERE campaign_id = ANY(${campaignIds})
+    ORDER BY id ASC
+  `;
+  const recipientIds = recipients.map((r) => r.id);
+  const replies = recipientIds.length
+    ? await sql`
+        SELECT * FROM outreach_replies
+        WHERE recipient_id = ANY(${recipientIds})
+        ORDER BY created_at ASC
+      `
+    : [];
+
+  const repliesByRecipient = new Map<number, typeof replies>();
+  for (const reply of replies) {
+    const list = repliesByRecipient.get(reply.recipient_id) || [];
+    list.push(reply);
+    repliesByRecipient.set(reply.recipient_id, list);
+  }
+
+  const recipientsByCampaign = new Map<number, Array<Record<string, unknown>>>();
+  for (const r of recipients) {
+    const list = recipientsByCampaign.get(r.campaign_id) || [];
+    list.push({ ...r, replies: repliesByRecipient.get(r.id) || [] });
+    recipientsByCampaign.set(r.campaign_id, list);
+  }
+
+  return campaigns.map((c) => ({
+    ...c,
+    recipients: recipientsByCampaign.get(c.id) || [],
+  }));
+}
+
 export async function upsertCheckoutPayload(params: {
   paymentIntentId: string;
   email?: string;

@@ -4,6 +4,8 @@ import {
   getSupportMessageById,
   insertSupportReply,
   reopenSupportThread,
+  getOutreachRecipientById,
+  insertOutreachReply,
   sql,
 } from "./db";
 
@@ -53,6 +55,17 @@ function extractThreadId(opts: { recipients: string[]; rawText: string }): numbe
   const tokenMatch = opts.rawText.match(/\[fanovera-thread:(\d+)\]/i);
   if (tokenMatch) return Number(tokenMatch[1]);
   return null;
+}
+
+/**
+ * Try to extract an outreach recipient id from a reply, via the hidden
+ * `[fanovera-outreach:<rid>]` token the outreach sender embeds in the body.
+ * Outreach replies are routed separately from support so they surface in the
+ * Outreach tab next to the recipient they belong to.
+ */
+function extractOutreachId(rawText: string): number | null {
+  const m = rawText.match(/\[fanovera-outreach:(\d+)\]/i);
+  return m ? Number(m[1]) : null;
 }
 
 /**
@@ -131,6 +144,29 @@ export async function pollInboundMail(): Promise<PollStats> {
           const subject = (parsed.subject || "").trim();
           const fromAddr = parsed.from?.value?.[0]?.address || "";
           const cleanBody = stripQuotedHistory(rawText) || `(${subject || "no content"})`;
+
+          // Outreach replies are checked first: an outreach token routes the
+          // reply to the Outreach tab instead of opening a support thread.
+          const outreachId = extractOutreachId(rawText);
+          if (outreachId) {
+            const recipient = await getOutreachRecipientById(outreachId);
+            if (recipient) {
+              await insertOutreachReply({
+                recipientId: outreachId,
+                fromEmail: fromAddr || recipient.email,
+                message: cleanBody,
+              });
+              await client.messageFlagsAdd(uid, ["\\Seen"], { uid: true });
+              stats.matched++;
+              continue;
+            }
+            // Token present but recipient gone — flag seen so we don't retry.
+            stats.unmatched++;
+            console.warn("[inbound-poll] Outreach recipient not found:", outreachId, "UID=", uid);
+            await client.messageFlagsAdd(uid, ["\\Seen"], { uid: true });
+            continue;
+          }
+
           const threadId = extractThreadId({ recipients: toList, rawText });
 
           if (threadId) {
