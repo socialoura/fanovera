@@ -54,6 +54,7 @@ export default function OutreachView() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<number | null>(null);
 
   const token = () => localStorage.getItem("admin_pw") || "";
 
@@ -113,6 +114,28 @@ export default function OutreachView() {
       setError("Échec de l'envoi");
     }
     setSending(false);
+  };
+
+  const handleRetry = async (recipientId: number) => {
+    setRetryingId(recipientId);
+    try {
+      const res = await fetch("/api/admin/outreach", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token()}`,
+        },
+        body: JSON.stringify({ recipientId }),
+      });
+      await fetchCampaigns();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Renvoi échoué");
+      }
+    } catch {
+      setError("Renvoi échoué");
+    }
+    setRetryingId(null);
   };
 
   if (loading) return <div style={{ padding: 32, color: "var(--a-ink-3)" }}>Chargement…</div>;
@@ -190,7 +213,7 @@ export default function OutreachView() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Bonjour,&#10;&#10;…"
+            placeholder="Bonjour,&#10;&#10;Je gère Fanovera…"
             rows={8}
             style={{ ...inputStyle, resize: "vertical", marginBottom: 14 }}
           />
@@ -264,8 +287,30 @@ export default function OutreachView() {
                         </span>
                       </div>
 
-                      {r.status === "error" && r.send_error && (
-                        <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4 }}>{r.send_error}</div>
+                      {r.status === "error" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
+                          {r.send_error && (
+                            <span style={{ fontSize: 11, color: "#dc2626", flex: 1, minWidth: 180 }}>{r.send_error}</span>
+                          )}
+                          <button
+                            onClick={() => handleRetry(r.id)}
+                            disabled={retryingId === r.id}
+                            style={{
+                              padding: "4px 12px",
+                              borderRadius: 7,
+                              background: "#000",
+                              color: "#fff",
+                              border: "none",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              cursor: retryingId === r.id ? "not-allowed" : "pointer",
+                              opacity: retryingId === r.id ? 0.6 : 1,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {retryingId === r.id ? "Renvoi…" : "Renvoyer"}
+                          </button>
+                        </div>
                       )}
 
                       {replies.length > 0 && (

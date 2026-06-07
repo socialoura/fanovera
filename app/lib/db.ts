@@ -1009,6 +1009,11 @@ export async function getOutreachRecipientById(id: number) {
   return rows[0] || null;
 }
 
+export async function getOutreachCampaignById(id: number) {
+  const rows = await sql`SELECT * FROM outreach_campaigns WHERE id = ${id} LIMIT 1`;
+  return rows[0] || null;
+}
+
 export async function insertOutreachReply(params: {
   recipientId: number;
   fromEmail: string;
