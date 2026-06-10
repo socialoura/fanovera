@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-import { NETWORKS, NET_META } from "../lib/networks";
+import { NETWORKS, NET_META, networkPath } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
 import { trackEvent } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
@@ -75,7 +75,7 @@ export default function CTABlock() {
                 return (
                   <a
                     key={n.id}
-                    href={isPromo ? hrefWithPromoAttribution(`/${n.id}`, searchParams, n.id) : `/${n.id}`}
+                    href={isPromo ? hrefWithPromoAttribution(networkPath(n.id), searchParams, n.id) : networkPath(n.id)}
                     aria-label={n.name}
                     title={n.name}
                     data-matched={isMatched ? "true" : undefined}
@@ -87,7 +87,7 @@ export default function CTABlock() {
                         entry_surface: "promo",
                         product_area: n.id,
                         destination_network: n.id,
-                        destination_path: `/${n.id}`,
+                        destination_path: networkPath(n.id),
                         feature_name: "promo_network_selector",
                         cta_location: "bottom_network_icon",
                         targeted_match: isMatched,

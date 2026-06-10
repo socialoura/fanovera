@@ -45,6 +45,14 @@ export type SanitizedCheckoutItem = {
   pageUrl?: string;
   pageHandle?: string;
   postUrl?: string;
+  /**
+   * Multiple post/video URLs a single priced line should be spread across
+   * (tiktok-2 likes/views distribution). The line is priced ONCE at its pack
+   * qty; fulfillment (runSmmForOrder) splits qty+bonus evenly across these URLs
+   * and places one BulkFollows sub-order per URL. Lines without `postUrls` keep
+   * the legacy single-`postUrl` behavior untouched.
+   */
+  postUrls?: string[];
   videoUrl?: string;
   videoId?: string;
   trackUrl?: string;
@@ -89,6 +97,24 @@ function pickRowPrice(row: PricingRow, currency: SupportedCurrency) {
 
 function sanitizeText(value: unknown, maxLength = 240) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : undefined;
+}
+
+// Distribution targets for a single priced line. Caps at 50 URLs, trims each,
+// drops blanks/dupes. Returns undefined when there's nothing usable so the
+// field is simply absent on lines that don't distribute.
+function sanitizePostUrls(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of value) {
+    if (typeof raw !== "string") continue;
+    const url = raw.trim().slice(0, 240);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push(url);
+    if (out.length >= 50) break;
+  }
+  return out.length ? out : undefined;
 }
 
 function normalizeCart(cart: unknown) {
@@ -176,6 +202,7 @@ export function calculateCheckoutPricing(input: CheckoutPricingInput): CheckoutP
       pageUrl: sanitizeText(item.pageUrl),
       pageHandle: sanitizeText(item.pageHandle, 80),
       postUrl: sanitizeText(item.postUrl),
+      postUrls: sanitizePostUrls(item.postUrls),
       videoUrl: sanitizeText(item.videoUrl),
       videoId: sanitizeText(item.videoId, 80),
       trackUrl: sanitizeText(item.trackUrl),

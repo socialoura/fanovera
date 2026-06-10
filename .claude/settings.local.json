@@ -167,7 +167,11 @@
       "PowerShell(node scripts/read-pricing-experiments.mjs)",
       "PowerShell(node scripts/create-price-split-tests.mjs)",
       "PowerShell(node scripts/create-price-split-tests.mjs --apply)",
-      "PowerShell(node scripts/add-x2-variant.mjs --apply)"
+      "PowerShell(node scripts/add-x2-variant.mjs --apply)",
+      "Read(//c/Users/ilyee/.claude/projects/C--Users-ilyee-Fanovera/295d5ba3-f3ab-4c43-bdd8-9a40a8e1c09e/tool-results/**)",
+      "Bash(mkdir -p design-extract)",
+      "Bash(tar -xzf webfetch-1781048018192-21lpsw.bin -C design-extract)",
+      "Bash(npx eslint *)"
     ]
   }
 }

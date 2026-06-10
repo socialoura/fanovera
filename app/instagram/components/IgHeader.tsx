@@ -7,7 +7,7 @@ import { Logo } from "../../components/Header";
 import NetIcon from "../../components/NetIcon";
 import { getPublicCopy } from "../../components/publicCopy";
 import { useI18n } from "../../i18n/I18nProvider";
-import { NETWORKS } from "../../lib/networks";
+import { NETWORKS, networkPath } from "../../lib/networks";
 import { useInstagramCopy } from "../i18n";
 import { withDynamicReviewCount } from "../../lib/reviewCount";
 
@@ -24,7 +24,7 @@ export default function IgHeader() {
           {NETWORKS.map((n) => (
             <Link
               key={n.id}
-              href={`/${n.id}`}
+              href={networkPath(n.id)}
               aria-label={n.name}
               title={n.name}
               className="nav-pill-icon"

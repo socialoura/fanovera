@@ -39,6 +39,11 @@ export const ANALYTICS_EVENTS = [
   // registered as a PostHog super property so checkout_started → payment_succeeded
   // carry `checkout_flow_variant` for the admin per-arm results query.
   "checkout_flow_exposed",
+  // /tiktok-2 pack-selector A/B: fired once when the visitor reaches the
+  // quantities step, with `variant` (chips | slider). Also registered as a
+  // PostHog super property `tt2_packs_variant` so downstream funnel events
+  // (checkout_started → payment_succeeded) carry it for per-arm conversion.
+  "tt2_packs_exposed",
   "pricing_toggle_changed",
   "pricing_cta_clicked",
   "checkout_started",

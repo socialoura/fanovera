@@ -252,7 +252,27 @@ export interface SmmSubOrder {
   charge: number | null; // USD cost charged by BF
   error: string | null;
   placedAt: string | null;
+  // Set only for lines distributed across multiple posts (postUrls): the
+  // specific video URL this sub-order targets. Together with `cartIndex` it
+  // forms the resume/retry key so each split target is tracked independently.
+  postUrl?: string;
 }
+
+/**
+ * Split a total quantity into `n` whole-number parts that sum back to `total`,
+ * giving the remainder to the first parts. Used to spread a likes/views pack
+ * evenly across the posts the buyer selected. e.g. splitQty(1000, 3) →
+ * [334, 333, 333].
+ */
+function splitQty(total: number, n: number): number[] {
+  if (n <= 0) return [];
+  const base = Math.floor(total / n);
+  let remainder = total - base * n;
+  return Array.from({ length: n }, () => base + (remainder-- > 0 ? 1 : 0));
+}
+
+// One BulkFollows placement target derived from a cart line.
+type SmmTarget = { link: string; qty: number; postUrl?: string };
 
 /**
  * Best-effort check that a URL is reachable before we spend BulkFollows
@@ -385,19 +405,24 @@ async function expandUrl(url: string): Promise<string> {
 async function resolveOrderUsername(
   rawUsername: string,
   platform: string,
-  cart: Array<{ postUrl?: string }>,
+  cart: Array<{ postUrl?: string; postUrls?: string[] }>,
 ): Promise<string> {
   const direct = (rawUsername || "").trim();
   if (direct) return direct;
   if (!HANDLE_RECOVERABLE_PLATFORMS.has(platform)) return "";
   for (const item of cart) {
-    const postUrl = typeof item?.postUrl === "string" ? item.postUrl : "";
-    if (!postUrl) continue;
-    let handle = extractHandleFromUrl(platform as ExtractPlatform, postUrl);
-    if (!handle && platform === "tiktok" && TIKTOK_SHORT_LINK.test(postUrl)) {
-      handle = extractHandleFromUrl(platform as ExtractPlatform, await expandUrl(postUrl));
+    const candidates = [
+      typeof item?.postUrl === "string" ? item.postUrl : "",
+      ...(Array.isArray(item?.postUrls) ? item.postUrls.filter((u) => typeof u === "string") : []),
+    ];
+    for (const postUrl of candidates) {
+      if (!postUrl) continue;
+      let handle = extractHandleFromUrl(platform as ExtractPlatform, postUrl);
+      if (!handle && platform === "tiktok" && TIKTOK_SHORT_LINK.test(postUrl)) {
+        handle = extractHandleFromUrl(platform as ExtractPlatform, await expandUrl(postUrl));
+      }
+      if (handle) return handle;
     }
-    if (handle) return handle;
   }
   return "";
 }
@@ -426,6 +451,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     bonus?: number;
     platform?: string;
     postUrl?: string;
+    postUrls?: string[];
   }> = Array.isArray(order.cart) ? order.cart : JSON.parse(order.cart || "[]");
 
   const platform = order.platform || "instagram";
@@ -465,107 +491,134 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
     const baseQty = Number(item.qty || item.quantity || 0);
     const bonus = Number(item.bonus || 0);
     // Send qty + bonus to BulkFollows so the customer gets the promised total.
-    const qty = baseQty + bonus;
+    const totalQty = baseQty + bonus;
     const itemPlatform = item.platform || platform;
 
-    // Skip if already successfully placed
-    const prev = existing.find(
-      (e) => e.cartIndex === i && (e.status === "placed" || e.status === "completed"),
-    );
-    if (prev) {
-      subOrders.push(prev);
-      continue;
-    }
-
     const config = lookupConfig(itemPlatform, svc);
-    if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
-      subOrders.push({
-        cartIndex: i,
-        service: svc,
-        platform: itemPlatform,
-        qty,
-        bfServiceId: 0,
-        bfOrderId: null,
-        status: "failed",
-        charge: null,
-        error: `No BulkFollows service ID configured for ${itemPlatform}:${svc}`,
-        placedAt: null,
-      });
-      continue;
-    }
 
-    const link = buildLink(itemPlatform, username, item.postUrl);
+    // Build placement targets. A line with `postUrls` distributes its qty+bonus
+    // evenly across the selected videos (one BF sub-order per video); otherwise
+    // it's a single profile/post target (legacy behavior).
+    const distrib = Array.isArray(item.postUrls)
+      ? item.postUrls.filter((u): u is string => typeof u === "string" && !!u.trim())
+      : [];
+    const isDistributed = distrib.length > 0;
+    const targets: SmmTarget[] = isDistributed
+      ? splitQty(totalQty, distrib.length).map((q, k) => ({
+          link: buildLink(itemPlatform, username, distrib[k]),
+          qty: q,
+          postUrl: distrib[k],
+        }))
+      : [{ link: buildLink(itemPlatform, username, item.postUrl), qty: totalQty, postUrl: item.postUrl }];
 
-    // Pre-flight URL check: if the link is clearly dead, don't burn BF credit.
-    // Step 2 no longer blocks on regex, so this is the safety net.
-    if (!(await isUrlReachable(link))) {
-      subOrders.push({
-        cartIndex: i,
-        service: svc,
-        platform: itemPlatform,
-        qty,
-        bfServiceId: config.bulkfollows_service_id,
-        bfOrderId: null,
-        status: "failed",
-        charge: null,
-        error: `URL not reachable: ${link}`,
-        placedAt: null,
-      });
-      continue;
-    }
-
-    try {
-      // Retry transient BulkFollows hiccups (429, 5xx, network blips) up to
-      // 3 times with jittered exponential backoff. Definitive errors
-      // (invalid link, no funds, inactive service) bail out immediately so
-      // we don't waste 3-6 seconds on lost causes.
-      const result = await withBfRetry(
-        () => placeOrder({
-          serviceId: config.bulkfollows_service_id,
-          link,
-          quantity: qty,
-        }),
-        { maxAttempts: 3, baseDelayMs: 600, label: `placeOrder ${itemPlatform}:${svc}` },
+    for (const target of targets) {
+      // Skip targets already successfully placed. For distributed lines the
+      // resume key is cartIndex + postUrl; legacy single-target lines key on
+      // cartIndex only so in-flight pre-upgrade orders still resume.
+      const prev = existing.find(
+        (e) =>
+          e.cartIndex === i &&
+          (!isDistributed || (e.postUrl || undefined) === (target.postUrl || undefined)) &&
+          (e.status === "placed" || e.status === "completed"),
       );
-
-      // Immediately fetch status to get the charge
-      const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, qty);
-      let charge: number | null = estimatedCharge;
-      try {
-        const st = await withBfRetry(
-          () => getOrderStatus(result.orderId),
-          { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
-        );
-        charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
-      } catch {
-        // non-critical — charge will be picked up on status refresh
+      if (prev) {
+        subOrders.push(prev);
+        continue;
       }
 
-      subOrders.push({
-        cartIndex: i,
-        service: svc,
-        platform: itemPlatform,
-        qty,
-        bfServiceId: config.bulkfollows_service_id,
-        bfOrderId: result.orderId,
-        status: "placed",
-        charge,
-        error: null,
-        placedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      subOrders.push({
-        cartIndex: i,
-        service: svc,
-        platform: itemPlatform,
-        qty,
-        bfServiceId: config.bulkfollows_service_id,
-        bfOrderId: null,
-        status: "failed",
-        charge: null,
-        error: err instanceof Error ? err.message : String(err),
-        placedAt: null,
-      });
+      if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
+        subOrders.push({
+          cartIndex: i,
+          service: svc,
+          platform: itemPlatform,
+          qty: target.qty,
+          bfServiceId: 0,
+          bfOrderId: null,
+          status: "failed",
+          charge: null,
+          error: `No BulkFollows service ID configured for ${itemPlatform}:${svc}`,
+          placedAt: null,
+          postUrl: target.postUrl,
+        });
+        continue;
+      }
+
+      const link = target.link;
+
+      // Pre-flight URL check: if the link is clearly dead, don't burn BF credit.
+      // Step 2 no longer blocks on regex, so this is the safety net.
+      if (!(await isUrlReachable(link))) {
+        subOrders.push({
+          cartIndex: i,
+          service: svc,
+          platform: itemPlatform,
+          qty: target.qty,
+          bfServiceId: config.bulkfollows_service_id,
+          bfOrderId: null,
+          status: "failed",
+          charge: null,
+          error: `URL not reachable: ${link}`,
+          placedAt: null,
+          postUrl: target.postUrl,
+        });
+        continue;
+      }
+
+      try {
+        // Retry transient BulkFollows hiccups (429, 5xx, network blips) up to
+        // 3 times with jittered exponential backoff. Definitive errors
+        // (invalid link, no funds, inactive service) bail out immediately so
+        // we don't waste 3-6 seconds on lost causes.
+        const result = await withBfRetry(
+          () => placeOrder({
+            serviceId: config.bulkfollows_service_id,
+            link,
+            quantity: target.qty,
+          }),
+          { maxAttempts: 3, baseDelayMs: 600, label: `placeOrder ${itemPlatform}:${svc}` },
+        );
+
+        // Immediately fetch status to get the charge
+        const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, target.qty);
+        let charge: number | null = estimatedCharge;
+        try {
+          const st = await withBfRetry(
+            () => getOrderStatus(result.orderId),
+            { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
+          );
+          charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
+        } catch {
+          // non-critical — charge will be picked up on status refresh
+        }
+
+        subOrders.push({
+          cartIndex: i,
+          service: svc,
+          platform: itemPlatform,
+          qty: target.qty,
+          bfServiceId: config.bulkfollows_service_id,
+          bfOrderId: result.orderId,
+          status: "placed",
+          charge,
+          error: null,
+          placedAt: new Date().toISOString(),
+          postUrl: target.postUrl,
+        });
+      } catch (err) {
+        subOrders.push({
+          cartIndex: i,
+          service: svc,
+          platform: itemPlatform,
+          qty: target.qty,
+          bfServiceId: config.bulkfollows_service_id,
+          bfOrderId: null,
+          status: "failed",
+          charge: null,
+          error: err instanceof Error ? err.message : String(err),
+          placedAt: null,
+          postUrl: target.postUrl,
+        });
+      }
     }
   }
 
@@ -617,6 +670,7 @@ export async function refillOrderFromScratch(
     bonus?: number;
     platform?: string;
     postUrl?: string;
+    postUrls?: string[];
   }> = Array.isArray(order.cart) ? order.cart : JSON.parse(order.cart || "[]");
   if (cart.length === 0) throw new Error("Order has an empty cart");
 
@@ -633,46 +687,64 @@ export async function refillOrderFromScratch(
   for (let i = 0; i < cart.length; i++) {
     const item = cart[i];
     const svc = item.service || "followers";
-    const qty = Number(item.qty || item.quantity || 0) + Number(item.bonus || 0);
+    const totalQty = Number(item.qty || item.quantity || 0) + Number(item.bonus || 0);
     const itemPlatform = item.platform || platform;
-    const link = buildLink(itemPlatform, username, item.postUrl);
-    const cartIndex = synthetic++;
 
-    if (qty <= 0) {
-      newSubs.push({
-        cartIndex, service: svc, platform: itemPlatform, qty,
-        bfServiceId: serviceId, bfOrderId: null, status: "failed",
-        charge: null, error: "Quantity is 0 — nothing to relaunch", placedAt: null,
-      });
-      continue;
-    }
+    // Same distribution logic as runSmmForOrder: one fresh sub-order per
+    // selected video when the line carries postUrls, else a single target.
+    const distrib = Array.isArray(item.postUrls)
+      ? item.postUrls.filter((u): u is string => typeof u === "string" && !!u.trim())
+      : [];
+    const targets: SmmTarget[] = distrib.length > 0
+      ? splitQty(totalQty, distrib.length).map((q, k) => ({
+          link: buildLink(itemPlatform, username, distrib[k]),
+          qty: q,
+          postUrl: distrib[k],
+        }))
+      : [{ link: buildLink(itemPlatform, username, item.postUrl), qty: totalQty, postUrl: item.postUrl }];
 
-    try {
-      const result = await withBfRetry(
-        () => placeOrder({ serviceId, link, quantity: qty }),
-        { maxAttempts: 3, baseDelayMs: 600, label: `refill ${itemPlatform}:${svc}` },
-      );
-      let charge: number | null = null;
-      try {
-        const st = await withBfRetry(
-          () => getOrderStatus(result.orderId),
-          { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
-        );
-        charge = resolveBulkFollowsCharge(st.charge, 0);
-      } catch {
-        /* non-critical — charge picked up on refresh */
+    for (const target of targets) {
+      const cartIndex = synthetic++;
+
+      if (target.qty <= 0) {
+        newSubs.push({
+          cartIndex, service: svc, platform: itemPlatform, qty: target.qty,
+          bfServiceId: serviceId, bfOrderId: null, status: "failed",
+          charge: null, error: "Quantity is 0 — nothing to relaunch", placedAt: null,
+          postUrl: target.postUrl,
+        });
+        continue;
       }
-      newSubs.push({
-        cartIndex, service: svc, platform: itemPlatform, qty,
-        bfServiceId: serviceId, bfOrderId: result.orderId, status: "placed",
-        charge, error: null, placedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      newSubs.push({
-        cartIndex, service: svc, platform: itemPlatform, qty,
-        bfServiceId: serviceId, bfOrderId: null, status: "failed",
-        charge: null, error: err instanceof Error ? err.message : String(err), placedAt: null,
-      });
+
+      try {
+        const result = await withBfRetry(
+          () => placeOrder({ serviceId, link: target.link, quantity: target.qty }),
+          { maxAttempts: 3, baseDelayMs: 600, label: `refill ${itemPlatform}:${svc}` },
+        );
+        let charge: number | null = null;
+        try {
+          const st = await withBfRetry(
+            () => getOrderStatus(result.orderId),
+            { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
+          );
+          charge = resolveBulkFollowsCharge(st.charge, 0);
+        } catch {
+          /* non-critical — charge picked up on refresh */
+        }
+        newSubs.push({
+          cartIndex, service: svc, platform: itemPlatform, qty: target.qty,
+          bfServiceId: serviceId, bfOrderId: result.orderId, status: "placed",
+          charge, error: null, placedAt: new Date().toISOString(),
+          postUrl: target.postUrl,
+        });
+      } catch (err) {
+        newSubs.push({
+          cartIndex, service: svc, platform: itemPlatform, qty: target.qty,
+          bfServiceId: serviceId, bfOrderId: null, status: "failed",
+          charge: null, error: err instanceof Error ? err.message : String(err), placedAt: null,
+          postUrl: target.postUrl,
+        });
+      }
     }
   }
 
@@ -756,7 +828,10 @@ export async function retrySmmSubOrder(
     ? order.cart
     : JSON.parse(order.cart || "[]");
   const username = await resolveOrderUsername(order.username, sub.platform, cart);
-  const link = buildLink(sub.platform, username, cart[sub.cartIndex]?.postUrl);
+  // Prefer the sub-order's own postUrl: distributed lines and refill subs use
+  // synthetic cartIndexes that don't map back to a cart row, but each sub
+  // records the exact video URL it targets.
+  const link = buildLink(sub.platform, username, sub.postUrl ?? cart[sub.cartIndex]?.postUrl);
 
   if (!(await isUrlReachable(link))) {
     sub.error = `URL not reachable: ${link}`;

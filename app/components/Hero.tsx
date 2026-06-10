@@ -7,7 +7,7 @@ import NetIcon from "./NetIcon";
 import StatusBadge from "./StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-import { NETWORKS, NET_META, PROMO_NETWORK_SERVICES, type Network, type NetworkId } from "../lib/networks";
+import { NETWORKS, NET_META, PROMO_NETWORK_SERVICES, networkPath, type Network, type NetworkId } from "../lib/networks";
 import { getCachedPricingPacks, prefetchProductPricing, useCurrencyPreference } from "../lib/useCurrencyPricing";
 import { prefetchPricingExperiments } from "../lib/usePricingExperiment";
 import { buildCurrencyFormatter, type SupportedCurrency } from "../lib/pricingCurrency";
@@ -756,6 +756,22 @@ export default function Hero({
     titleAfter: copy.titleAfter,
   };
 
+  // Username-first capture (A/B variant). Asks the @ before showing packs, then
+  // hands the handle off to the product page so it can greet the visitor with
+  // their real profile + a personalised projection. Wired for Instagram (→
+  // /instagram) and TikTok (→ /tiktok-2). Any other targeted network degrades
+  // to the control grid, so this is safe to ship per-network.
+  const captureNetwork: NetworkId | null =
+    isPromo && promoFlowVariant === "username_first" && (targetedNetwork === "instagram" || targetedNetwork === "tiktok")
+      ? targetedNetwork
+      : null;
+  const showUsernameCapture = captureNetwork !== null;
+  // TikTok routes to the new 4-step flow (/tiktok-2); Instagram to /instagram.
+  const captureDestPath = captureNetwork === "tiktok" ? "/tiktok-2" : "/instagram";
+  const captureNetworkName = captureNetwork
+    ? NETWORKS.find((n) => n.id === captureNetwork)?.name ?? ""
+    : "";
+
   useEffect(() => {
     if (!showPromoCodeBanner) return;
     trackEvent("promo_code_banner_exposed", {
@@ -782,18 +798,14 @@ export default function Hero({
     // route the visitor is statistically about to click, regardless of
     // whether that card is below the fold on mobile.
     try {
-      router.prefetch(`/${targetedNetwork}`);
+      // Prefetch the route the visitor is about to click: the username-capture
+      // destination (/tiktok-2 or /instagram) when that arm is active,
+      // otherwise the targeted network's product page.
+      router.prefetch(showUsernameCapture ? captureDestPath : networkPath(targetedNetwork));
     } catch {
       /* prefetch is best-effort; ignore stale-router edge cases */
     }
-  }, [isPromo, targetedNetwork, locale, router]);
-
-  // Username-first A/B: capture the @ on /promo and hand it off to the product
-  // page. Only shown for the Instagram-targeted campaign (where the handoff +
-  // personalization is wired). For any other network the variant degrades to
-  // control (no capture), so it's safe to ship before other platforms exist.
-  const showUsernameCapture =
-    isPromo && promoFlowVariant === "username_first" && targetedNetwork === "instagram";
+  }, [isPromo, targetedNetwork, locale, router, showUsernameCapture, captureDestPath]);
 
   // Exposure + variant super property: fired once per /promo view for BOTH arms
   // so the experiment is measurable (per-arm funnel) and the variant rides along
@@ -825,27 +837,28 @@ export default function Hero({
   const submitUsernameCapture = (e: React.FormEvent) => {
     e.preventDefault();
     const handle = promoHandle.replace(/^@/, "").trim();
+    const net = captureNetwork ?? "instagram";
     // Guardrail: this is the promo→product clickthrough for the username arm.
     // Compared against the control card's `cta_clicked` (same step) to catch a
     // top-of-funnel drop if asking the @ first scares off intent-to-buy traffic.
     trackEvent("cta_clicked", {
       page_type: "promo",
       entry_surface: "promo",
-      product_area: "instagram",
-      destination_network: "instagram",
-      destination_path: "/instagram",
+      product_area: net,
+      destination_network: net,
+      destination_path: captureDestPath,
       feature_name: "promo_username_capture",
       cta_location: "hero_username_capture",
       has_username: handle.length > 0,
     });
     // Preserve gclid/utm/kw/mt (keyword LTV) and append the captured handle.
-    const base = hrefWithPromoAttribution("/instagram", searchParams, "instagram");
+    const base = hrefWithPromoAttribution(captureDestPath, searchParams, net);
     const sep = base.includes("?") ? "&" : "?";
     router.push(handle ? `${base}${sep}u=${encodeURIComponent(handle)}` : base);
   };
 
   const networkHref = (network: Network) =>
-    isPromo ? hrefWithPromoAttribution(`/${network.id}`, searchParams, network.id) : `/${network.id}`;
+    isPromo ? hrefWithPromoAttribution(networkPath(network.id), searchParams, network.id) : networkPath(network.id);
   const trackNetworkSelect = (network: Network) => {
     if (!isPromo) return;
     trackEvent("cta_clicked", {
@@ -853,7 +866,7 @@ export default function Hero({
       entry_surface: "promo",
       product_area: network.id,
       destination_network: network.id,
-      destination_path: `/${network.id}`,
+      destination_path: networkPath(network.id),
       feature_name: "promo_network_selector",
       cta_location: "hero_network_card",
       targeted_match: targetedNetwork === network.id,
@@ -1006,7 +1019,7 @@ export default function Hero({
           // does a native GET to /instagram?u=…&<attribution> instead of
           // reloading /promo. Once hydrated, onSubmit takes over with tracking +
           // a soft SPA navigation (submitUsernameCapture calls preventDefault).
-          <form onSubmit={submitUsernameCapture} action="/instagram" method="get" className="promo-ig-capture">
+          <form onSubmit={submitUsernameCapture} action={captureDestPath} method="get" className={`promo-ig-capture${captureNetwork === "tiktok" ? " cap-tt" : ""}`}>
             {/* Carry attribution (utm/gclid/kw/mt) + promo surface markers on the
                 un-hydrated native-submit path so nothing is lost. */}
             {(searchParams ? Array.from(searchParams.entries()) : [])
@@ -1015,7 +1028,7 @@ export default function Hero({
                 <input key={k} type="hidden" name={k} value={v} />
               ))}
             <input type="hidden" name="entry_surface" value="promo" />
-            <input type="hidden" name="from" value="promo_instagram" />
+            <input type="hidden" name="from" value={`promo_${captureNetwork ?? "instagram"}`} />
             {/* Claude Design "V2 — Instagram gradient forward": gradient frame →
                 white inner with soft glow, IG eyebrow + big title, gradient-@
                 field, IG-gradient CTA. Reassurance row intentionally omitted. */}
@@ -1024,10 +1037,10 @@ export default function Hero({
                 <div className="promo-ig-capture-glow" />
                 <div className="promo-ig-capture-head">
                   <span className="promo-ig-capture-logo">
-                    <NetIcon kind="instagram" color="white" size={24} />
+                    <NetIcon kind={captureNetwork ?? "instagram"} color="white" size={24} />
                   </span>
                   <div>
-                    <div className="promo-ig-capture-eyebrow">Instagram</div>
+                    <div className="promo-ig-capture-eyebrow">{captureNetworkName}</div>
                     <div className="promo-ig-capture-title">Followers</div>
                   </div>
                 </div>
@@ -1060,7 +1073,7 @@ export default function Hero({
                   {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
                   <span className="promo-ig-capture-price">
                     {locale?.toLowerCase().startsWith("fr") ? "· dès " : "· from "}
-                    {promoNetworkPriceLabels.instagram}
+                    {promoNetworkPriceLabels[captureNetwork ?? "instagram"]}
                   </span>
                   <span className="promo-ig-capture-arrow">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

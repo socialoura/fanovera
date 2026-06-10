@@ -4,7 +4,7 @@ import { Logo } from "./Header";
 import NetIcon from "./NetIcon";
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
-import { NETWORKS } from "../lib/networks";
+import { NETWORKS, networkPath } from "../lib/networks";
 import { getPublicCopy } from "./publicCopy";
 
 /**
@@ -129,7 +129,7 @@ export default function Footer() {
               {NETWORKS.map((n) => (
                 <a
                   key={n.id}
-                  href={`/${n.id}`}
+                  href={networkPath(n.id)}
                   aria-label={n.name}
                   style={{
                     width: 44,

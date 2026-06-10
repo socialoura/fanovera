@@ -15,6 +15,16 @@ export type Network = {
   icon: NetworkId;
 };
 
+/**
+ * Product-page path for a network. Defaults to `/<id>`, but TikTok is routed to
+ * the new `/tiktok-2` flow everywhere internal links are built (nav, footer,
+ * promo cards, CTAs). Keep this the single source of truth so swapping the
+ * canonical TikTok page is a one-line change.
+ */
+export function networkPath(id: NetworkId): string {
+  return id === "tiktok" ? "/tiktok-2" : `/${id}`;
+}
+
 export const NETWORKS: Network[] = [
   { id: "instagram", name: "Instagram", color: "#e1407e", icon: "instagram" },
   { id: "tiktok", name: "TikTok", color: "#1d1d2c", icon: "tiktok" },

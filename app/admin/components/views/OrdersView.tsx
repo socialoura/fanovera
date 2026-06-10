@@ -113,6 +113,9 @@ type CartItem = {
   service?: string;
   platform?: string;
   postUrl?: string;
+  // Multi-video distribution (tiktok-2 likes/views): the pack is split across
+  // these videos at fulfillment (one BulkFollows sub-order per URL).
+  postUrls?: string[];
   link?: string;
   scheduledStartAt?: string;
   upsell?: boolean;
@@ -485,10 +488,24 @@ function OrderDetail({
                         📅 Live programmé : {new Date(item.scheduledStartAt).toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })}
                       </div>
                     )}
-                    {(item.postUrl || item.link) && (
+                    {(item.postUrl || item.link) && !(Array.isArray(item.postUrls) && item.postUrls.length) && (
                       <a className="order-link" href={(item.postUrl || item.link) as string} target="_blank" rel="noreferrer">
                         Voir le lien {Ic.external()}
                       </a>
+                    )}
+                    {Array.isArray(item.postUrls) && item.postUrls.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--a-ink)", marginBottom: 4 }}>
+                          Réparti sur {item.postUrls.length} vidéo{item.postUrls.length > 1 ? "s" : ""}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          {item.postUrls.map((url, i) => (
+                            <a key={i} className="order-link" href={url} target="_blank" rel="noreferrer">
+                              Vidéo {i + 1} {Ic.external()}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
