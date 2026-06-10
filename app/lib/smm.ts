@@ -690,6 +690,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
 export async function refillOrderFromScratch(
   orderId: number,
   serviceId: number,
+  provider: SmmProvider = DEFAULT_PROVIDER,
 ): Promise<{ subOrders: SmmSubOrder[]; placed: number; failed: number }> {
   const rows = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
   const order = rows[0];
@@ -750,13 +751,13 @@ export async function refillOrderFromScratch(
 
       try {
         const result = await withBfRetry(
-          () => placeOrder({ serviceId, link: target.link, quantity: target.qty }),
+          () => placeOrder({ serviceId, link: target.link, quantity: target.qty, provider }),
           { maxAttempts: 3, baseDelayMs: 600, label: `refill ${itemPlatform}:${svc}` },
         );
         let charge: number | null = null;
         try {
           const st = await withBfRetry(
-            () => getOrderStatus(result.orderId),
+            () => getOrderStatus(result.orderId, provider),
             { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
           );
           charge = resolveBulkFollowsCharge(st.charge, 0);
@@ -841,6 +842,8 @@ export async function retrySmmSubOrder(
   `;
   const config = configs[0];
 
+  const provider = (config?.provider || DEFAULT_PROVIDER) as SmmProvider;
+
   let serviceId: number;
   let ratePer1k: number;
   if (opts.serviceId && Number.isFinite(opts.serviceId) && opts.serviceId > 0) {
@@ -848,7 +851,7 @@ export async function retrySmmSubOrder(
     ratePer1k = config?.rate_per_1k ? Number(config.rate_per_1k) : 0;
   } else {
     if (!config || !config.bulkfollows_service_id || config.bulkfollows_service_id === 0) {
-      sub.error = `No BulkFollows service ID configured for ${sub.platform}:${sub.service}`;
+      sub.error = `No SMM service ID configured for ${sub.platform}:${sub.service}`;
       await sql`UPDATE orders SET smm_orders = ${JSON.stringify(subOrders)}::jsonb WHERE id = ${orderId}`;
       throw new Error(sub.error);
     }
@@ -878,6 +881,7 @@ export async function retrySmmSubOrder(
         serviceId,
         link,
         quantity: sub.qty,
+        provider,
       }),
       { maxAttempts: 3, baseDelayMs: 600, label: `retry placeOrder ${sub.platform}:${sub.service}` },
     );
@@ -886,7 +890,7 @@ export async function retrySmmSubOrder(
     let charge: number | null = estimatedCharge;
     try {
       const st = await withBfRetry(
-        () => getOrderStatus(result.orderId),
+        () => getOrderStatus(result.orderId, provider),
         { maxAttempts: 2, baseDelayMs: 400, label: `retry getOrderStatus ${result.orderId}` },
       );
       charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
