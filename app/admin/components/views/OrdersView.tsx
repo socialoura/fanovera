@@ -633,7 +633,7 @@ function OrderDetail({
       <section className="order-panel">
         <div className="order-panel-head">
           <div>
-            <h3>Commandes SMM (BulkFollows)</h3>
+            <h3>Commandes SMM</h3>
             <p>Suivi des sous-commandes envoyées au fournisseur</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -642,16 +642,16 @@ function OrderDetail({
               className="btn primary"
               onClick={(e) => { e.stopPropagation(); onRunSmm(order.id); }}
               disabled={smmBusy || cart.length === 0}
-              title="Lance ou relance les sous-commandes manquantes via l'API BulkFollows"
+              title="Lance ou relance les sous-commandes manquantes via le fournisseur SMM"
             >
-              {smmBusy ? "..." : Ic.zap()} Lancer BulkFollows
+              {smmBusy ? "..." : Ic.zap()} Lancer SMM
             </button>
             <button
               type="button"
               className="btn"
               onClick={(e) => { e.stopPropagation(); onRefreshSmm(order.id); }}
               disabled={smmBusy || smmOrders.length === 0}
-              title="Rafraîchit les statuts BulkFollows et recalcule le coût"
+              title="Rafraîchit les statuts SMM et recalcule le coût"
             >
               {Ic.refresh()} Rafraîchir statuts
             </button>
@@ -765,7 +765,7 @@ function OrderDetail({
                         type="button"
                         className="icon-btn"
                         onClick={(e) => { e.stopPropagation(); onStartEditBf(cartIdx, item.bfOrderId ? String(item.bfOrderId) : "", item.bfServiceId ? String(item.bfServiceId) : ""); }}
-                        title="Éditer le BulkFollows order ID"
+                        title="Éditer le SMM order ID"
                         style={{ width: 24, height: 24, borderRadius: 6 }}
                       >
                         {Ic.edit()}
@@ -799,7 +799,7 @@ function OrderDetail({
                       onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx, item.bfServiceId || 0); }}
                       disabled={smmBusy}
                       style={{ padding: "4px 10px", fontSize: 11 }}
-                      title="Relance cette sous-commande via BulkFollows — choisis un service ID one-off ou laisse vide pour celui du config global"
+                      title="Relance cette sous-commande via le fournisseur SMM — choisis un service ID one-off ou laisse vide pour celui du config global"
                     >
                       {Ic.refresh()} Retry
                     </button>
@@ -812,7 +812,7 @@ function OrderDetail({
                       onClick={(e) => { e.stopPropagation(); onTopUpSub(order.id, cartIdx, item.qty || 0, item.bfServiceId || 0); }}
                       disabled={smmBusy}
                       style={{ padding: "4px 10px", fontSize: 11 }}
-                      title="Place une nouvelle commande BulkFollows pour combler le reliquat (en plus de l'originale, audit trail conservé)"
+                      title="Place une nouvelle commande SMM pour combler le reliquat (en plus de l'originale, audit trail conservé)"
                     >
                       {Ic.zap()} Compléter la livraison
                     </button>
@@ -1245,7 +1245,7 @@ export default function OrdersView() {
     } catch (err) {
       setSmmMessage({
         kind: "error",
-        text: err instanceof Error ? err.message : "Erreur lors de l'appel BulkFollows",
+        text: err instanceof Error ? err.message : "Erreur lors de l'appel SMM",
       });
       return false;
     } finally {
@@ -1262,7 +1262,7 @@ export default function OrdersView() {
         const placed = summary.placed ?? 0;
         const failed = summary.failed ?? 0;
         const skipped = summary.skipped ?? 0;
-        return `BulkFollows lancé : ${placed} envoyée(s), ${skipped} déjà traitée(s), ${failed} en erreur.`;
+        return `SMM lancé : ${placed} envoyée(s), ${skipped} déjà traitée(s), ${failed} en erreur.`;
       },
     );
   };
@@ -1287,8 +1287,8 @@ export default function OrdersView() {
       message:
         "Relance TOUTE la commande de zéro : re-commande chaque ligne du panier à sa quantité complète sur le service ci-dessous, en sous-commandes neuves. L'ancienne livraison n'est pas écrasée.",
       input: {
-        label: "BulkFollows service ID",
-        placeholder: "ex. 13667",
+        label: "SMM service ID",
+        placeholder: "ex. 16635",
         validate: (v) => {
           const n = Number(v);
           return Number.isFinite(n) && n > 0 ? null : "Service ID invalide.";
@@ -1315,7 +1315,7 @@ export default function OrdersView() {
     const suggestion = currentServiceId > 0 ? String(currentServiceId) : "";
     const raw = window.prompt(
       `Retry de la sous-commande #${cartIndex}.\n\n` +
-      `BulkFollows service ID à utiliser ?\n` +
+      `SMM service ID à utiliser ?\n` +
       `(Laisse vide pour utiliser celui du smm_config global. ` +
       `Entre une valeur pour faire un retry one-off avec un service précis.)`,
       suggestion,
@@ -1347,7 +1347,7 @@ export default function OrdersView() {
     const qtySuggestion = originalQty > 0 ? String(originalQty) : "";
     const rawQty = window.prompt(
       `Compléter la livraison de la sous-commande #${cartIndex}.\n\n` +
-      `1/2 — Quelle quantité re-livrer via BulkFollows ?`,
+      `1/2 — Quelle quantité re-livrer via SMM ?`,
       qtySuggestion,
     );
     if (rawQty === null) return;
@@ -1360,7 +1360,7 @@ export default function OrdersView() {
     const svcSuggestion = bfServiceId > 0 ? String(bfServiceId) : "";
     const rawSvc = window.prompt(
       `Compléter la livraison de la sous-commande #${cartIndex}.\n\n` +
-      `2/2 — BulkFollows service ID à utiliser ?\n` +
+      `2/2 — SMM service ID à utiliser ?\n` +
       `(Laisse vide pour réutiliser le service de l'originale. ` +
       `Entre une valeur pour faire un top-up one-off avec un service précis.)`,
       svcSuggestion,
@@ -1721,7 +1721,7 @@ export default function OrdersView() {
               {actionRequired} commande{actionRequired > 1 ? "s" : ""} en attente d&apos;action
             </div>
             <div style={{ fontSize: 12, color: "var(--a-ink-3)", marginTop: 2 }}>
-              Livraison BulkFollows partielle ou annulée — décide si tu complètes via &quot;Compléter la livraison&quot; ou si tu rembourses via Stripe.
+              Livraison SMM partielle ou annulée — décide si tu complètes via &quot;Compléter la livraison&quot; ou si tu rembourses via Stripe.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -1757,7 +1757,7 @@ export default function OrdersView() {
         <div className="search-box" style={{ width: 220 }}>
           {Ic.search()}
           <input
-            placeholder="ID BulkFollows..."
+            placeholder="ID SMM..."
             value={bfSearchInput}
             onChange={(e) => setBfSearchInput(e.target.value)}
             onKeyDown={handleBfKeyDown}
