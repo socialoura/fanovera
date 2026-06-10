@@ -171,7 +171,32 @@
       "Read(//c/Users/ilyee/.claude/projects/C--Users-ilyee-Fanovera/295d5ba3-f3ab-4c43-bdd8-9a40a8e1c09e/tool-results/**)",
       "Bash(mkdir -p design-extract)",
       "Bash(tar -xzf webfetch-1781048018192-21lpsw.bin -C design-extract)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20)",
+      "Bash(npx @anthropic-ai/claude-code@latest skill install https://playwright.dev/agent-cli/skills)",
+      "Bash(claude skill *)",
+      "Bash(npx @anthropic-ai/claude-code skill install https://playwright.dev/agent-cli/skills)",
+      "WebFetch(domain:playwright.dev)",
+      "Bash(npx playwright-cli *)",
+      "Bash(npx *)",
+      "Bash(claude mcp *)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_type",
+      "Bash(cat *)",
+      "mcp__playwright__browser_close",
+      "Bash(start *)",
+      "mcp__playwright__browser_run_code_unsafe",
+      "Bash(base64 -w0 .playwright-mcp/qa-homepage-desktop.png)",
+      "Bash(base64 -w0 .playwright-mcp/qa-homepage-mobile.png)",
+      "Bash(base64 -w0 .playwright-mcp/qa-tiktok2-step1.png)",
+      "Bash(base64 -w0 .playwright-mcp/qa-tiktok2-step2.png)"
     ]
   }
 }

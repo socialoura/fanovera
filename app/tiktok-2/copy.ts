@@ -28,6 +28,9 @@ const t2 = {
       loadingNote: "Connexion chiffrée · cela prend quelques secondes…",
       publicFound: "Compte public trouvé",
       stages: ["Connexion sécurisée à TikTok", "Profil récupéré", "Analyse des dernières vidéos", "Profil prêt ✨"],
+      privateTitle: "Votre compte est privé",
+      privateBody: "On ne peut pas récupérer votre profil ni livrer votre commande tant qu'il est privé. Passez-le en public dans Réglages → Confidentialité, puis réessayez.",
+      privateRetry: "J'ai rendu mon compte public — réessayer",
     },
     step2: {
       titleBefore: "Composez votre",
@@ -95,6 +98,9 @@ const t2 = {
       loadingNote: "Encrypted connection · this takes a few seconds…",
       publicFound: "Public account found",
       stages: ["Secure connection to TikTok", "Profile fetched", "Analyzing latest videos", "Profile ready ✨"],
+      privateTitle: "Your account is private",
+      privateBody: "We can't fetch your profile or deliver your order while it's private. Switch it to public in Settings → Privacy, then try again.",
+      privateRetry: "I made my account public — retry",
     },
     step2: {
       titleBefore: "Build your",

@@ -1,0 +1,498 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]:
+        - link "Fanovera" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "Fanovera" [ref=e7]
+        - navigation [ref=e8]:
+          - link "Instagram" [ref=e9] [cursor=pointer]:
+            - /url: /instagram
+            - img [ref=e10]
+          - link "TikTok" [ref=e14] [cursor=pointer]:
+            - /url: /tiktok-2
+            - img [ref=e15]
+          - link "YouTube" [ref=e18] [cursor=pointer]:
+            - /url: /youtube
+            - img [ref=e19]
+          - link "Spotify" [ref=e22] [cursor=pointer]:
+            - /url: /spotify
+            - img [ref=e23]
+          - link "Twitter" [ref=e26] [cursor=pointer]:
+            - /url: /twitter
+            - img [ref=e27]
+          - link "Facebook" [ref=e29] [cursor=pointer]:
+            - /url: /facebook
+            - img [ref=e30]
+          - link "LinkedIn" [ref=e33] [cursor=pointer]:
+            - /url: /linkedin
+            - img [ref=e34]
+          - link "Twitch" [ref=e38] [cursor=pointer]:
+            - /url: /twitch
+            - img [ref=e39]
+          - link "Suivi" [ref=e43] [cursor=pointer]:
+            - /url: /track
+          - link "FAQ" [ref=e44] [cursor=pointer]:
+            - /url: /#faq
+          - link "Contact" [ref=e45] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e46]:
+          - button "Choisir la langue" [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: Langue
+            - generic [ref=e50]:
+              - generic [ref=e51]: FR
+              - generic [ref=e52]: Auto
+          - button "Choisir la devise" [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]: Devise
+            - generic [ref=e57]:
+              - generic [ref=e58]: EUR
+              - generic [ref=e59]: Auto
+          - link "Commencer" [ref=e61] [cursor=pointer]:
+            - /url: "#networks"
+            - text: Commencer
+            - img [ref=e62]
+      - generic [ref=e65]:
+        - generic [ref=e67]:
+          - generic [ref=e68]: 4.9 |
+          - img "4.9 / 5" [ref=e69]
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - img [ref=e89]
+              - img [ref=e91]
+              - img [ref=e93]
+              - img [ref=e95]
+              - img [ref=e97]
+            - generic [ref=e99]: “Audit clair et plan actionnable”
+            - generic [ref=e100]: "- Léa M., musicienne"
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - img [ref=e103]
+              - img [ref=e105]
+              - img [ref=e107]
+              - img [ref=e109]
+              - img [ref=e111]
+            - generic [ref=e113]: “Service sérieux, suivi lisible”
+            - generic [ref=e114]: "- Karim T., fondateur DTC"
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - img [ref=e117]
+              - img [ref=e119]
+              - img [ref=e121]
+              - img [ref=e123]
+              - img [ref=e125]
+            - generic [ref=e127]: “Un vrai cadre pour publier mieux”
+            - generic [ref=e128]: "- Studio Métrique"
+        - heading "Une présence en ligne plus claire , sans promesses artificielles." [level=1] [ref=e129]:
+          - text: Une présence en ligne
+          - generic [ref=e130]: plus claire
+          - text: ", sans promesses artificielles."
+        - generic [ref=e132]:
+          - link "★ POPULAIRE Instagram Audit et stratégie 1,49 €" [ref=e133] [cursor=pointer]:
+            - /url: /instagram
+            - generic:
+              - img
+            - generic [ref=e134]:
+              - img [ref=e136]
+              - generic [ref=e140]: ★ POPULAIRE
+            - generic [ref=e142]: Instagram
+            - generic [ref=e144]:
+              - generic [ref=e145]:
+                - generic [ref=e146]: Audit et stratégie
+                - generic [ref=e147]: 1,49 €
+              - img [ref=e149]
+          - link "TikTok Audit et stratégie 1,29 €" [ref=e151] [cursor=pointer]:
+            - /url: /tiktok-2
+            - generic:
+              - img
+            - img [ref=e154]
+            - generic [ref=e158]: TikTok
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - generic [ref=e162]: Audit et stratégie
+                - generic [ref=e163]: 1,29 €
+              - img [ref=e165]
+          - link "YouTube Audit et stratégie 4,99 €" [ref=e167] [cursor=pointer]:
+            - /url: /youtube
+            - generic:
+              - img
+            - img [ref=e170]
+            - generic [ref=e174]: YouTube
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: Audit et stratégie
+                - generic [ref=e179]: 4,99 €
+              - img [ref=e181]
+          - link "Spotify Audit et stratégie 1,99 €" [ref=e183] [cursor=pointer]:
+            - /url: /spotify
+            - generic:
+              - img
+            - img [ref=e186]
+            - generic [ref=e190]: Spotify
+            - generic [ref=e192]:
+              - generic [ref=e193]:
+                - generic [ref=e194]: Audit et stratégie
+                - generic [ref=e195]: 1,99 €
+              - img [ref=e197]
+          - link "Twitter Audit et stratégie 5,99 €" [ref=e199] [cursor=pointer]:
+            - /url: /twitter
+            - generic:
+              - img
+            - img [ref=e202]
+            - generic [ref=e205]: Twitter
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]: Audit et stratégie
+                - generic [ref=e210]: 5,99 €
+              - img [ref=e212]
+          - link "Facebook Audit et stratégie 4,99 €" [ref=e214] [cursor=pointer]:
+            - /url: /facebook
+            - generic:
+              - img
+            - img [ref=e217]
+            - generic [ref=e221]: Facebook
+            - generic [ref=e223]:
+              - generic [ref=e224]:
+                - generic [ref=e225]: Audit et stratégie
+                - generic [ref=e226]: 4,99 €
+              - img [ref=e228]
+          - link "LinkedIn Audit et stratégie 9,99 €" [ref=e230] [cursor=pointer]:
+            - /url: /linkedin
+            - generic:
+              - img
+            - img [ref=e233]
+            - generic [ref=e238]: LinkedIn
+            - generic [ref=e240]:
+              - generic [ref=e241]:
+                - generic [ref=e242]: Audit et stratégie
+                - generic [ref=e243]: 9,99 €
+              - img [ref=e245]
+          - link "★ NOUVEAU Twitch Audit et stratégie 4,99 €" [ref=e247] [cursor=pointer]:
+            - /url: /twitch
+            - generic:
+              - img
+            - generic [ref=e248]:
+              - img [ref=e250]
+              - generic [ref=e253]: ★ NOUVEAU
+            - generic [ref=e255]: Twitch
+            - generic [ref=e257]:
+              - generic [ref=e258]:
+                - generic [ref=e259]: Audit et stratégie
+                - generic [ref=e260]: 4,99 €
+              - img [ref=e262]
+        - generic [ref=e264]:
+          - generic [ref=e266]:
+            - generic [ref=e271]: app.fanovera.com
+            - generic [ref=e272]:
+              - generic [ref=e273]:
+                - generic [ref=e274]:
+                  - img [ref=e275]
+                  - text: + Nouvelle campagne
+                - generic [ref=e277]: Tableau de bord
+                - generic [ref=e278]: Campagnes
+                - generic [ref=e279]: Audience IA
+                - generic [ref=e280]: Statistiques
+                - generic [ref=e281]: Réseaux
+                - generic [ref=e282]: Facturation
+                - generic [ref=e283]: RÉSEAUX ACTIFS
+                - generic [ref=e284]:
+                  - img [ref=e286]
+                  - img [ref=e291]
+                  - img [ref=e295]
+                  - img [ref=e299]
+                  - img [ref=e303]
+                  - img [ref=e306]
+                  - img [ref=e310]
+                  - img [ref=e315]
+              - generic [ref=e318]:
+                - generic [ref=e319]:
+                  - generic [ref=e320]: C
+                  - generic [ref=e321]:
+                    - generic [ref=e322]: "@creator_42"
+                    - generic [ref=e323]: app.fanovera.com
+                  - generic [ref=e324]: ↑ Active
+                - generic [ref=e325]:
+                  - generic [ref=e326]:
+                    - generic [ref=e327]: "Campagne #042"
+                    - generic [ref=e328]: Active - Jour 18 sur 30
+                  - generic [ref=e329]:
+                    - generic [ref=e330]: 7j
+                    - generic [ref=e331]: 30j
+                    - generic [ref=e332]: 90j
+                - generic [ref=e333]:
+                  - generic [ref=e334]:
+                    - generic [ref=e335]: Présence
+                    - generic [ref=e336]: Active
+                    - generic [ref=e337]: 100%
+                  - generic [ref=e338]:
+                    - generic [ref=e339]: Visibilité
+                    - generic [ref=e340]: 30 j
+                    - generic [ref=e341]: suivie
+                  - generic [ref=e342]:
+                    - generic [ref=e343]: Réseaux
+                    - generic [ref=e344]: "8"
+                    - generic [ref=e345]: couverts
+                - generic [ref=e346]:
+                  - generic [ref=e347]: Présence en ligne - 30 jours
+                  - img [ref=e348]
+                - generic [ref=e356]:
+                  - img [ref=e358]
+                  - generic [ref=e360]:
+                    - generic [ref=e361]: Commande livrée
+                    - generic [ref=e362]: "#1247 · campagne #042"
+                  - generic [ref=e363]: 1,49 €
+          - img [ref=e366]
+          - generic [ref=e371]:
+            - img [ref=e372]
+            - generic [ref=e375]:
+              - generic [ref=e376]: TIKTOK
+              - generic [ref=e377]: audit
+          - generic [ref=e379]:
+            - img [ref=e381]
+            - generic [ref=e384]:
+              - generic [ref=e385]: Audit Spotify
+              - generic [ref=e386]: plan de lancement
+          - generic [ref=e388]:
+            - img [ref=e390]
+            - generic [ref=e392]:
+              - generic [ref=e393]: 4,9/5
+              - generic [ref=e394]: 2 508 avis
+          - generic [ref=e396]:
+            - img [ref=e398]
+            - generic [ref=e401]:
+              - generic [ref=e402]: SEO video
+              - generic [ref=e403]: titres et calendrier
+        - generic [ref=e404]:
+          - generic [ref=e405]:
+            - img [ref=e406]
+            - text: Paiement 100% sécurisé
+          - img "Visa, Mastercard, American Express, PayPal" [ref=e409]
+    - generic [ref=e411]:
+      - generic [ref=e412]:
+        - generic [ref=e413]: ★ Comment ça marche
+        - heading "Trois étapes pour une présence durable ." [level=2] [ref=e414]:
+          - text: Trois étapes pour une présence
+          - generic [ref=e415]: durable
+          - text: .
+      - generic [ref=e416]:
+        - generic [ref=e417]:
+          - generic [ref=e418]:
+            - img [ref=e420]
+            - generic [ref=e424]: "01"
+          - heading "Audit de votre présence" [level=3] [ref=e425]
+          - paragraph [ref=e426]: On analyse votre profil public, vos contenus, votre positionnement et vos objectifs. Aucun mot de passe, aucun accès demandé.
+        - generic [ref=e427]:
+          - generic [ref=e428]:
+            - img [ref=e430]
+            - generic [ref=e434]: "02"
+          - heading "Plan éditorial ciblé" [level=3] [ref=e435]
+          - paragraph [ref=e436]: "Vous recevez une feuille de route claire : angles de contenu, plateformes prioritaires, calendrier et pistes d'amélioration."
+        - generic [ref=e437]:
+          - generic [ref=e438]:
+            - img [ref=e440]
+            - generic [ref=e443]: "03"
+          - heading "Suivi et optimisation" [level=3] [ref=e444]
+          - paragraph [ref=e445]: On suit les signaux utiles, on ajuste les recommandations et on garde une progression cohérente avec votre marque.
+    - generic [ref=e447]:
+      - generic [ref=e448]:
+        - generic [ref=e449]: ★ Ils nous font confiance
+        - heading "Ils nous font confiance ." [level=2] [ref=e450]:
+          - text: Ils nous font
+          - generic [ref=e451]: confiance
+          - text: .
+      - generic [ref=e452]:
+        - generic [ref=e453]:
+          - generic [ref=e454]: "32"
+          - generic [ref=e455]: points d'audit
+        - generic [ref=e456]:
+          - generic [ref=e457]: "8"
+          - generic [ref=e458]: plateformes couvertes
+        - generic [ref=e459]:
+          - generic [ref=e460]: 4,9/5
+          - generic [ref=e461]: note moyenne
+        - generic [ref=e462]:
+          - generic [ref=e463]: 30j
+          - generic [ref=e464]: plan d'action
+      - generic [ref=e465]:
+        - article [ref=e466]:
+          - generic [ref=e467]:
+            - generic [ref=e468]:
+              - img [ref=e469]
+              - img [ref=e471]
+              - img [ref=e473]
+              - img [ref=e475]
+              - img [ref=e477]
+            - img [ref=e479]
+          - paragraph [ref=e482]: “Fanovera m'a aidée à clarifier ma ligne éditoriale et à organiser mes sorties sans courir après les chiffres.”
+          - generic [ref=e483]:
+            - generic [ref=e484]: L
+            - generic [ref=e485]:
+              - generic [ref=e486]: Léa Marchetti
+              - generic [ref=e487]: Musicienne - stratégie de lancement
+        - article [ref=e488]:
+          - generic [ref=e489]:
+            - generic [ref=e490]:
+              - img [ref=e491]
+              - img [ref=e493]
+              - img [ref=e495]
+              - img [ref=e497]
+              - img [ref=e499]
+            - img [ref=e501]
+          - paragraph [ref=e505]: "“L'audit était concret : quoi publier, quand le publier, et comment mieux raconter mon travail.”"
+          - generic [ref=e506]:
+            - generic [ref=e507]: T
+            - generic [ref=e508]:
+              - generic [ref=e509]: Thomas Durand
+              - generic [ref=e510]: Photographe - calendrier contenu
+        - article [ref=e511]:
+          - generic [ref=e512]:
+            - generic [ref=e513]:
+              - img [ref=e514]
+              - img [ref=e516]
+              - img [ref=e518]
+              - img [ref=e520]
+              - img [ref=e522]
+            - img [ref=e524]
+          - paragraph [ref=e527]: “On a posé une vraie méthode autour de mes formats courts. Le suivi est simple, lisible et utile.”
+          - generic [ref=e528]:
+            - generic [ref=e529]: S
+            - generic [ref=e530]:
+              - generic [ref=e531]: Sofia Ramos
+              - generic [ref=e532]: Créatrice - accompagnement TikTok
+    - generic [ref=e534]:
+      - generic [ref=e535]:
+        - generic [ref=e536]: ★ FAQ
+        - heading "Vos questions, nos réponses ." [level=2] [ref=e537]:
+          - text: Vos questions,
+          - generic [ref=e538]: nos réponses
+          - text: .
+      - generic [ref=e539]:
+        - generic [ref=e540]:
+          - button "Comment fonctionne votre service ?" [expanded] [ref=e541] [cursor=pointer]:
+            - generic [ref=e542]: Comment fonctionne votre service ?
+            - img [ref=e544]
+          - generic [ref=e546]: Nous analysons votre présence publique, vos contenus et vos objectifs pour préparer un plan de visibilité concret et progressif.
+        - generic [ref=e547]:
+          - button "Faut-il vous donner mes mots de passe ?" [ref=e548] [cursor=pointer]:
+            - generic [ref=e549]: Faut-il vous donner mes mots de passe ?
+            - img [ref=e551]
+          - generic: Jamais. Fanovera fonctionne à partir des informations publiques que vous nous indiquez. Aucun accès au compte n'est demandé.
+        - generic [ref=e553]:
+          - button "Que vais-je recevoir ?" [ref=e554] [cursor=pointer]:
+            - generic [ref=e555]: Que vais-je recevoir ?
+            - img [ref=e557]
+          - generic: Un audit, une stratégie de contenu, des recommandations par plateforme et un cadre de suivi pour piloter votre visibilité.
+        - generic [ref=e559]:
+          - button "Promettez-vous des chiffres précis ?" [ref=e560] [cursor=pointer]:
+            - generic [ref=e561]: Promettez-vous des chiffres précis ?
+            - img [ref=e563]
+          - generic: Non. Nous aidons à structurer votre présence et vos campagnes, sans promettre de volume artificiel ni de résultat garanti.
+      - generic [ref=e565]:
+        - text: Une autre question ? Écrivez-nous ·
+        - link "support@fanovera.com" [ref=e566] [cursor=pointer]:
+          - /url: mailto:support@fanovera.com
+    - generic [ref=e571]:
+      - heading "Prêt à structurer votre présence en ligne ?" [level=2] [ref=e572]
+      - paragraph [ref=e573]: Choisissez votre plateforme et préparez un plan de visibilité adapté à vos contenus.
+      - generic [ref=e574]:
+        - link "Instagram" [ref=e575] [cursor=pointer]:
+          - /url: /instagram
+          - img [ref=e576]
+        - link "TikTok" [ref=e580] [cursor=pointer]:
+          - /url: /tiktok-2
+          - img [ref=e581]
+        - link "YouTube" [ref=e584] [cursor=pointer]:
+          - /url: /youtube
+          - img [ref=e585]
+        - link "Spotify" [ref=e588] [cursor=pointer]:
+          - /url: /spotify
+          - img [ref=e589]
+        - link "Twitter" [ref=e592] [cursor=pointer]:
+          - /url: /twitter
+          - img [ref=e593]
+        - link "Facebook" [ref=e595] [cursor=pointer]:
+          - /url: /facebook
+          - img [ref=e596]
+        - link "LinkedIn" [ref=e599] [cursor=pointer]:
+          - /url: /linkedin
+          - img [ref=e600]
+        - link "Twitch" [ref=e604] [cursor=pointer]:
+          - /url: /twitch
+          - img [ref=e605]
+      - generic [ref=e608]: Audit public - Stratégie de contenu - Aucun accès au compte demandé
+    - contentinfo [ref=e609]:
+      - generic [ref=e610]:
+        - generic [ref=e611]:
+          - generic [ref=e612]:
+            - link "Fanovera" [ref=e613] [cursor=pointer]:
+              - /url: /
+              - img "Fanovera" [ref=e614]
+            - paragraph [ref=e615]: "Stratégie de présence en ligne propulsée par IA : audit, calendrier de contenu et suivi de visibilité."
+            - generic [ref=e616]:
+              - link "Instagram" [ref=e617] [cursor=pointer]:
+                - /url: /instagram
+                - img [ref=e618]
+              - link "TikTok" [ref=e622] [cursor=pointer]:
+                - /url: /tiktok-2
+                - img [ref=e623]
+              - link "YouTube" [ref=e626] [cursor=pointer]:
+                - /url: /youtube
+                - img [ref=e627]
+              - link "Spotify" [ref=e630] [cursor=pointer]:
+                - /url: /spotify
+                - img [ref=e631]
+              - link "Twitter" [ref=e634] [cursor=pointer]:
+                - /url: /twitter
+                - img [ref=e635]
+              - link "Facebook" [ref=e637] [cursor=pointer]:
+                - /url: /facebook
+                - img [ref=e638]
+              - link "LinkedIn" [ref=e641] [cursor=pointer]:
+                - /url: /linkedin
+                - img [ref=e642]
+              - link "Twitch" [ref=e646] [cursor=pointer]:
+                - /url: /twitch
+                - img [ref=e647]
+          - generic [ref=e650]:
+            - generic [ref=e651]: Produit
+            - list [ref=e652]:
+              - listitem [ref=e653]:
+                - link "Fonctionnement" [ref=e654] [cursor=pointer]:
+                  - /url: "#how"
+              - listitem [ref=e655]:
+                - link "Suivi" [ref=e656] [cursor=pointer]:
+                  - /url: /track
+              - listitem [ref=e657]:
+                - link "Témoignages" [ref=e658] [cursor=pointer]:
+                  - /url: "#proof"
+              - listitem [ref=e659]:
+                - link "FAQ" [ref=e660] [cursor=pointer]:
+                  - /url: "#faq"
+          - generic [ref=e661]:
+            - generic [ref=e662]: Société
+            - list [ref=e663]:
+              - listitem [ref=e664]:
+                - link "Mentions légales" [ref=e665] [cursor=pointer]:
+                  - /url: /fr/mentions-legales
+              - listitem [ref=e666]:
+                - link "CGV" [ref=e667] [cursor=pointer]:
+                  - /url: /fr/cgv
+              - listitem [ref=e668]:
+                - link "Confidentialité" [ref=e669] [cursor=pointer]:
+                  - /url: /fr/confidentialite
+              - listitem [ref=e670]:
+                - link "Cookies" [ref=e671] [cursor=pointer]:
+                  - /url: /fr/cookies
+              - listitem [ref=e672]:
+                - link "Contact" [ref=e673] [cursor=pointer]:
+                  - /url: /fr/contact
+        - generic [ref=e674]:
+          - generic [ref=e675]:
+            - img [ref=e676]
+            - generic [ref=e679]: Paiement sécurisé · SSL · via Stripe
+          - img "Visa, Mastercard, American Express, PayPal" [ref=e680]
+        - generic [ref=e681]:
+          - generic [ref=e682]: © Fanovera SAS 2026 · Made in Paris
+          - generic [ref=e683]: 17 rue de Paradis · 75010 Paris · support@fanovera.com
+  - button "Ouvrir le chat" [ref=e684] [cursor=pointer]:
+    - generic [ref=e685]: Une question ?

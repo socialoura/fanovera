@@ -1,8 +1,8 @@
 /**
- * BulkFollows SMM API client
- * Docs: https://bulkfollows.com/api
+ * Multi-provider SMM API client
+ * Supports any SMM panel v2 API (BulkFollows, DripFeedPanel, etc.)
  *
- * Every call goes through `bfPost` which handles auth + error wrapping.
+ * Every call goes through `smmPost` which handles auth + error wrapping.
  */
 
 import { sql } from "./db";
@@ -11,13 +11,42 @@ import { getUsdToCurrencyRate } from "./fxRates";
 import { captureServerEvent } from "./analytics.server";
 import { extractHandleFromUrl, type ExtractPlatform } from "./extractHandle";
 
-const BF_URL = "https://bulkfollows.com/api/v2";
+// ── Provider registry ──
 
-function apiKey(): string {
-  const k = process.env.BULKFOLLOWS_API_KEY;
-  if (!k) throw new Error("BULKFOLLOWS_API_KEY is not set");
+export type SmmProvider = "bulkfollows" | "dripfeedpanel";
+
+interface ProviderConfig {
+  url: string;
+  keyEnv: string;
+}
+
+const PROVIDERS: Record<SmmProvider, ProviderConfig> = {
+  bulkfollows: { url: "https://bulkfollows.com/api/v2", keyEnv: "BULKFOLLOWS_API_KEY" },
+  dripfeedpanel: { url: "https://dripfeedpanel.com/api/v2", keyEnv: "DRIPFEEDPANEL_API_KEY" },
+};
+
+const DEFAULT_PROVIDER: SmmProvider = "bulkfollows";
+
+function getProviderKey(provider: SmmProvider): string {
+  const cfg = PROVIDERS[provider];
+  if (!cfg) throw new Error(`Unknown SMM provider: ${provider}`);
+  const k = process.env[cfg.keyEnv];
+  if (!k) throw new Error(`${cfg.keyEnv} is not set`);
   return k;
 }
+
+function getProviderUrl(provider: SmmProvider): string {
+  const cfg = PROVIDERS[provider];
+  if (!cfg) throw new Error(`Unknown SMM provider: ${provider}`);
+  return cfg.url;
+}
+
+// Legacy helper for code that still calls without a provider
+function apiKey(): string {
+  return getProviderKey("bulkfollows");
+}
+
+const BF_URL = "https://bulkfollows.com/api/v2";
 
 // ── Low-level request ──
 
@@ -49,31 +78,32 @@ function isTransientBfMessage(msg: string): boolean {
   return TRANSIENT_BF_MESSAGES.some((needle) => lower.includes(needle));
 }
 
-async function bfPost<T = Record<string, unknown>>(
+async function smmPost<T = Record<string, unknown>>(
   params: Record<string, unknown>,
+  provider: SmmProvider = DEFAULT_PROVIDER,
 ): Promise<T> {
+  const url = getProviderUrl(provider);
+  const key = getProviderKey(provider);
+  const label = provider;
+
   let res: Response;
   try {
-    res = await fetch(BF_URL, {
+    res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: apiKey(), ...params }),
+      body: JSON.stringify({ key, ...params }),
     });
   } catch (err) {
-    // Network-level error — fetch threw before we got any response. Always
-    // transient (DNS, TCP, TLS issues). The retry loop will back off.
     throw new BfTransientError(
-      `BulkFollows network: ${err instanceof Error ? err.message : String(err)}`,
+      `${label} network: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
-  // 429 + 5xx are server-side hiccups — almost always recover within a few
-  // hundred ms. Mark as transient so callers retry.
   if (res.status === 429 || res.status >= 500) {
     let body = "";
     try { body = await res.text(); } catch { /* ignore */ }
     throw new BfTransientError(
-      `BulkFollows HTTP ${res.status}: ${body.slice(0, 200) || res.statusText}`,
+      `${label} HTTP ${res.status}: ${body.slice(0, 200) || res.statusText}`,
     );
   }
 
@@ -81,18 +111,23 @@ async function bfPost<T = Record<string, unknown>>(
   try {
     data = await res.json();
   } catch (err) {
-    // Non-JSON body on a 2xx is itself a transient anomaly worth retrying.
     throw new BfTransientError(
-      `BulkFollows malformed response: ${err instanceof Error ? err.message : String(err)}`,
+      `${label} malformed response: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
   if (data.error) {
     const msg = String(data.error);
-    if (isTransientBfMessage(msg)) throw new BfTransientError(`BulkFollows: ${msg}`);
-    throw new Error(`BulkFollows: ${msg}`);
+    if (isTransientBfMessage(msg)) throw new BfTransientError(`${label}: ${msg}`);
+    throw new Error(`${label}: ${msg}`);
   }
   return data as T;
+}
+
+async function bfPost<T = Record<string, unknown>>(
+  params: Record<string, unknown>,
+): Promise<T> {
+  return smmPost<T>(params, "bulkfollows");
 }
 
 /** Retry an async operation with exponential backoff on transient errors. */
@@ -125,27 +160,28 @@ async function withBfRetry<T>(
 // ── Public helpers ──
 
 /** Account balance (USD) */
-export async function getBalance(): Promise<number> {
-  const data = await bfPost<{ balance: string }>({ action: "balance" });
+export async function getBalance(provider: SmmProvider = DEFAULT_PROVIDER): Promise<number> {
+  const data = await smmPost<{ balance: string }>({ action: "balance" }, provider);
   return parseFloat(data.balance);
 }
 
-/** Place an order — returns the BulkFollows order ID */
+/** Place an order — returns the provider order ID */
 export async function placeOrder(params: {
   serviceId: number;
   link: string;
   quantity: number;
+  provider?: SmmProvider;
 }): Promise<{ orderId: number }> {
-  const data = await bfPost<{ order: number }>({
+  const data = await smmPost<{ order: number }>({
     action: "add",
     service: params.serviceId,
     link: params.link,
     quantity: params.quantity,
-  });
+  }, params.provider || DEFAULT_PROVIDER);
   return { orderId: data.order };
 }
 
-/** Check status of one BulkFollows order */
+/** Check status of one order */
 export interface BfOrderStatus {
   charge: string;
   start_count: string;
@@ -153,18 +189,19 @@ export interface BfOrderStatus {
   remains: string;
   currency: string;
 }
-export async function getOrderStatus(orderId: number): Promise<BfOrderStatus> {
-  return bfPost<BfOrderStatus>({ action: "status", order: orderId });
+export async function getOrderStatus(orderId: number, provider: SmmProvider = DEFAULT_PROVIDER): Promise<BfOrderStatus> {
+  return smmPost<BfOrderStatus>({ action: "status", order: orderId }, provider);
 }
 
-/** Check status of multiple BF orders at once (max 100) */
+/** Check status of multiple orders at once (max 100) */
 export async function getMultipleOrderStatus(
   orderIds: number[],
+  provider: SmmProvider = DEFAULT_PROVIDER,
 ): Promise<Record<string, BfOrderStatus>> {
-  return bfPost<Record<string, BfOrderStatus>>({
+  return smmPost<Record<string, BfOrderStatus>>({
     action: "status",
     orders: orderIds.join(","),
-  });
+  }, provider);
 }
 
 // ─── Cache layer for BulkFollows status ──────────────────────────────────────
@@ -220,7 +257,7 @@ export async function getMultipleOrderStatusCached(
   return merged;
 }
 
-/** Fetch all BulkFollows services with their rates */
+/** Fetch all services with their rates from a provider */
 export interface BfService {
   service: number;
   name: string;
@@ -230,10 +267,10 @@ export interface BfService {
   max: string;
   category: string;
 }
-export async function getServices(): Promise<BfService[]> {
-  const data = await bfPost<BfService[] | Record<string, BfService>>({
+export async function getServices(provider: SmmProvider = DEFAULT_PROVIDER): Promise<BfService[]> {
+  const data = await smmPost<BfService[] | Record<string, BfService>>({
     action: "services",
-  });
+  }, provider);
   // API returns either an array or { "1": {...}, "2": {...} }
   if (Array.isArray(data)) return data;
   return Object.values(data);
@@ -249,12 +286,10 @@ export interface SmmSubOrder {
   bfServiceId: number;
   bfOrderId: number | null;
   status: "pending" | "placed" | "completed" | "partial" | "failed" | "canceled";
-  charge: number | null; // USD cost charged by BF
+  charge: number | null; // USD cost charged by provider
   error: string | null;
   placedAt: string | null;
-  // Set only for lines distributed across multiple posts (postUrls): the
-  // specific video URL this sub-order targets. Together with `cartIndex` it
-  // forms the resume/retry key so each split target is tracked independently.
+  provider?: SmmProvider;
   postUrl?: string;
 }
 
@@ -536,17 +571,16 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
           bfOrderId: null,
           status: "failed",
           charge: null,
-          error: `No BulkFollows service ID configured for ${itemPlatform}:${svc}`,
+          error: `No SMM service ID configured for ${itemPlatform}:${svc}`,
           placedAt: null,
           postUrl: target.postUrl,
         });
         continue;
       }
 
+      const provider = (config.provider || DEFAULT_PROVIDER) as SmmProvider;
       const link = target.link;
 
-      // Pre-flight URL check: if the link is clearly dead, don't burn BF credit.
-      // Step 2 no longer blocks on regex, so this is the safety net.
       if (!(await isUrlReachable(link))) {
         subOrders.push({
           cartIndex: i,
@@ -565,25 +599,21 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
       }
 
       try {
-        // Retry transient BulkFollows hiccups (429, 5xx, network blips) up to
-        // 3 times with jittered exponential backoff. Definitive errors
-        // (invalid link, no funds, inactive service) bail out immediately so
-        // we don't waste 3-6 seconds on lost causes.
         const result = await withBfRetry(
           () => placeOrder({
             serviceId: config.bulkfollows_service_id,
             link,
             quantity: target.qty,
+            provider,
           }),
           { maxAttempts: 3, baseDelayMs: 600, label: `placeOrder ${itemPlatform}:${svc}` },
         );
 
-        // Immediately fetch status to get the charge
         const estimatedCharge = estimateBulkFollowsCharge(config.rate_per_1k, target.qty);
         let charge: number | null = estimatedCharge;
         try {
           const st = await withBfRetry(
-            () => getOrderStatus(result.orderId),
+            () => getOrderStatus(result.orderId, provider),
             { maxAttempts: 2, baseDelayMs: 400, label: `getOrderStatus ${result.orderId}` },
           );
           charge = resolveBulkFollowsCharge(st.charge, estimatedCharge);
@@ -602,6 +632,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
           charge,
           error: null,
           placedAt: new Date().toISOString(),
+          provider,
           postUrl: target.postUrl,
         });
       } catch (err) {
@@ -616,6 +647,7 @@ export async function runSmmForOrder(orderId: number): Promise<SmmSubOrder[]> {
           charge: null,
           error: err instanceof Error ? err.message : String(err),
           placedAt: null,
+          provider,
           postUrl: target.postUrl,
         });
       }
@@ -904,23 +936,33 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
     ? order.smm_orders
     : JSON.parse(order.smm_orders || "[]");
 
-  // Collect BF order IDs that need status check
+  // Collect order IDs that need status check, grouped by provider
   const toCheck = subOrders.filter(
     (s) => s.bfOrderId && (s.status === "placed" || s.status === "pending"),
   );
   if (toCheck.length === 0) return subOrders;
 
-  const bfIds = toCheck.map((s) => s.bfOrderId!);
+  // Group by provider for batched status calls
+  const byProvider = new Map<SmmProvider, number[]>();
+  for (const s of toCheck) {
+    const p = (s.provider || DEFAULT_PROVIDER) as SmmProvider;
+    const list = byProvider.get(p) || [];
+    list.push(s.bfOrderId!);
+    byProvider.set(p, list);
+  }
 
   try {
-    const statuses =
-      bfIds.length === 1
-        ? { [String(bfIds[0])]: await getOrderStatus(bfIds[0]) }
-        : await getMultipleOrderStatus(bfIds);
+    const allStatuses: Record<string, BfOrderStatus> = {};
+    for (const [provider, ids] of byProvider) {
+      const statuses = ids.length === 1
+        ? { [String(ids[0])]: await getOrderStatus(ids[0], provider) }
+        : await getMultipleOrderStatus(ids, provider);
+      Object.assign(allStatuses, statuses);
+    }
 
     for (const sub of subOrders) {
       if (!sub.bfOrderId) continue;
-      const st = statuses[String(sub.bfOrderId)];
+      const st = allStatuses[String(sub.bfOrderId)];
       if (!st) continue;
 
       const charge = resolveBulkFollowsCharge(st.charge, sub.charge);
@@ -935,7 +977,7 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
         sub.status = "placed";
     }
   } catch (err) {
-    console.error(`[refreshSmmStatus] BF status check failed for order ${orderId}:`, err);
+    console.error(`[refreshSmmStatus] status check failed for order ${orderId}:`, err);
   }
 
   const fxRate = await getUsdToCurrencyRate(order.currency || "EUR");
@@ -999,35 +1041,53 @@ export async function refreshSmmStatus(orderId: number): Promise<SmmSubOrder[]> 
 }
 
 /**
- * Fetch BulkFollows service rates and update the smm_config table
+ * Fetch service rates from all providers and update the smm_config table
  * with a `rate_per_1k` value (USD per 1000 units).
  */
 export async function refreshServiceRates(): Promise<{ updated: number; total: number }> {
-  const services = await getServices();
-  const svcMap = new Map<number, BfService>();
-  for (const s of services) {
-    svcMap.set(Number(s.service), s);
+  const configs = await sql`SELECT * FROM smm_config`;
+
+  // Group configs by provider
+  const byProvider = new Map<SmmProvider, typeof configs>();
+  for (const config of configs) {
+    const p = (config.provider || DEFAULT_PROVIDER) as SmmProvider;
+    const list = byProvider.get(p) || [];
+    list.push(config);
+    byProvider.set(p, list);
   }
 
-  const configs = await sql`SELECT * FROM smm_config`;
   let updated = 0;
 
-  for (const config of configs) {
-    const bfId = Number(config.bulkfollows_service_id);
-    if (!bfId || bfId === 0) continue;
+  for (const [provider, providerConfigs] of byProvider) {
+    let services: BfService[];
+    try {
+      services = await getServices(provider);
+    } catch {
+      continue;
+    }
 
-    const svc = svcMap.get(bfId);
-    if (!svc) continue;
+    const svcMap = new Map<number, BfService>();
+    for (const s of services) {
+      svcMap.set(Number(s.service), s);
+    }
 
-    const rate = parseFloat(svc.rate);
-    if (isNaN(rate)) continue;
+    for (const config of providerConfigs) {
+      const bfId = Number(config.bulkfollows_service_id);
+      if (!bfId || bfId === 0) continue;
 
-    await sql`
-      UPDATE smm_config
-      SET rate_per_1k = ${rate}
-      WHERE id = ${config.id}
-    `;
-    updated++;
+      const svc = svcMap.get(bfId);
+      if (!svc) continue;
+
+      const rate = parseFloat(svc.rate);
+      if (isNaN(rate)) continue;
+
+      await sql`
+        UPDATE smm_config
+        SET rate_per_1k = ${rate}
+        WHERE id = ${config.id}
+      `;
+      updated++;
+    }
   }
 
   return { updated, total: configs.length };

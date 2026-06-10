@@ -1,0 +1,421 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]:
+        - link "Fanovera" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "Fanovera" [ref=e7]
+        - navigation [ref=e8]:
+          - link "Instagram" [ref=e9] [cursor=pointer]:
+            - /url: /instagram
+            - img [ref=e10]
+          - link "TikTok" [ref=e14] [cursor=pointer]:
+            - /url: /tiktok-2
+            - img [ref=e15]
+          - link "YouTube" [ref=e18] [cursor=pointer]:
+            - /url: /youtube
+            - img [ref=e19]
+          - link "Spotify" [ref=e22] [cursor=pointer]:
+            - /url: /spotify
+            - img [ref=e23]
+          - link "Twitter" [ref=e26] [cursor=pointer]:
+            - /url: /twitter
+            - img [ref=e27]
+          - link "Facebook" [ref=e29] [cursor=pointer]:
+            - /url: /facebook
+            - img [ref=e30]
+          - link "LinkedIn" [ref=e33] [cursor=pointer]:
+            - /url: /linkedin
+            - img [ref=e34]
+          - link "Twitch" [ref=e38] [cursor=pointer]:
+            - /url: /twitch
+            - img [ref=e39]
+          - link "Suivi" [ref=e43] [cursor=pointer]:
+            - /url: /track
+          - link "FAQ" [ref=e44] [cursor=pointer]:
+            - /url: /#faq
+          - link "Contact" [ref=e45] [cursor=pointer]:
+            - /url: /contact
+        - generic [ref=e46]:
+          - button "Choisir la langue" [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: Langue
+            - generic [ref=e50]:
+              - generic [ref=e51]: FR
+              - generic [ref=e52]: Auto
+          - button "Choisir la devise" [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]: Devise
+            - generic [ref=e57]:
+              - generic [ref=e58]: EUR
+              - generic [ref=e59]: Auto
+          - generic [ref=e61]:
+            - img [ref=e62]
+            - generic [ref=e64]: 4,9
+            - generic [ref=e65]: · 2 508 avis
+          - link "Accueil" [ref=e66] [cursor=pointer]:
+            - /url: /
+            - img [ref=e67]
+      - generic [ref=e71]:
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic [ref=e72]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - generic [ref=e76]: "1"
+              - generic [ref=e77]: Votre TikTok
+            - generic [ref=e79]:
+              - generic [ref=e80]: "2"
+              - generic [ref=e81]: Quantités
+            - generic [ref=e83]:
+              - generic [ref=e84]: "3"
+              - generic [ref=e85]: Paiement
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - img [ref=e88]
+              - text: TikTok · Followers, Likes & Vues
+            - heading "Explosez sur TikTok en quelques minutes ." [level=1] [ref=e91]:
+              - text: Explosez sur TikTok en
+              - generic [ref=e92]: quelques minutes
+              - text: .
+            - paragraph [ref=e93]: Entrez votre pseudo, on récupère votre profil et vos vidéos. Aucun mot de passe. Compte public uniquement.
+          - generic [ref=e95]:
+            - generic [ref=e97]: 1 482
+            - text: commandes en cours
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - img [ref=e104]
+              - generic [ref=e107]:
+                - generic [ref=e108]: TikTok
+                - generic [ref=e109]: Followers
+            - generic [ref=e110]: Envie de booster votre profil ?
+            - generic [ref=e111]:
+              - generic [ref=e112]: "@"
+              - textbox "@" [active] [ref=e113]:
+                - /placeholder: votrepseudo
+            - button "Continuer" [disabled] [ref=e114]:
+              - text: Continuer
+              - img [ref=e116]
+    - generic [ref=e118]:
+      - generic [ref=e119]:
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - img [ref=e123]
+              - text: Pourquoi ça convertit
+            - heading "TikTok plus crédible dès le premier regard." [level=2] [ref=e126]:
+              - text: TikTok plus
+              - generic [ref=e127]: crédible
+              - text: dès le premier regard.
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - generic [ref=e130]: 🎯
+              - heading "Preuve sociale visible" [level=3] [ref=e131]
+              - paragraph [ref=e132]: Une présence plus solide aide vos contenus TikTok à paraître plus établis.
+            - generic [ref=e133]:
+              - generic [ref=e134]: 🛡
+              - heading "Progression suivie" [level=3] [ref=e135]
+              - paragraph [ref=e136]: Les followers sont ajoutés progressivement avec un suivi clair de la campagne.
+            - generic [ref=e137]:
+              - generic [ref=e138]: 🔒
+              - heading "Compte protégé" [level=3] [ref=e139]
+              - paragraph [ref=e140]: Aucun accès au compte, aucune publication à votre place, aucune action directe sur votre profil.
+            - generic [ref=e141]:
+              - generic [ref=e142]: ↩
+              - heading "Support inclus" [level=3] [ref=e143]
+              - paragraph [ref=e144]: Si le volume prévu n'est pas atteint, le support vérifie et prolonge la campagne.
+      - generic [ref=e145]:
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - img [ref=e149]
+              - text: Ils ont gagné en traction
+            - heading "2 508 avis · 4,9/5" [level=2] [ref=e152]:
+              - generic [ref=e153]: 2 508 avis
+              - text: · 4,9/5
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - generic [ref=e156]: 4,91
+              - generic [ref=e157]:
+                - img [ref=e158]
+                - img [ref=e160]
+                - img [ref=e162]
+                - img [ref=e164]
+                - img [ref=e166]
+              - generic [ref=e168]: 2 508 avis
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - generic [ref=e171]: "5"
+                - img [ref=e172]
+                - generic [ref=e176]: "2048"
+              - generic [ref=e177]:
+                - generic [ref=e178]: "4"
+                - img [ref=e179]
+                - generic [ref=e183]: "198"
+              - generic [ref=e184]:
+                - generic [ref=e185]: "3"
+                - img [ref=e186]
+                - generic [ref=e190]: "65"
+              - generic [ref=e191]:
+                - generic [ref=e192]: "2"
+                - img [ref=e193]
+                - generic [ref=e197]: "22"
+              - generic [ref=e198]:
+                - generic [ref=e199]: "1"
+                - img [ref=e200]
+                - generic [ref=e204]: "15"
+          - generic [ref=e205]:
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - generic [ref=e208]: Yanis K.
+                - generic [ref=e209]:
+                  - img [ref=e210]
+                  - img [ref=e212]
+                  - img [ref=e214]
+                  - img [ref=e216]
+                  - img [ref=e218]
+              - generic [ref=e220]: il y a 2 jours
+              - paragraph [ref=e221]: Progression régulière et campagne bien suivie. Je recommande.
+            - generic [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]: Camille R.
+                - generic [ref=e225]:
+                  - img [ref=e226]
+                  - img [ref=e228]
+                  - img [ref=e230]
+                  - img [ref=e232]
+                  - img [ref=e234]
+              - generic [ref=e236]: il y a 6 jours
+              - paragraph [ref=e237]: Mise en route rapide, suivi clair et rythme progressif.
+            - generic [ref=e238]:
+              - generic [ref=e239]:
+                - generic [ref=e240]: Mehdi A.
+                - generic [ref=e241]:
+                  - img [ref=e242]
+                  - img [ref=e244]
+                  - img [ref=e246]
+                  - img [ref=e248]
+                  - img [ref=e250]
+              - generic [ref=e252]: il y a 4 jours
+              - paragraph [ref=e253]: Ma visibilité TikTok a évolué progressivement.
+            - generic [ref=e254]:
+              - generic [ref=e255]:
+                - generic [ref=e256]: Sara P.
+                - generic [ref=e257]:
+                  - img [ref=e258]
+                  - img [ref=e260]
+                  - img [ref=e262]
+                  - img [ref=e264]
+                  - img [ref=e266]
+              - generic [ref=e268]: il y a 9 jours
+              - paragraph [ref=e269]: Service sérieux, suivi propre sur plusieurs semaines.
+            - generic [ref=e270]:
+              - generic [ref=e271]:
+                - generic [ref=e272]: Tom L.
+                - generic [ref=e273]:
+                  - img [ref=e274]
+                  - img [ref=e276]
+                  - img [ref=e278]
+                  - img [ref=e280]
+                  - img [ref=e282]
+              - generic [ref=e284]: il y a 5 jours
+              - paragraph [ref=e285]: Bonne progression continue sur 10 jours.
+            - generic [ref=e286]:
+              - generic [ref=e287]:
+                - generic [ref=e288]: Ines B.
+                - generic [ref=e289]:
+                  - img [ref=e290]
+                  - img [ref=e292]
+                  - img [ref=e294]
+                  - img [ref=e296]
+                  - img [ref=e298]
+              - generic [ref=e300]: il y a 11 jours
+              - paragraph [ref=e301]: Première campagne, service clair et professionnel.
+            - generic [ref=e302]:
+              - generic [ref=e303]:
+                - generic [ref=e304]: Hugo M.
+                - generic [ref=e305]:
+                  - img [ref=e306]
+                  - img [ref=e308]
+                  - img [ref=e310]
+                  - img [ref=e312]
+                  - img [ref=e314]
+              - generic [ref=e316]: il y a 14 jours
+              - paragraph [ref=e317]: Service client réactif et suivi au rendez-vous.
+            - generic [ref=e318]:
+              - generic [ref=e319]:
+                - generic [ref=e320]: Eva S.
+                - generic [ref=e321]:
+                  - img [ref=e322]
+                  - img [ref=e324]
+                  - img [ref=e326]
+                  - img [ref=e328]
+                  - img [ref=e330]
+              - generic [ref=e332]: il y a 15 jours
+              - paragraph [ref=e333]: Progression continue, exactement ce qui était annoncé.
+      - generic [ref=e334]:
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic:
+          - img
+        - generic [ref=e335]:
+          - generic [ref=e336]:
+            - generic [ref=e337]:
+              - img [ref=e338]
+              - text: FAQ
+            - heading "Avant de commander, l'essentiel ." [level=2] [ref=e341]:
+              - text: Avant de commander,
+              - generic [ref=e342]: l'essentiel
+              - text: .
+          - generic [ref=e343]:
+            - generic [ref=e344]:
+              - button "Dois-je partager mon mot de passe ?" [expanded] [ref=e345] [cursor=pointer]:
+                - generic [ref=e346]: Dois-je partager mon mot de passe ?
+                - img [ref=e348]
+              - generic [ref=e350]: Non. Nous demandons seulement un lien ou identifiant public pour lancer la campagne.
+            - generic [ref=e351]:
+              - button "Quand la livraison démarre-t-elle ?" [ref=e352] [cursor=pointer]:
+                - generic [ref=e353]: Quand la livraison démarre-t-elle ?
+                - img [ref=e355]
+              - generic: Après confirmation du paiement. La progression est suivie et peut s'étaler sur plusieurs jours selon le volume.
+            - generic [ref=e357]:
+              - button "Est-ce adapté à un nouveau profil ?" [ref=e358] [cursor=pointer]:
+                - generic [ref=e359]: Est-ce adapté à un nouveau profil ?
+                - img [ref=e361]
+              - generic: Oui, le but est de renforcer la preuve sociale tout en gardant une progression crédible.
+            - generic [ref=e363]:
+              - button "Que faire si tout n'est pas livré ?" [ref=e364] [cursor=pointer]:
+                - generic [ref=e365]: Que faire si tout n'est pas livré ?
+                - img [ref=e367]
+              - generic: Le support vérifie la campagne et peut prolonger la livraison sans frais supplémentaires.
+            - generic [ref=e369]:
+              - button "Y a-t-il un engagement ou un abonnement ?" [ref=e370] [cursor=pointer]:
+                - generic [ref=e371]: Y a-t-il un engagement ou un abonnement ?
+                - img [ref=e373]
+              - generic: "Non, aucun. C'est un paiement unique, sans engagement ni abonnement caché : vous payez une seule fois, c'est tout."
+    - contentinfo [ref=e375]:
+      - generic [ref=e376]:
+        - generic [ref=e377]:
+          - generic [ref=e378]:
+            - link "Fanovera" [ref=e379] [cursor=pointer]:
+              - /url: /
+              - img "Fanovera" [ref=e380]
+            - paragraph [ref=e381]: Campagnes TikTok avec lancement rapide, livraison progressive et suivi clair.
+            - generic [ref=e382]:
+              - link "Instagram" [ref=e383] [cursor=pointer]:
+                - /url: /instagram
+                - img [ref=e384]
+              - link "TikTok" [ref=e388] [cursor=pointer]:
+                - /url: /tiktok
+                - img [ref=e389]
+              - link "YouTube" [ref=e392] [cursor=pointer]:
+                - /url: /youtube
+                - img [ref=e393]
+              - link "Spotify" [ref=e396] [cursor=pointer]:
+                - /url: /spotify
+                - img [ref=e397]
+              - link "Twitter" [ref=e400] [cursor=pointer]:
+                - /url: /twitter
+                - img [ref=e401]
+              - link "Facebook" [ref=e403] [cursor=pointer]:
+                - /url: /facebook
+                - img [ref=e404]
+              - link "LinkedIn" [ref=e407] [cursor=pointer]:
+                - /url: /linkedin
+                - img [ref=e408]
+              - link "Twitch" [ref=e412] [cursor=pointer]:
+                - /url: /twitch
+                - img [ref=e413]
+          - generic [ref=e416]:
+            - generic [ref=e417]: Réseaux
+            - list [ref=e418]:
+              - listitem [ref=e419]:
+                - link "Instagram" [ref=e420] [cursor=pointer]:
+                  - /url: /instagram
+              - listitem [ref=e421]:
+                - link "TikTok" [ref=e422] [cursor=pointer]:
+                  - /url: /tiktok
+              - listitem [ref=e423]:
+                - link "YouTube" [ref=e424] [cursor=pointer]:
+                  - /url: /youtube
+              - listitem [ref=e425]:
+                - link "Spotify" [ref=e426] [cursor=pointer]:
+                  - /url: /spotify
+          - list [ref=e429]:
+            - listitem [ref=e430]:
+              - link "Twitter" [ref=e431] [cursor=pointer]:
+                - /url: /twitter
+            - listitem [ref=e432]:
+              - link "Facebook" [ref=e433] [cursor=pointer]:
+                - /url: /facebook
+            - listitem [ref=e434]:
+              - link "LinkedIn" [ref=e435] [cursor=pointer]:
+                - /url: /linkedin
+            - listitem [ref=e436]:
+              - link "Twitch" [ref=e437] [cursor=pointer]:
+                - /url: /twitch
+          - generic [ref=e438]:
+            - generic [ref=e439]: Aide
+            - list [ref=e440]:
+              - listitem [ref=e441]:
+                - link "Comment ça marche" [ref=e442] [cursor=pointer]:
+                  - /url: "#how"
+              - listitem [ref=e443]:
+                - link "Support campagne" [ref=e444] [cursor=pointer]:
+                  - /url: "#guarantee"
+              - listitem [ref=e445]:
+                - link "Contact" [ref=e446] [cursor=pointer]:
+                  - /url: mailto:hello@fanovera.com
+              - listitem [ref=e447]:
+                - link "Suivi de commande" [ref=e448] [cursor=pointer]:
+                  - /url: /track
+          - generic [ref=e449]:
+            - generic [ref=e450]: Légal
+            - list [ref=e451]:
+              - listitem [ref=e452]:
+                - link "Mentions légales" [ref=e453] [cursor=pointer]:
+                  - /url: /mentions-legales
+              - listitem [ref=e454]:
+                - link "CGV" [ref=e455] [cursor=pointer]:
+                  - /url: /cgv
+              - listitem [ref=e456]:
+                - link "Confidentialité" [ref=e457] [cursor=pointer]:
+                  - /url: /confidentialite
+              - listitem [ref=e458]:
+                - link "Cookies" [ref=e459] [cursor=pointer]:
+                  - /url: /cookies
+        - generic [ref=e460]:
+          - generic [ref=e461]: © Fanovera SAS 2026 · Made in Paris · 17 rue de Paradis · 75010 Paris
+          - generic [ref=e462]: hello@fanovera.com
+  - button "Ouvrir le chat" [ref=e463] [cursor=pointer]:
+    - generic [ref=e464]: Une question ?

@@ -39,6 +39,20 @@ export const ANALYTICS_EVENTS = [
   // registered as a PostHog super property so checkout_started → payment_succeeded
   // carry `checkout_flow_variant` for the admin per-arm results query.
   "checkout_flow_exposed",
+  // tiktok-2 funnel events — product page /tiktok-2
+  // Fired once per visit on the /tiktok-2 product page (distinct from the old
+  // /tiktok page). `from_promo` = true when the visitor was handed off from /promo.
+  "tiktok2_page_viewed",
+  // Fired each time the visitor advances to a new step (2 = quantities,
+  // 3 = post selection, 4 = checkout). Step 1 is captured by tiktok2_page_viewed.
+  "tt2_step_viewed",
+  // User picks or changes a pack in step 2. `product` = followers|likes|views.
+  "tt2_product_selected",
+  // User removes a product from the cart in step 2.
+  "tt2_product_removed",
+  // User confirms their video selection in step 3 and proceeds to checkout.
+  // `posts_count` = number of videos selected.
+  "tt2_posts_confirmed",
   // /tiktok-2 pack-selector A/B: fired once when the visitor reaches the
   // quantities step, with `variant` (chips | slider). Also registered as a
   // PostHog super property `tt2_packs_variant` so downstream funnel events
@@ -52,6 +66,9 @@ export const ANALYTICS_EVENTS = [
   "checkout_abandoned",
   // Funnel — fine-grained user journey events (Batch 3 funnel completion)
   "username_validated",
+  // Visitor entered a handle whose account is private — flow is paused on
+  // tiktok-2 step 1 (private account can't be fetched or serviced).
+  "username_private",
   // Server-side: PaymentIntent successfully created in /api/create-payment-intent.
   // Fires once per intent (re)creation, keyed by anonymousId — NOT a clean
   // per-user funnel step. The funnel-grade "reached checkout" event is the

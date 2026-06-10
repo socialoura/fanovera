@@ -274,9 +274,11 @@ export async function initDb() {
       bulkfollows_service_id INTEGER NOT NULL,
       rate_per_1k NUMERIC(10,4) DEFAULT 0,
       enabled BOOLEAN DEFAULT true,
+      provider VARCHAR(30) DEFAULT 'bulkfollows',
       UNIQUE(platform, service)
     )
   `;
+  await sql`ALTER TABLE smm_config ADD COLUMN IF NOT EXISTS provider VARCHAR(30) DEFAULT 'bulkfollows'`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS smm_settings (

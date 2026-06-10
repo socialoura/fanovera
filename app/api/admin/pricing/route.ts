@@ -154,28 +154,30 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Invalid qty" }, { status: 400 });
     }
 
-    if (fields.service !== undefined) await sql`UPDATE pricing SET service = ${fields.service} WHERE id = ${id}`;
-    if (fields.qty !== undefined) await sql`UPDATE pricing SET qty = ${fields.qty} WHERE id = ${id}`;
-    if (fields.price !== undefined) await sql`UPDATE pricing SET price = ${fields.price} WHERE id = ${id}`;
-    if (fields.price_usd !== undefined) await sql`UPDATE pricing SET price_usd = ${fields.price_usd} WHERE id = ${id}`;
-    if (fields.price_gbp !== undefined) await sql`UPDATE pricing SET price_gbp = ${fields.price_gbp} WHERE id = ${id}`;
-    if (fields.price_brl !== undefined) await sql`UPDATE pricing SET price_brl = ${fields.price_brl} WHERE id = ${id}`;
-    if (fields.price_try !== undefined) await sql`UPDATE pricing SET price_try = ${fields.price_try} WHERE id = ${id}`;
-    if (fields.price_cad !== undefined) await sql`UPDATE pricing SET price_cad = ${fields.price_cad} WHERE id = ${id}`;
-    if (fields.price_aud !== undefined) await sql`UPDATE pricing SET price_aud = ${fields.price_aud} WHERE id = ${id}`;
-    if (fields.price_chf !== undefined) await sql`UPDATE pricing SET price_chf = ${fields.price_chf} WHERE id = ${id}`;
-    if (fields.price_mxn !== undefined) await sql`UPDATE pricing SET price_mxn = ${fields.price_mxn} WHERE id = ${id}`;
-    if (fields.price_sek !== undefined) await sql`UPDATE pricing SET price_sek = ${fields.price_sek} WHERE id = ${id}`;
-    if (fields.popular !== undefined) await sql`UPDATE pricing SET popular = ${fields.popular} WHERE id = ${id}`;
-    if (fields.active !== undefined) await sql`UPDATE pricing SET active = ${fields.active} WHERE id = ${id}`;
-    if (fields.sort_order !== undefined) await sql`UPDATE pricing SET sort_order = ${Math.round(Number(fields.sort_order))} WHERE id = ${id}`;
+    const cur = current[0];
+    if (fields.service !== undefined && fields.service !== cur.service) await sql`UPDATE pricing SET service = ${fields.service} WHERE id = ${id}`;
+    if (fields.qty !== undefined && Number(fields.qty) !== Number(cur.qty)) await sql`UPDATE pricing SET qty = ${fields.qty} WHERE id = ${id}`;
+    if (fields.price !== undefined && Number(fields.price) !== Number(cur.price)) await sql`UPDATE pricing SET price = ${fields.price} WHERE id = ${id}`;
+    if (fields.price_usd !== undefined && Number(fields.price_usd) !== Number(cur.price_usd)) await sql`UPDATE pricing SET price_usd = ${fields.price_usd} WHERE id = ${id}`;
+    if (fields.price_gbp !== undefined && Number(fields.price_gbp) !== Number(cur.price_gbp)) await sql`UPDATE pricing SET price_gbp = ${fields.price_gbp} WHERE id = ${id}`;
+    if (fields.price_brl !== undefined && Number(fields.price_brl) !== Number(cur.price_brl)) await sql`UPDATE pricing SET price_brl = ${fields.price_brl} WHERE id = ${id}`;
+    if (fields.price_try !== undefined && Number(fields.price_try) !== Number(cur.price_try)) await sql`UPDATE pricing SET price_try = ${fields.price_try} WHERE id = ${id}`;
+    if (fields.price_cad !== undefined && Number(fields.price_cad) !== Number(cur.price_cad)) await sql`UPDATE pricing SET price_cad = ${fields.price_cad} WHERE id = ${id}`;
+    if (fields.price_aud !== undefined && Number(fields.price_aud) !== Number(cur.price_aud)) await sql`UPDATE pricing SET price_aud = ${fields.price_aud} WHERE id = ${id}`;
+    if (fields.price_chf !== undefined && Number(fields.price_chf) !== Number(cur.price_chf)) await sql`UPDATE pricing SET price_chf = ${fields.price_chf} WHERE id = ${id}`;
+    if (fields.price_mxn !== undefined && Number(fields.price_mxn) !== Number(cur.price_mxn)) await sql`UPDATE pricing SET price_mxn = ${fields.price_mxn} WHERE id = ${id}`;
+    if (fields.price_sek !== undefined && Number(fields.price_sek) !== Number(cur.price_sek)) await sql`UPDATE pricing SET price_sek = ${fields.price_sek} WHERE id = ${id}`;
+    if (fields.popular !== undefined && Boolean(fields.popular) !== Boolean(cur.popular)) await sql`UPDATE pricing SET popular = ${fields.popular} WHERE id = ${id}`;
+    if (fields.active !== undefined && Boolean(fields.active) !== Boolean(cur.active)) await sql`UPDATE pricing SET active = ${fields.active} WHERE id = ${id}`;
+    if (fields.sort_order !== undefined && Math.round(Number(fields.sort_order)) !== Number(cur.sort_order)) await sql`UPDATE pricing SET sort_order = ${Math.round(Number(fields.sort_order))} WHERE id = ${id}`;
 
     const updated = await sql`SELECT * FROM pricing WHERE id = ${id} LIMIT 1`;
 
     return NextResponse.json({ pack: updated[0] });
   } catch (error) {
     console.error("Pricing PUT error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

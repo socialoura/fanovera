@@ -6,7 +6,7 @@ import NetIcon from "../../components/NetIcon";
 import StripeCheckout from "../../components/StripePayment";
 import CouponField from "../../components/CouponField";
 import TtSprinkle from "../../tiktok/components/TtSprinkle";
-import { formatQty, fmtEuro, type CountryId } from "../../tiktok/data";
+import { formatQty, fmtEuro } from "../../tiktok/data";
 import { useTikTokCopy } from "../../tiktok/i18n";
 import { useI18n } from "../../i18n/I18nProvider";
 import { getPublicCopy } from "../../components/publicCopy";
@@ -19,7 +19,7 @@ import { PRODUCT_META, PRODUCT_ORDER, type ProductKey, type Selection } from "..
 import type { TtProfile, TtPost } from "../types";
 
 type Props = {
-  country: CountryId;
+  country: string;
   profile: TtProfile | null;
   username: string;
   email: string;
@@ -49,6 +49,17 @@ export default function Step4Checkout({ country, profile, username, email, setEm
 
   const clean = (profile?.username || username).replace(/^@/, "").trim();
   const postUrls = selectedPosts.map((p) => p.url).filter(Boolean);
+
+  // Build one-liner recap: "1 000 followers + 5 000 likes on 4 videos → @handle"
+  const recapParts: string[] = [];
+  PRODUCT_ORDER.forEach((k) => {
+    const i = sel[k];
+    if (i == null) return;
+    const p = PRODUCT_META[k].packs[i];
+    recapParts.push(`${formatQty(p.qty + p.bonus)} ${labels[k].toLowerCase()}`);
+  });
+  const recapVideos = selectedPosts.length > 0 ? ` sur ${selectedPosts.length} vidéo${selectedPosts.length > 1 ? "s" : ""}` : "";
+  const recapLine = recapParts.join(" + ") + recapVideos + ` → @${clean}`;
 
   const subtotal = PRODUCT_ORDER.reduce((sum, k) => {
     const i = sel[k];
@@ -101,6 +112,11 @@ export default function Step4Checkout({ country, profile, username, email, setEm
               <button onClick={onBackToStart} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--ink-3)", padding: 0 }}>
                 {c.change}
               </button>
+            </div>
+
+            {/* Recap one-liner */}
+            <div style={{ padding: "10px 14px", background: "var(--paper-2)", borderRadius: 12, marginBottom: 14, fontSize: 14, fontWeight: 700, color: "var(--ink)", textAlign: "center" }}>
+              {recapLine}
             </div>
 
             {/* Recipient */}

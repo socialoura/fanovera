@@ -5,22 +5,21 @@ import NetIcon from "../../components/NetIcon";
 import { trackEvent } from "../../lib/analytics";
 import TtSprinkle from "../../tiktok/components/TtSprinkle";
 import Stepper from "./Stepper";
-import { ArrowRight, Check } from "./icons";
+import { ArrowRight, Check, Lock } from "./icons";
 import { useT2Copy } from "../copy";
 import type { TtProfile, TtPost } from "../types";
 
 const USERNAME_RE = /^[a-zA-Z0-9._]{2,24}$/;
 
-async function fetchProfile(username: string): Promise<TtProfile> {
-  try {
-    const res = await fetch(`/api/tiktok/profile?username=${encodeURIComponent(username)}`);
-    if (res.ok) return (await res.json()) as TtProfile;
-  } catch {
-    /* fall through to minimal profile */
-  }
-  // Private / not-found / upstream error: still let the user proceed with a
-  // minimal profile so the flow never dead-ends (the API is reassurance only).
-  return {
+// `isPrivate` is the one upstream signal we act on: a private account is a real,
+// permanent, user-fixable state, so we stop the flow and ask them to go public
+// rather than handing the cart a profile we can't service. Every other failure
+// (not-found / upstream) still falls through to the minimal profile so the flow
+// never dead-ends on a transient hiccup.
+type ProfileResult = { profile: TtProfile; isPrivate: boolean };
+
+async function fetchProfile(username: string): Promise<ProfileResult> {
+  const fallback: TtProfile = {
     username,
     fullName: username,
     avatarUrl: "",
@@ -31,20 +30,19 @@ async function fetchProfile(username: string): Promise<TtProfile> {
     bio: "",
     verified: false,
   };
-}
-
-async function fetchPosts(username: string): Promise<TtPost[]> {
   try {
-    const res = await fetch(`/api/tiktok/posts?username=${encodeURIComponent(username)}`);
-    if (res.ok) {
-      const json = (await res.json()) as { posts?: TtPost[] };
-      return Array.isArray(json.posts) ? json.posts : [];
+    const res = await fetch(`/api/tiktok/profile?username=${encodeURIComponent(username)}`);
+    if (res.ok) return { profile: (await res.json()) as TtProfile, isPrivate: false };
+    if (res.status === 403) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (body?.error === "private") return { profile: fallback, isPrivate: true };
     }
   } catch {
-    /* ignore — posts grid will simply be empty */
+    /* fall through to minimal profile */
   }
-  return [];
+  return { profile: fallback, isPrivate: false };
 }
+
 
 type Props = {
   username: string;
@@ -59,7 +57,7 @@ type Props = {
 
 export default function Step1Username({ username, setUsername, onLoaded, autoStart = false, fromPriceLabel = null }: Props) {
   const c = useT2Copy().step1;
-  const [phase, setPhase] = useState<"input" | "loading">("input");
+  const [phase, setPhase] = useState<"input" | "loading" | "private">("input");
   const [stage, setStage] = useState(0);
   const clean = username.replace(/^@/, "").trim();
   const valid = USERNAME_RE.test(clean);
@@ -83,26 +81,26 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
   useEffect(() => {
     if (phase !== "loading") return;
     let cancelled = false;
-    const timers = [
-      setTimeout(() => !cancelled && setStage(1), 650),
-      setTimeout(() => !cancelled && setStage(2), 1350),
-      setTimeout(() => !cancelled && setStage(3), 2050),
-    ];
-    const minDelay = new Promise<void>((r) => setTimeout(r, 2400));
-    const work = Promise.all([fetchProfile(clean), fetchPosts(clean)]);
-    Promise.all([work, minDelay]).then(([[profile, posts]]) => {
+
+    setStage(0);
+    // Fetch profile first — advance as soon as it's ready.
+    // Posts load in the background and arrive while the user picks packs.
+    fetchProfile(clean).then(({ profile, isPrivate }) => {
       if (cancelled) return;
+      setStage(3);
+      if (isPrivate) {
+        trackEvent("username_private", { product_area: "tiktok", platform: "tiktok" });
+        setPhase("private");
+        return;
+      }
       trackEvent("username_validated", {
         product_area: "tiktok",
         platform: "tiktok",
         followers_count: profile.followersCount || 0,
       });
-      onLoaded(profile, posts);
+      onLoaded(profile, []);
     });
-    return () => {
-      cancelled = true;
-      timers.forEach(clearTimeout);
-    };
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -187,6 +185,29 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
                   </button>
                 </div>
               </div>
+            </div>
+          ) : phase === "private" ? (
+            <div className="tt2-scan-card" style={{ textAlign: "center" }}>
+              <div
+                style={{
+                  width: 64, height: 64, borderRadius: "50%", margin: "0 auto 18px",
+                  display: "grid", placeItems: "center",
+                  background: "rgba(254,44,85,0.10)", color: "var(--tt-red)",
+                }}
+              >
+                <Lock size={28} color="var(--tt-red)" />
+              </div>
+              <div className="tt2-scan-handle">@{clean}</div>
+              <h3 style={{ margin: "10px 0 8px", fontSize: 20, fontWeight: 800 }}>{c.privateTitle}</h3>
+              <p style={{ maxWidth: 380, margin: "0 auto 22px", fontSize: 15, color: "var(--ink-2)", lineHeight: 1.55 }}>
+                {c.privateBody}
+              </p>
+              <button className="promo-ig-capture-btn" onClick={start}>
+                {c.privateRetry}
+                <span className="promo-ig-capture-arrow">
+                  <ArrowRight size={16} />
+                </span>
+              </button>
             </div>
           ) : (
             <div className="tt2-scan-card">

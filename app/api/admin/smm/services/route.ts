@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { refreshServiceRates, getServices } from "@/app/lib/smm";
+import { refreshServiceRates, getServices, type SmmProvider } from "@/app/lib/smm";
 
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+
+const VALID_PROVIDERS: SmmProvider[] = ["bulkfollows", "dripfeedpanel"];
+
 /**
- * GET /api/admin/smm/services
- * Returns the full list of BulkFollows services (with rates).
+ * GET /api/admin/smm/services?provider=bulkfollows
+ * Returns the full list of services from the specified provider.
  */
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
   try {
-    const services = await getServices();
-    return NextResponse.json({ services, count: services.length });
+    const providerParam = req.nextUrl.searchParams.get("provider") || "bulkfollows";
+    const provider = VALID_PROVIDERS.includes(providerParam as SmmProvider)
+      ? (providerParam as SmmProvider)
+      : "bulkfollows";
+    const services = await getServices(provider);
+    return NextResponse.json({ services, count: services.length, provider });
   } catch (error) {
     console.error("[smm/services GET] error:", error);
     return NextResponse.json(

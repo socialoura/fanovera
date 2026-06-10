@@ -41,3 +41,13 @@ export function Check({ size = 13, color = "white" }: { size?: number; color?: s
     </svg>
   );
 }
+
+export function Lock({ size = 24, color = "currentColor" }: { size?: number; color?: string }) {
+  const s = { fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" {...s} />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" {...s} />
+    </svg>
+  );
+}

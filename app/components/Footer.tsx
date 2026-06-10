@@ -83,7 +83,7 @@ function FootCol({
       >
         {links.map((l, i) => (
           <li key={i}>
-            <a href={l.h} style={{ fontSize: 14, color: "var(--ink-2)" }}>
+            <a href={l.h} style={{ fontSize: 14, color: "var(--ink-2)", display: "inline-block", padding: "6px 0" }}>
               {l.l}
             </a>
           </li>
