@@ -128,6 +128,7 @@ type SmmOrderItem = {
   cartIndex?: number;
   service?: string;
   platform?: string;
+  provider?: string;
   qty?: number;
   bfServiceId?: number;
   bfOrderId?: number | null;
@@ -690,6 +691,7 @@ function OrderDetail({
               cartIndex: i,
               service: c.service,
               platform: c.platform || order.platform,
+              provider: undefined as string | undefined,
               qty: c.qty || c.quantity,
               status: "pending" as const,
               bfOrderId: null,
