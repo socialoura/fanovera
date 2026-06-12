@@ -15,7 +15,7 @@ export default function RoiPage() {
       <Header />
       <main style={{ padding: "60px 20px", minHeight: "60vh" }}>
         <div className="container">
-          <RoiCalculator ctaHref="/instagram" />
+          <RoiCalculator ctaHref="/instagram-2" />
         </div>
       </main>
       <Footer />

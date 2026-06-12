@@ -766,8 +766,8 @@ export default function Hero({
       ? targetedNetwork
       : null;
   const showUsernameCapture = captureNetwork !== null;
-  // TikTok routes to the new 4-step flow (/tiktok-2); Instagram to /instagram.
-  const captureDestPath = captureNetwork === "tiktok" ? "/tiktok-2" : "/instagram";
+  // TikTok routes to the new 4-step flow (/tiktok-2); Instagram to /instagram-2.
+  const captureDestPath = captureNetwork === "tiktok" ? "/tiktok-2" : "/instagram-2";
   const captureNetworkName = captureNetwork
     ? NETWORKS.find((n) => n.id === captureNetwork)?.name ?? ""
     : "";

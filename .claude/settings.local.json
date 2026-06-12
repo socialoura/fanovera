@@ -196,7 +196,8 @@
       "Bash(base64 -w0 .playwright-mcp/qa-homepage-desktop.png)",
       "Bash(base64 -w0 .playwright-mcp/qa-homepage-mobile.png)",
       "Bash(base64 -w0 .playwright-mcp/qa-tiktok2-step1.png)",
-      "Bash(base64 -w0 .playwright-mcp/qa-tiktok2-step2.png)"
+      "Bash(base64 -w0 .playwright-mcp/qa-tiktok2-step2.png)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1 | Measure-Object -Line; Write-Output \"---FIRST 15---\"; npx tsc --noEmit -p tsconfig.json 2>&1 | Select-Object -First 15)"
     ]
   }
 }

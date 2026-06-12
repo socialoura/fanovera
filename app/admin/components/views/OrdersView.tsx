@@ -760,7 +760,7 @@ function OrderDetail({
                     </span>
                   ) : (
                     <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-                      <span className="mono" style={{ fontSize: 12 }}>BF #{item.bfOrderId || "-"}</span>
+                      <span className="mono" style={{ fontSize: 12 }}>{item.provider === "dripfeedpanel" ? "DF" : "BF"} #{item.bfOrderId || "-"}</span>
                       <button
                         type="button"
                         className="icon-btn"
@@ -1383,7 +1383,7 @@ export default function OrdersView() {
       (data) => {
         const sub = (data?.newSub || {}) as Record<string, unknown>;
         const sid = sub?.bfServiceId ? ` · service #${sub.bfServiceId}` : "";
-        return `Top-up envoyé : ${quantity} unités via BF #${String(sub?.bfOrderId || "?")}${sid}. Commande repassée en processing.`;
+        return `Top-up envoyé : ${quantity} unités via #${String(sub?.bfOrderId || "?")}${sid}. Commande repassée en processing.`;
       },
     );
   };
@@ -1424,7 +1424,7 @@ export default function OrdersView() {
     const ok = await callSmmEndpoint(
       "/api/admin/orders/set-bf-id",
       { orderId, cartIndex: editingBf.cartIndex, bfOrderId, ...(bfServiceId ? { bfServiceId } : {}) },
-      () => `BF #${bfOrderId} associé à la sous-commande #${editingBf.cartIndex}.`,
+      () => `#${bfOrderId} associé à la sous-commande #${editingBf.cartIndex}.`,
     );
     if (ok) setEditingBf(null);
   };

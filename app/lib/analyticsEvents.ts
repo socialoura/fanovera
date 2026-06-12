@@ -58,6 +58,20 @@ export const ANALYTICS_EVENTS = [
   // PostHog super property `tt2_packs_variant` so downstream funnel events
   // (checkout_started → payment_succeeded) carry it for per-arm conversion.
   "tt2_packs_exposed",
+  // instagram-2 funnel events — product page /instagram-2 (mirror of tiktok-2).
+  // Fired once per visit on the /instagram-2 product page. `from_promo` = true
+  // when the visitor was handed off from /promo.
+  "instagram2_page_viewed",
+  // Fired each time the visitor advances to a new step (2 = quantities,
+  // 3 = post selection, 4 = checkout). Step 1 is captured by instagram2_page_viewed.
+  "ig2_step_viewed",
+  // User picks or changes a pack in step 2. `product` = followers|likes|views.
+  "ig2_product_selected",
+  // User removes a product from the cart in step 2.
+  "ig2_product_removed",
+  // User confirms their post selection in step 3 and proceeds to checkout.
+  // `posts_count` = number of posts selected.
+  "ig2_posts_confirmed",
   "pricing_toggle_changed",
   "pricing_cta_clicked",
   "checkout_started",

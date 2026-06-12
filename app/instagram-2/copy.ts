@@ -3,27 +3,27 @@
 import { useI18n } from "../i18n/I18nProvider";
 import { useMarketingMode } from "../marketing/MarketingModeProvider";
 
-// New strings specific to the tiktok-2 flow (username+loading, quantities,
-// video selection). Payment/coupon/legal strings are reused from the existing
-// useTikTokCopy().step3. FR + EN are authored; other locales fall back to EN.
+// New strings specific to the instagram-2 flow (username+loading, quantities,
+// post selection). Payment/coupon/legal strings are reused from the existing
+// useInstagramCopy().step3. FR + EN are authored; other locales fall back to EN.
 //
 // Three tones, matching the per-surface marketing modes (lib/performanceCopy.ts):
-//   whitehat → `base`        : neutral ("Explosez sur TikTok", "De vrais abonnés actifs")
+//   whitehat → `base`        : neutral ("Développez", "De vrais abonnés actifs")
 //   greyhat  → `greyhat` ov. : performance/traction ("campagne", "visibilité")
 //   blackhat → `blackhat` ov.: explicit ("Acheter", "livraison express garantie")
 // Only tone-bearing fields are overridden; functional strings stay shared.
 const base = {
   fr: {
-    stepper: { tiktok: "Votre TikTok", quantities: "Quantités", videos: "Vos vidéos", payment: "Paiement" },
+    stepper: { instagram: "Votre Instagram", quantities: "Quantités", posts: "Vos posts", payment: "Paiement" },
     step1: {
-      badge: "TikTok · Followers, Likes & Vues",
-      titleBefore: "Explosez sur TikTok en",
+      badge: "Instagram · Followers, Likes & Vues",
+      titleBefore: "Développez votre Instagram en",
       titleFocus: "quelques minutes",
       titleAfter: ".",
-      intro1: "Entrez votre pseudo, on récupère votre profil et vos vidéos.",
+      intro1: "Entrez votre pseudo, on récupère votre profil et vos publications.",
       noPassword: "Aucun mot de passe.",
       intro2: "Compte public uniquement.",
-      label: "Votre nom d'utilisateur TikTok",
+      label: "Votre nom d'utilisateur Instagram",
       subTitle: "Envie de booster votre profil ?",
       placeholder: "votrepseudo",
       cta: "Analyser mon profil",
@@ -34,7 +34,7 @@ const base = {
       ribbonOrders: "commandes en cours",
       loadingNote: "Connexion chiffrée · cela prend quelques secondes…",
       publicFound: "Compte public trouvé",
-      stages: ["Connexion sécurisée à TikTok", "Profil récupéré", "Analyse des dernières vidéos", "Profil prêt ✨"],
+      stages: ["Connexion sécurisée à Instagram", "Profil récupéré", "Analyse des dernières publications", "Profil prêt ✨"],
       privateTitle: "Votre compte est privé",
       privateBody: "On ne peut pas récupérer votre profil ni livrer votre commande tant qu'il est privé. Passez-le en public dans Réglages → Confidentialité, puis réessayez.",
       privateRetry: "J'ai rendu mon compte public — réessayer",
@@ -51,31 +51,31 @@ const base = {
       continue: "Continuer",
       remove: "Retirer",
       subFollowers: "De vrais abonnés actifs",
-      subLikes: "Répartis sur vos vidéos",
-      subViews: "Boostez la portée",
+      subLikes: "Répartis sur vos publications",
+      subViews: "Boostez vos Reels",
       moreOptions: (n: number) => `+ ${n} autres paliers`,
       lessOptions: "Réduire",
       add: "Ajouter",
       dragHint: "Glissez pour ajouter",
       none: "Non inclus",
-      needsPostsNote: "· sélection de vidéos à l'étape suivante",
+      needsPostsNote: "· sélection de posts à l'étape suivante",
       statFollowers: "abonnés",
-      statLikes: "likes",
-      statVideos: "vidéos",
+      statFollowing: "abonnements",
+      statPosts: "posts",
     },
     step3: {
-      titleBefore: "Sur quelles",
-      titleFocus: "vidéos",
+      titleBefore: "Sur quels",
+      titleFocus: "posts",
       titleAfter: "?",
-      intro: "Sélectionnez les vidéos qui recevront vos likes et vues. On répartit équitablement.",
-      selected: (n: number) => `${n} vidéo${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""}`,
-      last: "· 12 dernières",
+      intro: "Sélectionnez les publications qui recevront vos likes et vues. On répartit équitablement.",
+      selected: (n: number) => `${n} post${n > 1 ? "s" : ""} sélectionné${n > 1 ? "s" : ""}`,
+      last: "· 12 derniers",
       selectAll: "Tout sélectionner",
       clear: "Effacer",
       distribution: "Répartition",
-      empty: "Sélectionnez au moins une vidéo.",
-      perVideoLikes: (n: number) => `≈ ${n} likes par vidéo`,
-      perVideoViews: (n: number) => `≈ ${n} vues par vidéo`,
+      empty: "Sélectionnez au moins une publication.",
+      perVideoLikes: (n: number) => `≈ ${n} likes par post`,
+      perVideoViews: (n: number) => `≈ ${n} vues par post`,
       followersNote: (n: string) => `${n} followers livrés sur votre profil`,
       goToPayment: "Aller au paiement",
       editQuantities: "← Modifier les quantités",
@@ -84,16 +84,16 @@ const base = {
     },
   },
   en: {
-    stepper: { tiktok: "Your TikTok", quantities: "Quantities", videos: "Your videos", payment: "Payment" },
+    stepper: { instagram: "Your Instagram", quantities: "Quantities", posts: "Your posts", payment: "Payment" },
     step1: {
-      badge: "TikTok · Followers, Likes & Views",
-      titleBefore: "Blow up on TikTok in",
+      badge: "Instagram · Followers, Likes & Views",
+      titleBefore: "Grow your Instagram in",
       titleFocus: "minutes",
       titleAfter: ".",
-      intro1: "Enter your handle, we fetch your profile and your videos.",
+      intro1: "Enter your handle, we fetch your profile and your posts.",
       noPassword: "No password.",
       intro2: "Public accounts only.",
-      label: "Your TikTok username",
+      label: "Your Instagram username",
       subTitle: "Wanna boost your profile?",
       placeholder: "yourhandle",
       cta: "Analyze my profile",
@@ -104,7 +104,7 @@ const base = {
       ribbonOrders: "orders in progress",
       loadingNote: "Encrypted connection · this takes a few seconds…",
       publicFound: "Public account found",
-      stages: ["Secure connection to TikTok", "Profile fetched", "Analyzing latest videos", "Profile ready ✨"],
+      stages: ["Secure connection to Instagram", "Profile fetched", "Analyzing latest posts", "Profile ready ✨"],
       privateTitle: "Your account is private",
       privateBody: "We can't fetch your profile or deliver your order while it's private. Switch it to public in Settings → Privacy, then try again.",
       privateRetry: "I made my account public — retry",
@@ -121,31 +121,31 @@ const base = {
       continue: "Continue",
       remove: "Remove",
       subFollowers: "Real, active followers",
-      subLikes: "Spread across your videos",
-      subViews: "Boost your reach",
+      subLikes: "Spread across your posts",
+      subViews: "Boost your Reels",
       moreOptions: (n: number) => `+ ${n} more tiers`,
       lessOptions: "Show less",
       add: "Add",
       dragHint: "Drag to add",
       none: "Not included",
-      needsPostsNote: "· video selection in the next step",
+      needsPostsNote: "· post selection in the next step",
       statFollowers: "followers",
-      statLikes: "likes",
-      statVideos: "videos",
+      statFollowing: "following",
+      statPosts: "posts",
     },
     step3: {
       titleBefore: "On which",
-      titleFocus: "videos",
+      titleFocus: "posts",
       titleAfter: "?",
-      intro: "Select the videos that will receive your likes and views. We spread them evenly.",
-      selected: (n: number) => `${n} video${n > 1 ? "s" : ""} selected`,
+      intro: "Select the posts that will receive your likes and views. We spread them evenly.",
+      selected: (n: number) => `${n} post${n > 1 ? "s" : ""} selected`,
       last: "· last 12",
       selectAll: "Select all",
       clear: "Clear",
       distribution: "Distribution",
-      empty: "Select at least one video.",
-      perVideoLikes: (n: number) => `≈ ${n} likes per video`,
-      perVideoViews: (n: number) => `≈ ${n} views per video`,
+      empty: "Select at least one post.",
+      perVideoLikes: (n: number) => `≈ ${n} likes per post`,
+      perVideoViews: (n: number) => `≈ ${n} views per post`,
       followersNote: (n: string) => `${n} followers delivered to your profile`,
       goToPayment: "Go to payment",
       editQuantities: "← Edit quantities",
@@ -155,19 +155,19 @@ const base = {
   },
 };
 
-export type T2Copy = (typeof base)["en"];
+export type I2Copy = (typeof base)["en"];
 
 type StepKey = "stepper" | "step1" | "step2" | "step3";
-type T2Overrides = {
-  [K in StepKey]?: Partial<T2Copy[K]>;
+type I2Overrides = {
+  [K in StepKey]?: Partial<I2Copy[K]>;
 };
 
 // ── greyhat: performance / traction tone, no explicit "buy" ──
-const greyhat: Record<"fr" | "en", T2Overrides> = {
+const greyhat: Record<"fr" | "en", I2Overrides> = {
   fr: {
     step1: {
-      badge: "TikTok · Boost de visibilité",
-      titleBefore: "Boostez votre présence TikTok en",
+      badge: "Instagram · Boost de visibilité",
+      titleBefore: "Boostez votre présence Instagram en",
       subTitle: "Envie de plus de visibilité ?",
       chips: ["🔒 Aucun mot de passe", "⚡ Livraison progressive", "🛡 Garantie à vie", "🇪🇺 Conforme RGPD"],
     },
@@ -176,16 +176,16 @@ const greyhat: Record<"fr" | "en", T2Overrides> = {
       intro: "Followers, likes, vues : combinez ce qu'il faut pour gagner en visibilité. Une seule commande.",
       subFollowers: "Abonnés réels et actifs",
       subLikes: "Répartis pour un engagement crédible",
-      subViews: "De la traction sur vos vidéos",
+      subViews: "De la traction sur vos Reels",
     },
     step3: {
-      intro: "Choisissez les vidéos à booster. On répartit vos likes et vues équitablement.",
+      intro: "Choisissez les publications à booster. On répartit vos likes et vues équitablement.",
     },
   },
   en: {
     step1: {
-      badge: "TikTok · Visibility boost",
-      titleBefore: "Boost your TikTok presence in",
+      badge: "Instagram · Visibility boost",
+      titleBefore: "Boost your Instagram presence in",
       subTitle: "Want more visibility?",
       chips: ["🔒 No password", "⚡ Progressive delivery", "🛡 Lifetime guarantee", "🇪🇺 GDPR compliant"],
     },
@@ -194,20 +194,20 @@ const greyhat: Record<"fr" | "en", T2Overrides> = {
       intro: "Followers, likes, views: combine what you need to grow your reach. One single order.",
       subFollowers: "Real, active followers",
       subLikes: "Spread for credible engagement",
-      subViews: "Traction on your videos",
+      subViews: "Traction on your Reels",
     },
     step3: {
-      intro: "Choose the videos to boost. We spread your likes and views evenly.",
+      intro: "Choose the posts to boost. We spread your likes and views evenly.",
     },
   },
 };
 
 // ── blackhat: explicit "buy", express delivery, guaranteed, 100% real ──
-const blackhat: Record<"fr" | "en", T2Overrides> = {
+const blackhat: Record<"fr" | "en", I2Overrides> = {
   fr: {
     step1: {
-      badge: "TikTok · Followers, Likes & Vues réels",
-      titleBefore: "Achetez des followers TikTok —",
+      badge: "Instagram · Followers, Likes & Vues réels",
+      titleBefore: "Achetez des followers Instagram —",
       titleFocus: "livraison express",
       titleAfter: " garantie.",
       subTitle: "Prêt à booster votre compte ?",
@@ -217,18 +217,18 @@ const blackhat: Record<"fr" | "en", T2Overrides> = {
       titleFocus: "commande",
       intro: "Choisissez vos quantités : followers, likes, vues. Livraison express après paiement.",
       subFollowers: "Abonnés 100% réels, livrés en quelques heures",
-      subLikes: "Likes réels répartis sur vos vidéos",
-      subViews: "Vues réelles sur vos vidéos",
+      subLikes: "Likes réels répartis sur vos posts",
+      subViews: "Vues réelles sur vos Reels",
     },
     step3: {
-      intro: "Choisissez les vidéos à booster. Vos likes et vues réels sont répartis et livrés en quelques heures.",
+      intro: "Choisissez les posts à booster. Vos likes et vues réels sont répartis et livrés en quelques heures.",
       goToPayment: "Payer et recevoir",
     },
   },
   en: {
     step1: {
-      badge: "TikTok · Real followers, likes & views",
-      titleBefore: "Buy TikTok followers —",
+      badge: "Instagram · Real followers, likes & views",
+      titleBefore: "Buy Instagram followers —",
       titleFocus: "express delivery",
       titleAfter: " guaranteed.",
       subTitle: "Ready to boost your account?",
@@ -238,17 +238,19 @@ const blackhat: Record<"fr" | "en", T2Overrides> = {
       titleFocus: "order",
       intro: "Pick your quantities: followers, likes, views. Express delivery after payment.",
       subFollowers: "100% real followers, delivered in hours",
-      subLikes: "Real likes spread across your videos",
-      subViews: "Real views on your videos",
+      subLikes: "Real likes spread across your posts",
+      subViews: "Real views on your Reels",
     },
     step3: {
-      intro: "Choose the videos to boost. Your real likes and views are spread and delivered in hours.",
+      intro: "Choose the posts to boost. Your real likes and views are spread and delivered in hours.",
       goToPayment: "Pay and receive",
     },
   },
 };
 
-function mergeCopy(b: T2Copy, ov: T2Overrides): T2Copy {
+// Shallow-merge per step (each step is a flat map of string | string[] | fn,
+// so a per-step spread is correct — no deep recursion needed).
+function mergeCopy(b: I2Copy, ov: I2Overrides): I2Copy {
   return {
     stepper: { ...b.stepper, ...ov.stepper },
     step1: { ...b.step1, ...ov.step1 },
@@ -257,7 +259,7 @@ function mergeCopy(b: T2Copy, ov: T2Overrides): T2Copy {
   };
 }
 
-export function useT2Copy(): T2Copy {
+export function useI2Copy(): I2Copy {
   const { locale } = useI18n();
   const { surfaceMode } = useMarketingMode();
   const loc = locale === "fr" ? "fr" : "en";
