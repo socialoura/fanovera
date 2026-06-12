@@ -26,7 +26,7 @@ function maybeAssignPromoFlow(req: NextRequest, res: NextResponse, effectivePath
 // experiment is off) so flipping the admin toggle to "ab" doesn't re-randomise
 // existing visitors. Whether it's honoured is decided by the admin mode (DB).
 function maybeAssignCheckoutFlow(req: NextRequest, res: NextResponse, effectivePath: string) {
-  if (effectivePath !== "/instagram") return;
+  if (effectivePath !== "/instagram-2") return;
   if (req.cookies.get(CHECKOUT_FLOW_COOKIE)) return;
   const variant = Math.random() < 0.5 ? "merged" : "control";
   res.cookies.set(CHECKOUT_FLOW_COOKIE, variant, {
@@ -52,6 +52,14 @@ export function middleware(req: NextRequest) {
   const { locale, rest } = localeFromPath(pathname);
   const queryLocale = normalizeLocale(req.nextUrl.searchParams.get("lang"));
   const requestHeaders = new Headers(req.headers);
+
+  // Permanent redirect /instagram → /instagram-2 (preserving query + locale prefix).
+  const effectiveRest = locale ? rest : pathname;
+  if (effectiveRest === "/instagram") {
+    const url = req.nextUrl.clone();
+    url.pathname = locale ? `/${locale}/instagram-2` : "/instagram-2";
+    return NextResponse.redirect(url, 301);
+  }
 
   if (locale) {
     requestHeaders.set("x-fanovera-locale", locale);

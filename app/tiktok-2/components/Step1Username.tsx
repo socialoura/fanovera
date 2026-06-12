@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NetIcon from "../../components/NetIcon";
 import { trackEvent } from "../../lib/analytics";
 import TtSprinkle from "../../tiktok/components/TtSprinkle";
 import Stepper from "./Stepper";
-import { ArrowRight, Check, Lock } from "./icons";
+import { ArrowRight, Lock } from "./icons";
 import { useT2Copy } from "../copy";
+import { useI18n } from "../../i18n/I18nProvider";
 import type { TtProfile, TtPost } from "../types";
 
 const USERNAME_RE = /^[a-zA-Z0-9._]{2,24}$/;
@@ -18,7 +19,7 @@ const USERNAME_RE = /^[a-zA-Z0-9._]{2,24}$/;
 // never dead-ends on a transient hiccup.
 type ProfileResult = { profile: TtProfile; isPrivate: boolean };
 
-async function fetchProfile(username: string): Promise<ProfileResult> {
+async function fetchProfile(username: string, nocache = false): Promise<ProfileResult> {
   const fallback: TtProfile = {
     username,
     fullName: username,
@@ -31,7 +32,8 @@ async function fetchProfile(username: string): Promise<ProfileResult> {
     verified: false,
   };
   try {
-    const res = await fetch(`/api/tiktok/profile?username=${encodeURIComponent(username)}`);
+    const qs = `username=${encodeURIComponent(username)}${nocache ? "&nocache=1" : ""}`;
+    const res = await fetch(`/api/tiktok/profile?${qs}`);
     if (res.ok) return { profile: (await res.json()) as TtProfile, isPrivate: false };
     if (res.status === 403) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -48,19 +50,19 @@ type Props = {
   username: string;
   setUsername: (u: string) => void;
   onLoaded: (profile: TtProfile, posts: TtPost[]) => void;
-  // When true (e.g. /promo handoff with ?u=), skip the input screen and run the
-  // loading immediately so the visitor lands on step 2 (profile + packs).
   autoStart?: boolean;
-  // "from £X" anchor for the CTA (cheapest live TikTok price), matches the Hero.
   fromPriceLabel?: string | null;
 };
 
-export default function Step1Username({ username, setUsername, onLoaded, autoStart = false, fromPriceLabel = null }: Props) {
+export default function Step1Username({ username, setUsername, onLoaded, autoStart = false }: Props) {
   const c = useT2Copy().step1;
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
   const [phase, setPhase] = useState<"input" | "loading" | "private">("input");
   const [stage, setStage] = useState(0);
   const clean = username.replace(/^@/, "").trim();
   const valid = USERNAME_RE.test(clean);
+  const retryAfterPrivate = useRef(false);
 
   // Auto-advance on mount when handed a valid @ from /promo.
   useEffect(() => {
@@ -74,6 +76,7 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
   const start = () => {
     if (!valid) return;
     trackEvent("cta_clicked", { product_area: "tiktok", feature_name: "tt2_analyze", platform: "tiktok" });
+    if (phase === "private") retryAfterPrivate.current = true;
     setStage(0);
     setPhase("loading");
   };
@@ -81,25 +84,47 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
   useEffect(() => {
     if (phase !== "loading") return;
     let cancelled = false;
+    const isRetry = retryAfterPrivate.current;
+    retryAfterPrivate.current = false;
 
     setStage(0);
-    // Fetch profile first — advance as soon as it's ready.
-    // Posts load in the background and arrive while the user picks packs.
-    fetchProfile(clean).then(({ profile, isPrivate }) => {
+
+    async function run() {
+      let { profile, isPrivate } = await fetchProfile(clean, isRetry);
       if (cancelled) return;
-      setStage(3);
+
       if (isPrivate) {
+        setStage(3);
         trackEvent("username_private", { product_area: "tiktok", platform: "tiktok" });
         setPhase("private");
         return;
       }
+
+      // On a retry after private, if 0 followers the upstream hasn't propagated
+      // the public switch yet — wait 3s and retry once.
+      if (isRetry && profile.followersCount === 0) {
+        await new Promise((r) => setTimeout(r, 3000));
+        if (cancelled) return;
+        const second = await fetchProfile(clean, true);
+        if (cancelled) return;
+        if (second.isPrivate) {
+          setStage(3);
+          setPhase("private");
+          return;
+        }
+        profile = second.profile;
+      }
+
+      setStage(3);
       trackEvent("username_validated", {
         product_area: "tiktok",
         platform: "tiktok",
         followers_count: profile.followersCount || 0,
       });
       onLoaded(profile, []);
-    });
+    }
+
+    run();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -112,78 +137,84 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={1} needsPosts={false} />
 
-        <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 14px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "var(--paper-2)", border: "1px solid var(--line)", borderRadius: 999, marginBottom: 20, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            <NetIcon kind="tiktok" color="var(--tt-ink)" size={14} /> {c.badge}
-          </div>
-          <h1 className="display" style={{ margin: "0 0 14px" }}>
-            {c.titleBefore} <span className="squiggle tt">{c.titleFocus}</span>{c.titleAfter}
-          </h1>
-          <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 17, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            {c.intro1} <b style={{ color: "var(--ink)" }}>{c.noPassword}</b> {c.intro2}
-          </p>
-        </div>
-
-        {/* Live ribbon */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 18, flexWrap: "wrap", margin: "24px 0 34px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "white", border: "1px solid var(--line)", borderRadius: 999, fontSize: 13, color: "var(--ink-2)" }}>
-            <span className="tt2-pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)" }} />
-            <b style={{ color: "var(--ink)" }}>1 482</b> {c.ribbonOrders}
-          </div>
-        </div>
-
-        {/* Card: input OR loading */}
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        {/* Card: input OR loading OR private */}
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
           {phase === "input" ? (
-            // Same username field as /promo (promo-ig-capture card), TikTok-
-            // themed via .cap-tt. Keeps brand continuity for visitors who land
-            // on /tiktok-2 directly rather than through the /promo handoff.
-            <div className="promo-ig-capture cap-tt" style={{ maxWidth: "none" }}>
-              <div className="promo-ig-capture-card">
-                <div className="promo-ig-capture-inner">
-                  <div className="promo-ig-capture-glow" />
-                  <div className="promo-ig-capture-head">
-                    <span className="promo-ig-capture-logo">
-                      <NetIcon kind="tiktok" color="white" size={24} />
-                    </span>
-                    <div>
-                      <div className="promo-ig-capture-eyebrow">TikTok</div>
-                      <div className="promo-ig-capture-title">Followers</div>
-                    </div>
-                  </div>
+            <div className="promo-cap2 cap-tt">
+              <div className="promo-cap2-head">
+                <span className="promo-cap2-icon">
+                  <NetIcon kind="tiktok" color="white" size={32} />
+                </span>
+                <h1 className="promo-cap2-title">
+                  {isFr ? "Boostez votre " : "Boost your "}
+                  <span className="promo-cap2-title-net">TikTok</span>
+                </h1>
+                <p className="promo-cap2-sub">
+                  {isFr
+                    ? "Entrez votre nom d'utilisateur TikTok public pour commencer. Aucun mot de passe requis."
+                    : "Enter your public TikTok username to start. No password required."}
+                </p>
+              </div>
 
-                  <div className="promo-ig-capture-sub">{c.subTitle}</div>
+              <div className="promo-cap2-note">
+                {isFr
+                  ? "* Assurez-vous que votre compte est en public."
+                  : "* Make sure your account is public."}
+              </div>
 
-                  <label className="promo-ig-capture-field">
-                    <span className="promo-ig-capture-at">@</span>
-                    <input
-                      autoFocus
-                      spellCheck={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      enterKeyHint="go"
-                      placeholder={c.placeholder}
-                      value={clean}
-                      onChange={(e) => setUsername(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") start(); }}
-                    />
-                    {valid && (
-                      <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--green)", display: "grid", placeItems: "center", flexShrink: 0, marginRight: 6 }}>
-                        <Check />
-                      </span>
-                    )}
-                  </label>
-
-                  <button className="promo-ig-capture-btn" onClick={start} disabled={!valid} style={!valid ? { opacity: 0.55, cursor: "not-allowed" } : undefined}>
-                    {c.continueCta}
-                    {fromPriceLabel && (
-                      <span className="promo-ig-capture-price">{c.fromPrefix}{fromPriceLabel}</span>
-                    )}
-                    <span className="promo-ig-capture-arrow">
-                      <ArrowRight size={16} />
-                    </span>
-                  </button>
+              <div className="promo-cap2-form">
+                <div className="promo-cap2-field">
+                  <span className="promo-cap2-at">@</span>
+                  <input
+                    autoFocus
+                    className="promo-cap2-input"
+                    spellCheck={false}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    autoComplete="off"
+                    enterKeyHint="go"
+                    placeholder={c.placeholder}
+                    value={clean}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") start(); }}
+                  />
                 </div>
+                <button type="button" className="promo-cap2-btn" onClick={start} disabled={!valid} style={!valid ? { opacity: 0.5, cursor: "not-allowed" } : undefined}>
+                  <span>{isFr ? "Continuer" : "Continue"}</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="promo-cap2-badges">
+                <span className="promo-cap2-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {isFr ? "100% Sécurisé" : "100% Secure"}
+                </span>
+                <span className="promo-cap2-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {isFr ? "Sans mot de passe" : "No password"}
+                </span>
+              </div>
+
+              <div className="promo-cap2-trust" aria-label="Trustpilot 4.8 / 5">
+                <span className="promo-cap2-trust-score">4.8</span>
+                <span className="promo-cap2-trust-sep" />
+                <span className="promo-cap2-stars">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <svg key={i} width="18" height="18" viewBox="0 0 24 24" fill="white" aria-hidden="true" style={{ background: "#00B67A", borderRadius: 3 }}>
+                      <path d="M12 17.27l-5.18 3.05 1.4-5.95L3.5 9.24l6.06-.52L12 3l2.44 5.72 6.06.52-4.72 5.13 1.4 5.95z" />
+                    </svg>
+                  ))}
+                </span>
               </div>
             </div>
           ) : phase === "private" ? (

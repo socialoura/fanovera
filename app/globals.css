@@ -341,7 +341,7 @@ input { font: inherit; color: inherit; }
   color: var(--ig-2);
 }
 .promo-ig-capture-title {
-  font-size: 26px; font-weight: 800;
+  font-size: 30px; font-weight: 800;
   letter-spacing: -0.02em; color: var(--ink);
   margin-top: 2px; line-height: 1.1;
 }
@@ -427,6 +427,212 @@ input { font: inherit; color: inherit; }
 }
 .promo-ig-capture.cap-tt .promo-ig-capture-btn:hover {
   box-shadow: 3px 3px 0 var(--tt-red), -3px -3px 0 var(--tt-cyan), 0 16px 32px -10px rgba(1, 1, 1, 0.5);
+}
+
+/* /promo username-first capture — "V3 hero", adapted to the site's light
+   palette (paper card on the light page): a gradient network icon, a big
+   uppercase title, a subtitle + public-account note, an inline @username form,
+   reassurance badges and a Trustpilot score. Network accent via .cap-tt; the IG
+   gradient is the default. Only surfaces/text were re-themed — the structure
+   matches the original dark mock. */
+.promo-cap2 {
+  position: relative;
+  display: block;
+  max-width: 640px;
+  margin: 0 auto 8px;
+  padding: 40px 28px;
+  border-radius: 28px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 34px 70px -40px rgba(29, 29, 44, 0.25);
+  color: var(--ink);
+  text-align: center;
+  overflow: hidden;
+}
+/* Soft brand-tinted glow at the top of the panel — adds depth without breaking
+   the light theme. Swapped to TikTok cyan via .cap-tt. */
+.promo-cap2::before {
+  content: "";
+  position: absolute; top: -130px; left: 50%;
+  width: 380px; height: 260px; transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 41, 118, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.promo-cap2.cap-tt::before {
+  background: radial-gradient(circle, rgba(37, 244, 238, 0.16), transparent 70%);
+}
+.promo-cap2 > * { position: relative; }
+.promo-cap2-head { margin-bottom: 26px; }
+.promo-cap2-icon {
+  display: inline-grid; place-items: center;
+  width: 66px; height: 66px;
+  border-radius: 19px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 50%, var(--ig-3));
+  box-shadow: 0 14px 30px -8px rgba(214, 41, 118, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  margin-bottom: 22px;
+}
+.promo-cap2-title {
+  font-size: clamp(26px, 5.2vw, 44px);
+  font-weight: 900; letter-spacing: -0.02em; line-height: 1.05;
+  text-transform: uppercase;
+  margin: 0 0 14px; color: var(--ink);
+}
+.promo-cap2-title-net {
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 55%, var(--ig-3));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.promo-cap2.cap-tt .promo-cap2-title-net {
+  background: linear-gradient(120deg, var(--tt-cyan), var(--tt-red) 70%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.promo-cap2-sub {
+  font-size: clamp(14px, 2.2vw, 18px);
+  color: var(--ink-2);
+  max-width: 460px; margin: 0 auto; line-height: 1.55;
+}
+.promo-cap2-note {
+  font-size: 12px; font-style: italic;
+  color: var(--ink-3);
+  text-align: left; margin: 0 0 10px 6px;
+}
+.promo-cap2-form {
+  display: flex; gap: 10px;
+  background: #fff;
+  border: 1.5px solid var(--frame-2);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 8px 22px -16px rgba(29, 29, 44, 0.35);
+  transition: border-color .2s, box-shadow .2s;
+}
+.promo-cap2-form:focus-within {
+  border-color: var(--ig-2);
+  box-shadow: 0 0 0 3px rgba(214, 41, 118, 0.12);
+}
+.promo-cap2.cap-tt .promo-cap2-form:focus-within {
+  border-color: var(--tt-red);
+  box-shadow: 0 0 0 3px rgba(254, 44, 85, 0.14);
+}
+.promo-cap2-field { flex: 1; position: relative; display: flex; align-items: center; }
+.promo-cap2-at {
+  position: absolute; left: 16px;
+  font-size: 18px; font-weight: 500; color: var(--ink-3);
+  pointer-events: none;
+}
+.promo-cap2-input {
+  width: 100%; border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 16px; color: var(--ink);
+  padding: 14px 16px 14px 38px;
+}
+.promo-cap2-input::placeholder { color: var(--ink-3); }
+.promo-cap2-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 14px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 55%, var(--ig-3));
+  color: #fff; font: inherit; font-size: 15px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  white-space: nowrap; cursor: pointer;
+  box-shadow: 0 12px 26px -10px rgba(214, 41, 118, 0.6);
+  transition: opacity .2s, transform .2s;
+}
+.promo-cap2-btn:hover { opacity: 0.94; transform: translateY(-1px); }
+.promo-cap2-btn svg { transition: transform .2s; }
+.promo-cap2-btn:hover svg { transform: scale(1.12); }
+.promo-cap2-badges {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 24px; margin-top: 26px;
+  font-size: 13px; color: var(--ink-2);
+}
+.promo-cap2-badge { display: inline-flex; align-items: center; gap: 6px; }
+.promo-cap2-badge svg { color: var(--ig-2); flex-shrink: 0; }
+.promo-cap2-trust {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 18px; padding: 8px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.promo-cap2-trust-score { font-size: 14px; font-weight: 900; color: var(--ink); }
+.promo-cap2-trust-sep { width: 1px; height: 14px; background: var(--line); }
+.promo-cap2-stars { display: inline-flex; gap: 2px; }
+
+/* Loading state shown on /promo while the profile is prefetched before handing
+   off to the product page (so the visitor lands straight on the profile). A
+   brand-gradient ring rotates around the network glyph — on theme with the
+   card's icon, swapped to TikTok colours via .cap-tt. */
+.promo-cap2-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 22px; padding: 56px 0 50px;
+}
+.promo-cap2-loader {
+  position: relative;
+  width: 84px; height: 84px;
+  display: grid; place-items: center;
+}
+.promo-cap2-loader-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 8%, var(--ig-1), var(--ig-2) 45%, var(--ig-3) 70%, transparent 92%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  animation: promo-cap2-spin .95s linear infinite;
+}
+.promo-cap2-loader-core {
+  width: 58px; height: 58px;
+  border-radius: 17px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--ig-1), var(--ig-2) 50%, var(--ig-3));
+  box-shadow: 0 10px 22px -8px rgba(214, 41, 118, 0.5);
+  animation: promo-cap2-pulse 1.6s ease-in-out infinite;
+}
+.promo-cap2.cap-tt .promo-cap2-loader-ring {
+  background: conic-gradient(from 0deg, transparent 8%, var(--tt-cyan), var(--tt-red) 60%, transparent 92%);
+}
+.promo-cap2.cap-tt .promo-cap2-loader-core {
+  background: linear-gradient(135deg, var(--tt-cyan), var(--tt-red));
+  box-shadow: 0 10px 22px -8px rgba(254, 44, 85, 0.5);
+}
+.promo-cap2-loading-text {
+  font-size: 16px; color: var(--ink-2);
+  display: inline-flex; align-items: baseline; gap: 2px;
+}
+.promo-cap2-loading-text b { color: var(--ink); font-weight: 700; }
+.promo-cap2-dots { display: inline-flex; gap: 3px; margin-left: 4px; }
+.promo-cap2-dots i {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--ink-3);
+  animation: promo-cap2-dot 1.2s ease-in-out infinite;
+}
+.promo-cap2-dots i:nth-child(2) { animation-delay: .2s; }
+.promo-cap2-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes promo-cap2-spin { to { transform: rotate(360deg); } }
+@keyframes promo-cap2-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes promo-cap2-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+/* TikTok accent — cyan→red on the icon + CTA, cyan on the reassurance ticks. */
+.promo-cap2.cap-tt .promo-cap2-icon {
+  background: linear-gradient(135deg, var(--tt-cyan), var(--tt-red));
+  box-shadow: 0 12px 26px -8px rgba(254, 44, 85, 0.5);
+}
+.promo-cap2.cap-tt .promo-cap2-btn {
+  background: linear-gradient(135deg, var(--tt-cyan), var(--tt-red));
+  box-shadow: 0 12px 26px -10px rgba(254, 44, 85, 0.55);
+}
+.promo-cap2.cap-tt .promo-cap2-badge svg { color: var(--tt-cyan); }
+
+/* Mobile: stack the form (input over button) and tighten the panel padding. */
+@media (max-width: 560px) {
+  .promo-cap2 { padding: 30px 16px; }
+  .promo-cap2-form { flex-direction: column; }
+  .promo-cap2-btn { padding: 14px; }
 }
 
 /* btn-tt — TikTok signature button (black with cyan + red glow) */

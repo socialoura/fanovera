@@ -75,7 +75,8 @@ export default function Step2Quantities({ profile, username, sel, setSel, needsP
         <div className="checkout-grid ig2-two-col" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 24, maxWidth: 1100, margin: "0 auto", alignItems: "start" }}>
           {/* LEFT: profile + selectors */}
           <div>
-            {/* Profile card */}
+            {/* Profile card — hidden for private accounts (no real stats to show) */}
+            {(profile?.followersCount || profile?.avatarUrl) ? (
             <div className="ig2-profile-card" style={{ background: "white", border: "1px solid var(--line)", borderRadius: 20, padding: "20px 22px", marginBottom: 18, display: "flex", alignItems: "center", gap: 18 }}>
               <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, var(--ig-1), var(--ig-2) 50%, var(--ig-4))", padding: 3, flexShrink: 0 }}>
                 <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 26, color: "var(--ink)", overflow: "hidden" }}>
@@ -108,6 +109,7 @@ export default function Step2Quantities({ profile, username, sel, setSel, needsP
                 {c.change}
               </button>
             </div>
+            ) : null}
 
             {/* Product selectors */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

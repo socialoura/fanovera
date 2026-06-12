@@ -5,8 +5,9 @@ import NetIcon from "../../components/NetIcon";
 import { trackEvent } from "../../lib/analytics";
 import IgSprinkle from "../../instagram/components/IgSprinkle";
 import Stepper from "./Stepper";
-import { ArrowRight, Check, Lock } from "./icons";
+import { ArrowRight } from "./icons";
 import { useI2Copy } from "../copy";
+import { useI18n } from "../../i18n/I18nProvider";
 import type { IgProfile, IgPost } from "../types";
 
 const USERNAME_RE = /^[a-zA-Z0-9._]{2,30}$/;
@@ -47,16 +48,15 @@ type Props = {
   username: string;
   setUsername: (u: string) => void;
   onLoaded: (profile: IgProfile, posts: IgPost[]) => void;
-  // When true (e.g. /promo handoff with ?u=), skip the input screen and run the
-  // loading immediately so the visitor lands on step 2 (profile + packs).
   autoStart?: boolean;
-  // "from £X" anchor for the CTA (cheapest live Instagram price), matches the Hero.
   fromPriceLabel?: string | null;
 };
 
-export default function Step1Username({ username, setUsername, onLoaded, autoStart = false, fromPriceLabel = null }: Props) {
+export default function Step1Username({ username, setUsername, onLoaded, autoStart = false }: Props) {
   const c = useI2Copy().step1;
-  const [phase, setPhase] = useState<"input" | "loading" | "private">("input");
+  const { locale } = useI18n();
+  const isFr = locale === "fr";
+  const [phase, setPhase] = useState<"input" | "loading">("input");
   const [stage, setStage] = useState(0);
   const clean = username.replace(/^@/, "").trim();
   const valid = USERNAME_RE.test(clean);
@@ -82,23 +82,28 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
     let cancelled = false;
 
     setStage(0);
-    // Fetch profile first — advance as soon as it's ready.
-    // Posts load in the background and arrive while the user picks packs.
-    fetchProfile(clean).then(({ profile, isPrivate }) => {
+
+    async function run() {
+      const { profile, isPrivate } = await fetchProfile(clean);
       if (cancelled) return;
-      setStage(3);
+
+      // Private accounts can still order — we just proceed with a minimal
+      // profile (no bio/avatar/stats). Step 2 shows only the follower slider.
       if (isPrivate) {
         trackEvent("username_private", { product_area: "instagram", platform: "instagram" });
-        setPhase("private");
-        return;
+      } else {
+        trackEvent("username_validated", {
+          product_area: "instagram",
+          platform: "instagram",
+          followers_count: profile.followersCount || 0,
+        });
       }
-      trackEvent("username_validated", {
-        product_area: "instagram",
-        platform: "instagram",
-        followers_count: profile.followersCount || 0,
-      });
+
+      setStage(3);
       onLoaded(profile, []);
-    });
+    }
+
+    run();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -111,102 +116,85 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={1} needsPosts={false} />
 
-        <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 14px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "var(--paper-2)", border: "1px solid var(--line)", borderRadius: 999, marginBottom: 20, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            <NetIcon kind="instagram" color="var(--ig-2)" size={14} /> {c.badge}
-          </div>
-          <h1 className="display" style={{ margin: "0 0 14px" }}>
-            {c.titleBefore} <span className="squiggle ig">{c.titleFocus}</span>{c.titleAfter}
-          </h1>
-          <p style={{ maxWidth: 540, margin: "0 auto", fontSize: 17, color: "var(--ink-2)", lineHeight: 1.55 }}>
-            {c.intro1} <b style={{ color: "var(--ink)" }}>{c.noPassword}</b> {c.intro2}
-          </p>
-        </div>
-
-        {/* Live ribbon */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 18, flexWrap: "wrap", margin: "24px 0 34px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "white", border: "1px solid var(--line)", borderRadius: 999, fontSize: 13, color: "var(--ink-2)" }}>
-            <span className="ig2-pulse-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)" }} />
-            <b style={{ color: "var(--ink)" }}>1 482</b> {c.ribbonOrders}
-          </div>
-        </div>
-
-        {/* Card: input OR loading */}
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        {/* Card: input OR loading OR private */}
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
           {phase === "input" ? (
-            // Same username field as /promo (promo-ig-capture card), already
-            // Instagram-themed. Keeps brand continuity for visitors who land on
-            // /instagram-2 directly rather than through the /promo handoff.
-            <div className="promo-ig-capture" style={{ maxWidth: "none" }}>
-              <div className="promo-ig-capture-card">
-                <div className="promo-ig-capture-inner">
-                  <div className="promo-ig-capture-glow" />
-                  <div className="promo-ig-capture-head">
-                    <span className="promo-ig-capture-logo">
-                      <NetIcon kind="instagram" color="white" size={24} />
-                    </span>
-                    <div>
-                      <div className="promo-ig-capture-eyebrow">Instagram</div>
-                      <div className="promo-ig-capture-title">Followers</div>
-                    </div>
-                  </div>
-
-                  <div className="promo-ig-capture-sub">{c.subTitle}</div>
-
-                  <label className="promo-ig-capture-field">
-                    <span className="promo-ig-capture-at">@</span>
-                    <input
-                      autoFocus
-                      spellCheck={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      enterKeyHint="go"
-                      placeholder={c.placeholder}
-                      value={clean}
-                      onChange={(e) => setUsername(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") start(); }}
-                    />
-                    {valid && (
-                      <span style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--green)", display: "grid", placeItems: "center", flexShrink: 0, marginRight: 6 }}>
-                        <Check />
-                      </span>
-                    )}
-                  </label>
-
-                  <button className="promo-ig-capture-btn" onClick={start} disabled={!valid} style={!valid ? { opacity: 0.55, cursor: "not-allowed" } : undefined}>
-                    {c.continueCta}
-                    {fromPriceLabel && (
-                      <span className="promo-ig-capture-price">{c.fromPrefix}{fromPriceLabel}</span>
-                    )}
-                    <span className="promo-ig-capture-arrow">
-                      <ArrowRight size={16} />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : phase === "private" ? (
-            <div className="ig2-scan-card" style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  width: 64, height: 64, borderRadius: "50%", margin: "0 auto 18px",
-                  display: "grid", placeItems: "center",
-                  background: "rgba(214,41,118,0.10)", color: "var(--ig-2)",
-                }}
-              >
-                <Lock size={28} color="var(--ig-2)" />
-              </div>
-              <div className="ig2-scan-handle">@{clean}</div>
-              <h3 style={{ margin: "10px 0 8px", fontSize: 20, fontWeight: 800 }}>{c.privateTitle}</h3>
-              <p style={{ maxWidth: 380, margin: "0 auto 22px", fontSize: 15, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                {c.privateBody}
-              </p>
-              <button className="promo-ig-capture-btn" onClick={start}>
-                {c.privateRetry}
-                <span className="promo-ig-capture-arrow">
-                  <ArrowRight size={16} />
+            <div className="promo-cap2">
+              <div className="promo-cap2-head">
+                <span className="promo-cap2-icon">
+                  <NetIcon kind="instagram" color="white" size={32} />
                 </span>
-              </button>
+                <h1 className="promo-cap2-title">
+                  {isFr ? "Boostez votre " : "Boost your "}
+                  <span className="promo-cap2-title-net">Instagram</span>
+                </h1>
+                <p className="promo-cap2-sub">
+                  {isFr
+                    ? "Entrez votre nom d'utilisateur Instagram public pour commencer. Aucun mot de passe requis."
+                    : "Enter your public Instagram username to start. No password required."}
+                </p>
+              </div>
+
+              <div className="promo-cap2-note">
+                {isFr
+                  ? "* Assurez-vous que votre compte est en public."
+                  : "* Make sure your account is public."}
+              </div>
+
+              <div className="promo-cap2-form">
+                <div className="promo-cap2-field">
+                  <span className="promo-cap2-at">@</span>
+                  <input
+                    autoFocus
+                    className="promo-cap2-input"
+                    spellCheck={false}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    autoComplete="off"
+                    enterKeyHint="go"
+                    placeholder={c.placeholder}
+                    value={clean}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") start(); }}
+                  />
+                </div>
+                <button type="button" className="promo-cap2-btn" onClick={start} disabled={!valid} style={!valid ? { opacity: 0.5, cursor: "not-allowed" } : undefined}>
+                  <span>{isFr ? "Continuer" : "Continue"}</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="promo-cap2-badges">
+                <span className="promo-cap2-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {isFr ? "100% Sécurisé" : "100% Secure"}
+                </span>
+                <span className="promo-cap2-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  {isFr ? "Sans mot de passe" : "No password"}
+                </span>
+              </div>
+
+              <div className="promo-cap2-trust" aria-label="Trustpilot 4.8 / 5">
+                <span className="promo-cap2-trust-score">4.8</span>
+                <span className="promo-cap2-trust-sep" />
+                <span className="promo-cap2-stars">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <svg key={i} width="18" height="18" viewBox="0 0 24 24" fill="white" aria-hidden="true" style={{ background: "#00B67A", borderRadius: 3 }}>
+                      <path d="M12 17.27l-5.18 3.05 1.4-5.95L3.5 9.24l6.06-.52L12 3l2.44 5.72 6.06.52-4.72 5.13 1.4 5.95z" />
+                    </svg>
+                  ))}
+                </span>
+              </div>
             </div>
           ) : (
             <div className="ig2-scan-card">

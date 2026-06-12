@@ -15,6 +15,7 @@ import { getPublicCopy } from "./publicCopy";
 import { withDynamicReviewCount } from "../lib/reviewCount";
 import { trackEvent, registerSuperProperties } from "../lib/analytics";
 import { hrefWithPromoAttribution } from "../lib/promoAttribution";
+import { saveProfileHandoff } from "../lib/profileHandoff";
 import type { PromoFlowVariant } from "../lib/promoFlow";
 import { detectTargetNetworkFromParams, squiggleClass } from "../lib/detectTargetNetwork";
 import { getTargetedHeroTitle } from "./promoHeroTargetedCopy";
@@ -717,6 +718,9 @@ export default function Hero({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [promoHandle, setPromoHandle] = useState("");
+  // True while we prefetch the profile on /promo (spinner) before handing off to
+  // the product page — see submitUsernameCapture.
+  const [capturing, setCapturing] = useState(false);
   // Username-first arm collapses the 8-network grid to keep the page single-
   // intent (the visitor came for Instagram). This reveals it on demand for the
   // off-intent minority via a discreet "autre réseau ?" link — cheap escape
@@ -834,8 +838,9 @@ export default function Hero({
     void prefetchPricingExperiments();
   }, [isPromo]);
 
-  const submitUsernameCapture = (e: React.FormEvent) => {
+  const submitUsernameCapture = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (capturing) return;
     const handle = promoHandle.replace(/^@/, "").trim();
     const net = captureNetwork ?? "instagram";
     // Guardrail: this is the promo→product clickthrough for the username arm.
@@ -854,7 +859,40 @@ export default function Hero({
     // Preserve gclid/utm/kw/mt (keyword LTV) and append the captured handle.
     const base = hrefWithPromoAttribution(captureDestPath, searchParams, net);
     const sep = base.includes("?") ? "&" : "?";
-    router.push(handle ? `${base}${sep}u=${encodeURIComponent(handle)}` : base);
+    const dest = handle ? `${base}${sep}u=${encodeURIComponent(handle)}` : base;
+    // No handle → nothing to prefetch; let the product page show its input.
+    if (!handle) {
+      router.push(dest);
+      return;
+    }
+    // Prefetch the profile HERE (spinner stays on /promo) and hand it off via
+    // sessionStorage, so the product page opens straight on the profile + packs
+    // instead of replaying its own loading "scan". On private (403) or any error
+    // we store nothing and just navigate — the product page then runs its normal
+    // scan, which surfaces the "go public" screen / retries the fetch.
+    setCapturing(true);
+    // Warm the destination in PARALLEL with the profile fetch so the two waits
+    // overlap instead of stacking: prefetch the exact dynamic RSC (so router.push
+    // is near-instant) and make sure the pricing-experiments cache is hot (so the
+    // packs paint on first frame instead of flashing PricingPacksLoading).
+    router.prefetch(dest);
+    void prefetchPricingExperiments();
+    try {
+      const endpoint = net === "tiktok" ? "/api/tiktok/profile" : "/api/instagram/profile";
+      // Bound the spinner: if the profile API is slow we navigate anyway after
+      // 6s and let the product page run its own fetch, so we never hang here.
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 6000);
+      try {
+        const res = await fetch(`${endpoint}?username=${encodeURIComponent(handle)}`, { signal: ctrl.signal });
+        if (res.ok) saveProfileHandoff(net, handle, await res.json());
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch {
+      /* network hiccup / timeout — fall through to navigation, product retries */
+    }
+    router.push(dest);
   };
 
   const networkHref = (network: Network) =>
@@ -925,101 +963,100 @@ export default function Hero({
           </div>
         )}
 
-        {/* Trustpilot-style rating — first thing the visitor sees */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
+        {!showUsernameCapture ? (
+          <>
+            {/* Trustpilot-style rating — first thing the visitor sees */}
+            <div
               style={{
-                fontWeight: 500,
-                fontSize: 20,
-                marginRight: 8,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 16,
               }}
             >
-              4.9 <span style={{ opacity: 0.7 }}>|</span>
-            </span>
-            <svg
-              viewBox="0 0 128 24"
-              style={{ height: 24, display: "block" }}
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-label="4.9 / 5"
-            >
-              {/* 4 full green squares with 2px gap between each */}
-              {[0, 1, 2, 3].map((i) => (
-                <g key={i} transform={`translate(${i * 26}, 0)`}>
-                  <rect width="24" height="24" fill="#00B67A" />
-                  <path
-                    d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
-                    fill="white"
-                  />
-                </g>
-              ))}
-              {/* 5th star: 90% filled (4.9/5) */}
-              <g transform="translate(104, 0)">
-                <rect width="21.6" height="24" fill="#00B67A" />
-                <rect x="21.6" width="2.4" height="24" fill="#dcdce6" />
-                <path
-                  d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
-                  fill="white"
-                />
-              </g>
-            </svg>
-          </div>
-        </div>
-        {/* The top StatusBadge stays on desktop, but on mobile UTM-match
-            visits we move it down to the eyebrow's slot for tighter social-
-            proof → H1 hand-off. Without this rule mobile would render two
-            StatusBadges (top + eyebrow slot) on /promo?utm_term=*. */}
-        <div className={targetedTitle ? "hide-md" : ""}>
-          <StatusBadge />
-        </div>
-        <StarsRow items={copy.stars} />
-        {targetedTitle && (
-          <>
-            {/* Mobile: drop the promotional eyebrow ("Instagram · Visibilité
-                progressive") in favour of the live "X commandes livrées
-                aujourd'hui" trust pill so the pre-H1 signal is concrete
-                instead of marketing-flavoured. */}
-            <div
-              className="show-md-only"
-              style={{ width: "100%", justifyContent: "center" }}
-            >
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontWeight: 500,
+                    fontSize: 20,
+                    marginRight: 8,
+                  }}
+                >
+                  4.9 <span style={{ opacity: 0.7 }}>|</span>
+                </span>
+                <svg
+                  viewBox="0 0 128 24"
+                  style={{ height: 24, display: "block" }}
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="4.9 / 5"
+                >
+                  {/* 4 full green squares with 2px gap between each */}
+                  {[0, 1, 2, 3].map((i) => (
+                    <g key={i} transform={`translate(${i * 26}, 0)`}>
+                      <rect width="24" height="24" fill="#00B67A" />
+                      <path
+                        d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
+                        fill="white"
+                      />
+                    </g>
+                  ))}
+                  {/* 5th star: 90% filled (4.9/5) */}
+                  <g transform="translate(104, 0)">
+                    <rect width="21.6" height="24" fill="#00B67A" />
+                    <rect x="21.6" width="2.4" height="24" fill="#dcdce6" />
+                    <path
+                      d="M12 5l1.96 4.45 4.84.4-3.68 3.18 1.12 4.73L12 15.27l-4.24 2.49 1.12-4.73L5.2 9.85l4.84-.4z"
+                      fill="white"
+                    />
+                  </g>
+                </svg>
+              </div>
+            </div>
+            {/* The top StatusBadge stays on desktop, but on mobile UTM-match
+                visits we move it down to the eyebrow's slot for tighter social-
+                proof → H1 hand-off. */}
+            <div className={targetedTitle ? "hide-md" : ""}>
               <StatusBadge />
             </div>
+            <StarsRow items={copy.stars} />
+            {targetedTitle && (
+              <div
+                className="show-md-only"
+                style={{ width: "100%", justifyContent: "center" }}
+              >
+                <StatusBadge />
+              </div>
+            )}
+            <h1
+              className="display"
+              style={{
+                textAlign: "center",
+                margin: "0 auto 16px",
+                maxWidth: 900,
+                fontSize: "clamp(28px, 5vw, 56px)",
+              }}
+            >
+              {heroTitle.titleBefore}<span className={squiggleClass(targetedNetwork)}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
+            </h1>
           </>
-        )}
-        <h1
-          className="display"
-          style={{
-            textAlign: "center",
-            margin: "0 auto 16px",
-            maxWidth: 900,
-            fontSize: "clamp(28px, 5vw, 56px)",
-          }}
-        >
-          {heroTitle.titleBefore}<span className={squiggleClass(targetedNetwork)}>{heroTitle.titleHighlight}</span>{heroTitle.titleAfter}
-        </h1>
-
-        {/* Username-first capture (A/B variant). Asks the @ before showing
-            packs: a micro-commitment that also lets the product page greet the
-            visitor with their real profile + a personalised projection. In this
-            arm the 8-network grid below is collapsed (single-intent) behind an
-            "autre réseau ?" link — see the #networks block. */}
-        {showUsernameCapture && (
-          // Progressive enhancement: `action`/`method` + name="u" mean that even
-          // BEFORE React hydrates (slow networks, dev mode), clicking Continue
-          // does a native GET to /instagram?u=…&<attribution> instead of
-          // reloading /promo. Once hydrated, onSubmit takes over with tracking +
-          // a soft SPA navigation (submitUsernameCapture calls preventDefault).
-          <form onSubmit={submitUsernameCapture} action={captureDestPath} method="get" className={`promo-ig-capture${captureNetwork === "tiktok" ? " cap-tt" : ""}`}>
+        ) : (
+          /* Username-first capture — "V3 dark hero". A self-contained dark panel
+             (stays legible on the light promo page) leads with a gradient
+             network icon, a big uppercase title, a subtitle + public-account
+             note, an inline @username form, reassurance badges and a Trustpilot
+             score — its own trust signals, so the light rating/StatusBadge/
+             StarsRow stack above is suppressed. Progressive enhancement is
+             preserved: action/method + name="u" do a native GET to the product
+             page before hydration; once hydrated submitUsernameCapture takes
+             over (tracking + soft SPA nav). */
+          <form
+            onSubmit={submitUsernameCapture}
+            action={captureDestPath}
+            method="get"
+            className={`promo-cap2${captureNetwork === "tiktok" ? " cap-tt" : ""}`}
+          >
             {/* Carry attribution (utm/gclid/kw/mt) + promo surface markers on the
                 un-hydrated native-submit path so nothing is lost. */}
             {(searchParams ? Array.from(searchParams.entries()) : [])
@@ -1029,60 +1066,110 @@ export default function Hero({
               ))}
             <input type="hidden" name="entry_surface" value="promo" />
             <input type="hidden" name="from" value={`promo_${captureNetwork ?? "instagram"}`} />
-            {/* Claude Design "V2 — Instagram gradient forward": gradient frame →
-                white inner with soft glow, IG eyebrow + big title, gradient-@
-                field, IG-gradient CTA. Reassurance row intentionally omitted. */}
-            <div className="promo-ig-capture-card">
-              <div className="promo-ig-capture-inner">
-                <div className="promo-ig-capture-glow" />
-                <div className="promo-ig-capture-head">
-                  <span className="promo-ig-capture-logo">
-                    <NetIcon kind={captureNetwork ?? "instagram"} color="white" size={24} />
+
+            {capturing ? (
+              <div className="promo-cap2-loading" role="status" aria-live="polite">
+                <span className="promo-cap2-loader" aria-hidden="true">
+                  <span className="promo-cap2-loader-ring" />
+                  <span className="promo-cap2-loader-core">
+                    <NetIcon kind={captureNetwork ?? "instagram"} color="white" size={26} />
                   </span>
-                  <div>
-                    <div className="promo-ig-capture-eyebrow">{captureNetworkName}</div>
-                    <div className="promo-ig-capture-title">Followers</div>
-                  </div>
+                </span>
+                <div className="promo-cap2-loading-text">
+                  {locale?.toLowerCase().startsWith("fr") ? "Analyse de " : "Analyzing "}
+                  <b>@{promoHandle.replace(/^@+/, "")}</b>
+                  <span className="promo-cap2-dots" aria-hidden="true"><i /><i /><i /></span>
                 </div>
-
-                <div className="promo-ig-capture-sub">
-                  {locale?.toLowerCase().startsWith("fr")
-                    ? "Entrez votre nom d'utilisateur"
-                    : "Enter your username"}
-                </div>
-
-                <label className="promo-ig-capture-field">
-                  <span className="promo-ig-capture-at">@</span>
-                  <input
-                    id="promo-ig-handle"
-                    data-testid="promo-username-capture"
-                    type="text"
-                    name="u"
-                    enterKeyHint="go"
-                    placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
-                    value={promoHandle}
-                    onChange={(e) => setPromoHandle(e.target.value.replace(/^@+/, ""))}
-                    spellCheck={false}
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    autoCorrect="off"
-                  />
-                </label>
-
-                <button type="submit" className="promo-ig-capture-btn">
-                  {locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}
-                  <span className="promo-ig-capture-price">
-                    {locale?.toLowerCase().startsWith("fr") ? "· dès " : "· from "}
-                    {promoNetworkPriceLabels[captureNetwork ?? "instagram"]}
-                  </span>
-                  <span className="promo-ig-capture-arrow">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M3 8h9M8 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                </button>
               </div>
+            ) : (
+            <>
+            <div className="promo-cap2-head">
+              <span className="promo-cap2-icon">
+                <NetIcon kind={captureNetwork ?? "instagram"} color="white" size={32} />
+              </span>
+              <h1 className="promo-cap2-title">
+                {locale?.toLowerCase().startsWith("fr") ? "Boostez votre " : "Boost your "}
+                <span className="promo-cap2-title-net">{captureNetworkName}</span>
+              </h1>
+              <p className="promo-cap2-sub">
+                {locale?.toLowerCase().startsWith("fr")
+                  ? `Entrez votre nom d'utilisateur ${captureNetworkName} public pour commencer. Aucun mot de passe requis.`
+                  : `Enter your public ${captureNetworkName} username to start. No password required.`}
+              </p>
             </div>
+
+            <div className="promo-cap2-note">
+              {locale?.toLowerCase().startsWith("fr")
+                ? "* Assurez-vous que votre compte est en public."
+                : "* Make sure your account is public."}
+            </div>
+
+            <div className="promo-cap2-form">
+              <div className="promo-cap2-field">
+                <span className="promo-cap2-at">@</span>
+                <input
+                  id="promo-ig-handle"
+                  data-testid="promo-username-capture"
+                  type="text"
+                  name="u"
+                  enterKeyHint="go"
+                  className="promo-cap2-input"
+                  placeholder={locale?.toLowerCase().startsWith("fr") ? "votre_nom" : "your_handle"}
+                  value={promoHandle}
+                  onChange={(e) => setPromoHandle(e.target.value.replace(/^@+/, ""))}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                />
+              </div>
+              <button type="submit" className="promo-cap2-btn">
+                <span>{locale?.toLowerCase().startsWith("fr") ? "Continuer" : "Continue"}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m21 21-4.34-4.34" />
+                  <circle cx="11" cy="11" r="8" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="promo-cap2-badges">
+              <span className="promo-cap2-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+                {locale?.toLowerCase().startsWith("fr") ? "100% Sécurisé" : "100% Secure"}
+              </span>
+              <span className="promo-cap2-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+                {locale?.toLowerCase().startsWith("fr") ? "Sans mot de passe" : "No password"}
+              </span>
+            </div>
+
+            <div className="promo-cap2-trust" aria-label="Trustpilot 4.8 / 5">
+              <span className="promo-cap2-trust-score">4.8</span>
+              <span className="promo-cap2-trust-sep" />
+              <span className="promo-cap2-stars">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <svg
+                    key={i}
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="white"
+                    aria-hidden="true"
+                    style={{ background: "#00B67A", borderRadius: 3 }}
+                  >
+                    <path d="M12 17.27l-5.18 3.05 1.4-5.95L3.5 9.24l6.06-.52L12 3l2.44 5.72 6.06.52-4.72 5.13 1.4 5.95z" />
+                  </svg>
+                ))}
+              </span>
+            </div>
+            </>
+            )}
           </form>
         )}
 

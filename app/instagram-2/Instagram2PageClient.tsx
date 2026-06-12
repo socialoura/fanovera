@@ -13,6 +13,7 @@ import { useApplyCurrencyPricing, usePrefetchProductPricing, useCurrencyPreferen
 import { useTrackPageVisit } from "../lib/useTrackPageVisit";
 import { trackEvent, registerSuperProperties, currentAttributionProperties } from "../lib/analytics";
 import { scrollToStepMain } from "../lib/stepScroll";
+import { peekProfileHandoff, clearProfileHandoff } from "../lib/profileHandoff";
 import Step1Username from "./components/Step1Username";
 import Step2Quantities from "./components/Step2Quantities";
 import Step3Posts from "./components/Step3Posts";
@@ -46,11 +47,17 @@ export default function Instagram2PageClient() {
 
   // Restore session state on mount (survives refresh / back-navigation)
   const restored = useRef(handoffHandle ? null : loadSessionState());
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  // Profile prefetched on /promo and handed off client-side. When present we
+  // open straight on step 2 (profile + packs) and skip Step1's loading scan.
+  const handoffProfile = useRef<IgProfile | null>(
+    handoffHandle ? peekProfileHandoff<IgProfile>("instagram", handoffHandle) : null,
+  );
+  const hasHandoff = handoffProfile.current != null;
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(hasHandoff ? 2 : 1);
   const [username, setUsername] = useState(handoffHandle || restored.current?.username || "");
-  const [autoStart, setAutoStart] = useState(handoffHandle.length > 0);
+  const [autoStart, setAutoStart] = useState(handoffHandle.length > 0 && !hasHandoff);
   const [email, setEmail] = useState(restored.current?.email || "");
-  const [profile, setProfile] = useState<IgProfile | null>(null);
+  const [profile, setProfile] = useState<IgProfile | null>(hasHandoff ? handoffProfile.current : null);
   const [posts, setPosts] = useState<IgPost[]>([]);
   const [sel, setSel] = useState<Selection>(restored.current?.sel || { followers: null, likes: null, views: null });
   const [selectedIds, setSelectedIds] = useState<string[]>(restored.current?.selectedIds || []);
@@ -154,6 +161,32 @@ export default function Instagram2PageClient() {
       })
       .catch(() => {});
   };
+
+  // Consume the /promo profile handoff once: we already opened on step 2 with
+  // the profile, so just replicate onLoaded's side effects (validation tracking
+  // + background posts fetch) that Step1's scan would normally have run.
+  useEffect(() => {
+    const p = handoffProfile.current;
+    if (!hasHandoff || !p) return;
+    clearProfileHandoff();
+    trackEvent("username_validated", {
+      product_area: "instagram",
+      platform: "instagram",
+      followers_count: p.followersCount || 0,
+      from_promo: true,
+    });
+    const handle = (p.username || username).replace(/^@/, "").trim();
+    fetch(`/api/instagram/posts?username=${encodeURIComponent(handle)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!json?.posts) return;
+        const fetched: IgPost[] = json.posts;
+        setPosts(fetched);
+        if (selectedIds.length === 0) setSelectedIds(fetched.slice(0, 4).map((x) => x.id));
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Intercept selection changes to fire per-product tracking without modifying
   // Step2Quantities (which has no analytics dependency).

@@ -71,8 +71,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid_username" }, { status: 400 });
   }
 
-  const cached = getCached(username);
-  if (cached) return NextResponse.json(cached);
+  const nocache = req.nextUrl.searchParams.get("nocache") === "1";
+  if (!nocache) {
+    const cached = getCached(username);
+    if (cached) return NextResponse.json(cached);
+  } else {
+    cache.delete(username);
+  }
 
   if (!process.env.RAPIDAPI_KEY) {
     return NextResponse.json(mockProfile(username));

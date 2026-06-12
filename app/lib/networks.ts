@@ -22,7 +22,9 @@ export type Network = {
  * canonical TikTok page is a one-line change.
  */
 export function networkPath(id: NetworkId): string {
-  return id === "tiktok" ? "/tiktok-2" : `/${id}`;
+  if (id === "tiktok") return "/tiktok-2";
+  if (id === "instagram") return "/instagram-2";
+  return `/${id}`;
 }
 
 export const NETWORKS: Network[] = [

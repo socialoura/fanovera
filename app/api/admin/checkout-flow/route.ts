@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     await setCheckoutFlowMode(body.mode);
     // Take effect immediately on the SSR Instagram page.
     revalidateTag("checkout-flow-mode");
-    revalidatePath("/instagram");
+    revalidatePath("/instagram-2");
     console.log(`[checkout-flow] mode → ${body.mode}`);
     return NextResponse.json({ mode: body.mode, changed: true });
   } catch (error) {
