@@ -5,7 +5,6 @@ import NetIcon from "../../components/NetIcon";
 import { trackEvent } from "../../lib/analytics";
 import IgSprinkle from "../../instagram/components/IgSprinkle";
 import Stepper from "./Stepper";
-import { ArrowRight } from "./icons";
 import { useI2Copy } from "../copy";
 import { useI18n } from "../../i18n/I18nProvider";
 import type { IgProfile, IgPost } from "../types";

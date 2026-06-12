@@ -90,10 +90,11 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
     setStage(0);
 
     async function run() {
-      let { profile, isPrivate } = await fetchProfile(clean, isRetry);
+      const result = await fetchProfile(clean, isRetry);
+      let profile = result.profile;
       if (cancelled) return;
 
-      if (isPrivate) {
+      if (result.isPrivate) {
         setStage(3);
         trackEvent("username_private", { product_area: "tiktok", platform: "tiktok" });
         setPhase("private");
