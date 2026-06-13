@@ -1,41 +1,30 @@
 "use client";
 
 import { Fragment } from "react";
-import { useInstagramCopy } from "../i18n";
+import { useI2Copy } from "../copy";
+import { Check } from "./icons";
 
-export default function Stepper({ step, labels }: { step: number; labels?: string[] }) {
-  const t = useInstagramCopy();
-  // `labels` overrides the default 3-step labels — e.g. the merged-checkout A/B
-  // variant passes a 2-step set (packs → profile & payment).
-  const steps = (labels ?? t.stepper).map((label, index) => ({
-    n: index + 1,
-    label,
-  }));
+// Dynamic stepper: the "Vos posts" step only appears when the order contains
+// likes/views (needsPosts). Step numbers stay 1..N visually.
+export default function Stepper({ step, needsPosts }: { step: number; needsPosts: boolean }) {
+  const c = useI2Copy().stepper;
+  const steps = [
+    { n: 1, label: c.instagram },
+    { n: 2, label: c.quantities },
+    ...(needsPosts ? [{ n: 3, label: c.posts }] : []),
+    { n: 4, label: c.payment },
+  ];
 
   return (
     <div data-i18n-skip style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
       <div className="stepper">
         {steps.map((s, i) => (
           <Fragment key={s.n}>
-            <div className={`step-pill ${step === s.n ? "active" : ""} ${step > s.n ? "done" : ""}`}>
-              <span className="step-num">
-                {step > s.n ? (
-                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                    <path
-                      d="M2 5.5l2.5 2.5 4.5-5"
-                      stroke="white"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  s.n
-                )}
-              </span>
+            <div className={`step-pill ${step === s.n ? "active" : ""} ${step > s.n ? "done" : ""} ${step !== s.n ? "ig2-inactive-md" : ""}`}>
+              <span className="step-num">{step > s.n ? <Check size={11} /> : i + 1}</span>
               <span className="step-pill-label">{s.label}</span>
             </div>
-            {i < steps.length - 1 && <div className="step-divider"></div>}
+            {i < steps.length - 1 && <div className="step-divider" />}
           </Fragment>
         ))}
       </div>

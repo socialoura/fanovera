@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Mode invalide." }, { status: 400 });
     }
     await setTt2PacksMode(body.mode);
-    // Take effect immediately on the SSR /tiktok-2 page.
+    // Take effect immediately on the SSR /tiktok page (the canonical TikTok flow).
     revalidateTag("tt2-packs-mode");
-    revalidatePath("/tiktok-2");
+    revalidatePath("/tiktok");
     console.log(`[tt2-packs] mode → ${body.mode}`);
     return NextResponse.json({ mode: body.mode, changed: true });
   } catch (error) {

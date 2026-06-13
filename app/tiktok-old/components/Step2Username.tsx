@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import TtSprinkle from "./TtSprinkle";
+import TtSprinkle from "../../tiktok/components/TtSprinkle";
 import Stepper from "./Stepper";
-import { getPacksForProduct, formatQty, formatPrice, type CountryId, type TikTokProductType } from "../data";
-import { useTikTokCopy } from "../i18n";
+import { getPacksForProduct, formatQty, formatPrice, type CountryId, type TikTokProductType } from "../../tiktok/data";
+import { useTikTokCopy } from "../../tiktok/i18n";
 import { trackEvent } from "../../lib/analytics";
 import { extractHandleFromUrl } from "../../lib/extractHandle";
 

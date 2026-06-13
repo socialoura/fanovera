@@ -1,6 +1,6 @@
 "use client";
 
-// Lightweight client-only A/B for the /tiktok-2 pack selector UI:
+// Lightweight client-only A/B for the /tiktok pack selector UI:
 //   - "chips"  → the current curated chips + "more tiers" expander
 //   - "slider" → a single range slider per product
 // Assignment is a sticky 50/50 bucket persisted in localStorage so the visitor

@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import NetIcon from "../../components/NetIcon";
-import IgSprinkle from "./IgSprinkle";
+import IgSprinkle from "../../instagram/components/IgSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type InstagramProductType, getPacksForProduct } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type InstagramProductType, getPacksForProduct } from "../../instagram/data";
 import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
-import { useInstagramCopy } from "../i18n";
+import { useInstagramCopy } from "../../instagram/i18n";
 import { useI18n } from "../../i18n/I18nProvider";
 import { useMarketingMode } from "../../marketing/MarketingModeProvider";
 import { getEffectiveMarketingMode } from "../../lib/marketingModeTypes";

@@ -169,7 +169,7 @@ function pickClosestPack(qty: number) {
   return best;
 }
 
-export default function RoiCalculator({ ctaHref = "/instagram-2" }: { ctaHref?: string }) {
+export default function RoiCalculator({ ctaHref = "/instagram" }: { ctaHref?: string }) {
   const { locale } = useI18n();
   const c = COPY[locale] || COPY.fr;
 

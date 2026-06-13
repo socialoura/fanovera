@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import IgSprinkle from "../../instagram/components/IgSprinkle";
-import { formatQty } from "../../instagram/data";
+import IgSprinkle from "./IgSprinkle";
+import { formatQty } from "../data";
 import Stepper from "./Stepper";
 import { ProdIcon, ArrowRight, Check } from "./icons";
 import { useI2Copy } from "../copy";

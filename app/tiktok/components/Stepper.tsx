@@ -1,22 +1,30 @@
 "use client";
 
 import { Fragment } from "react";
-import { useTikTokCopy } from "../i18n";
+import { useT2Copy } from "../copy";
+import { Check } from "./icons";
 
-export default function Stepper({ step }: { step: 1 | 2 | 3 }) {
-  const t = useTikTokCopy();
-  const steps = t.stepper.map((label, index) => ({ n: (index + 1) as 1 | 2 | 3, label }));
+// Dynamic stepper: the "Vos vidéos" step only appears when the order contains
+// likes/views (needsPosts). Step numbers stay 1..N visually.
+export default function Stepper({ step, needsPosts }: { step: number; needsPosts: boolean }) {
+  const c = useT2Copy().stepper;
+  const steps = [
+    { n: 1, label: c.tiktok },
+    { n: 2, label: c.quantities },
+    ...(needsPosts ? [{ n: 3, label: c.videos }] : []),
+    { n: 4, label: c.payment },
+  ];
 
   return (
     <div data-i18n-skip style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
       <div className="stepper">
         {steps.map((s, i) => (
           <Fragment key={s.n}>
-            <div className={`step-pill ${step === s.n ? "active" : ""} ${step > s.n ? "done" : ""}`}>
-              <span className="step-num">{s.n}</span>
+            <div className={`step-pill ${step === s.n ? "active" : ""} ${step > s.n ? "done" : ""} ${step !== s.n ? "tt2-inactive-md" : ""}`}>
+              <span className="step-num">{step > s.n ? <Check size={11} /> : i + 1}</span>
               <span className="step-pill-label">{s.label}</span>
             </div>
-            {i < steps.length - 1 && <div className="step-divider"></div>}
+            {i < steps.length - 1 && <div className="step-divider" />}
           </Fragment>
         ))}
       </div>

@@ -5,7 +5,7 @@ import { runHogQL, posthogQueryConfigured } from "@/app/lib/posthogQuery.server"
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Per-variant funnel for the /tiktok-2 pack-selector A/B, read from PostHog via
+// Per-variant funnel for the /tiktok pack-selector A/B, read from PostHog via
 // the `tt2_packs_variant` super property carried on every event of an exposed
 // visitor. `amount` is in cents; revenue mixes currencies — fine for a
 // directional per-arm comparison.

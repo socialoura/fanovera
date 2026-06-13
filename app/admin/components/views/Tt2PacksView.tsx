@@ -103,9 +103,9 @@ export default function Tt2PacksView() {
 
       <section className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--a-line)" }}>
-          <div className="card-title" style={{ marginBottom: 2 }}>A/B Packs — TikTok 2 (slider vs pastilles)</div>
+          <div className="card-title" style={{ marginBottom: 2 }}>A/B Packs — TikTok (slider vs pastilles)</div>
           <div className="card-sub">
-            Sur <strong>/tiktok-2</strong> (étape Quantités) : sélecteur de packs en <strong>slider</strong> ou en
+            Sur <strong>/tiktok</strong> (étape Quantités) : sélecteur de packs en <strong>slider</strong> ou en
             pastilles. Le changement prend effet immédiatement, sans déploiement.
           </div>
         </div>

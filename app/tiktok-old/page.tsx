@@ -1,26 +1,31 @@
+import type { Metadata } from "next";
 import JsonLd from "../components/JsonLd";
 import { getMarketingMode, getEffectiveMarketingModeForSurface } from "../lib/marketingMode.server";
 import { generateSurfaceMetadata, getRequestLocale } from "../lib/metadata";
 import { productJsonLd } from "../lib/siteMetadata";
 import { MarketingModeProvider } from "../marketing/MarketingModeProvider";
 import { surfaceModeToLegacy } from "../lib/marketingModeTypes";
-import { getCachedTt2PacksMode } from "../lib/tt2PacksExperiment.server";
-import Tiktok2PageClient from "./Tiktok2PageClient";
+import TiktokOldPageClient from "./TiktokOldPageClient";
 
-export const generateMetadata = () => generateSurfaceMetadata("tiktok", "tiktok");
+// Parked previous TikTok flow (3-step, losing A/B variant). Kept reachable at
+// /tiktok-old for reference/rollback only — force noindex so it never competes
+// with the canonical /tiktok in search.
+export const generateMetadata = async (): Promise<Metadata> => {
+  const base = await generateSurfaceMetadata("tiktok", "tiktok");
+  return { ...base, robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
+};
 
-export default async function Tiktok2Page() {
+export default async function TiktokOldPage() {
   const locale = await getRequestLocale();
-  const [marketingMode, surfaceMode, packsMode] = await Promise.all([
+  const [marketingMode, surfaceMode] = await Promise.all([
     getMarketingMode(),
     getEffectiveMarketingModeForSurface("tiktok", locale),
-    getCachedTt2PacksMode(),
   ]);
   const legacyMode = surfaceModeToLegacy(surfaceMode);
   return (
     <MarketingModeProvider initialMode={legacyMode} initialSurfaceMode={surfaceMode}>
       <JsonLd data={productJsonLd("tiktok", locale, marketingMode)} />
-      <Tiktok2PageClient packsMode={packsMode} />
+      <TiktokOldPageClient />
     </MarketingModeProvider>
   );
 }

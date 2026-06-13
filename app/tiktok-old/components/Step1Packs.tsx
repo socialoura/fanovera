@@ -2,11 +2,11 @@
 
 import { useRef } from "react";
 import NetIcon from "../../components/NetIcon";
-import TtSprinkle from "./TtSprinkle";
+import TtSprinkle from "../../tiktok/components/TtSprinkle";
 import Stepper from "./Stepper";
-import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type TikTokProductType, getPacksForProduct } from "../data";
+import { PACKS, formatPrice, formatOld, formatQty, fmtEuro, type CountryId, type TikTokProductType, getPacksForProduct } from "../../tiktok/data";
 import { resolveSwitchedPackIndex } from "../../lib/packEquivalence";
-import { useTikTokCopy } from "../i18n";
+import { useTikTokCopy } from "../../tiktok/i18n";
 import ValueFraming from "../../components/ValueFraming";
 
 type Props = { country: CountryId; pack: number; setPack: (i: number) => void; onNext: () => void; productType: TikTokProductType; setProductType: (t: TikTokProductType) => void };

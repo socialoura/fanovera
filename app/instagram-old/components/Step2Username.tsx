@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import IgSprinkle from "./IgSprinkle";
+import IgSprinkle from "../../instagram/components/IgSprinkle";
 import Stepper from "./Stepper";
-import { getPacksForProduct, formatQty, type CountryId, type InstagramProductType } from "../data";
-import { useInstagramCopy } from "../i18n";
+import { getPacksForProduct, formatQty, type CountryId, type InstagramProductType } from "../../instagram/data";
+import { useInstagramCopy } from "../../instagram/i18n";
 import { trackEvent } from "../../lib/analytics";
 import { extractHandleFromUrl } from "../../lib/extractHandle";
 

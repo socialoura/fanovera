@@ -48,7 +48,7 @@ export function isMarketingSurface(value: unknown): value is MarketingSurface {
 export const SURFACE_PATH_MAP: Record<MarketingSurface, string> = {
   home: "/",
   promo: "/promo",
-  instagram: "/instagram-2",
+  instagram: "/instagram",
   tiktok: "/tiktok",
   twitter: "/twitter",
   twitch: "/twitch",

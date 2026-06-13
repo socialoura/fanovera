@@ -16,14 +16,14 @@ export type Network = {
 };
 
 /**
- * Product-page path for a network. Defaults to `/<id>`, but TikTok is routed to
- * the new `/tiktok-2` flow everywhere internal links are built (nav, footer,
- * promo cards, CTAs). Keep this the single source of truth so swapping the
- * canonical TikTok page is a one-line change.
+ * Product-page path for a network. Defaults to `/<id>`. Both TikTok and
+ * Instagram now serve their 4-step flow directly at the canonical `/tiktok` and
+ * `/instagram` (the old 3-step flows are parked at `/tiktok-old` /
+ * `/instagram-old`, and `/tiktok-2` / `/instagram-2` redirect to the canonical).
+ * Keep this the single source of truth so swapping a canonical page is a
+ * one-line change.
  */
 export function networkPath(id: NetworkId): string {
-  if (id === "tiktok") return "/tiktok-2";
-  if (id === "instagram") return "/instagram-2";
   return `/${id}`;
 }
 

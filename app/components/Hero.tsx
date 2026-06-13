@@ -763,15 +763,16 @@ export default function Hero({
   // Username-first capture (A/B variant). Asks the @ before showing packs, then
   // hands the handle off to the product page so it can greet the visitor with
   // their real profile + a personalised projection. Wired for Instagram (→
-  // /instagram) and TikTok (→ /tiktok-2). Any other targeted network degrades
+  // /instagram) and TikTok (→ /tiktok). Any other targeted network degrades
   // to the control grid, so this is safe to ship per-network.
   const captureNetwork: NetworkId | null =
     isPromo && promoFlowVariant === "username_first" && (targetedNetwork === "instagram" || targetedNetwork === "tiktok")
       ? targetedNetwork
       : null;
   const showUsernameCapture = captureNetwork !== null;
-  // TikTok routes to the new 4-step flow (/tiktok-2); Instagram to /instagram-2.
-  const captureDestPath = captureNetwork === "tiktok" ? "/tiktok-2" : "/instagram-2";
+  // TikTok and Instagram both route to their 4-step flow at the canonical
+  // /tiktok and /instagram.
+  const captureDestPath = captureNetwork === "tiktok" ? "/tiktok" : "/instagram";
   const captureNetworkName = captureNetwork
     ? NETWORKS.find((n) => n.id === captureNetwork)?.name ?? ""
     : "";
@@ -803,7 +804,7 @@ export default function Hero({
     // whether that card is below the fold on mobile.
     try {
       // Prefetch the route the visitor is about to click: the username-capture
-      // destination (/tiktok-2 or /instagram) when that arm is active,
+      // destination (/tiktok or /instagram) when that arm is active,
       // otherwise the targeted network's product page.
       router.prefetch(showUsernameCapture ? captureDestPath : networkPath(targetedNetwork));
     } catch {

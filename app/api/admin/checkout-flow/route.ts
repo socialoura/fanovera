@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Mode invalide." }, { status: 400 });
     }
     await setCheckoutFlowMode(body.mode);
-    // Take effect immediately on the SSR Instagram page.
+    // Take effect immediately on the SSR page that runs this A/B (the parked
+    // previous Instagram flow, now at /instagram-old).
     revalidateTag("checkout-flow-mode");
-    revalidatePath("/instagram-2");
+    revalidatePath("/instagram-old");
     console.log(`[checkout-flow] mode → ${body.mode}`);
     return NextResponse.json({ mode: body.mode, changed: true });
   } catch (error) {

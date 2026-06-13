@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import TtSprinkle from "../../tiktok/components/TtSprinkle";
-import { formatQty } from "../../tiktok/data";
+import TtSprinkle from "./TtSprinkle";
+import { formatQty } from "../data";
 import Stepper from "./Stepper";
 import { ProdIcon, ArrowRight, Check } from "./icons";
 import { useT2Copy } from "../copy";

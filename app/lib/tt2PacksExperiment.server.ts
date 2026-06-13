@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { sql } from "./db";
 
-// Admin-controlled mode for the /tiktok-2 pack-selector A/B, stored in the
+// Admin-controlled mode for the /tiktok pack-selector A/B, stored in the
 // shared key/value `smm_settings` table (same store as the promo flow mode).
 //   off          → everyone sees the chips selector (control)
 //   ab           → 50/50 split (honours the sticky localStorage bucket)
@@ -39,7 +39,7 @@ export async function getTt2PacksMode(): Promise<Tt2PacksMode> {
   }
 }
 
-// Cached read for the SSR /tiktok-2 page — revalidated on admin POST via the
+// Cached read for the SSR /tiktok page — revalidated on admin POST via the
 // `tt2-packs-mode` tag so a toggle takes effect immediately.
 export function getCachedTt2PacksMode(): Promise<Tt2PacksMode> {
   return unstable_cache(getTt2PacksMode, ["tt2_packs_mode"], {

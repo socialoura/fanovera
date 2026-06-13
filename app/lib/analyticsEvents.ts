@@ -35,13 +35,14 @@ export const ANALYTICS_EVENTS = [
   // is also registered as a PostHog super property so downstream funnel events
   // (checkout_started → payment_succeeded) carry it for per-arm analysis.
   "promo_flow_exposed",
-  // Instagram merged-checkout A/B: fired once on /instagram with `variant`. Also
+  // Instagram merged-checkout A/B: fired once on the parked /instagram-old flow
+  // (which runs this experiment) with `variant`. Also
   // registered as a PostHog super property so checkout_started → payment_succeeded
   // carry `checkout_flow_variant` for the admin per-arm results query.
   "checkout_flow_exposed",
-  // tiktok-2 funnel events — product page /tiktok-2
-  // Fired once per visit on the /tiktok-2 product page (distinct from the old
-  // /tiktok page). `from_promo` = true when the visitor was handed off from /promo.
+  // TikTok 4-step flow funnel events (internal codename "tt2") — now served at
+  // the canonical /tiktok. Fired once per visit on the /tiktok product page.
+  // `from_promo` = true when the visitor was handed off from /promo.
   "tiktok2_page_viewed",
   // Fired each time the visitor advances to a new step (2 = quantities,
   // 3 = post selection, 4 = checkout). Step 1 is captured by tiktok2_page_viewed.
@@ -53,14 +54,14 @@ export const ANALYTICS_EVENTS = [
   // User confirms their video selection in step 3 and proceeds to checkout.
   // `posts_count` = number of videos selected.
   "tt2_posts_confirmed",
-  // /tiktok-2 pack-selector A/B: fired once when the visitor reaches the
+  // /tiktok pack-selector A/B: fired once when the visitor reaches the
   // quantities step, with `variant` (chips | slider). Also registered as a
   // PostHog super property `tt2_packs_variant` so downstream funnel events
   // (checkout_started → payment_succeeded) carry it for per-arm conversion.
   "tt2_packs_exposed",
-  // instagram-2 funnel events — product page /instagram-2 (mirror of tiktok-2).
-  // Fired once per visit on the /instagram-2 product page. `from_promo` = true
-  // when the visitor was handed off from /promo.
+  // Instagram 4-step flow funnel events (internal codename "ig2") — now served
+  // at the canonical /instagram. Fired once per visit on the /instagram product
+  // page. `from_promo` = true when the visitor was handed off from /promo.
   "ig2_packs_exposed",
   "instagram2_page_viewed",
   // Fired each time the visitor advances to a new step (2 = quantities,
@@ -82,7 +83,7 @@ export const ANALYTICS_EVENTS = [
   // Funnel — fine-grained user journey events (Batch 3 funnel completion)
   "username_validated",
   // Visitor entered a handle whose account is private — flow is paused on
-  // tiktok-2 step 1 (private account can't be fetched or serviced).
+  // the TikTok flow step 1 (private account can't be fetched or serviced).
   "username_private",
   // Server-side: PaymentIntent successfully created in /api/create-payment-intent.
   // Fires once per intent (re)creation, keyed by anonymousId — NOT a clean

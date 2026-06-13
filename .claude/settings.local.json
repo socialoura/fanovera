@@ -200,7 +200,12 @@
       "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1 | Measure-Object -Line; Write-Output \"---FIRST 15---\"; npx tsc --noEmit -p tsconfig.json 2>&1 | Select-Object -First 15)",
       "Bash(Select-String -NotMatch 'MetadataLookup','trace-warnings')",
       "Bash(git rev-list *)",
-      "Bash(command -v vercel)"
+      "Bash(command -v vercel)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1 | Select-Object -First 20)",
+      "PowerShell(git add *)",
+      "Bash(set -e)",
+      "Bash(git mv *)",
+      "Bash(tasklist)"
     ]
   }
 }

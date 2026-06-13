@@ -1,40 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import NetIcon from "../../components/NetIcon";
 import { trackEvent } from "../../lib/analytics";
-import TtSprinkle from "../../tiktok/components/TtSprinkle";
+import IgSprinkle from "./IgSprinkle";
 import Stepper from "./Stepper";
-import { ArrowRight, Lock } from "./icons";
-import { useT2Copy } from "../copy";
+import { useI2Copy } from "../copy";
 import { useI18n } from "../../i18n/I18nProvider";
-import type { TtProfile, TtPost } from "../types";
+import type { IgProfile, IgPost } from "../types";
 
-const USERNAME_RE = /^[a-zA-Z0-9._]{2,24}$/;
+const USERNAME_RE = /^[a-zA-Z0-9._]{2,30}$/;
 
 // `isPrivate` is the one upstream signal we act on: a private account is a real,
 // permanent, user-fixable state, so we stop the flow and ask them to go public
 // rather than handing the cart a profile we can't service. Every other failure
 // (not-found / upstream) still falls through to the minimal profile so the flow
 // never dead-ends on a transient hiccup.
-type ProfileResult = { profile: TtProfile; isPrivate: boolean };
+type ProfileResult = { profile: IgProfile; isPrivate: boolean };
 
-async function fetchProfile(username: string, nocache = false): Promise<ProfileResult> {
-  const fallback: TtProfile = {
+async function fetchProfile(username: string): Promise<ProfileResult> {
+  const fallback: IgProfile = {
     username,
     fullName: username,
     avatarUrl: "",
     followersCount: 0,
     followingCount: 0,
-    likesCount: 0,
-    videoCount: 0,
+    mediaCount: 0,
     bio: "",
     verified: false,
   };
   try {
-    const qs = `username=${encodeURIComponent(username)}${nocache ? "&nocache=1" : ""}`;
-    const res = await fetch(`/api/tiktok/profile?${qs}`);
-    if (res.ok) return { profile: (await res.json()) as TtProfile, isPrivate: false };
+    const res = await fetch(`/api/instagram/profile?username=${encodeURIComponent(username)}`);
+    if (res.ok) return { profile: (await res.json()) as IgProfile, isPrivate: false };
     if (res.status === 403) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       if (body?.error === "private") return { profile: fallback, isPrivate: true };
@@ -49,20 +46,19 @@ async function fetchProfile(username: string, nocache = false): Promise<ProfileR
 type Props = {
   username: string;
   setUsername: (u: string) => void;
-  onLoaded: (profile: TtProfile, posts: TtPost[]) => void;
+  onLoaded: (profile: IgProfile, posts: IgPost[]) => void;
   autoStart?: boolean;
   fromPriceLabel?: string | null;
 };
 
 export default function Step1Username({ username, setUsername, onLoaded, autoStart = false }: Props) {
-  const c = useT2Copy().step1;
+  const c = useI2Copy().step1;
   const { locale } = useI18n();
   const isFr = locale === "fr";
-  const [phase, setPhase] = useState<"input" | "loading" | "private">("input");
+  const [phase, setPhase] = useState<"input" | "loading">("input");
   const [stage, setStage] = useState(0);
   const clean = username.replace(/^@/, "").trim();
   const valid = USERNAME_RE.test(clean);
-  const retryAfterPrivate = useRef(false);
 
   // Auto-advance on mount when handed a valid @ from /promo.
   useEffect(() => {
@@ -75,8 +71,7 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
 
   const start = () => {
     if (!valid) return;
-    trackEvent("cta_clicked", { product_area: "tiktok", feature_name: "tt2_analyze", platform: "tiktok" });
-    if (phase === "private") retryAfterPrivate.current = true;
+    trackEvent("cta_clicked", { product_area: "instagram", feature_name: "ig2_analyze", platform: "instagram" });
     setStage(0);
     setPhase("loading");
   };
@@ -84,44 +79,26 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
   useEffect(() => {
     if (phase !== "loading") return;
     let cancelled = false;
-    const isRetry = retryAfterPrivate.current;
-    retryAfterPrivate.current = false;
 
     setStage(0);
 
     async function run() {
-      const result = await fetchProfile(clean, isRetry);
-      let profile = result.profile;
+      const { profile, isPrivate } = await fetchProfile(clean);
       if (cancelled) return;
 
-      if (result.isPrivate) {
-        setStage(3);
-        trackEvent("username_private", { product_area: "tiktok", platform: "tiktok" });
-        setPhase("private");
-        return;
-      }
-
-      // On a retry after private, if 0 followers the upstream hasn't propagated
-      // the public switch yet — wait 3s and retry once.
-      if (isRetry && profile.followersCount === 0) {
-        await new Promise((r) => setTimeout(r, 3000));
-        if (cancelled) return;
-        const second = await fetchProfile(clean, true);
-        if (cancelled) return;
-        if (second.isPrivate) {
-          setStage(3);
-          setPhase("private");
-          return;
-        }
-        profile = second.profile;
+      // Private accounts can still order — we just proceed with a minimal
+      // profile (no bio/avatar/stats). Step 2 shows only the follower slider.
+      if (isPrivate) {
+        trackEvent("username_private", { product_area: "instagram", platform: "instagram" });
+      } else {
+        trackEvent("username_validated", {
+          product_area: "instagram",
+          platform: "instagram",
+          followers_count: profile.followersCount || 0,
+        });
       }
 
       setStage(3);
-      trackEvent("username_validated", {
-        product_area: "tiktok",
-        platform: "tiktok",
-        followers_count: profile.followersCount || 0,
-      });
       onLoaded(profile, []);
     }
 
@@ -134,26 +111,26 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
 
   return (
     <section className="slide-in" style={{ padding: "40px 0 0", position: "relative" }}>
-      <TtSprinkle count={5} seed={0} />
+      <IgSprinkle count={5} seed={0} />
       <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <Stepper step={1} needsPosts={false} />
 
         {/* Card: input OR loading OR private */}
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           {phase === "input" ? (
-            <div className="promo-cap2 cap-tt">
+            <div className="promo-cap2">
               <div className="promo-cap2-head">
                 <span className="promo-cap2-icon">
-                  <NetIcon kind="tiktok" color="white" size={32} />
+                  <NetIcon kind="instagram" color="white" size={32} />
                 </span>
                 <h1 className="promo-cap2-title">
                   {isFr ? "Boostez votre " : "Boost your "}
-                  <span className="promo-cap2-title-net">TikTok</span>
+                  <span className="promo-cap2-title-net">Instagram</span>
                 </h1>
                 <p className="promo-cap2-sub">
                   {isFr
-                    ? "Entrez votre nom d'utilisateur TikTok public pour commencer. Aucun mot de passe requis."
-                    : "Enter your public TikTok username to start. No password required."}
+                    ? "Entrez votre nom d'utilisateur Instagram public pour commencer. Aucun mot de passe requis."
+                    : "Enter your public Instagram username to start. No password required."}
                 </p>
               </div>
 
@@ -218,50 +195,27 @@ export default function Step1Username({ username, setUsername, onLoaded, autoSta
                 </span>
               </div>
             </div>
-          ) : phase === "private" ? (
-            <div className="tt2-scan-card" style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  width: 64, height: 64, borderRadius: "50%", margin: "0 auto 18px",
-                  display: "grid", placeItems: "center",
-                  background: "rgba(254,44,85,0.10)", color: "var(--tt-red)",
-                }}
-              >
-                <Lock size={28} color="var(--tt-red)" />
-              </div>
-              <div className="tt2-scan-handle">@{clean}</div>
-              <h3 style={{ margin: "10px 0 8px", fontSize: 20, fontWeight: 800 }}>{c.privateTitle}</h3>
-              <p style={{ maxWidth: 380, margin: "0 auto 22px", fontSize: 15, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                {c.privateBody}
-              </p>
-              <button className="promo-ig-capture-btn" onClick={start}>
-                {c.privateRetry}
-                <span className="promo-ig-capture-arrow">
-                  <ArrowRight size={16} />
-                </span>
-              </button>
-            </div>
           ) : (
-            <div className="tt2-scan-card">
+            <div className="ig2-scan-card">
               {/* Scanner orb — rotating gradient ring around the handle initial */}
-              <div className="tt2-scan-orb" aria-hidden>
-                <span className="tt2-scan-orb-ring" />
-                <span className="tt2-scan-orb-core">{clean.charAt(0).toUpperCase() || "@"}</span>
+              <div className="ig2-scan-orb" aria-hidden>
+                <span className="ig2-scan-orb-ring" />
+                <span className="ig2-scan-orb-core">{clean.charAt(0).toUpperCase() || "@"}</span>
               </div>
 
-              <div className="tt2-scan-handle slide-in">@{clean}</div>
+              <div className="ig2-scan-handle slide-in">@{clean}</div>
 
               {/* Dynamic status line — re-mounts each stage to replay the fade */}
-              <div className="tt2-scan-status">
-                <span className="tt2-pulse-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
+              <div className="ig2-scan-status">
+                <span className="ig2-pulse-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
                 <span key={stage}>{stages[Math.min(stage, stages.length - 1)]}</span>
               </div>
 
-              <div className="tt2-scan-track">
-                <div className="tt2-scan-fill" style={{ width: ((stage + 1) / stages.length) * 100 + "%" }} />
+              <div className="ig2-scan-track">
+                <div className="ig2-scan-fill" style={{ width: ((stage + 1) / stages.length) * 100 + "%" }} />
               </div>
 
-              <div className="tt2-scan-note">{c.loadingNote}</div>
+              <div className="ig2-scan-note">{c.loadingNote}</div>
             </div>
           )}
         </div>
