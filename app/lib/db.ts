@@ -77,6 +77,21 @@ export async function ensurePromoCodesSchema() {
   promoCodesSchemaReady = true;
 }
 
+// In-memory guard mirroring the others — the support thread/soft-delete columns
+// (parent_id, sender_type, deleted_at) live in initDb(), which isn't invoked
+// per-request. Without this on-demand migration a fresh deploy queries
+// `WHERE deleted_at IS NULL` against a column that doesn't exist yet, which
+// throws and makes every support read 500 (the whole inbox renders empty).
+let supportSchemaReady = false;
+
+export async function ensureSupportSchema() {
+  if (supportSchemaReady) return;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS parent_id INTEGER`;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS sender_type VARCHAR(10) DEFAULT 'client'`;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`;
+  supportSchemaReady = true;
+}
+
 export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS pricing (
@@ -811,6 +826,7 @@ export async function updateOrderStatusById(id: number, status: string) {
 // ── Support Messages ──
 
 export async function createSupportMessage(email: string, message: string): Promise<number> {
+  await ensureSupportSchema();
   const result = await sql`
     INSERT INTO support_messages (email, message)
     VALUES (${email}, ${message})
@@ -862,6 +878,7 @@ export async function getMatchingUpsell(platform: string, service: string) {
 }
 
 export async function getPendingSupportCount(): Promise<number> {
+  await ensureSupportSchema();
   const rows = await sql`
     SELECT COUNT(*)::int AS count
     FROM support_messages
@@ -871,6 +888,7 @@ export async function getPendingSupportCount(): Promise<number> {
 }
 
 export async function getSupportThreads() {
+  await ensureSupportSchema();
   const roots = await sql`
     SELECT * FROM support_messages
     WHERE parent_id IS NULL AND deleted_at IS NULL
