@@ -131,6 +131,13 @@ export default function Instagram2PageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  const packsExposedRef = useRef(false);
+  useEffect(() => {
+    if (step !== 2 || packsExposedRef.current) return;
+    packsExposedRef.current = true;
+    trackEvent("ig2_packs_exposed", { variant: "slider", product_area: "instagram", platform: "instagram" });
+  }, [step]);
+
   const needsPosts = sel.likes != null || sel.views != null;
   const selectedPosts = useMemo(
     () => posts.filter((p) => selectedIds.includes(p.id)),

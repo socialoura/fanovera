@@ -61,6 +61,7 @@ export const ANALYTICS_EVENTS = [
   // instagram-2 funnel events — product page /instagram-2 (mirror of tiktok-2).
   // Fired once per visit on the /instagram-2 product page. `from_promo` = true
   // when the visitor was handed off from /promo.
+  "ig2_packs_exposed",
   "instagram2_page_viewed",
   // Fired each time the visitor advances to a new step (2 = quantities,
   // 3 = post selection, 4 = checkout). Step 1 is captured by instagram2_page_viewed.
