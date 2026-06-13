@@ -329,6 +329,7 @@ export async function initDb() {
   await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_created ON support_messages(created_at DESC)`;
   await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS parent_id INTEGER`;
   await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS sender_type VARCHAR(10) DEFAULT 'client'`;
+  await sql`ALTER TABLE support_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`;
   await sql`CREATE INDEX IF NOT EXISTS idx_support_messages_parent ON support_messages(parent_id)`;
 
   await sql`
@@ -819,7 +820,7 @@ export async function createSupportMessage(email: string, message: string): Prom
 }
 
 export async function getSupportMessages() {
-  return await sql`SELECT * FROM support_messages ORDER BY created_at DESC LIMIT 200`;
+  return await sql`SELECT * FROM support_messages WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 200`;
 }
 
 export async function replySupportMessage(id: number, replyText: string) {
@@ -838,7 +839,7 @@ export async function getSupportMessageById(id: number) {
 export async function getSupportThreadReplies(rootId: number) {
   return await sql`
     SELECT * FROM support_messages
-    WHERE parent_id = ${rootId}
+    WHERE parent_id = ${rootId} AND deleted_at IS NULL
     ORDER BY created_at ASC
   `;
 }
@@ -864,7 +865,7 @@ export async function getPendingSupportCount(): Promise<number> {
   const rows = await sql`
     SELECT COUNT(*)::int AS count
     FROM support_messages
-    WHERE parent_id IS NULL AND replied = false
+    WHERE parent_id IS NULL AND replied = false AND deleted_at IS NULL
   `;
   return Number(rows[0]?.count) || 0;
 }
@@ -872,7 +873,7 @@ export async function getPendingSupportCount(): Promise<number> {
 export async function getSupportThreads() {
   const roots = await sql`
     SELECT * FROM support_messages
-    WHERE parent_id IS NULL
+    WHERE parent_id IS NULL AND deleted_at IS NULL
     ORDER BY created_at DESC
     LIMIT 200
   `;
@@ -881,7 +882,7 @@ export async function getSupportThreads() {
   const rootIds = roots.map((r) => r.id);
   const children = await sql`
     SELECT * FROM support_messages
-    WHERE parent_id = ANY(${rootIds})
+    WHERE parent_id = ANY(${rootIds}) AND deleted_at IS NULL
     ORDER BY created_at ASC
   `;
 
@@ -910,7 +911,9 @@ export async function insertSupportReply(params: {
 }
 
 export async function reopenSupportThread(rootId: number) {
-  await sql`UPDATE support_messages SET replied = false WHERE id = ${rootId}`;
+  // Clearing deleted_at resurrects a soft-deleted thread — a client replying to
+  // a thread the operator had deleted must resurface, never be silently dropped.
+  await sql`UPDATE support_messages SET replied = false, deleted_at = NULL WHERE id = ${rootId}`;
 }
 
 export async function markThreadReplied(rootId: number, replyText: string) {
@@ -920,6 +923,17 @@ export async function markThreadReplied(rootId: number, replyText: string) {
         reply_text = COALESCE(reply_text, ${replyText}),
         replied_at = COALESCE(replied_at, NOW())
     WHERE id = ${rootId}
+  `;
+}
+
+// Soft-delete a thread: stamp deleted_at on the root row plus every reply so it
+// drops out of the admin views but stays in the DB for audit. Reversible — a new
+// client reply runs reopenSupportThread, which clears deleted_at and resurfaces it.
+export async function deleteSupportThread(rootId: number) {
+  await sql`
+    UPDATE support_messages
+    SET deleted_at = NOW()
+    WHERE (id = ${rootId} OR parent_id = ${rootId}) AND deleted_at IS NULL
   `;
 }
 

@@ -80,6 +80,7 @@ export default function SupportView() {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [draftContext, setDraftContext] = useState("");
@@ -165,6 +166,23 @@ export default function SupportView() {
       await fetchThreads();
     } catch { /* ignore */ }
     setResolvingId(null);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Masquer cette conversation (message + réponses) ? Elle est archivée, pas effacée — elle réapparaîtra si le client répond à nouveau.")) return;
+    setDeletingId(id);
+    try {
+      await fetch("/api/admin/support", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("admin_pw") || ""}`,
+        },
+        body: JSON.stringify({ id }),
+      });
+      await fetchThreads();
+    } catch { /* ignore */ }
+    setDeletingId(null);
   };
 
   const handleReply = async (id: number) => {
@@ -490,6 +508,24 @@ export default function SupportView() {
                     }}
                   >
                     {customerOrders[thread.id] ? "Masquer ses commandes" : "Commandes du client"}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(thread.id)}
+                    disabled={deletingId === thread.id}
+                    style={{
+                      marginLeft: "auto",
+                      padding: "7px 14px",
+                      borderRadius: 8,
+                      background: "var(--a-card)",
+                      color: "#dc2626",
+                      border: "1px solid rgba(220,38,38,0.4)",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: deletingId === thread.id ? "not-allowed" : "pointer",
+                      opacity: deletingId === thread.id ? 0.6 : 1,
+                    }}
+                  >
+                    {deletingId === thread.id ? "Suppression…" : "Supprimer"}
                   </button>
                 </div>
               )}

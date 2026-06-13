@@ -6,6 +6,7 @@ import {
   insertSupportReply,
   markThreadReplied,
   reopenSupportThread,
+  deleteSupportThread,
 } from "@/app/lib/db";
 import { RESEND_FROM } from "@/app/lib/email";
 import { pollInboundMail } from "@/app/lib/inboundMailPoll";
@@ -67,6 +68,28 @@ export async function PATCH(req: NextRequest) {
   } else {
     await reopenSupportThread(rootId);
   }
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  if (!isAdmin(req)) return unauthorized();
+
+  const body = await req.json().catch(() => ({}));
+  const { id } = body as { id?: number | string };
+
+  if (!id) {
+    return NextResponse.json({ error: "id required" }, { status: 400 });
+  }
+
+  const msg = await getSupportMessageById(Number(id));
+  if (!msg) {
+    return NextResponse.json({ error: "message not found" }, { status: 404 });
+  }
+  // Cards only expose the root id, but normalise defensively in case a reply id
+  // is ever passed — we always delete at the thread root so nothing is orphaned.
+  const rootId = msg.parent_id ? Number(msg.parent_id) : Number(msg.id);
+
+  await deleteSupportThread(rootId);
   return NextResponse.json({ success: true });
 }
 
