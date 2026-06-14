@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 import { refillOrderFromScratch, type SmmProvider } from "@/app/lib/smm";
+import { sql, ensureDropOpsSchema } from "@/app/lib/db";
 
 const PROVIDERS: SmmProvider[] = ["bulkfollows", "dripfeedpanel"];
 
@@ -33,6 +34,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { placed, failed } = await refillOrderFromScratch(orderId, serviceId, provider);
+
+    // Stamp the refill so the Drops view can flag it and avoid double-refilling.
+    await ensureDropOpsSchema();
+    await sql`UPDATE orders SET last_refill_at = NOW() WHERE id = ${orderId}`;
 
     return NextResponse.json({
       success: true,

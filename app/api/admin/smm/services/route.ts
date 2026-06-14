@@ -18,6 +18,16 @@ export async function GET(req: NextRequest) {
       ? (providerParam as SmmProvider)
       : "bulkfollows";
     const services = await getServices(provider);
+
+    // Single-service lookup (used by the Drops cost preview): return just the
+    // matching service so the client doesn't ship the whole catalog.
+    const idParam = req.nextUrl.searchParams.get("id");
+    if (idParam) {
+      const id = Number(idParam);
+      const service = services.find((s) => Number(s.service) === id) || null;
+      return NextResponse.json({ service, provider });
+    }
+
     return NextResponse.json({ services, count: services.length, provider });
   } catch (error) {
     console.error("[smm/services GET] error:", error);

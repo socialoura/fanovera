@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/app/lib/db";
+import { sql, ensureDropOpsSchema } from "@/app/lib/db";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
-import { placeOrder, getOrderStatus, type SmmSubOrder } from "@/app/lib/smm";
+import { placeOrder, getOrderStatus, type SmmSubOrder, type SmmProvider } from "@/app/lib/smm";
+
+const PROVIDERS: SmmProvider[] = ["bulkfollows", "dripfeedpanel"];
 import { bulkFollowsCostCents, estimateBulkFollowsCharge, resolveBulkFollowsCharge } from "@/app/lib/smmCost";
 import { getUsdToCurrencyRate } from "@/app/lib/fxRates";
 
@@ -30,6 +32,9 @@ export async function POST(req: NextRequest) {
     const quantity = Number(body?.quantity);
     const explicitServiceId = body?.serviceId !== undefined ? Number(body.serviceId) : undefined;
     const explicitLink = typeof body?.link === "string" ? body.link.trim() : "";
+    // Default to the source sub-order's provider, falling back to dripfeedpanel
+    // (the active follower panel) so top-ups don't silently hit BulkFollows.
+    const explicitProvider: SmmProvider | undefined = PROVIDERS.includes(body?.provider) ? body.provider : undefined;
 
     if (!Number.isFinite(orderId) || orderId <= 0) {
       return NextResponse.json({ error: "orderId is required" }, { status: 400 });
@@ -76,19 +81,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Could not resolve a target link for the top-up" }, { status: 400 });
     }
 
+    const provider: SmmProvider =
+      explicitProvider || (original.provider as SmmProvider) || "dripfeedpanel";
+
     let placed: { orderId: number } | null = null;
     try {
-      placed = await placeOrder({ serviceId, link, quantity });
+      placed = await placeOrder({ serviceId, link, quantity, provider });
     } catch (err) {
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "BulkFollows placeOrder failed" },
+        { error: err instanceof Error ? err.message : "placeOrder failed" },
         { status: 502 },
       );
     }
 
     let charge: number | null = null;
     try {
-      const st = await getOrderStatus(placed.orderId);
+      const st = await getOrderStatus(placed.orderId, provider);
       // Estimate using the original sub-order's rate_per_1k proxy: original
       // charge / original qty. Falls back to 0 if not yet known.
       const origRate = original.charge && original.qty ? (original.charge / original.qty) * 1000 : 0;
@@ -112,6 +120,7 @@ export async function POST(req: NextRequest) {
       charge,
       error: null,
       placedAt: new Date().toISOString(),
+      provider,
     };
     subOrders.push(newSub);
 
@@ -119,12 +128,14 @@ export async function POST(req: NextRequest) {
     const costCents = bulkFollowsCostCents(subOrders.map((s) => s.charge), fxRate);
 
     // Bring the order back to processing so the auto-refresh polls it again.
+    await ensureDropOpsSchema();
     await sql`
       UPDATE orders
       SET smm_orders = ${JSON.stringify(subOrders)}::jsonb,
           cost_cents = ${costCents},
           status = 'processing',
-          delivered_at = NULL
+          delivered_at = NULL,
+          last_topup_at = NOW()
       WHERE id = ${orderId}
     `;
 

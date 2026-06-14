@@ -92,6 +92,38 @@ export async function ensureSupportSchema() {
   supportSchemaReady = true;
 }
 
+// Timestamps stamped by the Follower-Drops admin tooling so the operator never
+// double-emails / double-refills / double-tops-up the same order. Created on
+// demand (initDb isn't run per-request) so the feature works without a manual
+// migration.
+let dropOpsSchemaReady = false;
+
+export async function ensureDropOpsSchema() {
+  if (dropOpsSchemaReady) return;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS refill_notice_sent_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_refill_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_topup_at TIMESTAMPTZ`;
+  dropOpsSchemaReady = true;
+}
+
+// Short-lived cache of live follower counts so re-running the Drops analysis
+// (or scanning a wide date range) doesn't re-bill RapidAPI for every account.
+let liveCacheSchemaReady = false;
+
+export async function ensureLiveCacheSchema() {
+  if (liveCacheSchemaReady) return;
+  await sql`
+    CREATE TABLE IF NOT EXISTS live_follower_cache (
+      platform VARCHAR(20) NOT NULL,
+      username VARCHAR(120) NOT NULL,
+      followers INTEGER NOT NULL,
+      checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (platform, username)
+    )
+  `;
+  liveCacheSchemaReady = true;
+}
+
 export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS pricing (

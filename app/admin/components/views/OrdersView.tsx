@@ -305,7 +305,7 @@ function OrderDetail({
   onRunSmm: (orderId: number) => void;
   onRefreshSmm: (orderId: number) => void;
   onRefillSmm: (orderId: number) => void;
-  onRetrySub: (orderId: number, cartIndex: number, currentServiceId: number) => void;
+  onRetrySub: (orderId: number, cartIndex: number, currentServiceId: number, currentProvider?: string) => void;
   onTopUpSub: (orderId: number, cartIndex: number, originalQty: number, bfServiceId: number) => void;
   onStartEditBf: (cartIndex: number, currentBf: string, currentService: string) => void;
   onChangeBf: (value: string) => void;
@@ -798,7 +798,7 @@ function OrderDetail({
                     <button
                       type="button"
                       className="btn"
-                      onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx, item.bfServiceId || 0); }}
+                      onClick={(e) => { e.stopPropagation(); onRetrySub(order.id, cartIdx, item.bfServiceId || 0, item.provider); }}
                       disabled={smmBusy}
                       style={{ padding: "4px 10px", fontSize: 11 }}
                       title="Relance cette sous-commande via le fournisseur SMM — choisis un service ID one-off ou laisse vide pour celui du config global"
@@ -1313,7 +1313,7 @@ export default function OrdersView() {
     });
   };
 
-  const handleRetrySub = async (orderId: number, cartIndex: number, currentServiceId: number) => {
+  const handleRetrySub = async (orderId: number, cartIndex: number, currentServiceId: number, currentProvider?: string) => {
     const suggestion = currentServiceId > 0 ? String(currentServiceId) : "";
     const raw = window.prompt(
       `Retry de la sous-commande #${cartIndex}.\n\n` +
@@ -1332,6 +1332,14 @@ export default function OrdersView() {
         return;
       }
       body.serviceId = n;
+      const providerChoice = window.prompt(
+        `Provider pour le service #${n} ?\n\n` +
+        `1 = dripfeedpanel (défaut)\n2 = bulkfollows\n\n` +
+        `(Laisse vide ou "1" pour DripFeedPanel)`,
+        currentProvider === "bulkfollows" ? "2" : "1",
+      );
+      if (providerChoice === null) return;
+      body.provider = providerChoice.trim() === "2" ? "bulkfollows" : "dripfeedpanel";
     }
     await callSmmEndpoint(
       "/api/admin/orders/retry-smm",
@@ -1340,7 +1348,8 @@ export default function OrdersView() {
         const retried = (data?.retried || {}) as Record<string, unknown>;
         const status = String(retried?.status || "inconnu");
         const sid = retried?.bfServiceId ? ` · service #${retried.bfServiceId}` : "";
-        return `Sous-commande #${cartIndex} relancée (statut : ${status})${sid}.`;
+        const prov = retried?.provider ? ` (${retried.provider})` : "";
+        return `Sous-commande #${cartIndex} relancée (statut : ${status})${sid}${prov}.`;
       },
     );
   };

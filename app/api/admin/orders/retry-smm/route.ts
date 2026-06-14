@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { retrySmmSubOrder } from "@/app/lib/smm";
+import { retrySmmSubOrder, type SmmProvider } from "@/app/lib/smm";
 
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
+
+const PROVIDERS: SmmProvider[] = ["bulkfollows", "dripfeedpanel"];
+
 /**
  * POST /api/admin/orders/retry-smm
- * Body: { orderId: number, cartIndex: number, serviceId?: number }
+ * Body: { orderId: number, cartIndex: number, serviceId?: number, provider?: SmmProvider }
  *
  * Retries a specific failed/canceled sub-order within an order. By default
- * uses the BulkFollows service ID from `smm_config`, but accepts an explicit
- * `serviceId` override so the operator can target a one-off service per
- * commande (e.g. when the global config is wrong or a better-priced service
- * is available for this specific order).
+ * uses the service ID + provider from `smm_config`, but accepts explicit
+ * overrides so the operator can target a one-off service/provider per retry.
  */
 export async function POST(req: NextRequest) {
   if (!isAdmin(req)) return unauthorized();
 
   try {
     const body = await req.json();
-    const { orderId, cartIndex, serviceId } = body;
+    const { orderId, cartIndex, serviceId, provider } = body;
 
     if (!orderId || typeof orderId !== "number") {
       return NextResponse.json({ error: "orderId (number) is required" }, { status: 400 });
@@ -26,13 +27,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "cartIndex (number) is required" }, { status: 400 });
     }
 
-    const opts: { serviceId?: number } = {};
+    const opts: { serviceId?: number; provider?: SmmProvider } = {};
     if (serviceId !== undefined && serviceId !== null && serviceId !== "") {
       const n = Number(serviceId);
       if (!Number.isFinite(n) || n <= 0) {
         return NextResponse.json({ error: "serviceId must be a positive number" }, { status: 400 });
       }
       opts.serviceId = n;
+    }
+    if (PROVIDERS.includes(provider)) {
+      opts.provider = provider;
     }
 
     const subOrders = await retrySmmSubOrder(orderId, cartIndex, opts);

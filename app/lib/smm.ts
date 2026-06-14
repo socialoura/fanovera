@@ -827,7 +827,7 @@ export async function refillOrderFromScratch(
 export async function retrySmmSubOrder(
   orderId: number,
   cartIndex: number,
-  opts: { serviceId?: number } = {},
+  opts: { serviceId?: number; provider?: SmmProvider } = {},
 ): Promise<SmmSubOrder[]> {
   const rows = await sql`SELECT * FROM orders WHERE id = ${orderId} LIMIT 1`;
   const order = rows[0];
@@ -857,7 +857,7 @@ export async function retrySmmSubOrder(
   `;
   const config = configs[0];
 
-  const provider = (config?.provider || DEFAULT_PROVIDER) as SmmProvider;
+  const provider: SmmProvider = opts.provider || (config?.provider as SmmProvider) || DEFAULT_PROVIDER;
 
   let serviceId: number;
   let ratePer1k: number;
@@ -917,6 +917,7 @@ export async function retrySmmSubOrder(
     sub.charge = charge;
     sub.error = null;
     sub.placedAt = new Date().toISOString();
+    sub.provider = provider;
   } catch (err) {
     sub.error = err instanceof Error ? err.message : String(err);
     // status stays "failed"

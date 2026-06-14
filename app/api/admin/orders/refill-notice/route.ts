@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/app/lib/db";
+import { sql, ensureDropOpsSchema } from "@/app/lib/db";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
 import { sendRefillNoticeEmail } from "@/app/lib/email";
 
@@ -80,6 +80,10 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
+
+  // Stamp the send so the Drops view shows "emailé le …" and avoids re-sending.
+  await ensureDropOpsSchema();
+  await sql`UPDATE orders SET refill_notice_sent_at = NOW() WHERE id = ${orderId}`;
 
   return NextResponse.json({ success: true, emailId: result.id, purchaseCount: purchases.length });
 }
