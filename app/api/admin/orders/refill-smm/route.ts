@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin, unauthorized } from "@/app/lib/adminAuth";
-import { refillOrderFromScratch } from "@/app/lib/smm";
+import { refillOrderFromScratch, type SmmProvider } from "@/app/lib/smm";
+
+const PROVIDERS: SmmProvider[] = ["bulkfollows", "dripfeedpanel"];
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,20 +23,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const orderId = Number(body?.orderId);
     const serviceId = Number(body?.serviceId);
+    const provider: SmmProvider = PROVIDERS.includes(body?.provider) ? body.provider : "dripfeedpanel";
 
     if (!Number.isFinite(orderId) || orderId <= 0) {
       return NextResponse.json({ error: "orderId is required" }, { status: 400 });
     }
     if (!Number.isFinite(serviceId) || serviceId <= 0) {
-      return NextResponse.json({ error: "serviceId (BulkFollows service ID) is required" }, { status: 400 });
+      return NextResponse.json({ error: "serviceId (provider service ID) is required" }, { status: 400 });
     }
 
-    const { placed, failed } = await refillOrderFromScratch(orderId, serviceId);
+    const { placed, failed } = await refillOrderFromScratch(orderId, serviceId, provider);
 
     return NextResponse.json({
       success: true,
       orderId,
       serviceId,
+      provider,
       summary: { placed, failed },
     });
   } catch (err) {

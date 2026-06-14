@@ -165,6 +165,21 @@ export async function getBalance(provider: SmmProvider = DEFAULT_PROVIDER): Prom
   return parseFloat(data.balance);
 }
 
+/**
+ * Like {@link getBalance} but never throws — returns the provider's real error
+ * message instead, so the admin UI can surface "Invalid API key" /
+ * "Not enough funds" rather than a silent "—".
+ */
+export async function getBalanceSafe(
+  provider: SmmProvider = DEFAULT_PROVIDER,
+): Promise<{ balance: number | null; error: string | null }> {
+  try {
+    return { balance: await getBalance(provider), error: null };
+  } catch (err) {
+    return { balance: null, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 /** Place an order — returns the provider order ID */
 export async function placeOrder(params: {
   serviceId: number;
